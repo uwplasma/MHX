@@ -30,7 +30,7 @@ def compute_Az_from_hat(B_hat: Array, kx: Array, ky: Array) -> Array:
 
 def tearing_amplitude(B_hat: Array, Lx: float, Ly: float, Lz: float, band_width_frac: float = 0.25) -> Array:
     """
-    RMS of Bx in a band around the current sheet (|x-Lx/2| < band_width_frac*Lx/2).
+    RMS of Bx in a band around the current sheet (abs(x - Lx/2) < band_width_frac*Lx/2).
     Pure JAX version returning a JAX scalar.
     """
     B = jnp.fft.ifftn(B_hat, axes=(1, 2, 3)).real

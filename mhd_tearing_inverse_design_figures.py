@@ -84,7 +84,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-from mhd_tearing_inverse_design import (
+from mhx.inverse_design.train import (
     InverseDesignConfig,
     _simulate_metrics,
 )

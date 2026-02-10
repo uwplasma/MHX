@@ -136,55 +136,11 @@ def inverse_design(
     steps: int = typer.Option(2, "--steps"),
     fast: bool = typer.Option(True, "--fast"),
 ) -> None:
-    from mhx.config import objective_preset
-    from mhx.io.paths import create_run_dir
-    from mhx.io.npz import savez
-    from mhx.solver.tearing import _run_tearing_simulation_and_diagnostics, TearingMetrics
-    from mhx.config import dump_config_yaml
+    from mhx.inverse_design.train import InverseDesignConfig, run_inverse_design
 
-    cfg = TearingSimConfig.fast(equilibrium) if fast else TearingSimConfig(equilibrium_mode=equilibrium)
-    objective = objective_preset(equilibrium)
-    run_paths = create_run_dir(tag=f"inverse_{equilibrium}")
-    dump_config_yaml(run_paths.config_yaml, {"sim": cfg.as_dict(), "objective": objective.as_dict()})
-
-    # Minimal inverse-design loop: random search (placeholder)
-    # TODO: wire full training loop from mhd_tearing_inverse_design.py
-    best = None
-    best_loss = float("inf")
-    history = {"loss": [], "f_kin": [], "complexity": [], "eta": [], "nu": [],
-               "target_f_kin": [objective.target_f_kin],
-               "target_complexity": [objective.target_complexity],
-               "lambda_complexity": [objective.lambda_complexity]}
-
-    import numpy as np
-    rng = np.random.default_rng(0)
-    for _ in range(steps):
-        eta = 10 ** rng.uniform(-4.5, -2.0)
-        nu = 10 ** rng.uniform(-4.5, -2.0)
-        res = _run_tearing_simulation_and_diagnostics(
-            Nx=cfg.Nx, Ny=cfg.Ny, Nz=cfg.Nz,
-            Lx=cfg.Lx, Ly=cfg.Ly, Lz=cfg.Lz,
-            nu=nu, eta=eta,
-            B0=cfg.B0, a=cfg.a, B_g=cfg.B_g, eps_B=cfg.eps_B,
-            t0=cfg.t0, t1=cfg.t1, n_frames=cfg.n_frames, dt0=cfg.dt0,
-            equilibrium_mode=equilibrium,
-        )
-        metrics = TearingMetrics.from_result(res)
-        loss = (metrics.f_kin - objective.target_f_kin) ** 2 +                objective.lambda_complexity * (metrics.complexity - objective.target_complexity) ** 2
-
-        history["loss"].append(float(loss))
-        history["f_kin"].append(float(metrics.f_kin))
-        history["complexity"].append(float(metrics.complexity))
-        history["eta"].append(float(eta))
-        history["nu"].append(float(nu))
-
-        if loss < best_loss:
-            best_loss = loss
-            best = res
-
-    if best is not None:
-        savez(run_paths.solution_final_npz, best)
-    savez(run_paths.history_npz, history)
+    cfg = InverseDesignConfig.fast(equilibrium) if fast else InverseDesignConfig(equilibrium_mode=equilibrium)
+    cfg.n_train_steps = steps
+    run_paths, _, _, _, _ = run_inverse_design(cfg)
     typer.echo(str(run_paths.run_dir))
 
 

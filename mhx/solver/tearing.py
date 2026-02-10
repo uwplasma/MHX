@@ -1,32 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-mhd_tearing_solve.py
+Incompressible pseudo-spectral MHD tearing solver (Harris sheet).
 
-Incompressible pseudo-spectral MHD in a periodic box
-for a Harris-sheet tearing mode test case.
-
-This script:
-  - builds the grid and spectral operators,
-  - initializes a Harris-sheet equilibrium + perturbation,
-  - runs the MHD equations with diffrax,
-  - saves the full solution (Fourier coefficients) and metadata to a .npz file.
-
-There are two modes for the equilibria:
-  - original : classic tearing Harris sheet
-  - forcefree: equilibrium-subtracted, plasmoid-like regime
-
-Post-processing / ML codes can use the saved .npz, which now also contains
-simple but useful diagnostic quantities such as:
-  - Sweet–Parker estimates (v_A, S, delta_SP, v_in_SP, E_SP),
-  - tearing-mode amplitude time traces,
-  - an automatic estimate of the linear growth rate γ_fit,
-  - reconnection-rate proxy from A_z at the X-point,
-  - simple plasmoid / island count from extrema of A_z on a midplane.
-
-The heavy lifting (MHD RHS + diagnostics) is JAX-based so that pieces of this
-solver can be JIT-compiled and differentiated if desired.
+Exports a JAX-based solver, equilibrium initialization, and diagnostics
+used across scans and inverse design.
 """
+
 
 from __future__ import annotations
 
@@ -80,7 +60,7 @@ class TearingMetrics:
         complexity = plasmoid_complexity_metric(Az_final_mid)
         gamma_fit = res["gamma_fit"]
 
-        return cls(float(f_kin), float(complexity), float(gamma_fit))
+        return cls(f_kin, complexity, gamma_fit)
 
 
 
