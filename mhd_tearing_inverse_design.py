@@ -44,8 +44,8 @@ import optax
 
 from mhd_tearing_solve import (
     _run_tearing_simulation_and_diagnostics,
-    plasmoid_complexity_metric,
 )
+from mhx.solver.tearing import TearingMetrics
 from mhx.config import Objective, objective_preset
 from mhx.config import dump_config_yaml
 from mhx.io.paths import create_run_dir, RunPaths
@@ -171,12 +171,6 @@ def _simulate_metrics(eta: jnp.ndarray,
     Run the tearing simulation and return:
 
         f_kin, complexity, gamma_fit, res
-
-    where
-      - f_kin: late-time kinetic-energy fraction
-      - complexity: plasmoid complexity metric from A_z midplane at final time
-      - gamma_fit: fitted exponential growth rate (tearing-mode amplitude)
-      - res: full simulation result dict
     """
     res = _run_tearing_simulation_and_diagnostics(
         Nx=cfg.Nx,
@@ -198,25 +192,10 @@ def _simulate_metrics(eta: jnp.ndarray,
         equilibrium_mode=cfg.equilibrium_mode,
     )
 
-    ts = res["ts"]
-    E_kin = res["E_kin"]
-    E_mag = res["E_mag"]
-    Az_final_mid = res["Az_final_mid"]
-
-    # Average kinetic-energy fraction over last 30% of the simulation
-    T = ts.shape[0]
-    i0 = int(0.7 * (T - 1))
-    E_kin_tail = E_kin[i0:]
-    E_mag_tail = E_mag[i0:]
-
-    E_kin_mean = jnp.mean(E_kin_tail)
-    E_mag_mean = jnp.mean(E_mag_tail)
-    E_tot_mean = E_kin_mean + E_mag_mean + 1e-30
-    f_kin = E_kin_mean / E_tot_mean
-
-    complexity = plasmoid_complexity_metric(Az_final_mid)
-
-    gamma_fit = res["gamma_fit"]
+    metrics = TearingMetrics.from_result(res)
+    f_kin = jnp.asarray(metrics.f_kin)
+    complexity = jnp.asarray(metrics.complexity)
+    gamma_fit = jnp.asarray(metrics.gamma_fit)
     return f_kin, complexity, gamma_fit, res
 
 
@@ -523,6 +502,24 @@ def plot_Az_midplane_profiles(res_init: Dict[str, Any],
 
 def main():
     cfg = InverseDesignConfig()
+
+    # Optional overrides via environment (used by CLI wrapper)
+    import os as _os
+    eq_env = _os.environ.get("MHX_ID_EQ_MODE")
+    steps_env = _os.environ.get("MHX_ID_STEPS")
+    fast_env = _os.environ.get("MHX_ID_FAST")
+    if eq_env:
+        cfg.equilibrium_mode = eq_env
+    if steps_env:
+        cfg.n_train_steps = int(steps_env)
+    if fast_env == "1":
+        cfg.Nx = 16
+        cfg.Ny = 16
+        cfg.Nz = 1
+        cfg.t1 = 0.5
+        cfg.n_frames = 6
+        cfg.dt0 = 5e-4
+
 
     # Choose the default objective based on the equilibrium branch (unless the
     # user explicitly set cfg.objective before calling main()).

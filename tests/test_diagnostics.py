@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from mhx.solver.tearing import estimate_growth_rate, plasmoid_complexity_metric
+from mhx.solver.diagnostics import estimate_growth_rate, plasmoid_complexity_metric
 
 
 def test_gamma_fit_linear_growth_window():
