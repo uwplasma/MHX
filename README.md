@@ -1,63 +1,69 @@
 # MHX
 
-Collection of reduced MHD / tearing-mode / reconnection model scripts (JAX-based).
-
-This repository was split out of the earlier `uwplasma/LX` umbrella repo to keep
-vacuum-field solvers (now `uwplasma/BIMFx`) separate from MHD tooling.
-
-## What’s here
-
-The codebase currently consists of research scripts (not yet packaged as a
-library), including:
-
-- Tearing-mode solvers and scans
-- Postprocessing/visualization scripts
-- Inverse-design / ML-assisted variants
+Differentiable pseudo-spectral reduced MHD tearing/plasmoid solver and analysis tools (JAX-based).
 
 ## Install
-
-```bash
-pip install -r requirements.txt
-```
-
-or for editable development:
 
 ```bash
 pip install -e .
 ```
 
-For inverse-design / ML scripts:
+Inverse design / ML extras:
 
 ```bash
 pip install -e ".[ml]"
 ```
 
+Docs extras:
+
+```bash
+pip install -e ".[docs]"
+```
+
 ## Quickstart (FAST)
 
-Run a tiny tearing simulation and generate a couple of basic figures:
+Run a tiny simulation (seconds) and generate figures:
 
 ```bash
 mhx simulate --fast --equilibrium original --eta 1e-3 --nu 1e-3
 mhx figures --run outputs/runs/<timestamp>_simulate
 ```
 
-The `--fast` mode is intended for smoke tests and CI (seconds, not minutes).
+## Outputs
 
-## Inverse design objective consistency
+Runs are written under:
 
-The inverse-design training script now persists the objective used for training
-(`target_f_kin`, `target_complexity`, `lambda_complexity`) into the saved
-`inverse_design_history_<eq_mode>.npz`. The figure generator prefers loading the
-objective from that history file to avoid apples-to-oranges comparisons.
+```
+outputs/runs/<timestamp>_<tag>/
+  config.yaml
+  history.npz
+  solution_initial.npz
+  solution_mid.npz
+  solution_final.npz
+  figures/
+```
+
+Grid scans and figure outputs from the inverse-design figure driver:
+
+```
+outputs/scans/reachable_region_scan_<eq_mode>.npz
+outputs/figures/*.png
+```
+
+## Objective consistency (important)
+
+The inverse-design objective is persisted into `history.npz` (`target_f_kin`,
+`target_complexity`, `lambda_complexity`). The figure generator will load these
+values by default to avoid apples-to-oranges comparisons.
+
+## Citation
+
+If you use MHX, please cite it. See `CITATION.cff`.
 
 ## Notes
 
-- Many scripts assume JAX 64-bit mode. Consider setting:
+- Many scripts assume 64-bit JAX. Enable with:
 
-  ```bash
-  export JAX_ENABLE_X64=1
-  ```
-
-## License
-
-MIT. See `LICENSE`.
+```bash
+export JAX_ENABLE_X64=1
+```
