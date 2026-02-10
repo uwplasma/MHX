@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mhx"
+version = "0.1.0"
+description = "Reduced MHD / tearing-mode / reconnection model scripts (JAX-based)."
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.9"
+dependencies = [
+  "jax",
+  "jaxlib",
+  "numpy",
+  "scipy",
+  "matplotlib",
+  "diffrax",
+]
+
+[project.optional-dependencies]
+ml = ["optax", "equinox"]
+dev = ["pytest>=7", "ruff>=0.1.0"]
+
