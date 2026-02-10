@@ -12,3 +12,18 @@ Generate figures from the run directory:
 .. code-block:: bash
 
    mhx figures --run outputs/runs/<timestamp>_simulate
+
+Example outputs
+---------------
+
+.. image:: _static/energy.png
+   :width: 600
+   :alt: Energy time series
+
+.. image:: _static/az_midplane.gif
+   :width: 600
+   :alt: A_z midplane evolution
+
+Media generation script:
+
+- https://github.com/uwplasma/MHX/blob/main/examples/make_fast_media.py

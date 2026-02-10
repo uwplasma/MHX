@@ -18,3 +18,7 @@ outputs/
 !docs/**/*.jpeg
 !docs/**/*.svg
 *.mp4
+
+# Sphinx build outputs
+docs/_build/
+docs/generated/

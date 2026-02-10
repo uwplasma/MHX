@@ -29,6 +29,23 @@ mhx simulate --fast --equilibrium original --eta 1e-3 --nu 1e-3
 mhx figures --run outputs/runs/<timestamp>_simulate
 ```
 
+Run a tiny scan and inverse design (requires `pip install -e ".[ml]"`):
+
+```bash
+mhx scan --equilibrium forcefree --grid 4x4
+mhx inverse-design --equilibrium forcefree --steps 2 --fast
+```
+
+## Figures & Movies
+
+Energy evolution (FAST example):
+
+![Energy time series](docs/_static/energy.png)
+
+Midplane flux evolution (FAST example):
+
+![Az midplane evolution](docs/_static/az_midplane.gif)
+
 ## Outputs
 
 Runs are written under:
@@ -43,7 +60,7 @@ outputs/runs/<timestamp>_<tag>/
   figures/
 ```
 
-Grid scans and figure outputs from the inverse-design figure driver:
+Grid scans and figure outputs:
 
 ```
 outputs/scans/reachable_region_scan_<eq_mode>.npz
@@ -55,6 +72,12 @@ outputs/figures/*.png
 The inverse-design objective is persisted into `history.npz` (`target_f_kin`,
 `target_complexity`, `lambda_complexity`). The figure generator will load these
 values by default to avoid apples-to-oranges comparisons.
+
+## Source code links
+
+- Diagnostics API: [mhx/solver/diagnostics.py](https://github.com/uwplasma/MHX/blob/main/mhx/solver/diagnostics.py)
+- Core solver: [mhx/solver/tearing.py](https://github.com/uwplasma/MHX/blob/main/mhx/solver/tearing.py)
+- Inverse design training: [mhx/inverse_design/train.py](https://github.com/uwplasma/MHX/blob/main/mhx/inverse_design/train.py)
 
 ## Citation
 
