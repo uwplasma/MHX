@@ -71,7 +71,7 @@ from __future__ import annotations
 
 import os
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Dict, Any, Tuple
 
 import jax
@@ -87,6 +87,7 @@ from mhd_tearing_inverse_design import (
     InverseDesignConfig,
     _simulate_metrics,
 )
+from mhx.config import Objective, objective_preset
 
 # -----------------------------------------------------------------------------#
 # Global plotting style
@@ -140,10 +141,10 @@ class FigureScanConfig:
     n_frames: int = 120
     dt0: float = 5e-4
 
-    # Target behaviour (must match InverseDesignConfig to compare fairly)
-    target_f_kin: float = 0.03
-    target_complexity: float = 1e-5
-    lambda_complexity: float = 1.0  # cost weight for complexity term
+    # Default objective used when scanning and when inverse-design history does
+    # not provide one. For fair comparisons, comparisons should prefer the
+    # objective loaded from the saved inverse-design history.
+    objective: Objective = field(default_factory=lambda: objective_preset("forcefree"))
 
     # Equilibria to scan
     eq_modes: Tuple[str, str] = ("original", "forcefree")
@@ -182,9 +183,7 @@ def build_inverse_cfg(fig_cfg: FigureScanConfig, eq_mode: str) -> InverseDesignC
         n_frames=fig_cfg.n_frames,
         dt0=fig_cfg.dt0,
         equilibrium_mode=eq_mode,
-        target_f_kin=fig_cfg.target_f_kin,
-        target_complexity=fig_cfg.target_complexity,
-        lambda_complexity=fig_cfg.lambda_complexity,
+        objective=fig_cfg.objective,
         log10_eta_min=fig_cfg.log10_eta_min,
         log10_eta_max=fig_cfg.log10_eta_max,
         log10_nu_min=fig_cfg.log10_nu_min,
@@ -322,7 +321,7 @@ def plot_scan_heatmaps(scan_data: Dict[str, Any]):
 def plot_reachable_region_plane(
     scan_orig: Dict[str, Any],
     scan_ff: Dict[str, Any],
-    fig_cfg: FigureScanConfig,
+    objective: Objective,
 ):
     """Combined reachable region in (f_kin, C_plasmoid) plane."""
     f_o = scan_orig["f_kin_grid"].ravel()
@@ -353,8 +352,8 @@ def plot_reachable_region_plane(
     )
 
     ax.scatter(
-        [fig_cfg.target_f_kin],
-        [fig_cfg.target_complexity],
+        [objective.target_f_kin],
+        [objective.target_complexity],
         s=90,
         marker="*",
         color="k",
@@ -457,7 +456,7 @@ def grid_cost_history(
 
 def load_inverse_history(
     fig_cfg: FigureScanConfig,
-) -> Dict[str, np.ndarray] | None:
+) -> Tuple[Dict[str, np.ndarray] | None, Objective | None]:
     """
     Load inverse-design training history NPZ if present.
     This file must be produced by mhd_tearing_inverse_design.py:
@@ -476,19 +475,36 @@ def load_inverse_history(
             f"[INV] WARNING: {path} not found; "
             "skipping inverse-design-vs-grid comparison."
         )
-        return None
+        return None, None
 
     print(f"[INV] Loading inverse-design training history from {path}")
     npz = np.load(path)
     history = {k: np.array(npz[k]) for k in npz.files}
-    return history
+
+    # Objective used during training (if present).
+    def _scalar(name: str) -> float | None:
+        if name not in history:
+            return None
+        arr = np.array(history[name]).reshape(-1)
+        if arr.size == 0:
+            return None
+        return float(arr[0])
+
+    tf = _scalar("target_f_kin")
+    tc = _scalar("target_complexity")
+    lam = _scalar("lambda_complexity")
+    obj = None
+    if tf is not None and tc is not None and lam is not None:
+        obj = Objective(target_f_kin=tf, target_complexity=tc, lambda_complexity=lam)
+
+    return history, obj
 
 
 def plot_inverse_vs_grid_for_mode(
     eq_mode: str,
     scan_data: Dict[str, Any],
     inv_history: Dict[str, np.ndarray],
-    fig_cfg: FigureScanConfig,
+    objective: Objective,
 ):
     """
     For a single equilibrium_mode:
@@ -509,9 +525,9 @@ def plot_inverse_vs_grid_for_mode(
     # --- Grid search cost history --- #
     costs_grid, best_so_far_grid, best_grid_info = grid_cost_history(
         scan_data,
-        fig_cfg.target_f_kin,
-        fig_cfg.target_complexity,
-        fig_cfg.lambda_complexity,
+        objective.target_f_kin,
+        objective.target_complexity,
+        objective.lambda_complexity,
     )
     n_grid = len(costs_grid)
     steps_grid = np.arange(1, n_grid + 1)
@@ -519,8 +535,8 @@ def plot_inverse_vs_grid_for_mode(
     # --- Inverse design cost history --- #
     f_inv = np.array(inv_history["f_kin"], dtype=float)
     C_inv = np.array(inv_history["complexity"], dtype=float)
-    costs_inv = (f_inv - fig_cfg.target_f_kin) ** 2 + fig_cfg.lambda_complexity * (
-        C_inv - fig_cfg.target_complexity
+    costs_inv = (f_inv - objective.target_f_kin) ** 2 + objective.lambda_complexity * (
+        C_inv - objective.target_complexity
     ) ** 2
     steps_inv = np.arange(1, len(costs_inv) + 1)
 
@@ -569,8 +585,8 @@ def plot_inverse_vs_grid_for_mode(
         label="inverse design",
     )
     axes[1].scatter(
-        [fig_cfg.target_f_kin],
-        [fig_cfg.target_complexity],
+        [objective.target_f_kin],
+        [objective.target_complexity],
         s=100,
         marker="*",
         color="k",
@@ -614,20 +630,29 @@ def main():
     plot_scan_heatmaps(scan_ff)
 
     # 3) Combined reachable region and gamma vs f_kin
-    plot_reachable_region_plane(scan_orig, scan_ff, fig_cfg)
+    plot_reachable_region_plane(scan_orig, scan_ff, fig_cfg.objective)
     plot_gamma_vs_fkin(scan_orig, scan_ff)
 
     # 4) Inverse design vs grid for the chosen equilibrium, using
     #    pre-saved training history (no optimisation here).
-    inv_history = load_inverse_history(fig_cfg)
+    inv_history, inv_obj = load_inverse_history(fig_cfg)
     if inv_history is not None:
+        objective = inv_obj or fig_cfg.objective
+        if inv_obj is not None:
+            print(
+                "[INV] Using objective loaded from inverse-design history: "
+                f"target_f_kin={objective.target_f_kin}, "
+                f"target_complexity={objective.target_complexity}, "
+                f"lambda_complexity={objective.lambda_complexity}"
+            )
+
         if fig_cfg.inverse_eq_mode == "original":
             scan_for_mode = scan_orig
         else:
             scan_for_mode = scan_ff
 
         plot_inverse_vs_grid_for_mode(
-            fig_cfg.inverse_eq_mode, scan_for_mode, inv_history, fig_cfg
+            fig_cfg.inverse_eq_mode, scan_for_mode, inv_history, objective
         )
 
     print("\n[DONE] All figures generated. You can now:")

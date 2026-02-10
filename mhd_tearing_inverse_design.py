@@ -30,7 +30,7 @@ and produces publication-ready diagnostic figures.
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Dict, Any, List, Tuple
 
 import jax
@@ -46,6 +46,7 @@ from mhd_tearing_solve import (
     _run_tearing_simulation_and_diagnostics,
     plasmoid_complexity_metric,
 )
+from mhx.config import Objective, objective_preset
 
 # -----------------------------------------------------------------------------
 # Configuration
@@ -76,13 +77,10 @@ class InverseDesignConfig:
     # Equilibrium
     equilibrium_mode: str = "forcefree"   # "forcefree" or "original"
 
-    # Target reconnection behaviour (values are overridden in main()
-    # depending on equilibrium_mode)
-    target_f_kin: float = 0.03
-    target_complexity: float = 1e-5
-
-    # Trade-off between matching f_kin and complexity
-    lambda_complexity: float = 1.0
+    # Objective for training and for fair comparisons in figure scripts.
+    # IMPORTANT: figures should load the objective used for training from saved
+    # artifacts, not silently use different defaults.
+    objective: Objective = field(default_factory=lambda: objective_preset("forcefree"))
 
     # Bounds for eta and nu (log10-space) 
     log10_eta_min: float = -4.5
@@ -165,15 +163,16 @@ class DesignMLP(eqx.Module):
 
 def _simulate_metrics(eta: jnp.ndarray,
                       nu: jnp.ndarray,
-                      cfg: InverseDesignConfig) -> Tuple[jnp.ndarray, jnp.ndarray, Dict[str, Any]]:
+                      cfg: InverseDesignConfig) -> Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray, Dict[str, Any]]:
     """
     Run the tearing simulation and return:
 
-        f_kin, complexity, res
+        f_kin, complexity, gamma_fit, res
 
     where
       - f_kin: late-time kinetic-energy fraction
       - complexity: plasmoid complexity metric from A_z midplane at final time
+      - gamma_fit: fitted exponential growth rate (tearing-mode amplitude)
       - res: full simulation result dict
     """
     res = _run_tearing_simulation_and_diagnostics(
@@ -244,7 +243,10 @@ def make_loss_fn(cfg: InverseDesignConfig):
     (f_kin, C_plasmoid).
     """
 
-    target = jnp.array([cfg.target_f_kin, cfg.target_complexity], dtype=jnp.float64)
+    target = jnp.array(
+        [cfg.objective.target_f_kin, cfg.objective.target_complexity],
+        dtype=jnp.float64,
+    )
     z_train = jnp.array(cfg.z_train, dtype=jnp.float64)
 
     def loss_fn(model: DesignMLP, key: jax.random.PRNGKey) -> Tuple[jnp.ndarray, Dict[str, Any]]:
@@ -263,7 +265,7 @@ def make_loss_fn(cfg: InverseDesignConfig):
         diff_f = f_kin - target[0]
         diff_c = complexity - target[1]
 
-        loss = diff_f**2 + cfg.lambda_complexity * diff_c**2
+        loss = diff_f**2 + cfg.objective.lambda_complexity * diff_c**2
 
         # Debug printing (AD-safe)
         jax.debug.print(
@@ -519,11 +521,9 @@ def plot_Az_midplane_profiles(res_init: Dict[str, Any],
 def main():
     cfg = InverseDesignConfig()
 
-    cfg.target_f_kin = 0.03
-    cfg.target_complexity = 1e-5
-    cfg.lambda_complexity = 1.0
-
-    cfg.lambda_complexity = 1e3  # complexity term scaled to match f_kin variations
+    # Choose the default objective based on the equilibrium branch (unless the
+    # user explicitly set cfg.objective before calling main()).
+    cfg.objective = objective_preset(cfg.equilibrium_mode)
 
     print("========================================================")
     print(" Differentiable inverse design for tearing reconnection ")
@@ -580,7 +580,7 @@ def main():
         eta = 10.0**log10_eta
         nu  = 10.0**log10_nu
         f_kin, C, gamma_fit, _ = _simulate_metrics(eta, nu, cfg)
-        return (f_kin - cfg.target_f_kin)**2 + cfg.lambda_complexity * (C - cfg.target_complexity)**2
+        return (f_kin - cfg.objective.target_f_kin)**2 + cfg.objective.lambda_complexity * (C - cfg.objective.target_complexity)**2
 
     grad_eta, grad_nu = jax.grad(simple_loss, argnums=(0, 1))(jnp.array(-3.0), jnp.array(-3.0))
     print(f"Gradient at (-3,-3): dL/dlog10_eta={grad_eta:.3e}, dL/dlog10_nu={grad_nu:.3e}")
@@ -594,6 +594,11 @@ def main():
         "nu": [],
         "f_kin": [],
         "complexity": [],
+        # Persist the objective used for training so downstream figure scripts
+        # can reproduce fair comparisons without silent target/weight drift.
+        "target_f_kin": [float(cfg.objective.target_f_kin)],
+        "target_complexity": [float(cfg.objective.target_complexity)],
+        "lambda_complexity": [float(cfg.objective.lambda_complexity)],
     }
 
     last_aux = None
