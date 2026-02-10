@@ -5,6 +5,7 @@ __pycache__/
 .DS_Store
 .venv/
 venv/
+*.egg-info/
 outputs/
 # Legacy scripts still write outputs to CWD; keep the repo clean.
 *.npz
