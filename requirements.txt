@@ -4,4 +4,4 @@ numpy
 scipy
 matplotlib
 diffrax
-
+typer>=0.9
