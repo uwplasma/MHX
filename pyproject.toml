@@ -26,6 +26,8 @@ mhx = "mhx.cli.main:app"
 ml = ["optax", "equinox"]
 dev = ["pytest>=7", "ruff>=0.1.0"]
 
+docs = ["sphinx>=7", "sphinx-rtd-theme>=2", "pyyaml>=6"]
+
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["mhx*"]
