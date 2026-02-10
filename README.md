@@ -26,6 +26,30 @@ or for editable development:
 pip install -e .
 ```
 
+For inverse-design / ML scripts:
+
+```bash
+pip install -e ".[ml]"
+```
+
+## Quickstart (FAST)
+
+Run a tiny tearing simulation and generate a couple of basic figures:
+
+```bash
+mhx simulate --fast --equilibrium original --eta 1e-3 --nu 1e-3
+mhx figures --run outputs/runs/<timestamp>_simulate
+```
+
+The `--fast` mode is intended for smoke tests and CI (seconds, not minutes).
+
+## Inverse design objective consistency
+
+The inverse-design training script now persists the objective used for training
+(`target_f_kin`, `target_complexity`, `lambda_complexity`) into the saved
+`inverse_design_history_<eq_mode>.npz`. The figure generator prefers loading the
+objective from that history file to avoid apples-to-oranges comparisons.
+
 ## Notes
 
 - Many scripts assume JAX 64-bit mode. Consider setting:
@@ -37,4 +61,3 @@ pip install -e .
 ## License
 
 MIT. See `LICENSE`.
-
