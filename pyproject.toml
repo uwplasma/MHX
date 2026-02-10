@@ -16,9 +16,16 @@ dependencies = [
   "scipy",
   "matplotlib",
   "diffrax",
+  "typer>=0.9",
 ]
+
+[project.scripts]
+mhx = "mhx.cli.main:app"
 
 [project.optional-dependencies]
 ml = ["optax", "equinox"]
 dev = ["pytest>=7", "ruff>=0.1.0"]
 
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["mhx*"]
