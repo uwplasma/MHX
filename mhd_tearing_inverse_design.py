@@ -47,6 +47,9 @@ from mhd_tearing_solve import (
     plasmoid_complexity_metric,
 )
 from mhx.config import Objective, objective_preset
+from mhx.config import dump_config_yaml
+from mhx.io.paths import create_run_dir, RunPaths
+from mhx.io.npz import savez
 
 # -----------------------------------------------------------------------------
 # Configuration
@@ -530,6 +533,26 @@ def main():
     print("========================================================")
     print(cfg)
 
+    # Output directory (new schema)
+    run_paths = create_run_dir(tag=f"inverse_{cfg.equilibrium_mode}")
+    config_payload = {
+        "inverse_design": {
+            "equilibrium_mode": cfg.equilibrium_mode,
+            "objective": cfg.objective.as_dict(),
+            "log10_eta_min": cfg.log10_eta_min,
+            "log10_eta_max": cfg.log10_eta_max,
+            "log10_nu_min": cfg.log10_nu_min,
+            "log10_nu_max": cfg.log10_nu_max,
+            "latent_dim": cfg.latent_dim,
+            "hidden_width": cfg.hidden_width,
+            "hidden_depth": cfg.hidden_depth,
+            "learning_rate": cfg.learning_rate,
+            "n_train_steps": cfg.n_train_steps,
+            "seed": cfg.seed,
+        }
+    }
+    dump_config_yaml(run_paths.config_yaml, config_payload)
+
     # 1. Initialize MLP and optimizer
     key = jax.random.PRNGKey(cfg.seed)
     key_model, key_train = jax.random.split(key)
@@ -571,8 +594,8 @@ def main():
         f"f_kin0={float(f_kin0):.4f}, complexity0={float(comp0):.3e}"
     )
     # Save a dedicated NPZ for the initial run so it can be post-processed
-    outfile = f"mhd_tearing_inverse_design_solution_initial_{cfg.equilibrium_mode}.npz"
-    np.savez(outfile, **res_init)
+    outfile = run_paths.solution_initial_npz
+    savez(outfile, res_init)
     print(f"[SAVE] Saved initial solution to {outfile}")
 
     # Quick gradient check in (log10_eta, log10_nu) space around (-3,-3)
@@ -649,8 +672,8 @@ def main():
         last_aux = aux
 
     # Save training history for publication-grade postprocessing
-    hist_path = f"inverse_design_history_{cfg.equilibrium_mode}.npz"
-    np.savez(hist_path, **history)
+    hist_path = run_paths.history_npz
+    savez(hist_path, history)
     print(f"[SAVE] Saved inverse-design training history to {hist_path}")
 
     # 4. Final designed parameters from best training step (early stopping)
@@ -682,8 +705,8 @@ def main():
         f"[MID] f_kin_mid={float(f_kin_mid):.4f}, "
         f"complexity_mid={float(comp_mid):.3e}"
     )
-    outfile_mid = f"mhd_tearing_inverse_design_solution_mid_{cfg.equilibrium_mode}.npz"
-    np.savez(outfile_mid, **res_mid)
+    outfile_mid = run_paths.solution_mid_npz
+    savez(outfile_mid, res_mid)
     print(f"[SAVE] Saved mid-training solution to {outfile_mid}")
 
     # 4c. Final dedicated simulation at (eta_final, nu_final)
@@ -701,13 +724,13 @@ def main():
     final_model = eqx.combine(params, static_model)
 
     # Save the trained design network to disk
-    model_path = f"design_mlp_final_{cfg.equilibrium_mode}.eqx"
+    model_path = str(run_paths.run_dir / f"design_mlp_final_{cfg.equilibrium_mode}.eqx")
     eqx.tree_serialise_leaves(model_path, final_model)
     print(f"[SAVE] Saved trained DesignMLP to {model_path}")
 
     # 5. Save a dedicated NPZ for the final run so it can be post-processed
-    outfile_final = f"mhd_tearing_inverse_design_solution_final_{cfg.equilibrium_mode}.npz"
-    np.savez(outfile_final, **res_final)
+    outfile_final = run_paths.solution_final_npz
+    savez(outfile_final, res_final)
     print(f"[SAVE] Saved final designed solution to {outfile_final}")
 
     # 6. Make plots (training + baseline vs designed)

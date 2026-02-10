@@ -8,11 +8,10 @@ Publication-ready figure generator for the tearing / plasmoid inverse-design stu
 This script assumes that:
   * mhd_tearing_solve.py is available and working.
   * mhd_tearing_inverse_design.py has ALREADY been run at least once,
-    so that you have:
-        - mhd_tearing_inverse_design_solution_initial.npz
-        - mhd_tearing_inverse_design_solution_final.npz
-        - (optionally) inverse_design_history_<eq_mode>.npz
-          with the training history arrays, as described below.
+    so that you have a run directory under outputs/runs/... with:
+        - solution_initial.npz
+        - solution_final.npz
+        - history.npz (training history arrays, if inverse design was run)
 
 What this script does
 ---------------------
@@ -40,7 +39,7 @@ What this script does
 
    It *does not* re-run inverse design. Instead it expects a history file:
 
-       inverse_design_history_<eq_mode>.npz
+       outputs/runs/<timestamp>_inverse_<eq_mode>/history.npz
 
    produced by a slightly extended version of mhd_tearing_inverse_design.py
    that saves the training history dict:
@@ -56,7 +55,7 @@ What this script does
        }
 
    saved as:
-       np.savez(f"inverse_design_history_{cfg.equilibrium_mode}.npz", **history)
+       np.savez(history.npz, **history)
 
    Using that, we build:
        - Cost vs # simulations: grid search vs inverse design.
@@ -71,8 +70,10 @@ from __future__ import annotations
 
 import os
 import math
+import glob
 from dataclasses import dataclass, field
 from typing import Dict, Any, Tuple
+from pathlib import Path
 
 import jax
 jax.config.update("jax_enable_x64", True)
@@ -152,12 +153,10 @@ class FigureScanConfig:
     # Which equilibrium has been used in inverse design
     inverse_eq_mode: str = "forcefree"
 
-    # Paths for inverse-design history (no optimisation is run here)
-    # By default we look for:
-    #   inverse_design_history_<inverse_eq_mode>.npz
-    # created by mhd_tearing_inverse_design.py.
+    # Paths for inverse-design history (no optimisation is run here).
+    # By default we look under outputs/runs for a matching inverse run.
     def inverse_history_path(self) -> str:
-        return f"inverse_design_history_{self.inverse_eq_mode}.npz"
+        return f"outputs/runs/*_inverse_{self.inverse_eq_mode}/history.npz"
 
 
 # -----------------------------------------------------------------------------#
@@ -228,10 +227,12 @@ def parameter_scan(fig_cfg: FigureScanConfig, eq_mode: str) -> Dict[str, Any]:
     loaded and returned (no simulations re-run). Otherwise we run the scan
     and save the NPZ.
     """
-    outname = f"reachable_region_scan_{eq_mode}.npz"
-    if os.path.exists(outname):
-        print(f"[SCAN] Found existing {outname} – loading instead of re-running.")
-        data = dict(np.load(outname, allow_pickle=True))
+    outdir = Path("outputs/scans")
+    outdir.mkdir(parents=True, exist_ok=True)
+    outpath = outdir / f"reachable_region_scan_{eq_mode}.npz"
+    if outpath.exists():
+        print(f"[SCAN] Found existing {outpath} – loading instead of re-running.")
+        data = dict(np.load(outpath, allow_pickle=True))
         data["eq_mode"] = str(data.get("eq_mode", eq_mode))
         return data
 
@@ -272,8 +273,8 @@ def parameter_scan(fig_cfg: FigureScanConfig, eq_mode: str) -> Dict[str, Any]:
         "eq_mode": eq_mode,
     }
 
-    np.savez(outname, **scan_data)
-    print(f"[SAVE] Saved scan data to {outname}")
+    np.savez(outpath, **scan_data)
+    print(f"[SAVE] Saved scan data to {outpath}")
     return scan_data
 
 
@@ -312,7 +313,9 @@ def plot_scan_heatmaps(scan_data: Dict[str, Any]):
     axes[2].set_title(rf"$\gamma_{{\rm fit}}$ for '{eq_mode}'")
 
     fig.suptitle(rf"Reachable dissipation space: '{eq_mode}'", fontsize=14)
-    outname = f"fig_reachable_heatmaps_{eq_mode}.png"
+    figdir = Path("outputs/figures")
+    figdir.mkdir(parents=True, exist_ok=True)
+    outname = figdir / f"fig_reachable_heatmaps_{eq_mode}.png"
     fig.savefig(outname, dpi=300)
     plt.close(fig)
     print(f"[PLOT] Saved {outname}")
@@ -366,7 +369,9 @@ def plot_reachable_region_plane(
     ax.grid(True, alpha=0.3)
     ax.legend()
 
-    outname = "fig_reachable_region_fkin_Cplasmoid.png"
+    figdir = Path("outputs/figures")
+    figdir.mkdir(parents=True, exist_ok=True)
+    outname = figdir / "fig_reachable_region_fkin_Cplasmoid.png"
     fig.savefig(outname, dpi=300)
     plt.close(fig)
     print(f"[PLOT] Saved {outname}")
@@ -399,7 +404,9 @@ def plot_gamma_vs_fkin(scan_orig: Dict[str, Any], scan_ff: Dict[str, Any]):
     ax.grid(True, alpha=0.3)
     ax.legend()
 
-    outname = "fig_gamma_vs_fkin.png"
+    figdir = Path("outputs/figures")
+    figdir.mkdir(parents=True, exist_ok=True)
+    outname = figdir / "fig_gamma_vs_fkin.png"
     fig.savefig(outname, dpi=300)
     plt.close(fig)
     print(f"[PLOT] Saved {outname}")
@@ -469,14 +476,16 @@ def load_inverse_history(
     where history has keys:
         "loss", "log10_eta", "log10_nu", "eta", "nu", "f_kin", "complexity".
     """
-    path = fig_cfg.inverse_history_path()
-    if not os.path.exists(path):
+    pattern = fig_cfg.inverse_history_path()
+    matches = sorted(glob.glob(pattern))
+    if not matches:
         print(
-            f"[INV] WARNING: {path} not found; "
+            f"[INV] WARNING: no history file found for pattern {pattern}; "
             "skipping inverse-design-vs-grid comparison."
         )
         return None, None
 
+    path = matches[-1]
     print(f"[INV] Loading inverse-design training history from {path}")
     npz = np.load(path)
     history = {k: np.array(npz[k]) for k in npz.files}
@@ -602,7 +611,9 @@ def plot_inverse_vs_grid_for_mode(
     axes[1].legend()
 
     fig.suptitle(rf"Inverse design vs grid search ('{eq_mode}')", fontsize=14)
-    outname = f"fig_inverse_vs_grid_{eq_mode}.png"
+    figdir = Path("outputs/figures")
+    figdir.mkdir(parents=True, exist_ok=True)
+    outname = figdir / f"fig_inverse_vs_grid_{eq_mode}.png"
     fig.savefig(outname, dpi=300)
     plt.close(fig)
     print(f"[PLOT] Saved {outname}")
@@ -615,6 +626,18 @@ def plot_inverse_vs_grid_for_mode(
 
 def main():
     fig_cfg = FigureScanConfig()
+
+    # Optional overrides via env (used by CLI wrapper)
+    eq_env = os.environ.get("MHX_SCAN_EQ_MODE")
+    n_eta_env = os.environ.get("MHX_SCAN_N_ETA")
+    n_nu_env = os.environ.get("MHX_SCAN_N_NU")
+    if eq_env:
+        fig_cfg.inverse_eq_mode = eq_env
+        fig_cfg.eq_modes = ("original", "forcefree")
+    if n_eta_env:
+        fig_cfg.n_eta = int(n_eta_env)
+    if n_nu_env:
+        fig_cfg.n_nu = int(n_nu_env)
 
     print("========================================================")
     print(" MHD tearing/plasmoid: inverse-design figure generator ")
@@ -656,9 +679,9 @@ def main():
         )
 
     print("\n[DONE] All figures generated. You can now:")
-    print("  - Inspect reachable_region_scan_*.npz")
+    print("  - Inspect outputs/scans/reachable_region_scan_*.npz")
     print("  - Use mhd_tearing_postprocess.py on any NPZ from the scans")
-    print("  - Drop the generated PNGs directly into the paper.")
+    print("  - Drop outputs/figures/*.png directly into the paper.")
 
 
 if __name__ == "__main__":

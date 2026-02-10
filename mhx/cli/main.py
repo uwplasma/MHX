@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-import json
 import dataclasses
 from pathlib import Path
+import os
 from typing import Optional
 
 import numpy as np
@@ -11,17 +11,12 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-from mhx.config import TearingSimConfig
+from mhx.config import TearingSimConfig, dump_config_yaml
 from mhx.io.npz import savez
 from mhx.io.paths import RunPaths, create_run_dir
 from mhx.solver.tearing import _run_tearing_simulation_and_diagnostics
 
 app = typer.Typer(add_completion=False, no_args_is_help=True)
-
-
-def _dump_config_yaml(path: Path, config: dict) -> None:
-    # Avoid a hard PyYAML dependency for now; JSON is valid YAML 1.2.
-    path.write_text(json.dumps(config, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
 @app.callback()
@@ -50,7 +45,7 @@ def simulate(
         run = RunPaths(run_dir=outdir)
 
     config_payload = {"sim": cfg.as_dict()}
-    _dump_config_yaml(run.config_yaml, config_payload)
+    dump_config_yaml(run.config_yaml, config_payload)
 
     res = _run_tearing_simulation_and_diagnostics(
         Nx=cfg.Nx,
@@ -84,6 +79,27 @@ def simulate(
 
     savez(run.solution_final_npz, payload)
     typer.echo(str(run.run_dir))
+
+
+@app.command()
+def scan(
+    equilibrium: str = typer.Option("original", "--equilibrium"),
+    grid: str = typer.Option("4x4", "--grid", help="Grid size as NxM in log10 space, e.g. 4x4."),
+) -> None:
+    # Thin wrapper around legacy script for now.
+    import subprocess
+    import sys
+
+    n_eta, n_nu = [int(x) for x in grid.lower().split("x")]
+    cmd = [
+        sys.executable,
+        "mhd_tearing_inverse_design_figures.py",
+    ]
+    env = dict(os.environ)
+    env["MHX_SCAN_EQ_MODE"] = equilibrium
+    env["MHX_SCAN_N_ETA"] = str(n_eta)
+    env["MHX_SCAN_N_NU"] = str(n_nu)
+    subprocess.run(cmd, check=True, env=env)
 
 
 @app.command()

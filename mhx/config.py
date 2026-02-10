@@ -3,7 +3,13 @@ from __future__ import annotations
 import dataclasses
 import math
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Dict, Literal, Optional
+
+try:
+    import yaml  # type: ignore
+except Exception:  # pragma: no cover - optional dependency
+    yaml = None
 
 
 EquilibriumMode = Literal["original", "forcefree"]
@@ -130,3 +136,22 @@ def override_objective(
         lambda_complexity=objective.lambda_complexity if lambda_complexity is None else float(lambda_complexity),
     )
 
+
+def dump_config_yaml(path, payload: Dict[str, Any]) -> None:
+    """Write config payload to YAML; fall back to JSON if PyYAML unavailable."""
+    if yaml is None:
+        import json
+
+        Path(path).write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        return
+    with open(path, "w", encoding="utf-8") as f:
+        yaml.safe_dump(payload, f, sort_keys=True)
+
+
+def load_config_yaml(path) -> Dict[str, Any]:
+    if yaml is None:
+        import json
+
+        return json.loads(Path(path).read_text(encoding="utf-8"))
+    with open(path, "r", encoding="utf-8") as f:
+        return yaml.safe_load(f)
