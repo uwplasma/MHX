@@ -14,7 +14,7 @@ import jax
 
 jax.config.update("jax_enable_x64", True)
 
-from mhx.solver.tearing import *  # noqa: F401,F403
+from mhx.solver import *  # noqa: F401,F403
 
 
 if __name__ == "__main__":
