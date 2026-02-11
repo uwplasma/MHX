@@ -31,6 +31,9 @@ def test_tiny_convergence_f_kin():
         n_frames=cfg8.n_frames,
         dt0=cfg8.dt0,
         equilibrium_mode=cfg8.equilibrium_mode,
+        progress=cfg8.progress,
+        jit=cfg8.jit,
+        check_finite=cfg8.check_finite,
     )
     res12 = _run_tearing_simulation_and_diagnostics(
         Nx=cfg12.Nx,
@@ -50,6 +53,9 @@ def test_tiny_convergence_f_kin():
         n_frames=cfg12.n_frames,
         dt0=cfg12.dt0,
         equilibrium_mode=cfg12.equilibrium_mode,
+        progress=cfg12.progress,
+        jit=cfg12.jit,
+        check_finite=cfg12.check_finite,
     )
 
     f8 = float(np.array(TearingMetrics.from_result(res8).f_kin))

@@ -47,6 +47,10 @@ from mhx.solver.plugins import PhysicsTerm
 Array = jnp.ndarray
 
 
+def _is_tracer(x) -> bool:
+    return isinstance(x, jax.core.Tracer)
+
+
 @dataclass(frozen=True)
 class TearingMetrics:
     f_kin: Array
@@ -158,6 +162,9 @@ def _run_tearing_simulation_and_diagnostics(
     dt0: float,
     equilibrium_mode: str = "original",
     terms: list[PhysicsTerm] | None = None,
+    progress: bool = True,
+    jit: bool = False,
+    check_finite: bool = True,
 ) -> Dict[str, Any]:
     kx, ky, kz, k2, NX, NY, NZ = make_k_arrays(Nx, Ny, Nz, Lx, Ly, Lz)
     mask_dealias = make_dealias_mask(Nx, Ny, Nz, NX, NY, NZ)
@@ -203,6 +210,8 @@ def _run_tearing_simulation_and_diagnostics(
         dt0=dt0,
         n_frames=n_frames,
         y0=(v0_hat, B0_hat),
+        jit=jit,
+        progress=progress,
     )
 
     ts = sol.ts
@@ -238,9 +247,26 @@ def _run_tearing_simulation_and_diagnostics(
     Az_xpt_series = Az_frames[:, ix_mid, iy0, iz0_real]
     E_rec_series = reconnection_rate_from_Az(ts, Az_xpt_series)
 
-    Az_final_mid = Az_frames[-1, ix_mid, :, iz0_real]
+    Az_midplane_series = Az_frames[:, ix_mid, :, iz0_real]
+    complexity_series = jax.vmap(plasmoid_complexity_metric)(Az_midplane_series)
+
+    Az_final_mid = Az_midplane_series[-1]
     n_plasmoids_final = count_local_extrema_1d(Az_final_mid)
     complexity_final = plasmoid_complexity_metric(Az_final_mid)
+
+    total_energy = E_kin_series + E_mag_series
+    if check_finite and not _is_tracer(total_energy):
+        finite_ok = bool(jnp.all(jnp.isfinite(total_energy)))
+        nonneg_ok = bool(jnp.all(E_kin_series >= -1e-12)) and bool(jnp.all(E_mag_series >= -1e-12))
+        energy_ratio = float(jnp.max(total_energy) / jnp.maximum(jnp.min(total_energy), 1e-30))
+        energy_ratio_warn = energy_ratio > 1e8
+        if not finite_ok or not nonneg_ok:
+            raise ValueError("Non-finite or negative energies detected in solver output.")
+    else:
+        finite_ok = True
+        nonneg_ok = True
+        energy_ratio = float("nan")
+        energy_ratio_warn = False
 
     return dict(
         ts=ts,
@@ -274,8 +300,14 @@ def _run_tearing_simulation_and_diagnostics(
         Az_xpt_series=Az_xpt_series,
         E_rec_series=E_rec_series,
         n_plasmoids_final=n_plasmoids_final,
+        Az_midplane_series=Az_midplane_series,
         Az_final_mid=Az_final_mid,
+        complexity_series=complexity_series,
         complexity_final=complexity_final,
+        sanity_finite_ok=finite_ok,
+        sanity_nonneg_ok=nonneg_ok,
+        sanity_energy_ratio=energy_ratio,
+        sanity_energy_ratio_warn=energy_ratio_warn,
         ix0=ix0, iy1=iy1, iz0=iz0,
         equilibrium_mode=equilibrium_mode,
     )

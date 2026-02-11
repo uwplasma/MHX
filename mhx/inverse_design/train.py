@@ -9,9 +9,10 @@ import jax.numpy as jnp
 import equinox as eqx
 import optax
 
-from mhx.config import Objective, objective_preset, dump_config_yaml
+from mhx.config import Objective, objective_preset, dump_config_yaml, ModelConfig
 from mhx.io.paths import RunPaths, create_run_dir
 from mhx.io.npz import savez
+from mhx.solver.plugins import build_terms, PhysicsTerm
 from mhx.solver.tearing import (
     _run_tearing_simulation_and_diagnostics,
     TearingMetrics,
@@ -39,12 +40,18 @@ class InverseDesignConfig:
     t1: float = 60.0
     n_frames: int = 150
     dt0: float = 5e-4
+    progress: bool = True
+    jit: bool = False
+    check_finite: bool = True
 
     # Equilibrium
     equilibrium_mode: str = "forcefree"
 
     # Objective
     objective: Objective = field(default_factory=lambda: objective_preset("forcefree"))
+
+    # Physics model / plugin configuration
+    model: ModelConfig = field(default_factory=ModelConfig)
 
     # Bounds for eta and nu (log10-space)
     log10_eta_min: float = -4.5
@@ -67,6 +74,10 @@ class InverseDesignConfig:
     seed: int = 1234
 
     @classmethod
+    def default(cls, eq_mode: str = "forcefree") -> "InverseDesignConfig":
+        return cls(equilibrium_mode=eq_mode, objective=objective_preset(eq_mode))
+
+    @classmethod
     def fast(cls, eq_mode: str = "forcefree") -> "InverseDesignConfig":
         cfg = cls(equilibrium_mode=eq_mode, objective=objective_preset(eq_mode))
         cfg.Nx = 16
@@ -75,6 +86,9 @@ class InverseDesignConfig:
         cfg.t1 = 0.5
         cfg.n_frames = 6
         cfg.dt0 = 5e-4
+        cfg.progress = False
+        cfg.jit = False
+        cfg.check_finite = True
         cfg.hidden_width = 8
         cfg.hidden_depth = 1
         cfg.n_train_steps = 2
@@ -117,7 +131,11 @@ def _simulate_metrics(
     eta: jnp.ndarray,
     nu: jnp.ndarray,
     cfg: InverseDesignConfig,
+    terms: list[PhysicsTerm] | None = None,
 ) -> Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray, Dict[str, Any]]:
+    if terms is None and cfg.model is not None:
+        terms = build_terms(cfg.model.rhs_terms, cfg.model.term_params)
+    eq_mode = cfg.model.equilibrium_mode or cfg.equilibrium_mode
     res = _run_tearing_simulation_and_diagnostics(
         Nx=cfg.Nx,
         Ny=cfg.Ny,
@@ -135,7 +153,11 @@ def _simulate_metrics(
         t1=cfg.t1,
         n_frames=cfg.n_frames,
         dt0=cfg.dt0,
-        equilibrium_mode=cfg.equilibrium_mode,
+        equilibrium_mode=eq_mode,
+        terms=terms,
+        progress=cfg.progress,
+        jit=cfg.jit,
+        check_finite=cfg.check_finite,
     )
 
     metrics = TearingMetrics.from_result(res)
@@ -145,7 +167,7 @@ def _simulate_metrics(
     return f_kin, complexity, gamma_fit, res
 
 
-def make_loss_fn(cfg: InverseDesignConfig):
+def make_loss_fn(cfg: InverseDesignConfig, terms: list[PhysicsTerm] | None):
     target = jnp.array([cfg.objective.target_f_kin, cfg.objective.target_complexity], dtype=jnp.float64)
     z_train = jnp.array(cfg.z_train, dtype=jnp.float64)
 
@@ -157,7 +179,8 @@ def make_loss_fn(cfg: InverseDesignConfig):
         eta = 10.0 ** log10_eta
         nu = 10.0 ** log10_nu
 
-        f_kin, complexity, gamma_fit, res = _simulate_metrics(eta, nu, cfg)
+        f_kin, complexity, gamma_fit, res = _simulate_metrics(eta, nu, cfg, terms=terms)
+        _ = (gamma_fit, res)
         diff_f = f_kin - target[0]
         diff_c = complexity - target[1]
         loss = diff_f**2 + cfg.objective.lambda_complexity * diff_c**2
@@ -179,8 +202,9 @@ def build_training_step(
     cfg: InverseDesignConfig,
     optimizer: optax.GradientTransformation,
     static_model: DesignMLP,
+    terms: list[PhysicsTerm] | None,
 ):
-    loss_fn = make_loss_fn(cfg)
+    loss_fn = make_loss_fn(cfg, terms)
 
     def loss_from_params(params, key):
         model = eqx.combine(params, static_model)
@@ -212,11 +236,14 @@ def run_inverse_design(
         "Lx": cfg.Lx, "Ly": cfg.Ly, "Lz": cfg.Lz,
                 "B0": cfg.B0, "a": cfg.a, "B_g": cfg.B_g, "eps_B": cfg.eps_B,
         "t0": cfg.t0, "t1": cfg.t1, "n_frames": cfg.n_frames, "dt0": cfg.dt0,
+        "progress": cfg.progress, "jit": cfg.jit, "check_finite": cfg.check_finite,
         "equilibrium_mode": cfg.equilibrium_mode,
     }, "objective": cfg.objective.as_dict(), "training": {
         "latent_dim": cfg.latent_dim, "hidden_width": cfg.hidden_width, "hidden_depth": cfg.hidden_depth,
         "learning_rate": cfg.learning_rate, "n_train_steps": cfg.n_train_steps, "seed": cfg.seed,
     }}
+    if cfg.model is not None:
+        config_payload["model"] = cfg.model.as_dict()
     dump_config_yaml(run_paths.config_yaml, config_payload)
 
     # Initialize MLP and optimizer
@@ -233,7 +260,8 @@ def run_inverse_design(
     params, static_model = eqx.partition(model, eqx.is_array)
     optimizer = optax.chain(optax.clip_by_global_norm(1.0), optax.adam(cfg.learning_rate))
     opt_state = optimizer.init(params)
-    training_step = build_training_step(cfg, optimizer, static_model)
+    terms = build_terms(cfg.model.rhs_terms, cfg.model.term_params) if cfg.model is not None else None
+    training_step = build_training_step(cfg, optimizer, static_model, terms)
 
     # Baseline simulation
     log10_eta0 = 0.5 * (cfg.log10_eta_min + cfg.log10_eta_max)
@@ -244,6 +272,7 @@ def run_inverse_design(
         jnp.array(eta0, dtype=jnp.float64),
         jnp.array(nu0, dtype=jnp.float64),
         cfg,
+        terms=terms,
     )
     savez(run_paths.solution_initial_npz, res_init)
 
@@ -293,6 +322,7 @@ def run_inverse_design(
         jnp.array(eta_mid, dtype=jnp.float64),
         jnp.array(nu_mid, dtype=jnp.float64),
         cfg,
+        terms=terms,
     )
     savez(run_paths.solution_mid_npz, res_mid)
 
@@ -303,6 +333,7 @@ def run_inverse_design(
         jnp.array(eta_final, dtype=jnp.float64),
         jnp.array(nu_final, dtype=jnp.float64),
         cfg,
+        terms=terms,
     )
     savez(run_paths.solution_final_npz, res_final)
 

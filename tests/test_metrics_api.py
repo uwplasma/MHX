@@ -26,9 +26,14 @@ def test_tearing_metrics_from_result_shapes():
         n_frames=cfg.n_frames,
         dt0=cfg.dt0,
         equilibrium_mode=cfg.equilibrium_mode,
+        progress=cfg.progress,
+        jit=cfg.jit,
+        check_finite=cfg.check_finite,
     )
 
     assert res["ts"].shape[0] == cfg.n_frames
+    assert res["Az_midplane_series"].shape[0] == cfg.n_frames
+    assert res["complexity_series"].shape[0] == cfg.n_frames
     metrics = TearingMetrics.from_result(res)
     assert np.isfinite(np.array(metrics.f_kin))
     assert np.isfinite(np.array(metrics.complexity))

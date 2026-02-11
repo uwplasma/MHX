@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+import jax
 import jax.numpy as jnp
 import diffrax as dfx
 
@@ -279,6 +280,16 @@ def make_mhd_rhs_forcefree(nu: float, eta: float, kx: Array, ky: Array, kz: Arra
 # Time integration
 # -----------------------------------------------------------------------------
 
+def _progress_meter(enabled: bool):
+    if not enabled:
+        return dfx.NoProgressMeter()
+    try:  # tqdm is optional
+        import tqdm  # noqa: F401
+    except Exception:
+        return dfx.NoProgressMeter()
+    return dfx.TqdmProgressMeter()
+
+
 def run_time_integration(
     rhs,
     *,
@@ -287,6 +298,8 @@ def run_time_integration(
     dt0: float,
     n_frames: int,
     y0,
+    jit: bool = False,
+    progress: bool = True,
 ):
     term = dfx.ODETerm(rhs)
     solver = dfx.Dopri8()
@@ -294,19 +307,23 @@ def run_time_integration(
     ts_save = jnp.linspace(t0, t1, n_frames)
     saveat = dfx.SaveAt(ts=ts_save)
 
-    sol = dfx.diffeqsolve(
-        term,
-        solver,
-        t0=t0,
-        t1=t1,
-        dt0=dt0,
-        y0=y0,
-        args=None,
-        saveat=saveat,
-        max_steps=int((t1 - t0) / dt0) + 10_000,
-        stepsize_controller=stepsize_controller,
-        progress_meter=dfx.TqdmProgressMeter(),
-    )
+    def _solve(y0_local):
+        return dfx.diffeqsolve(
+            term,
+            solver,
+            t0=t0,
+            t1=t1,
+            dt0=dt0,
+            y0=y0_local,
+            args=None,
+            saveat=saveat,
+            max_steps=int((t1 - t0) / dt0) + 10_000,
+            stepsize_controller=stepsize_controller,
+            progress_meter=_progress_meter(progress),
+        )
+
+    solve_fn = jax.jit(_solve) if jit else _solve
+    sol = solve_fn(y0)
     return sol
 
 

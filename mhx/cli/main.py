@@ -10,8 +10,9 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-from mhx.config import TearingSimConfig, dump_config_yaml
+from mhx.config import TearingSimConfig, dump_config_yaml, load_model_config
 from mhx.io.npz import savez
+from mhx.solver.plugins import build_terms
 from mhx.io.paths import RunPaths, create_run_dir
 from mhx.solver.tearing import _run_tearing_simulation_and_diagnostics
 
@@ -29,12 +30,21 @@ def simulate(
     eta: float = typer.Option(1e-3, "--eta"),
     nu: float = typer.Option(1e-3, "--nu"),
     outdir: Optional[Path] = typer.Option(None, "--outdir", help="Run directory; if omitted a timestamped dir is created under outputs/runs."),
+    model_config: Optional[Path] = typer.Option(None, "--model-config", help="YAML/JSON model config specifying equilibrium and physics terms."),
     tag: str = typer.Option("simulate", "--tag"),
     fast: bool = typer.Option(False, "--fast", help="Very small/short run for smoke tests."),
 ) -> None:
     eq_mode = equilibrium
     cfg = TearingSimConfig.fast(eq_mode) if fast else TearingSimConfig(equilibrium_mode=eq_mode)
     cfg = dataclasses.replace(cfg, eta=float(eta), nu=float(nu))
+
+    model_cfg = None
+    terms = None
+    if model_config is not None:
+        model_cfg = load_model_config(model_config)
+        eq_mode = model_cfg.equilibrium_mode or eq_mode
+        cfg = dataclasses.replace(cfg, equilibrium_mode=eq_mode)
+        terms = build_terms(model_cfg.rhs_terms, model_cfg.term_params)
 
     if outdir is None:
         run = create_run_dir(tag=tag)
@@ -44,6 +54,8 @@ def simulate(
         run = RunPaths(run_dir=outdir)
 
     config_payload = {"sim": cfg.as_dict()}
+    if model_cfg is not None:
+        config_payload["model"] = model_cfg.as_dict()
     dump_config_yaml(run.config_yaml, config_payload)
 
     res = _run_tearing_simulation_and_diagnostics(
@@ -64,6 +76,10 @@ def simulate(
         n_frames=cfg.n_frames,
         dt0=cfg.dt0,
         equilibrium_mode=cfg.equilibrium_mode,
+        terms=terms,
+        progress=cfg.progress,
+        jit=cfg.jit,
+        check_finite=cfg.check_finite,
     )
 
     # Convert JAX arrays to NumPy scalars/arrays for saving.
@@ -77,6 +93,15 @@ def simulate(
             payload[k] = np.array(v)
 
     savez(run.solution_final_npz, payload)
+    log_lines = [
+        "mhx simulate",
+        f"run_dir: {run.run_dir}",
+        f"sanity_finite_ok: {bool(payload.get('sanity_finite_ok', True))}",
+        f"sanity_nonneg_ok: {bool(payload.get('sanity_nonneg_ok', True))}",
+        f"sanity_energy_ratio: {float(payload.get('sanity_energy_ratio', float('nan'))):.3e}",
+        f"sanity_energy_ratio_warn: {bool(payload.get('sanity_energy_ratio_warn', False))}",
+    ]
+    run.logs_txt.write_text("\n".join(log_lines) + "\n", encoding="utf-8")
     typer.echo(str(run.run_dir))
 
 
@@ -85,6 +110,7 @@ def scan(
     equilibrium: str = typer.Option("original", "--equilibrium"),
     grid: str = typer.Option("4x4", "--grid", help="Grid size as NxM in log10 space, e.g. 4x4."),
     outdir: Path = typer.Option(Path("outputs/scans"), "--outdir"),
+    model_config: Optional[Path] = typer.Option(None, "--model-config", help="Optional YAML/JSON model config for physics terms."),
 ) -> None:
     from mhx.config import TearingSimConfig
     from mhx.solver.tearing import _run_tearing_simulation_and_diagnostics, TearingMetrics
@@ -98,6 +124,12 @@ def scan(
     gamma_grid = np.zeros((n_eta, n_nu))
 
     cfg = TearingSimConfig.fast(equilibrium)
+    terms = None
+    if model_config is not None:
+        model_cfg = load_model_config(model_config)
+        if model_cfg.equilibrium_mode:
+            cfg = dataclasses.replace(cfg, equilibrium_mode=model_cfg.equilibrium_mode)
+        terms = build_terms(model_cfg.rhs_terms, model_cfg.term_params)
 
     for i, log10_eta in enumerate(log10_eta_vals):
         for j, log10_nu in enumerate(log10_nu_vals):
@@ -109,7 +141,8 @@ def scan(
                 nu=nu, eta=eta,
                 B0=cfg.B0, a=cfg.a, B_g=cfg.B_g, eps_B=cfg.eps_B,
                 t0=cfg.t0, t1=cfg.t1, n_frames=cfg.n_frames, dt0=cfg.dt0,
-                equilibrium_mode=equilibrium,
+                equilibrium_mode=cfg.equilibrium_mode,
+                terms=terms,
             )
             metrics = TearingMetrics.from_result(res)
             f_kin_grid[i, j] = metrics.f_kin
@@ -117,7 +150,7 @@ def scan(
             gamma_grid[i, j] = metrics.gamma_fit
 
     outdir.mkdir(parents=True, exist_ok=True)
-    outpath = outdir / f"reachable_region_scan_{equilibrium}.npz"
+    outpath = outdir / f"reachable_region_scan_{cfg.equilibrium_mode}.npz"
     np.savez(
         outpath,
         log10_eta_vals=log10_eta_vals,
@@ -135,10 +168,16 @@ def inverse_design(
     equilibrium: str = typer.Option("forcefree", "--equilibrium"),
     steps: int = typer.Option(2, "--steps"),
     fast: bool = typer.Option(True, "--fast"),
+    model_config: Optional[Path] = typer.Option(None, "--model-config", help="Optional YAML/JSON model config for physics terms."),
 ) -> None:
     from mhx.inverse_design.train import InverseDesignConfig, run_inverse_design
 
-    cfg = InverseDesignConfig.fast(equilibrium) if fast else InverseDesignConfig(equilibrium_mode=equilibrium)
+    cfg = InverseDesignConfig.fast(equilibrium) if fast else InverseDesignConfig.default(equilibrium)
+    if model_config is not None:
+        model_cfg = load_model_config(model_config)
+        cfg.model = model_cfg
+        if model_cfg.equilibrium_mode:
+            cfg.equilibrium_mode = model_cfg.equilibrium_mode
     cfg.n_train_steps = steps
     run_paths, _, _, _, _ = run_inverse_design(cfg)
     typer.echo(str(run_paths.run_dir))

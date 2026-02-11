@@ -68,6 +68,9 @@ class TearingSimConfig:
     t1: float = 60.0
     n_frames: int = 150
     dt0: float = 5e-4
+    progress: bool = True
+    jit: bool = False
+    check_finite: bool = True
 
     equilibrium_mode: EquilibriumMode = "original"
 
@@ -80,11 +83,46 @@ class TearingSimConfig:
             t1=0.5,
             n_frames=6,
             dt0=5e-4,
+            progress=False,
+            jit=False,
+            check_finite=True,
             equilibrium_mode=equilibrium_mode,
         )
 
     def as_dict(self) -> Dict[str, Any]:
         return dataclasses.asdict(self)
+
+
+
+
+@dataclass(frozen=True)
+class ModelConfig:
+    equilibrium_mode: str | None = None
+    rhs_terms: list[str] | None = None
+    term_params: dict[str, dict[str, float]] | None = None
+    diagnostics: list[str] | None = None
+
+    def __post_init__(self):
+        object.__setattr__(self, "rhs_terms", self.rhs_terms or [])
+        object.__setattr__(self, "term_params", self.term_params or {})
+        object.__setattr__(self, "diagnostics", self.diagnostics or [])
+
+    def as_dict(self) -> Dict[str, Any]:
+        return {
+            "equilibrium_mode": self.equilibrium_mode,
+            "rhs_terms": self.rhs_terms,
+            "term_params": self.term_params,
+            "diagnostics": self.diagnostics,
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "ModelConfig":
+        return cls(
+            equilibrium_mode=data.get("equilibrium_mode"),
+            rhs_terms=list(data.get("rhs_terms", [])),
+            term_params=dict(data.get("term_params", {})),
+            diagnostics=list(data.get("diagnostics", [])),
+        )
 
 
 @dataclass(frozen=True)
@@ -155,3 +193,10 @@ def load_config_yaml(path) -> Dict[str, Any]:
         return json.loads(Path(path).read_text(encoding="utf-8"))
     with open(path, "r", encoding="utf-8") as f:
         return yaml.safe_load(f)
+
+
+def load_model_config(path) -> ModelConfig:
+    data = load_config_yaml(path)
+    if "model" in data:
+        data = data["model"]
+    return ModelConfig.from_dict(data)
