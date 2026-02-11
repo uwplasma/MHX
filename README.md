@@ -102,7 +102,8 @@ export JAX_ENABLE_X64=1
 ## Physics plugins
 
 Define additive physics terms via `PhysicsTerm` and pass them to the solver.
-See `examples/physics_plugin_minimal.py`.
+See `examples/physics_plugin_minimal.py` and `examples/physics_plugin_extended_mhd.py`
+for a toy Hall-like term (`hall_toy`).
 
 ## Latent ODE
 
@@ -112,7 +113,8 @@ FAST tutorial:
 python examples/latent_ode_fast.py
 ```
 
-This generates `docs/_static/latent_ode_fit.png`.
+This generates `docs/_static/latent_ode_fit.png` and an ablation table
+`docs/_static/latent_ode_ablation.rst`.
 
 ## Reproduce all figures (FAST)
 
@@ -125,6 +127,8 @@ Expected outputs include `outputs/manifest.json` plus figures under `docs/_stati
 ## Reproducibility
 
 See `docs/reproducibility.rst` for exact command sequences and expected outputs.
+
+Output schema details are documented in `docs/output_schema.rst`.
 
 ## Model configuration
 

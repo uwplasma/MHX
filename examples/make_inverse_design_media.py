@@ -3,15 +3,17 @@ from __future__ import annotations
 import numpy as np
 import matplotlib.pyplot as plt
 
-from mhx.config import TearingSimConfig
-from mhx.inverse_design.train import InverseDesignConfig, run_inverse_design
+import dataclasses
+
+from mhx.config import TearingSimConfig, InverseDesignConfig
+from mhx.inverse_design.train import run_inverse_design
 from mhx.solver.tearing import _run_tearing_simulation_and_diagnostics, TearingMetrics
 
 
 def main() -> None:
     # Run a tiny inverse design to get history
     cfg = InverseDesignConfig.fast("forcefree")
-    cfg.n_train_steps = 3
+    cfg = dataclasses.replace(cfg, n_train_steps=3)
     run_paths, history, _, _, _ = run_inverse_design(cfg)
 
     # Tiny scan for reachable region

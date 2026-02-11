@@ -29,6 +29,7 @@ def fit_latent_ode(
     y: Array,
     *,
     latent_dim: int = 2,
+    hidden_dim: int = 32,
     steps: int = 200,
     lr: float = 1e-3,
     seed: int = 0,
@@ -38,8 +39,8 @@ def fit_latent_ode(
     key_z, key_latent, key_dec = jax.random.split(key, 3)
 
     z0 = jax.random.normal(key_z, (latent_dim,))
-    latent_params = init_mlp(latent_dim, 32, latent_dim, key_latent)
-    decoder_params = init_mlp(latent_dim, 32, y.shape[-1], key_dec)
+    latent_params = init_mlp(latent_dim, hidden_dim, latent_dim, key_latent)
+    decoder_params = init_mlp(latent_dim, hidden_dim, y.shape[-1], key_dec)
 
     params = {"latent": latent_params, "decoder": decoder_params, "z0": z0}
     opt = optax.adam(lr)

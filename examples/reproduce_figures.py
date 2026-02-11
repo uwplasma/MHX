@@ -8,8 +8,8 @@ import time
 from pathlib import Path
 
 
-def run(cmd: list[str]) -> None:
-    subprocess.run(cmd, check=True)
+def run(cmd: list[str], *, env: dict | None = None) -> None:
+    subprocess.run(cmd, check=True, env=env)
 
 
 def main() -> None:
@@ -37,7 +37,11 @@ def main() -> None:
     manifest["commands"].append("examples/latent_ode_fast.py")
 
     # Reachable region figures (grid/inverse comparison)
-    run([sys.executable, "mhd_tearing_inverse_design_figures.py"])
+    env_fast = os.environ.copy()
+    env_fast.setdefault("MHX_FIGURES_FAST", "1")
+    env_fast.setdefault("MHX_SCAN_N_ETA", "3")
+    env_fast.setdefault("MHX_SCAN_N_NU", "3")
+    run([sys.executable, "mhd_tearing_inverse_design_figures.py"], env=env_fast)
     manifest["commands"].append("mhd_tearing_inverse_design_figures.py")
 
     # Timing table
@@ -52,10 +56,12 @@ def main() -> None:
         "docs/_static/fig_reachable_region.png",
         "docs/_static/fig_cost_history.png",
         "docs/_static/latent_ode_fit.png",
+        "docs/_static/latent_ode_ablation.rst",
         "docs/_static/timing_table.rst",
         "outputs/figures/fig_reachable_heatmaps_forcefree.png",
         "outputs/figures/fig_inverse_vs_grid_forcefree.png",
         "outputs/benchmarks/timing_table.json",
+        "outputs/benchmarks/latent_ode_ablation.json",
     ]:
         if Path(path).exists():
             manifest["outputs"].append(path)

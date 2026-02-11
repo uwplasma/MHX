@@ -24,6 +24,10 @@ mean-squared error (MSE) in the figure titles:
    :width: 600
    :alt: Latent ODE fit
 
+It also generates an ablation table:
+
+.. include:: _static/latent_ode_ablation.rst
+
 Source:
 
 - https://github.com/uwplasma/MHX/blob/main/mhx/ml/latent_ode.py
