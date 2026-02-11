@@ -123,6 +123,12 @@ Validate plugin metadata/signatures with:
 mhx plugin lint
 ```
 
+Generate Hall/anisotropic media (figures + GIFs):
+
+```bash
+python examples/make_extended_mhd_media.py
+```
+
 ## Latent ODE
 
 FAST tutorial:

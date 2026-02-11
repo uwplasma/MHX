@@ -30,6 +30,10 @@ def main() -> None:
     run([sys.executable, "examples/make_fast_media.py"])
     manifest["commands"].append("examples/make_fast_media.py")
 
+    # Extended-MHD media
+    run([sys.executable, "examples/make_extended_mhd_media.py"])
+    manifest["commands"].append("examples/make_extended_mhd_media.py")
+
     # Inverse design / reachable region
     run([sys.executable, "examples/make_inverse_design_media.py"])
     manifest["commands"].append("examples/make_inverse_design_media.py")
@@ -71,6 +75,12 @@ def main() -> None:
         "docs/_static/fig_reachable_heatmap.png",
         "docs/_static/fig_reachable_region.png",
         "docs/_static/fig_cost_history.png",
+        "docs/_static/energy_hall.png",
+        "docs/_static/az_midplane_hall.png",
+        "docs/_static/az_midplane_hall.gif",
+        "docs/_static/energy_anisotropic.png",
+        "docs/_static/az_midplane_anisotropic.png",
+        "docs/_static/az_midplane_anisotropic.gif",
         "docs/_static/latent_ode_fit.png",
         "docs/_static/latent_ode_ablation.rst",
         "docs/_static/timing_table.rst",

@@ -83,6 +83,20 @@ Expected outputs:
 - `docs/_static/fig_reachable_region.png`
 - `docs/_static/fig_cost_history.png`
 
+5b) Extended-MHD media (optional)
+---------------------------------
+
+.. code-block:: bash
+
+   python examples/make_extended_mhd_media.py
+
+Expected outputs:
+
+- `docs/_static/energy_hall.png`
+- `docs/_static/az_midplane_hall.gif`
+- `docs/_static/energy_anisotropic.png`
+- `docs/_static/az_midplane_anisotropic.gif`
+
 6) Latent ODE dataset
 ---------------------
 

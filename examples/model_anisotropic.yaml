@@ -1,0 +1,6 @@
+model:
+  equilibrium_mode: original
+  rhs_terms: [anisotropic_pressure]
+  term_params:
+    anisotropic_pressure:
+      chi: 1e-2

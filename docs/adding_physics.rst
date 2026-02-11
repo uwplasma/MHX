@@ -53,6 +53,47 @@ See:
 
 - https://github.com/uwplasma/MHX/blob/main/examples/physics_plugin_extended_mhd.py
 
+Extended-MHD reconnection media
+-------------------------------
+
+Generate Hall and anisotropic-pressure example movies:
+
+.. code-block:: bash
+
+   python examples/make_extended_mhd_media.py
+
+Outputs:
+
+- ``docs/_static/energy_hall.png``
+- ``docs/_static/az_midplane_hall.png``
+- ``docs/_static/az_midplane_hall.gif``
+- ``docs/_static/energy_anisotropic.png``
+- ``docs/_static/az_midplane_anisotropic.png``
+- ``docs/_static/az_midplane_anisotropic.gif``
+
+Preview:
+
+.. image:: _static/az_midplane_hall.gif
+   :width: 400
+   :alt: Hall MHD az midplane
+
+.. image:: _static/az_midplane_anisotropic.gif
+   :width: 400
+   :alt: Anisotropic pressure az midplane
+
+Model-config usage:
+
+.. code-block:: bash
+
+   mhx simulate --fast --model-config examples/model_hall.yaml
+   mhx simulate --fast --model-config examples/model_anisotropic.yaml
+
+Literature context
+------------------
+
+Hall-MHD and extended-MHD reconnection are widely used in the literature;
+see :doc:`references` for the GEM challenge and Hall reconnection papers.
+
 Plugin template
 ---------------
 

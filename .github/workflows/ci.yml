@@ -107,6 +107,10 @@ jobs:
         run: |
           test -f outputs/manifest.json
           test -f docs/_static/energy.png
+          test -f docs/_static/energy_hall.png
+          test -f docs/_static/az_midplane_hall.gif
+          test -f docs/_static/energy_anisotropic.png
+          test -f docs/_static/az_midplane_anisotropic.gif
           test -f docs/_static/latent_ode_fit.png
           test -f docs/_static/latent_ode_ablation.rst
           test -f docs/_static/latent_ode_experiment.png

@@ -1,0 +1,6 @@
+model:
+  equilibrium_mode: original
+  rhs_terms: [hall]
+  term_params:
+    hall:
+      d_h: 1e-2

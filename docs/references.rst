@@ -27,3 +27,18 @@ Differentiable programming stack:
   arXiv: https://arxiv.org/abs/1811.04209
 - Kidger et al. (2022) *Diffrax: numerical differential equation solvers in JAX*.
   JOSS. DOI: https://doi.org/10.21105/joss.04488
+
+Extended-MHD and Hall reconnection:
+
+- Shay et al. (1998) *Structure of the dissipation region during collisionless magnetic reconnection*.
+  J. Geophys. Res. DOI: https://doi.org/10.1029/97JA03528
+- Shay et al. (2001) *Alfvénic collisionless magnetic reconnection and the Hall term*.
+  J. Geophys. Res. DOI: https://doi.org/10.1029/1999JA001007
+- Birn et al. (2001) *Geospace Environmental Modeling (GEM) magnetic reconnection challenge*.
+  J. Geophys. Res. DOI: https://doi.org/10.1029/1999JA900449
+- Birn & Hesse (2001) *GEM reconnection challenge: Resistive tearing, anisotropic pressure and Hall effects*.
+  J. Geophys. Res. DOI: https://doi.org/10.1029/1999JA001001
+- Pontin (2022) *Magnetic reconnection: MHD theory and modelling*.
+  Living Rev. Solar Phys. DOI: https://doi.org/10.1007/s41116-022-00032-9
+- Huang, Bhattacharjee & Forbes (2013) *Magnetic reconnection mediated by hyper-resistive plasmoid instability*.
+  arXiv: https://arxiv.org/abs/1308.1871
