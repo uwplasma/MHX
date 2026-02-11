@@ -4,6 +4,8 @@ Reproducibility
 This section provides exact command sequences and the expected output files.
 All commands assume you are at the repository root.
 
+See also :doc:`output_schema` for detailed NPZ keys and file layout.
+
 Setup
 -----
 
@@ -57,7 +59,8 @@ Expected outputs (under the printed run directory):
 
 .. code-block:: bash
 
-   python mhd_tearing_inverse_design_figures.py
+   # FAST mode:
+   MHX_FIGURES_FAST=1 python mhd_tearing_inverse_design_figures.py
 
 Expected outputs:
 
@@ -94,10 +97,12 @@ Expected outputs include:
 - `docs/_static/fig_reachable_region.png`
 - `docs/_static/fig_cost_history.png`
 - `docs/_static/latent_ode_fit.png`
+- `docs/_static/latent_ode_ablation.rst`
 - `docs/_static/timing_table.rst`
 - `outputs/figures/fig_reachable_heatmaps_forcefree.png`
 - `outputs/figures/fig_inverse_vs_grid_forcefree.png`
 - `outputs/benchmarks/timing_table.json`
+- `outputs/benchmarks/latent_ode_ablation.json`
 - `outputs/manifest.json`
 
 7) Timing table (FAST + small)

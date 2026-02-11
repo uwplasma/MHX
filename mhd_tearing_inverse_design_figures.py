@@ -76,7 +76,6 @@ from typing import Dict, Any, Tuple
 from pathlib import Path
 
 import jax
-jax.config.update("jax_enable_x64", True)
 import jax.numpy as jnp
 import numpy as np
 
@@ -84,11 +83,10 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-from mhx.inverse_design.train import (
-    InverseDesignConfig,
-    _simulate_metrics,
-)
-from mhx.config import Objective, objective_preset
+from mhx.config import Objective, objective_preset, InverseDesignConfig, TearingSimConfig
+from mhx.inverse_design.train import _simulate_metrics
+
+jax.config.update("jax_enable_x64", True)
 
 # -----------------------------------------------------------------------------#
 # Global plotting style
@@ -141,6 +139,9 @@ class FigureScanConfig:
     t1: float = 60.0
     n_frames: int = 120
     dt0: float = 5e-4
+    progress: bool = False
+    jit: bool = False
+    check_finite: bool = True
 
     # Default objective used when scanning and when inverse-design history does
     # not provide one. For fair comparisons, comparisons should prefer the
@@ -166,7 +167,7 @@ class FigureScanConfig:
 
 def build_inverse_cfg(fig_cfg: FigureScanConfig, eq_mode: str) -> InverseDesignConfig:
     """Create an InverseDesignConfig instance consistent with fig_cfg."""
-    return InverseDesignConfig(
+    sim = TearingSimConfig(
         Nx=fig_cfg.Nx,
         Ny=fig_cfg.Ny,
         Nz=fig_cfg.Nz,
@@ -182,6 +183,12 @@ def build_inverse_cfg(fig_cfg: FigureScanConfig, eq_mode: str) -> InverseDesignC
         n_frames=fig_cfg.n_frames,
         dt0=fig_cfg.dt0,
         equilibrium_mode=eq_mode,
+        progress=fig_cfg.progress,
+        jit=fig_cfg.jit,
+        check_finite=fig_cfg.check_finite,
+    )
+    return InverseDesignConfig(
+        sim=sim,
         objective=fig_cfg.objective,
         log10_eta_min=fig_cfg.log10_eta_min,
         log10_eta_max=fig_cfg.log10_eta_max,
@@ -631,6 +638,7 @@ def main():
     eq_env = os.environ.get("MHX_SCAN_EQ_MODE")
     n_eta_env = os.environ.get("MHX_SCAN_N_ETA")
     n_nu_env = os.environ.get("MHX_SCAN_N_NU")
+    fast_env = os.environ.get("MHX_FIGURES_FAST")
     if eq_env:
         fig_cfg.inverse_eq_mode = eq_env
         fig_cfg.eq_modes = ("original", "forcefree")
@@ -638,6 +646,21 @@ def main():
         fig_cfg.n_eta = int(n_eta_env)
     if n_nu_env:
         fig_cfg.n_nu = int(n_nu_env)
+
+    if fast_env == "1":
+        fig_cfg.Nx = 16
+        fig_cfg.Ny = 16
+        fig_cfg.Nz = 1
+        fig_cfg.t1 = 0.5
+        fig_cfg.n_frames = 6
+        fig_cfg.dt0 = 5e-4
+        fig_cfg.progress = False
+        fig_cfg.jit = False
+        fig_cfg.check_finite = True
+        if n_eta_env is None:
+            fig_cfg.n_eta = 3
+        if n_nu_env is None:
+            fig_cfg.n_nu = 3
 
     print("========================================================")
     print(" MHD tearing/plasmoid: inverse-design figure generator ")

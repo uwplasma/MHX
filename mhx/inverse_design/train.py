@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import math
-from dataclasses import dataclass, field
 from typing import Any, Dict, List, Tuple
 
 import jax
@@ -9,7 +7,7 @@ import jax.numpy as jnp
 import equinox as eqx
 import optax
 
-from mhx.config import Objective, objective_preset, dump_config_yaml, ModelConfig
+from mhx.config import InverseDesignConfig, dump_config_yaml
 from mhx.io.paths import RunPaths, create_run_dir
 from mhx.io.npz import savez
 from mhx.solver.plugins import build_terms, PhysicsTerm
@@ -17,82 +15,6 @@ from mhx.solver.tearing import (
     _run_tearing_simulation_and_diagnostics,
     TearingMetrics,
 )
-
-
-@dataclass
-class InverseDesignConfig:
-    # Grid and box
-    Nx: int = 64
-    Ny: int = 64
-    Nz: int = 1
-    Lx: float = 2.0 * math.pi
-    Ly: float = 2.0 * math.pi
-    Lz: float = 2.0 * math.pi
-
-    # Fixed physical parameters
-    B0: float = 1.0
-    B_g: float = 0.2
-    a: float = 0.25
-    eps_B: float = 1e-3
-
-    # Time integration
-    t0: float = 0.0
-    t1: float = 60.0
-    n_frames: int = 150
-    dt0: float = 5e-4
-    progress: bool = True
-    jit: bool = False
-    check_finite: bool = True
-
-    # Equilibrium
-    equilibrium_mode: str = "forcefree"
-
-    # Objective
-    objective: Objective = field(default_factory=lambda: objective_preset("forcefree"))
-
-    # Physics model / plugin configuration
-    model: ModelConfig = field(default_factory=ModelConfig)
-
-    # Bounds for eta and nu (log10-space)
-    log10_eta_min: float = -4.5
-    log10_eta_max: float = -2.0
-    log10_nu_min: float = -4.5
-    log10_nu_max: float = -2.0
-
-    # Neural network + training hyperparameters
-    latent_dim: int = 1
-    hidden_width: int = 32
-    hidden_depth: int = 2
-    learning_rate: float = 1e-3
-    n_train_steps: int = 25
-    print_every: int = 1
-
-    # Latent design value to train at (scalar)
-    z_train: float = 0.0
-
-    # Random seed
-    seed: int = 1234
-
-    @classmethod
-    def default(cls, eq_mode: str = "forcefree") -> "InverseDesignConfig":
-        return cls(equilibrium_mode=eq_mode, objective=objective_preset(eq_mode))
-
-    @classmethod
-    def fast(cls, eq_mode: str = "forcefree") -> "InverseDesignConfig":
-        cfg = cls(equilibrium_mode=eq_mode, objective=objective_preset(eq_mode))
-        cfg.Nx = 16
-        cfg.Ny = 16
-        cfg.Nz = 1
-        cfg.t1 = 0.5
-        cfg.n_frames = 6
-        cfg.dt0 = 5e-4
-        cfg.progress = False
-        cfg.jit = False
-        cfg.check_finite = True
-        cfg.hidden_width = 8
-        cfg.hidden_depth = 1
-        cfg.n_train_steps = 2
-        return cfg
 
 
 class DesignMLP(eqx.Module):
@@ -135,29 +57,29 @@ def _simulate_metrics(
 ) -> Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray, Dict[str, Any]]:
     if terms is None and cfg.model is not None:
         terms = build_terms(cfg.model.rhs_terms, cfg.model.term_params)
-    eq_mode = cfg.model.equilibrium_mode or cfg.equilibrium_mode
+    eq_mode = cfg.model.equilibrium_mode or cfg.sim.equilibrium_mode
     res = _run_tearing_simulation_and_diagnostics(
-        Nx=cfg.Nx,
-        Ny=cfg.Ny,
-        Nz=cfg.Nz,
-        Lx=cfg.Lx,
-        Ly=cfg.Ly,
-        Lz=cfg.Lz,
+        Nx=cfg.sim.Nx,
+        Ny=cfg.sim.Ny,
+        Nz=cfg.sim.Nz,
+        Lx=cfg.sim.Lx,
+        Ly=cfg.sim.Ly,
+        Lz=cfg.sim.Lz,
         nu=nu,
         eta=eta,
-        B0=cfg.B0,
-        a=cfg.a,
-        B_g=cfg.B_g,
-        eps_B=cfg.eps_B,
-        t0=cfg.t0,
-        t1=cfg.t1,
-        n_frames=cfg.n_frames,
-        dt0=cfg.dt0,
+        B0=cfg.sim.B0,
+        a=cfg.sim.a,
+        B_g=cfg.sim.B_g,
+        eps_B=cfg.sim.eps_B,
+        t0=cfg.sim.t0,
+        t1=cfg.sim.t1,
+        n_frames=cfg.sim.n_frames,
+        dt0=cfg.sim.dt0,
         equilibrium_mode=eq_mode,
         terms=terms,
-        progress=cfg.progress,
-        jit=cfg.jit,
-        check_finite=cfg.check_finite,
+        progress=cfg.sim.progress,
+        jit=cfg.sim.jit,
+        check_finite=cfg.sim.check_finite,
     )
 
     metrics = TearingMetrics.from_result(res)
@@ -229,21 +151,22 @@ def run_inverse_design(
     run_paths: RunPaths | None = None,
 ) -> Tuple[RunPaths, Dict[str, List[float]], Dict[str, Any], Dict[str, Any], Dict[str, Any]]:
     if run_paths is None:
-        run_paths = create_run_dir(tag=f"inverse_{cfg.equilibrium_mode}")
+        eq_tag = cfg.model.equilibrium_mode or cfg.sim.equilibrium_mode
+        run_paths = create_run_dir(tag=f"inverse_{eq_tag}")
 
-    config_payload = {"sim": {
-        "Nx": cfg.Nx, "Ny": cfg.Ny, "Nz": cfg.Nz,
-        "Lx": cfg.Lx, "Ly": cfg.Ly, "Lz": cfg.Lz,
-                "B0": cfg.B0, "a": cfg.a, "B_g": cfg.B_g, "eps_B": cfg.eps_B,
-        "t0": cfg.t0, "t1": cfg.t1, "n_frames": cfg.n_frames, "dt0": cfg.dt0,
-        "progress": cfg.progress, "jit": cfg.jit, "check_finite": cfg.check_finite,
-        "equilibrium_mode": cfg.equilibrium_mode,
-    }, "objective": cfg.objective.as_dict(), "training": {
-        "latent_dim": cfg.latent_dim, "hidden_width": cfg.hidden_width, "hidden_depth": cfg.hidden_depth,
-        "learning_rate": cfg.learning_rate, "n_train_steps": cfg.n_train_steps, "seed": cfg.seed,
-    }}
-    if cfg.model is not None:
-        config_payload["model"] = cfg.model.as_dict()
+    config_payload = {
+        "sim": cfg.sim.as_dict(),
+        "objective": cfg.objective.as_dict(),
+        "model": cfg.model.as_dict() if cfg.model is not None else {},
+        "training": {
+            "latent_dim": cfg.latent_dim,
+            "hidden_width": cfg.hidden_width,
+            "hidden_depth": cfg.hidden_depth,
+            "learning_rate": cfg.learning_rate,
+            "n_train_steps": cfg.n_train_steps,
+            "seed": cfg.seed,
+        },
+    }
     dump_config_yaml(run_paths.config_yaml, config_payload)
 
     # Initialize MLP and optimizer

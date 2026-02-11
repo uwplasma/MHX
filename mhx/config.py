@@ -129,6 +129,7 @@ class ModelConfig:
 class InverseDesignConfig:
     sim: TearingSimConfig
     objective: Objective
+    model: ModelConfig = dataclasses.field(default_factory=ModelConfig)
 
     # Bounds for eta and nu (log10-space)
     log10_eta_min: float = -4.5

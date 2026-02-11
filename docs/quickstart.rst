@@ -6,6 +6,8 @@ Run a tiny simulation (seconds):
 .. code-block:: bash
 
    mhx simulate --fast --equilibrium original --eta 1e-3 --nu 1e-3
+   # disable progress bars for CI:
+   mhx simulate --fast --no-progress
 
 Generate figures from the run directory:
 

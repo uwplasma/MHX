@@ -33,10 +33,19 @@ def simulate(
     model_config: Optional[Path] = typer.Option(None, "--model-config", help="YAML/JSON model config specifying equilibrium and physics terms."),
     tag: str = typer.Option("simulate", "--tag"),
     fast: bool = typer.Option(False, "--fast", help="Very small/short run for smoke tests."),
+    progress: Optional[bool] = typer.Option(None, "--progress/--no-progress", help="Enable progress meter."),
+    jit: Optional[bool] = typer.Option(None, "--jit/--no-jit", help="Enable JIT in time integration."),
+    check_finite: Optional[bool] = typer.Option(None, "--check-finite/--no-check-finite", help="Validate finite/nonnegative energies."),
 ) -> None:
     eq_mode = equilibrium
     cfg = TearingSimConfig.fast(eq_mode) if fast else TearingSimConfig(equilibrium_mode=eq_mode)
     cfg = dataclasses.replace(cfg, eta=float(eta), nu=float(nu))
+    if progress is not None:
+        cfg = dataclasses.replace(cfg, progress=progress)
+    if jit is not None:
+        cfg = dataclasses.replace(cfg, jit=jit)
+    if check_finite is not None:
+        cfg = dataclasses.replace(cfg, check_finite=check_finite)
 
     model_cfg = None
     terms = None
@@ -111,6 +120,9 @@ def scan(
     grid: str = typer.Option("4x4", "--grid", help="Grid size as NxM in log10 space, e.g. 4x4."),
     outdir: Path = typer.Option(Path("outputs/scans"), "--outdir"),
     model_config: Optional[Path] = typer.Option(None, "--model-config", help="Optional YAML/JSON model config for physics terms."),
+    progress: Optional[bool] = typer.Option(None, "--progress/--no-progress", help="Enable progress meter."),
+    jit: Optional[bool] = typer.Option(None, "--jit/--no-jit", help="Enable JIT in time integration."),
+    check_finite: Optional[bool] = typer.Option(None, "--check-finite/--no-check-finite", help="Validate finite/nonnegative energies."),
 ) -> None:
     from mhx.config import TearingSimConfig
     from mhx.solver.tearing import _run_tearing_simulation_and_diagnostics, TearingMetrics
@@ -124,6 +136,12 @@ def scan(
     gamma_grid = np.zeros((n_eta, n_nu))
 
     cfg = TearingSimConfig.fast(equilibrium)
+    if progress is not None:
+        cfg = dataclasses.replace(cfg, progress=progress)
+    if jit is not None:
+        cfg = dataclasses.replace(cfg, jit=jit)
+    if check_finite is not None:
+        cfg = dataclasses.replace(cfg, check_finite=check_finite)
     terms = None
     if model_config is not None:
         model_cfg = load_model_config(model_config)
@@ -169,16 +187,26 @@ def inverse_design(
     steps: int = typer.Option(2, "--steps"),
     fast: bool = typer.Option(True, "--fast"),
     model_config: Optional[Path] = typer.Option(None, "--model-config", help="Optional YAML/JSON model config for physics terms."),
+    progress: Optional[bool] = typer.Option(None, "--progress/--no-progress", help="Enable progress meter."),
+    jit: Optional[bool] = typer.Option(None, "--jit/--no-jit", help="Enable JIT in time integration."),
+    check_finite: Optional[bool] = typer.Option(None, "--check-finite/--no-check-finite", help="Validate finite/nonnegative energies."),
 ) -> None:
-    from mhx.inverse_design.train import InverseDesignConfig, run_inverse_design
+    from mhx.config import InverseDesignConfig
+    from mhx.inverse_design.train import run_inverse_design
 
     cfg = InverseDesignConfig.fast(equilibrium) if fast else InverseDesignConfig.default(equilibrium)
     if model_config is not None:
         model_cfg = load_model_config(model_config)
-        cfg.model = model_cfg
+        cfg = dataclasses.replace(cfg, model=model_cfg)
         if model_cfg.equilibrium_mode:
-            cfg.equilibrium_mode = model_cfg.equilibrium_mode
-    cfg.n_train_steps = steps
+            cfg = dataclasses.replace(cfg, sim=dataclasses.replace(cfg.sim, equilibrium_mode=model_cfg.equilibrium_mode))
+    if progress is not None:
+        cfg = dataclasses.replace(cfg, sim=dataclasses.replace(cfg.sim, progress=progress))
+    if jit is not None:
+        cfg = dataclasses.replace(cfg, sim=dataclasses.replace(cfg.sim, jit=jit))
+    if check_finite is not None:
+        cfg = dataclasses.replace(cfg, sim=dataclasses.replace(cfg.sim, check_finite=check_finite))
+    cfg = dataclasses.replace(cfg, n_train_steps=steps)
     run_paths, _, _, _, _ = run_inverse_design(cfg)
     typer.echo(str(run_paths.run_dir))
 
