@@ -1,6 +1,13 @@
 Release Process
 ===============
 
+Deprecation policy
+------------------
+
+- Deprecated APIs remain supported for **two minor releases**.
+- Deprecations must emit a warning and link to the migration guide.
+- Removal requires a changelog entry and a doc update.
+
 1. Update version in `pyproject.toml` and `mhx/version.py`.
 2. Update `CHANGELOG.md` with release notes.
 3. Run:

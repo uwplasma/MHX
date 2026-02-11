@@ -23,5 +23,6 @@ Differentiable pseudo-spectral reduced MHD tearing/plasmoid solver and tools.
    scans
    benchmarks
    performance
+   migration
    api
    references

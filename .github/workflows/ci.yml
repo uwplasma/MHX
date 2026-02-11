@@ -29,6 +29,9 @@ jobs:
       - name: Lint (package only)
         run: |
           python -m ruff check mhx tests
+      - name: Check legacy imports
+        run: |
+          python tools/check_legacy_imports.py
       - name: Tests
         run: |
           python -m pytest -q
@@ -107,8 +110,13 @@ jobs:
           test -f docs/_static/latent_ode_fit.png
           test -f docs/_static/latent_ode_ablation.rst
           test -f docs/_static/latent_ode_experiment.png
+          test -f docs/_static/latent_ode_calibration.png
+          test -f docs/_static/latent_ode_failure.png
+          test -f docs/_static/benchmark_matrix.rst
           test -f outputs/benchmarks/latent_ode_ablation.json
           test -f outputs/benchmarks/latent_ode_experiment.json
+          test -f outputs/benchmarks/benchmark_matrix.json
+          test -f outputs/datasets/latent_ode_dataset.npz
           test -f outputs/figures/fig_inverse_vs_grid_forcefree.png
       - name: Validate manifest hashes
         run: |
