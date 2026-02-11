@@ -9,6 +9,7 @@ Differentiable pseudo-spectral reduced MHD tearing/plasmoid solver and tools.
 
    installation
    quickstart
+   reproducibility
    physics
    diagnostics
    inverse_design

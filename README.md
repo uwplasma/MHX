@@ -46,6 +46,14 @@ Midplane flux evolution (FAST example):
 
 ![Az midplane evolution](docs/_static/az_midplane.gif)
 
+Reachable region (FAST example):
+
+![Reachable region](docs/_static/fig_reachable_region.png)
+
+Cost history (FAST example):
+
+![Cost history](docs/_static/fig_cost_history.png)
+
 ## Outputs
 
 Runs are written under:
