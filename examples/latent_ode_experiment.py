@@ -4,15 +4,17 @@ from pathlib import Path
 import json
 import numpy as np
 import matplotlib.pyplot as plt
+import sys
 
 import jax
 import jax.numpy as jnp
 import optax
 import diffrax as dfx
 
-from mhx.config import TearingSimConfig
-from mhx.solver.tearing import _run_tearing_simulation_and_diagnostics
 from mhx.ml.latent_ode import fit_latent_ode, init_mlp, mlp_apply
+
+sys.path.append(str(Path(__file__).resolve().parent))
+from latent_ode_dataset import generate_dataset
 
 
 def _predict_latent(params: dict, ts: np.ndarray) -> np.ndarray:
@@ -83,69 +85,45 @@ def _ar1_baseline(y: np.ndarray, train_mask: np.ndarray) -> np.ndarray:
 
 
 def main() -> None:
-    cfg = TearingSimConfig.fast("original")
-    cases = [
-        (1e-3, 1e-3),
-        (5e-4, 1e-3),
-        (1e-3, 5e-4),
-    ]
+    dataset_path = Path("outputs/datasets/latent_ode_dataset.npz")
+    if not dataset_path.exists():
+        generate_dataset(dataset_path)
+
+    data = np.load(dataset_path, allow_pickle=True)
+    ts = np.array(data["ts"])
+    ys = np.array(data["y"])
+    eta_vals = np.array(data["eta"])
+    nu_vals = np.array(data["nu"])
+    train_mask = np.array(data["train_mask"]).astype(bool)
+    test_mask = np.array(data["test_mask"]).astype(bool)
 
     rows = []
-    for idx, (eta, nu) in enumerate(cases):
-        res = _run_tearing_simulation_and_diagnostics(
-            Nx=cfg.Nx,
-            Ny=cfg.Ny,
-            Nz=cfg.Nz,
-            Lx=cfg.Lx,
-            Ly=cfg.Ly,
-            Lz=cfg.Lz,
-            nu=nu,
-            eta=eta,
-            B0=cfg.B0,
-            a=cfg.a,
-            B_g=cfg.B_g,
-            eps_B=cfg.eps_B,
-            t0=cfg.t0,
-            t1=cfg.t1,
-            n_frames=cfg.n_frames,
-            dt0=cfg.dt0,
-            equilibrium_mode=cfg.equilibrium_mode,
-            progress=False,
-            jit=False,
-            check_finite=True,
-        )
-        ts = np.array(res["ts"])
-        E_kin = np.array(res["E_kin"])
-        E_mag = np.array(res["E_mag"])
-        f_kin = E_kin / (E_kin + E_mag + 1e-30)
-        complexity = np.array(res["complexity_series"])
-        y = np.stack([f_kin, complexity], axis=1)
+    all_pred = []
+    all_true = []
+    worst_case = {"idx": None, "mse": -np.inf, "y": None, "pred": None}
 
-        split = int(0.7 * len(ts))
-        train_mask = np.zeros(len(ts), dtype=bool)
-        train_mask[:split] = True
-        val_mask = ~train_mask
-
+    for idx in range(ys.shape[0]):
+        y = ys[idx]
         out = fit_latent_ode(ts, y, latent_dim=2, hidden_dim=32, steps=100, lr=1e-2, seed=0, train_mask=train_mask)
         y_latent = _predict_latent(out["params"], ts)
         y_ar1 = _ar1_baseline(y, train_mask)
         y_mlp = _fit_mlp_time(ts, y, train_mask, hidden=16, steps=300, lr=1e-2)
 
-        def metrics(y_hat):
-            err = y_hat[val_mask] - y[val_mask]
+        def metrics(y_hat, mask):
+            err = y_hat[mask] - y[mask]
             mse = np.mean(err ** 2, axis=0)
             mae = np.mean(np.abs(err), axis=0)
             return mse, mae
 
-        mse_lat, mae_lat = metrics(y_latent)
-        mse_ar1, mae_ar1 = metrics(y_ar1)
-        mse_mlp, mae_mlp = metrics(y_mlp)
+        mse_lat, mae_lat = metrics(y_latent, test_mask)
+        mse_ar1, mae_ar1 = metrics(y_ar1, test_mask)
+        mse_mlp, mae_mlp = metrics(y_mlp, test_mask)
 
         rows.append(
             {
                 "case": idx,
-                "eta": float(eta),
-                "nu": float(nu),
+                "eta": float(eta_vals[idx]),
+                "nu": float(nu_vals[idx]),
                 "latent_mse": mse_lat.tolist(),
                 "latent_mae": mae_lat.tolist(),
                 "ar1_mse": mse_ar1.tolist(),
@@ -155,6 +133,12 @@ def main() -> None:
             }
         )
 
+        all_pred.append(y_latent[test_mask])
+        all_true.append(y[test_mask])
+        case_mse = float(np.mean((y_latent[test_mask] - y[test_mask]) ** 2))
+        if case_mse > worst_case["mse"]:
+            worst_case = {"idx": idx, "mse": case_mse, "y": y, "pred": y_latent}
+
         if idx == 0:
             fig, axes = plt.subplots(1, 2, figsize=(10.5, 3.6))
             labels = ["latent ODE", "AR(1)", "MLP-time"]
@@ -162,7 +146,7 @@ def main() -> None:
             axes[0].plot(ts, y[:, 0], "k-", label="truth")
             for p, lab in zip(preds, labels):
                 axes[0].plot(ts, p[:, 0], "--", label=lab)
-            axes[0].set_title("f_kin (val overlay)")
+            axes[0].set_title("f_kin (train/val/test)")
             axes[0].set_xlabel("t")
             axes[0].set_ylabel("f_kin")
             axes[0].legend()
@@ -170,7 +154,7 @@ def main() -> None:
             axes[1].plot(ts, y[:, 1], "k-", label="truth")
             for p, lab in zip(preds, labels):
                 axes[1].plot(ts, p[:, 1], "--", label=lab)
-            axes[1].set_title("C_plasmoid (val overlay)")
+            axes[1].set_title("C_plasmoid (train/val/test)")
             axes[1].set_xlabel("t")
             axes[1].set_ylabel("C_plasmoid")
             axes[1].legend()
@@ -184,7 +168,7 @@ def main() -> None:
     (out_dir / "latent_ode_experiment.json").write_text(json.dumps(rows, indent=2), encoding="utf-8")
 
     lines = [
-        ".. list-table:: Latent ODE experiment (FAST)",
+        ".. list-table:: Latent ODE experiment (FAST, test split)",
         "   :header-rows: 1",
         "",
         "   * - Case",
@@ -201,7 +185,48 @@ def main() -> None:
                 f"     - {row['mlp_mse'][0]:.2e}, {row['mlp_mse'][1]:.2e}",
             ]
         )
-    Path("docs/_static/latent_ode_experiment.rst").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    static_dir = Path("docs/_static")
+    static_dir.mkdir(parents=True, exist_ok=True)
+    (static_dir / "latent_ode_experiment.rst").write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+    # Calibration plot (test split)
+    pred = np.vstack(all_pred)
+    true = np.vstack(all_true)
+    fig, axes = plt.subplots(1, 2, figsize=(10.5, 4.0))
+    for i, label in enumerate(["f_kin", "C_plasmoid"]):
+        axes[i].scatter(true[:, i], pred[:, i], s=12, alpha=0.6, label="test")
+        lo = min(true[:, i].min(), pred[:, i].min())
+        hi = max(true[:, i].max(), pred[:, i].max())
+        axes[i].plot([lo, hi], [lo, hi], "k--", lw=1.0)
+        axes[i].set_title(f"Calibration: {label}")
+        axes[i].set_xlabel("truth")
+        axes[i].set_ylabel("prediction")
+    fig.tight_layout()
+    fig.savefig("docs/_static/latent_ode_calibration.png", dpi=200)
+    plt.close(fig)
+
+    # Failure case (worst test MSE)
+    if worst_case["idx"] is not None:
+        y = worst_case["y"]
+        y_hat = worst_case["pred"]
+        fig, axes = plt.subplots(1, 2, figsize=(10.5, 3.6))
+        axes[0].plot(ts, y[:, 0], "k-", label="truth")
+        axes[0].plot(ts, y_hat[:, 0], "--", label="latent ODE")
+        axes[0].set_title("Failure case: f_kin")
+        axes[0].set_xlabel("t")
+        axes[0].set_ylabel("f_kin")
+        axes[0].legend()
+
+        axes[1].plot(ts, y[:, 1], "k-", label="truth")
+        axes[1].plot(ts, y_hat[:, 1], "--", label="latent ODE")
+        axes[1].set_title("Failure case: C_plasmoid")
+        axes[1].set_xlabel("t")
+        axes[1].set_ylabel("C_plasmoid")
+        axes[1].legend()
+
+        fig.tight_layout()
+        fig.savefig("docs/_static/latent_ode_failure.png", dpi=200)
+        plt.close(fig)
 
 
 if __name__ == "__main__":

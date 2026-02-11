@@ -12,6 +12,7 @@ Setup
 .. code-block:: bash
 
    export JAX_ENABLE_X64=1
+   export MHX_API_VERSION=1
    pip install -e ".[ml,docs]"
 
 1) Tiny simulation
@@ -82,7 +83,18 @@ Expected outputs:
 - `docs/_static/fig_reachable_region.png`
 - `docs/_static/fig_cost_history.png`
 
-6) Reproduce all figures (FAST)
+6) Latent ODE dataset
+---------------------
+
+.. code-block:: bash
+
+   python examples/latent_ode_dataset.py
+
+Expected outputs:
+
+- `outputs/datasets/latent_ode_dataset.npz`
+
+7) Reproduce all figures (FAST)
 --------------------------------
 
 .. code-block:: bash
@@ -101,15 +113,20 @@ Expected outputs include:
 - `docs/_static/timing_table.rst`
 - `docs/_static/latent_ode_experiment.png`
 - `docs/_static/latent_ode_experiment.rst`
+- `docs/_static/latent_ode_calibration.png`
+- `docs/_static/latent_ode_failure.png`
+- `docs/_static/benchmark_matrix.rst`
 - `outputs/figures/fig_reachable_heatmaps_forcefree.png`
 - `outputs/figures/fig_inverse_vs_grid_forcefree.png`
 - `outputs/benchmarks/timing_table.json`
 - `outputs/benchmarks/latent_ode_ablation.json`
 - `outputs/benchmarks/latent_ode_experiment.json`
+- `outputs/benchmarks/benchmark_matrix.json`
+- `outputs/datasets/latent_ode_dataset.npz`
 - `outputs/manifest.json`
 - `outputs/run_configs/*.yaml`
 
-7) Timing table (FAST + small)
+8) Timing table (FAST + small)
 ------------------------------
 
 .. code-block:: bash
@@ -120,3 +137,15 @@ Expected outputs:
 
 - `outputs/benchmarks/timing_table.json`
 - `docs/_static/timing_table.rst`
+
+9) Benchmark matrix
+-------------------
+
+.. code-block:: bash
+
+   MHX_BENCH_FAST=1 python bench/benchmark_matrix.py
+
+Expected outputs:
+
+- `outputs/benchmarks/benchmark_matrix.json`
+- `docs/_static/benchmark_matrix.rst`

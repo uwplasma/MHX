@@ -38,6 +38,10 @@ def main() -> None:
     run([sys.executable, "examples/latent_ode_fast.py"])
     manifest["commands"].append("examples/latent_ode_fast.py")
 
+    # Latent ODE dataset
+    run([sys.executable, "examples/latent_ode_dataset.py"])
+    manifest["commands"].append("examples/latent_ode_dataset.py")
+
     # Latent ODE experiment with baselines
     run([sys.executable, "examples/latent_ode_experiment.py"])
     manifest["commands"].append("examples/latent_ode_experiment.py")
@@ -54,6 +58,12 @@ def main() -> None:
     run([sys.executable, "examples/benchmark_timings.py"])
     manifest["commands"].append("examples/benchmark_timings.py")
 
+    # Benchmark matrix
+    env_bench = os.environ.copy()
+    env_bench.setdefault("MHX_BENCH_FAST", "1")
+    run([sys.executable, "bench/benchmark_matrix.py"], env=env_bench)
+    manifest["commands"].append("bench/benchmark_matrix.py")
+
     # Collect outputs
     for path in [
         "docs/_static/energy.png",
@@ -66,11 +76,16 @@ def main() -> None:
         "docs/_static/timing_table.rst",
         "docs/_static/latent_ode_experiment.png",
         "docs/_static/latent_ode_experiment.rst",
+        "docs/_static/benchmark_matrix.rst",
+        "docs/_static/latent_ode_calibration.png",
+        "docs/_static/latent_ode_failure.png",
         "outputs/figures/fig_reachable_heatmaps_forcefree.png",
         "outputs/figures/fig_inverse_vs_grid_forcefree.png",
         "outputs/benchmarks/timing_table.json",
         "outputs/benchmarks/latent_ode_ablation.json",
         "outputs/benchmarks/latent_ode_experiment.json",
+        "outputs/benchmarks/benchmark_matrix.json",
+        "outputs/datasets/latent_ode_dataset.npz",
     ]:
         if Path(path).exists():
             manifest["outputs"].append(path)

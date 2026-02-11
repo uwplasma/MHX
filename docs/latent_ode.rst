@@ -47,6 +47,33 @@ And a summary table:
 
 .. include:: _static/latent_ode_experiment.rst
 
+Dataset generator
+-----------------
+
+The experiment uses a fixed FAST dataset with explicit train/val/test splits:
+
+.. code-block:: bash
+
+   python examples/latent_ode_dataset.py
+
+The dataset is written to ``outputs/datasets/latent_ode_dataset.npz`` and is
+reused by the experiment script.
+
+Calibration and failure cases
+-----------------------------
+
+Calibration scatter (test split):
+
+.. image:: _static/latent_ode_calibration.png
+   :width: 600
+   :alt: Latent ODE calibration
+
+Worst-case example (test split):
+
+.. image:: _static/latent_ode_failure.png
+   :width: 600
+   :alt: Latent ODE failure case
+
 Source:
 
 - https://github.com/uwplasma/MHX/blob/main/mhx/ml/latent_ode.py
@@ -75,3 +102,5 @@ Can fail when:
 - the dynamics are stiff or strongly multi-scale,
 - diagnostics are noisy or non-smooth,
 - the training window includes regime changes.
+
+See the failure-case plot above for a concrete example on the FAST dataset.
