@@ -7,17 +7,17 @@ All commands assume you are at the repository root.
 Setup
 -----
 
-```bash
-export JAX_ENABLE_X64=1
-pip install -e ".[ml,docs]"
-```
+.. code-block:: bash
+
+   export JAX_ENABLE_X64=1
+   pip install -e ".[ml,docs]"
 
 1) Tiny simulation
 ------------------
 
-```bash
-mhx simulate --fast --equilibrium original --eta 1e-3 --nu 1e-3
-```
+.. code-block:: bash
+
+   mhx simulate --fast --equilibrium original --eta 1e-3 --nu 1e-3
 
 Expected outputs (under the printed run directory):
 
@@ -29,9 +29,9 @@ Expected outputs (under the printed run directory):
 2) Tiny scan
 ------------
 
-```bash
-mhx scan --equilibrium forcefree --grid 4x4
-```
+.. code-block:: bash
+
+   mhx scan --equilibrium forcefree --grid 4x4
 
 Expected outputs:
 
@@ -40,9 +40,9 @@ Expected outputs:
 3) Tiny inverse design
 ----------------------
 
-```bash
-mhx inverse-design --equilibrium forcefree --steps 2 --fast
-```
+.. code-block:: bash
+
+   mhx inverse-design --equilibrium forcefree --steps 2 --fast
 
 Expected outputs (under the printed run directory):
 
@@ -55,9 +55,9 @@ Expected outputs (under the printed run directory):
 4) Reachable region & comparison figures
 -----------------------------------------
 
-```bash
-python mhd_tearing_inverse_design_figures.py
-```
+.. code-block:: bash
+
+   python mhd_tearing_inverse_design_figures.py
 
 Expected outputs:
 
@@ -69,9 +69,9 @@ Expected outputs:
 5) Docs media (optional)
 ------------------------
 
-```bash
-python examples/make_inverse_design_media.py
-```
+.. code-block:: bash
+
+   python examples/make_inverse_design_media.py
 
 Expected outputs:
 
