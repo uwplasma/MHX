@@ -20,6 +20,12 @@ Docs extras:
 pip install -e ".[docs]"
 ```
 
+CI/repro pinned set:
+
+```bash
+pip install -r requirements-ci.txt
+```
+
 ## Quickstart (FAST)
 
 Run a tiny simulation (seconds) and generate figures:
@@ -99,6 +105,11 @@ If you use MHX, please cite it. See `CITATION.cff`.
 export JAX_ENABLE_X64=1
 ```
 
+## Legacy scripts
+
+Legacy scripts have been moved to `scripts/legacy/`. Root-level files now
+provide deprecation shims for backward compatibility.
+
 ## Physics plugins
 
 Define additive physics terms via `PhysicsTerm` and pass them to the solver.
@@ -115,6 +126,15 @@ python examples/latent_ode_fast.py
 
 This generates `docs/_static/latent_ode_fit.png` and an ablation table
 `docs/_static/latent_ode_ablation.rst`.
+
+Baseline experiment:
+
+```bash
+python examples/latent_ode_experiment.py
+```
+
+This generates `docs/_static/latent_ode_experiment.png` and
+`docs/_static/latent_ode_experiment.rst`.
 
 ## Reproduce all figures (FAST)
 

@@ -28,6 +28,25 @@ It also generates an ablation table:
 
 .. include:: _static/latent_ode_ablation.rst
 
+Experiment with baselines
+-------------------------
+
+Run:
+
+.. code-block:: bash
+
+   python examples/latent_ode_experiment.py
+
+This produces a baseline comparison plot:
+
+.. image:: _static/latent_ode_experiment.png
+   :width: 600
+   :alt: Latent ODE experiment
+
+And a summary table:
+
+.. include:: _static/latent_ode_experiment.rst
+
 Source:
 
 - https://github.com/uwplasma/MHX/blob/main/mhx/ml/latent_ode.py

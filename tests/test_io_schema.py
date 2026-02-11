@@ -30,3 +30,5 @@ def test_inverse_design_io_schema(tmp_path: Path) -> None:
     h = np.load(run_paths.history_npz, allow_pickle=True)
     for key in ["loss", "f_kin", "complexity", "target_f_kin", "target_complexity", "lambda_complexity"]:
         assert key in h.files
+    assert "schema_version" in h.files
+    assert "mhx_version" in h.files

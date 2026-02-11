@@ -33,6 +33,7 @@ def fit_latent_ode(
     steps: int = 200,
     lr: float = 1e-3,
     seed: int = 0,
+    train_mask: Array | None = None,
 ) -> Dict[str, Any]:
     """Fit a simple latent ODE to time series y(t)."""
     key = jax.random.PRNGKey(seed)
@@ -71,7 +72,13 @@ def fit_latent_ode(
     def loss_fn(params):
         zs = solve(params["z0"], params["latent"])
         y_hat = jax.vmap(lambda z: decode(z, params["decoder"]))(zs)
-        return jnp.mean((y_hat - y) ** 2)
+        if train_mask is None:
+            return jnp.mean((y_hat - y) ** 2)
+        mask = jnp.asarray(train_mask, dtype=y.dtype)
+        if mask.ndim == 1 and y_hat.ndim > 1:
+            mask = mask[:, None]
+        weight = mask / jnp.maximum(jnp.sum(mask), 1.0)
+        return jnp.sum((y_hat - y) ** 2 * weight)
 
     @jax.jit
     def step(params, opt_state):

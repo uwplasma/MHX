@@ -99,11 +99,15 @@ Expected outputs include:
 - `docs/_static/latent_ode_fit.png`
 - `docs/_static/latent_ode_ablation.rst`
 - `docs/_static/timing_table.rst`
+- `docs/_static/latent_ode_experiment.png`
+- `docs/_static/latent_ode_experiment.rst`
 - `outputs/figures/fig_reachable_heatmaps_forcefree.png`
 - `outputs/figures/fig_inverse_vs_grid_forcefree.png`
 - `outputs/benchmarks/timing_table.json`
 - `outputs/benchmarks/latent_ode_ablation.json`
+- `outputs/benchmarks/latent_ode_experiment.json`
 - `outputs/manifest.json`
+- `outputs/run_configs/*.yaml`
 
 7) Timing table (FAST + small)
 ------------------------------

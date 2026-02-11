@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 import time
+import tracemalloc
 from pathlib import Path
 
 from mhx.config import TearingSimConfig
@@ -10,6 +11,15 @@ from mhx.solver.tearing import _run_tearing_simulation_and_diagnostics
 
 
 def _time_case(label: str, cfg: TearingSimConfig, *, jit: bool) -> dict:
+    rss_mb = None
+    try:
+        import psutil  # type: ignore
+
+        rss_mb = psutil.Process().memory_info().rss / 1e6
+    except Exception:
+        rss_mb = None
+
+    tracemalloc.start()
     start = time.perf_counter()
     _run_tearing_simulation_and_diagnostics(
         Nx=cfg.Nx,
@@ -34,6 +44,8 @@ def _time_case(label: str, cfg: TearingSimConfig, *, jit: bool) -> dict:
         check_finite=True,
     )
     elapsed = time.perf_counter() - start
+    _, peak = tracemalloc.get_traced_memory()
+    tracemalloc.stop()
     return {
         "case": label,
         "Nx": cfg.Nx,
@@ -42,6 +54,8 @@ def _time_case(label: str, cfg: TearingSimConfig, *, jit: bool) -> dict:
         "n_frames": cfg.n_frames,
         "jit": jit,
         "elapsed_sec": elapsed,
+        "rss_mb": rss_mb,
+        "tracemalloc_peak_mb": peak / 1e6,
     }
 
 

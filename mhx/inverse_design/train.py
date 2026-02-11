@@ -80,6 +80,7 @@ def _simulate_metrics(
         progress=cfg.sim.progress,
         jit=cfg.sim.jit,
         check_finite=cfg.sim.check_finite,
+        diagnostics=cfg.model.diagnostics if cfg.model is not None else None,
     )
 
     metrics = TearingMetrics.from_result(res)

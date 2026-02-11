@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import os
+import shutil
 import subprocess
 import sys
 import time
@@ -36,6 +38,10 @@ def main() -> None:
     run([sys.executable, "examples/latent_ode_fast.py"])
     manifest["commands"].append("examples/latent_ode_fast.py")
 
+    # Latent ODE experiment with baselines
+    run([sys.executable, "examples/latent_ode_experiment.py"])
+    manifest["commands"].append("examples/latent_ode_experiment.py")
+
     # Reachable region figures (grid/inverse comparison)
     env_fast = os.environ.copy()
     env_fast.setdefault("MHX_FIGURES_FAST", "1")
@@ -58,13 +64,39 @@ def main() -> None:
         "docs/_static/latent_ode_fit.png",
         "docs/_static/latent_ode_ablation.rst",
         "docs/_static/timing_table.rst",
+        "docs/_static/latent_ode_experiment.png",
+        "docs/_static/latent_ode_experiment.rst",
         "outputs/figures/fig_reachable_heatmaps_forcefree.png",
         "outputs/figures/fig_inverse_vs_grid_forcefree.png",
         "outputs/benchmarks/timing_table.json",
         "outputs/benchmarks/latent_ode_ablation.json",
+        "outputs/benchmarks/latent_ode_experiment.json",
     ]:
         if Path(path).exists():
             manifest["outputs"].append(path)
+
+    # Bundle run configs from this session
+    run_configs_dir = Path("outputs/run_configs")
+    run_configs_dir.mkdir(parents=True, exist_ok=True)
+    run_config_paths = []
+    for run_dir in sorted(Path("outputs/runs").glob("*")):
+        if run_dir.is_dir() and run_dir.stat().st_mtime >= start:
+            cfg = run_dir / "config.yaml"
+            if cfg.exists():
+                dst = run_configs_dir / f"{run_dir.name}_config.yaml"
+                shutil.copy2(cfg, dst)
+                run_config_paths.append(str(dst))
+    manifest["run_configs"] = run_config_paths
+
+    # Hashes for outputs (sha256)
+    hashes = {}
+    for path in manifest["outputs"]:
+        p = Path(path)
+        if p.exists():
+            h = hashlib.sha256()
+            h.update(p.read_bytes())
+            hashes[path] = h.hexdigest()
+    manifest["hashes"] = hashes
 
     manifest["elapsed_sec"] = time.time() - start
     out = Path("outputs") / "manifest.json"
