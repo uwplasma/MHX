@@ -24,7 +24,7 @@ mhx = "mhx.cli.main:app"
 
 [project.optional-dependencies]
 ml = ["optax", "equinox"]
-dev = ["pytest>=7", "ruff>=0.1.0", "optax", "equinox"]
+dev = ["pytest>=7", "ruff>=0.1.0", "optax", "equinox", "imageio"]
 
 docs = ["sphinx>=7", "sphinx-rtd-theme>=2", "pyyaml>=6"]
 
