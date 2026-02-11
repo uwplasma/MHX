@@ -31,3 +31,10 @@ Template
            dv = 0.0 * v_hat
            dB = 0.0 * B_hat
            return dv, dB
+
+Extended-MHD toy example
+------------------------
+
+See:
+
+- https://github.com/uwplasma/MHX/blob/main/examples/physics_plugin_extended_mhd.py

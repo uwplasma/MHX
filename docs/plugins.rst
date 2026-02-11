@@ -40,6 +40,13 @@ Registry
    register_term(MyTerm())
    print(list_terms())
 
+Built-in terms
+--------------
+
+- ``linear_drag``: adds ``-mu * v_hat``
+- ``hyper_resistivity``: adds ``-eta4 * k^4 * B_hat``
+- ``hall_toy``: toy Hall-like term ``-d_h * k^2 * curl(B)``
+
 Template
 --------
 

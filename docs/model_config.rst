@@ -10,12 +10,14 @@ Example
 
    model:
      equilibrium_mode: original
-     rhs_terms: [linear_drag, hyper_resistivity]
+     rhs_terms: [linear_drag, hyper_resistivity, hall_toy]
      term_params:
        linear_drag:
          mu: 0.05
        hyper_resistivity:
          eta4: 1e-3
+       hall_toy:
+         d_h: 1e-2
 
 Usage
 -----
