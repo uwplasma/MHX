@@ -4,7 +4,9 @@ import dataclasses
 import math
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, Literal, Optional
+from typing import Any, Dict, Literal, Optional, ClassVar
+
+from mhx.version import SIM_API_VERSION, INVERSE_API_VERSION
 
 try:
     import yaml  # type: ignore
@@ -47,6 +49,7 @@ def objective_preset(eq_mode: EquilibriumMode) -> Objective:
 
 @dataclass(frozen=True)
 class TearingSimConfig:
+    API_VERSION: ClassVar[str] = SIM_API_VERSION
     # Grid and box
     Nx: int = 64
     Ny: int = 64
@@ -127,6 +130,7 @@ class ModelConfig:
 
 @dataclass(frozen=True)
 class InverseDesignConfig:
+    API_VERSION: ClassVar[str] = INVERSE_API_VERSION
     sim: TearingSimConfig
     objective: Objective
     model: ModelConfig = dataclasses.field(default_factory=ModelConfig)

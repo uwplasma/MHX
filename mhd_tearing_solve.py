@@ -1,23 +1,20 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Compatibility shim.
-
-The core tearing solver has moved to `mhx.solver.tearing` as part of the
-package refactor. This module re-exports the public API so existing research
-scripts that import `mhd_tearing_solve` keep working.
-"""
-
 from __future__ import annotations
 
-import jax
+import runpy
+import warnings
+from pathlib import Path
 
-jax.config.update("jax_enable_x64", True)
 
-from mhx.solver import *  # noqa: F401,F403
+def main() -> None:
+    warnings.warn(
+        "Deprecated: this legacy script moved to scripts/legacy/mhd_tearing_solve.py. "
+        "Prefer `mhx simulate`.",
+        DeprecationWarning,
+    )
+    target = Path(__file__).parent / "scripts" / "legacy" / "mhd_tearing_solve.py"
+    runpy.run_path(str(target), run_name="__main__")
 
 
 if __name__ == "__main__":
-    from mhx.solver.tearing import main
-
     main()

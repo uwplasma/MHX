@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mhx"
-version = "0.1.0"
+version = "0.2.0"
 description = "Reduced MHD / tearing-mode / reconnection model scripts (JAX-based)."
 readme = "README.md"
 license = { text = "MIT" }
@@ -31,3 +31,13 @@ docs = ["sphinx>=7", "sphinx-rtd-theme>=2", "pyyaml>=6"]
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["mhx*"]
+
+[tool.ruff]
+line-length = 120
+extend-exclude = [
+  "scripts/legacy",
+  "templates",
+  "outputs",
+  "docs/_static",
+  "bench",
+]

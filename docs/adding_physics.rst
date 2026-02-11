@@ -16,6 +16,18 @@ How to test
 
    pytest -q tests/test_plugins.py
    python examples/physics_plugin_minimal.py
+   python examples/physics_plugin_extended_mhd.py
+
+How to add a diagnostic
+-----------------------
+
+1. Add a new key or group in ``mhx/solver/diagnostics.py``.
+2. Reference it in ``ModelConfig.diagnostics`` via YAML.
+3. Verify in a FAST run:
+
+.. code-block:: bash
+
+   mhx simulate --fast --model-config model.yaml
 
 Template
 --------
@@ -38,3 +50,9 @@ Extended-MHD toy example
 See:
 
 - https://github.com/uwplasma/MHX/blob/main/examples/physics_plugin_extended_mhd.py
+
+Plugin template
+---------------
+
+Copy the template under ``templates/physics_plugin_template/`` to bootstrap
+your own plugin with tests and docs.

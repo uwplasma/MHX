@@ -49,11 +49,13 @@ def simulate(
 
     model_cfg = None
     terms = None
+    diagnostics = None
     if model_config is not None:
         model_cfg = load_model_config(model_config)
         eq_mode = model_cfg.equilibrium_mode or eq_mode
         cfg = dataclasses.replace(cfg, equilibrium_mode=eq_mode)
         terms = build_terms(model_cfg.rhs_terms, model_cfg.term_params)
+        diagnostics = model_cfg.diagnostics
 
     if outdir is None:
         run = create_run_dir(tag=tag)
@@ -89,6 +91,7 @@ def simulate(
         progress=cfg.progress,
         jit=cfg.jit,
         check_finite=cfg.check_finite,
+        diagnostics=diagnostics,
     )
 
     # Convert JAX arrays to NumPy scalars/arrays for saving.
@@ -143,11 +146,13 @@ def scan(
     if check_finite is not None:
         cfg = dataclasses.replace(cfg, check_finite=check_finite)
     terms = None
+    diagnostics = None
     if model_config is not None:
         model_cfg = load_model_config(model_config)
         if model_cfg.equilibrium_mode:
             cfg = dataclasses.replace(cfg, equilibrium_mode=model_cfg.equilibrium_mode)
         terms = build_terms(model_cfg.rhs_terms, model_cfg.term_params)
+        diagnostics = model_cfg.diagnostics
 
     for i, log10_eta in enumerate(log10_eta_vals):
         for j, log10_nu in enumerate(log10_nu_vals):
@@ -161,6 +166,7 @@ def scan(
                 t0=cfg.t0, t1=cfg.t1, n_frames=cfg.n_frames, dt0=cfg.dt0,
                 equilibrium_mode=cfg.equilibrium_mode,
                 terms=terms,
+                diagnostics=diagnostics,
             )
             metrics = TearingMetrics.from_result(res)
             f_kin_grid[i, j] = metrics.f_kin

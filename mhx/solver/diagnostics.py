@@ -7,6 +7,26 @@ from jax import lax
 
 Array = jnp.ndarray
 
+DIAGNOSTIC_GROUPS = {
+    "energies": {"E_kin", "E_mag", "E_kin_end", "E_mag_end"},
+    "tearing": {"gamma_fit", "mode_amp_series", "tearing_amp_series", "lnA_fit", "mask_lin"},
+    "reconnection": {"Az_xpt_series", "E_rec_series"},
+    "plasmoid": {"Az_final_mid", "Az_midplane_series", "complexity_series", "complexity_final", "n_plasmoids_final"},
+    "sweet_parker": {"vA", "S_sheet", "delta_SP", "v_in_SP", "E_SP", "S"},
+    "theory": {"gamma_FKR", "S_a", "Delta_prime_a"},
+    "fields": {"v_hat", "B_hat"},
+}
+
+
+def expand_diagnostics(requested: list[str]) -> set[str]:
+    keys: set[str] = set()
+    for name in requested:
+        if name in DIAGNOSTIC_GROUPS:
+            keys.update(DIAGNOSTIC_GROUPS[name])
+        else:
+            keys.add(name)
+    return keys
+
 
 # --- Flux function ---
 

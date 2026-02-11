@@ -34,6 +34,21 @@ Implementation details
   ``res`` from ``_run_tearing_simulation_and_diagnostics`` and returns
   ``f_kin``, ``complexity``, and ``gamma_fit`` consistently.
 
+Diagnostic groups (for ModelConfig)
+-----------------------------------
+
+You can select diagnostic groups in YAML:
+
+- ``energies``
+- ``tearing``
+- ``reconnection``
+- ``plasmoid``
+- ``sweet_parker``
+- ``theory``
+- ``fields``
+
+See ``mhx/solver/diagnostics.py`` for the mapping of groups to keys.
+
 Source link:
 
 - https://github.com/uwplasma/MHX/blob/main/mhx/solver/diagnostics.py

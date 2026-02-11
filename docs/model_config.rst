@@ -30,3 +30,15 @@ Usage
 
 If ``equilibrium_mode`` is omitted in the model file, the CLI ``--equilibrium``
 value is used.
+
+Diagnostics selection
+---------------------
+
+You can request specific diagnostics (or groups) with:
+
+.. code-block:: yaml
+
+   model:
+     diagnostics: [energies, tearing, plasmoid]
+
+See :doc:`diagnostics` for available groups.

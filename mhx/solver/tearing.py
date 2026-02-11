@@ -41,6 +41,8 @@ from mhx.solver.diagnostics import (
     reconnection_rate_from_Az,
     count_local_extrema_1d,
     plasmoid_complexity_metric,
+    expand_diagnostics,
+    DIAGNOSTIC_GROUPS,
 )  # noqa: F401
 from mhx.solver.plugins import PhysicsTerm
 
@@ -165,6 +167,7 @@ def _run_tearing_simulation_and_diagnostics(
     progress: bool = True,
     jit: bool = False,
     check_finite: bool = True,
+    diagnostics: list[str] | None = None,
 ) -> Dict[str, Any]:
     kx, ky, kz, k2, NX, NY, NZ = make_k_arrays(Nx, Ny, Nz, Lx, Ly, Lz)
     mask_dealias = make_dealias_mask(Nx, Ny, Nz, NX, NY, NZ)
@@ -268,7 +271,7 @@ def _run_tearing_simulation_and_diagnostics(
         energy_ratio = float("nan")
         energy_ratio_warn = False
 
-    return dict(
+    res = dict(
         ts=ts,
         v_hat=v_hat_frames,
         B_hat=B_hat_frames,
@@ -311,6 +314,42 @@ def _run_tearing_simulation_and_diagnostics(
         ix0=ix0, iy1=iy1, iz0=iz0,
         equilibrium_mode=equilibrium_mode,
     )
+
+    if diagnostics:
+        core_keys = {
+            "ts",
+            "v_hat",
+            "B_hat",
+            "Nx",
+            "Ny",
+            "Nz",
+            "Lx",
+            "Ly",
+            "Lz",
+            "nu",
+            "eta",
+            "B0",
+            "a",
+            "B_g",
+            "eps_B",
+            "t0",
+            "t1",
+            "n_frames",
+            "dt0",
+            "equilibrium_mode",
+            "E_kin",
+            "E_mag",
+            "gamma_fit",
+            "Az_final_mid",
+            "complexity_final",
+        }
+        selected = expand_diagnostics(diagnostics)
+        keep = core_keys | selected
+        res = {k: v for k, v in res.items() if k in keep}
+        res["diagnostics_requested"] = list(diagnostics)
+        res["diagnostics_available"] = sorted(DIAGNOSTIC_GROUPS.keys())
+
+    return res
 
 
 def solve_tearing_case(

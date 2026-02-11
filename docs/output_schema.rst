@@ -31,6 +31,8 @@ Grid + parameters:
 - ``nu, eta, B0, a, B_g, eps_B``
 - ``t0, t1, n_frames, dt0``
 - ``equilibrium_mode``
+- ``schema_version``
+- ``mhx_version``
 
 Time series:
 
@@ -79,4 +81,6 @@ The paper/repro pipeline writes ``outputs/manifest.json`` with:
 - ``git_rev`` (if available)
 - ``commands`` (scripts executed)
 - ``outputs`` (files generated)
+- ``run_configs`` (bundled config YAMLs)
+- ``hashes`` (sha256 for each output)
 - ``elapsed_sec``

@@ -5,6 +5,8 @@ from typing import Protocol, Dict, List, Tuple, Callable
 
 import jax.numpy as jnp
 
+from mhx.version import PHYSICS_API_VERSION
+
 Array = jnp.ndarray
 
 @dataclass(frozen=True)
@@ -15,7 +17,7 @@ class PhysicsAPI:
 
 
 PHYSICS_API = PhysicsAPI(
-    version="1",
+    version=PHYSICS_API_VERSION,
     term_signature="rhs_additions(*, t, v_hat, B_hat, kx, ky, kz, k2, mask_dealias) -> (dv_hat, dB_hat)",
     notes="Return additive spectral RHS contributions; inputs are dealised and div-free.",
 )
