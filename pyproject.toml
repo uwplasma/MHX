@@ -16,6 +16,7 @@ dependencies = [
   "scipy",
   "matplotlib",
   "diffrax",
+  "tqdm",
   "typer>=0.9",
 ]
 
