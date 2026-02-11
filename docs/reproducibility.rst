@@ -94,5 +94,20 @@ Expected outputs include:
 - `docs/_static/fig_reachable_region.png`
 - `docs/_static/fig_cost_history.png`
 - `docs/_static/latent_ode_fit.png`
+- `docs/_static/timing_table.rst`
 - `outputs/figures/fig_reachable_heatmaps_forcefree.png`
 - `outputs/figures/fig_inverse_vs_grid_forcefree.png`
+- `outputs/benchmarks/timing_table.json`
+- `outputs/manifest.json`
+
+7) Timing table (FAST + small)
+------------------------------
+
+.. code-block:: bash
+
+   python examples/benchmark_timings.py
+
+Expected outputs:
+
+- `outputs/benchmarks/timing_table.json`
+- `docs/_static/timing_table.rst`

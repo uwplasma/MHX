@@ -46,6 +46,9 @@ def main() -> None:
                 n_frames=sim.n_frames,
                 dt0=sim.dt0,
                 equilibrium_mode=sim.equilibrium_mode,
+                progress=sim.progress,
+                jit=sim.jit,
+                check_finite=sim.check_finite,
             )
             metrics = TearingMetrics.from_result(res)
             f_kin_grid[i, j] = float(metrics.f_kin)

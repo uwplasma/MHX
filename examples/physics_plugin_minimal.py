@@ -27,6 +27,9 @@ def main() -> None:
         dt0=cfg.dt0,
         equilibrium_mode=cfg.equilibrium_mode,
         terms=[term],
+        progress=cfg.progress,
+        jit=cfg.jit,
+        check_finite=cfg.check_finite,
     )
     print("Ran with LinearDragTerm, final gamma_fit:", float(res["gamma_fit"]))
 

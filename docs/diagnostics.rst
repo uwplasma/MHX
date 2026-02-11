@@ -30,6 +30,9 @@ Implementation details
 
 - Growth fitting uses a masked, JAX-friendly regression window.
 - Complexity metric is differentiable (no discrete island counting).
+- Standardized metrics API: ``TearingMetrics.from_result(res)`` expects
+  ``res`` from ``_run_tearing_simulation_and_diagnostics`` and returns
+  ``f_kin``, ``complexity``, and ``gamma_fit`` consistently.
 
 Source link:
 

@@ -29,6 +29,9 @@ def main() -> None:
         n_frames=cfg.n_frames,
         dt0=cfg.dt0,
         equilibrium_mode=cfg.equilibrium_mode,
+        progress=cfg.progress,
+        jit=cfg.jit,
+        check_finite=cfg.check_finite,
     )
 
     # Energy plot

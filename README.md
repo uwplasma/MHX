@@ -119,3 +119,28 @@ This generates `docs/_static/latent_ode_fit.png`.
 ```bash
 python examples/reproduce_figures.py
 ```
+
+Expected outputs include `outputs/manifest.json` plus figures under `docs/_static/`.
+
+## Reproducibility
+
+See `docs/reproducibility.rst` for exact command sequences and expected outputs.
+
+## Model configuration
+
+```bash
+mhx simulate --fast --model-config model.yaml
+```
+
+Example YAML:
+
+```yaml
+model:
+  equilibrium_mode: original
+  rhs_terms: [linear_drag, hyper_resistivity]
+  term_params:
+    linear_drag:
+      mu: 0.05
+    hyper_resistivity:
+      eta4: 1e-3
+```
