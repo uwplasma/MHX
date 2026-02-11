@@ -98,3 +98,24 @@ If you use MHX, please cite it. See `CITATION.cff`.
 ```bash
 export JAX_ENABLE_X64=1
 ```
+
+## Physics plugins
+
+Define additive physics terms via `PhysicsTerm` and pass them to the solver.
+See `examples/physics_plugin_minimal.py`.
+
+## Latent ODE
+
+FAST tutorial:
+
+```bash
+python examples/latent_ode_fast.py
+```
+
+This generates `docs/_static/latent_ode_fit.png`.
+
+## Reproduce all figures (FAST)
+
+```bash
+python examples/reproduce_figures.py
+```

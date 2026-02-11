@@ -78,3 +78,21 @@ Expected outputs:
 - `docs/_static/fig_reachable_heatmap.png`
 - `docs/_static/fig_reachable_region.png`
 - `docs/_static/fig_cost_history.png`
+
+6) Reproduce all figures (FAST)
+--------------------------------
+
+.. code-block:: bash
+
+   python examples/reproduce_figures.py
+
+Expected outputs include:
+
+- `docs/_static/energy.png`
+- `docs/_static/az_midplane.gif`
+- `docs/_static/fig_reachable_heatmap.png`
+- `docs/_static/fig_reachable_region.png`
+- `docs/_static/fig_cost_history.png`
+- `docs/_static/latent_ode_fit.png`
+- `outputs/figures/fig_reachable_heatmaps_forcefree.png`
+- `outputs/figures/fig_inverse_vs_grid_forcefree.png`

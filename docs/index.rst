@@ -12,7 +12,10 @@ Differentiable pseudo-spectral reduced MHD tearing/plasmoid solver and tools.
    reproducibility
    physics
    diagnostics
+   plugins
    inverse_design
+   latent_ode
    scans
+   benchmarks
    api
    references
