@@ -8,6 +8,7 @@ Checklist
 2. Register a factory for config-driven use.
 3. Add a minimal example and a test.
 4. Update docs if the term affects diagnostics.
+5. Run ``mhx plugin lint`` to validate term metadata/signature.
 
 How to test
 -----------
@@ -17,6 +18,7 @@ How to test
    pytest -q tests/test_plugins.py
    python examples/physics_plugin_minimal.py
    python examples/physics_plugin_extended_mhd.py
+   mhx plugin lint
 
 How to add a diagnostic
 -----------------------
@@ -56,3 +58,12 @@ Plugin template
 
 Copy the template under ``templates/physics_plugin_template/`` to bootstrap
 your own plugin with tests and docs.
+
+Built-in terms
+--------------
+
+MHX ships a few vetted toy terms for quick experimentation:
+
+- ``hall`` (Hall-like induction term)
+- ``hyper_resistivity`` (``-eta4 * k^4 * B``)
+- ``anisotropic_pressure`` (parallel velocity damping)

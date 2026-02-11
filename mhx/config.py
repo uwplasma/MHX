@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, Literal, Optional, ClassVar
 
-from mhx.version import SIM_API_VERSION, INVERSE_API_VERSION
+from mhx.version import SIM_API_VERSION, INVERSE_API_VERSION, PHYSICS_API_VERSION, NPZ_SCHEMA_VERSION, check_api_version
 
 try:
     import yaml  # type: ignore
@@ -182,6 +182,14 @@ def override_objective(
 
 def dump_config_yaml(path, payload: Dict[str, Any]) -> None:
     """Write config payload to YAML; fall back to JSON if PyYAML unavailable."""
+    if "api" not in payload:
+        payload = dict(payload)
+        payload["api"] = {
+            "sim": SIM_API_VERSION,
+            "inverse": INVERSE_API_VERSION,
+            "physics": PHYSICS_API_VERSION,
+            "npz": NPZ_SCHEMA_VERSION,
+        }
     if yaml is None:
         import json
 
@@ -195,9 +203,24 @@ def load_config_yaml(path) -> Dict[str, Any]:
     if yaml is None:
         import json
 
-        return json.loads(Path(path).read_text(encoding="utf-8"))
+        data = json.loads(Path(path).read_text(encoding="utf-8"))
+        _check_api_payload(data)
+        return data
     with open(path, "r", encoding="utf-8") as f:
-        return yaml.safe_load(f)
+        data = yaml.safe_load(f)
+        _check_api_payload(data)
+        return data
+
+
+def _check_api_payload(data: Dict[str, Any]) -> None:
+    if not isinstance(data, dict):
+        return
+    api = data.get("api")
+    if not isinstance(api, dict):
+        return
+    for key in ("sim", "inverse", "physics", "npz"):
+        if key in api:
+            check_api_version(key, str(api[key]))
 
 
 def load_model_config(path) -> ModelConfig:

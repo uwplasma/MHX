@@ -109,12 +109,19 @@ export JAX_ENABLE_X64=1
 
 Legacy scripts have been moved to `scripts/legacy/`. Root-level files now
 provide deprecation shims for backward compatibility.
+See `docs/migration.rst` for the old → new command mapping.
 
 ## Physics plugins
 
 Define additive physics terms via `PhysicsTerm` and pass them to the solver.
 See `examples/physics_plugin_minimal.py` and `examples/physics_plugin_extended_mhd.py`
-for a toy Hall-like term (`hall_toy`).
+for toy terms (`hall`, `hyper_resistivity`, `anisotropic_pressure`).
+
+Validate plugin metadata/signatures with:
+
+```bash
+mhx plugin lint
+```
 
 ## Latent ODE
 
@@ -134,7 +141,14 @@ python examples/latent_ode_experiment.py
 ```
 
 This generates `docs/_static/latent_ode_experiment.png` and
-`docs/_static/latent_ode_experiment.rst`.
+`docs/_static/latent_ode_experiment.rst`, plus calibration and failure-case
+plots.
+
+Dataset generator:
+
+```bash
+python examples/latent_ode_dataset.py
+```
 
 ## Reproduce all figures (FAST)
 
@@ -149,6 +163,8 @@ Expected outputs include `outputs/manifest.json` plus figures under `docs/_stati
 See `docs/reproducibility.rst` for exact command sequences and expected outputs.
 
 Output schema details are documented in `docs/output_schema.rst`.
+To enforce API compatibility during loading, set `MHX_API_VERSION` (see
+`docs/api_versioning.rst`).
 
 ## Model configuration
 

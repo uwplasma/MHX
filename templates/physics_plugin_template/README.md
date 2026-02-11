@@ -11,6 +11,21 @@ Contents
 - `tests/test_my_term.py`: a basic shape test.
 - `docs/index.md`: short documentation stub.
 
+Metadata
+--------
+
+Make sure each term defines:
+
+- `name`
+- `api_version` (set to `mhx.solver.plugins.API_VERSION`)
+- `rhs_additions(...)` with the required keyword arguments.
+
+Validate via:
+
+```
+mhx plugin lint
+```
+
 Suggested structure
 -------------------
 

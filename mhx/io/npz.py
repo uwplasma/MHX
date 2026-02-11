@@ -5,7 +5,7 @@ from typing import Any, Dict
 
 import numpy as np
 
-from mhx.version import NPZ_SCHEMA_VERSION, __version__
+from mhx.version import NPZ_SCHEMA_VERSION, __version__, check_api_version
 
 
 def _augment_payload(payload: Dict[str, Any]) -> Dict[str, Any]:
@@ -25,4 +25,12 @@ def savez(path: Path | str, payload: Dict[str, Any]) -> Path:
 def load_npz(path: Path | str) -> Dict[str, Any]:
     p = Path(path)
     data = np.load(p, allow_pickle=True)
-    return {k: data[k] for k in data.files}
+    out = {k: data[k] for k in data.files}
+    schema = out.get("schema_version")
+    if isinstance(schema, np.ndarray):
+        try:
+            schema = schema.item()
+        except Exception:
+            pass
+    check_api_version("npz", None if schema is None else str(schema))
+    return out

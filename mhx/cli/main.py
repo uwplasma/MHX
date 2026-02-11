@@ -17,6 +17,8 @@ from mhx.io.paths import RunPaths, create_run_dir
 from mhx.solver.tearing import _run_tearing_simulation_and_diagnostics
 
 app = typer.Typer(add_completion=False, no_args_is_help=True)
+plugin_app = typer.Typer(add_completion=False, no_args_is_help=True)
+app.add_typer(plugin_app, name="plugin")
 
 
 @app.callback()
@@ -224,13 +226,14 @@ def figures(
 ) -> None:
     run_paths = RunPaths(run_dir=run)
     npz_path = run / solution
-    data = np.load(npz_path, allow_pickle=True)
+    from mhx.io.npz import load_npz
+    data = load_npz(npz_path)
 
     figs = run_paths.figures_dir
     figs.mkdir(parents=True, exist_ok=True)
 
     # Energies
-    if "ts" in data.files and "E_kin" in data.files and "E_mag" in data.files:
+    if "ts" in data and "E_kin" in data and "E_mag" in data:
         ts = data["ts"]
         E_kin = data["E_kin"]
         E_mag = data["E_mag"]
@@ -247,11 +250,11 @@ def figures(
         plt.close(fig)
 
     # Final midplane Az profile + complexity
-    if "Az_final_mid" in data.files and "Ly" in data.files:
+    if "Az_final_mid" in data and "Ly" in data:
         Az = data["Az_final_mid"]
         Ly = float(np.array(data["Ly"]))
         y = np.linspace(0.0, Ly, Az.shape[0], endpoint=False)
-        complexity = float(np.array(data["complexity_final"])) if "complexity_final" in data.files else float("nan")
+        complexity = float(np.array(data["complexity_final"])) if "complexity_final" in data else float("nan")
 
         fig, ax = plt.subplots(figsize=(5.6, 3.6))
         ax.plot(y, Az)
@@ -263,6 +266,30 @@ def figures(
         plt.close(fig)
 
     typer.echo(str(figs))
+
+
+@plugin_app.command("lint")
+def plugin_lint(
+    terms: Optional[str] = typer.Option(None, "--terms", help="Comma-separated term names to lint (default: all factories)."),
+) -> None:
+    from mhx.solver import plugins
+
+    names = [t.strip() for t in terms.split(",")] if terms else plugins.list_factories()
+    errors: list[str] = []
+    for name in names:
+        try:
+            term = plugins.build_terms([name])[0]
+        except Exception as exc:
+            errors.append(f"{name}: failed to build ({exc})")
+            continue
+        term_errors = plugins.validate_term(term)
+        if term_errors:
+            errors.append(f"{name}: " + "; ".join(term_errors))
+    if errors:
+        for line in errors:
+            typer.echo(line)
+        raise typer.Exit(code=1)
+    typer.echo("OK")
 
 
 if __name__ == "__main__":

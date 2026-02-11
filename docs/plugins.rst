@@ -45,7 +45,17 @@ Built-in terms
 
 - ``linear_drag``: adds ``-mu * v_hat``
 - ``hyper_resistivity``: adds ``-eta4 * k^4 * B_hat``
-- ``hall_toy``: toy Hall-like term ``-d_h * k^2 * curl(B)``
+- ``hall``: Hall-like term ``-d_h * k^2 * curl(B)``
+- ``anisotropic_pressure``: parallel velocity damping term
+
+Plugin lint
+-----------
+
+Validate term metadata/signatures:
+
+.. code-block:: bash
+
+   mhx plugin lint
 
 Template
 --------

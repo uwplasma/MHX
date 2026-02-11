@@ -2,12 +2,15 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Protocol, Dict, List, Tuple, Callable
+import inspect
 
 import jax.numpy as jnp
 
 from mhx.version import PHYSICS_API_VERSION
 
 Array = jnp.ndarray
+
+REQUIRED_TERM_KWARGS = {"t", "v_hat", "B_hat", "kx", "ky", "kz", "k2", "mask_dealias"}
 
 @dataclass(frozen=True)
 class PhysicsAPI:
@@ -76,6 +79,10 @@ def list_terms() -> List[str]:
     return sorted(_REGISTRY.keys())
 
 
+def list_factories() -> List[str]:
+    return sorted(_FACTORIES.keys())
+
+
 def build_terms(names: List[str], params: Dict[str, Dict[str, float]] | None = None) -> List[PhysicsTerm]:
     params = params or {}
     terms = []
@@ -120,6 +127,26 @@ def apply_terms(
     return dv, dB
 
 
+def validate_term(term: PhysicsTerm) -> List[str]:
+    errors: List[str] = []
+    if not getattr(term, "name", None):
+        errors.append("missing name attribute")
+    if not getattr(term, "api_version", None):
+        errors.append("missing api_version attribute")
+    if getattr(term, "api_version", None) not in SUPPORTED_API:
+        errors.append(f"unsupported api_version {getattr(term, 'api_version', None)}")
+    fn = getattr(term, "rhs_additions", None)
+    if fn is None:
+        errors.append("missing rhs_additions method")
+        return errors
+    sig = inspect.signature(fn)
+    params = {p.name for p in sig.parameters.values() if p.name != "self"}
+    missing = REQUIRED_TERM_KWARGS - params
+    if missing:
+        errors.append(f"rhs_additions missing kwargs: {sorted(missing)}")
+    return errors
+
+
 @dataclass(frozen=True)
 class HyperResistivityTerm:
     """Adds -eta4 * k^4 * B_hat to induction equation."""
@@ -156,11 +183,11 @@ register_factory("linear_drag", lambda mu=0.1: LinearDragTerm(mu=mu))
 
 
 @dataclass(frozen=True)
-class HallToyTerm:
-    """Toy Hall-like term: dB ~ -d_h * k^2 * curl(B) in spectral form."""
+class HallTerm:
+    """Hall-like term: dB ~ -d_h * k^2 * curl(B) in spectral form."""
 
     d_h: float
-    name: str = "hall_toy"
+    name: str = "hall"
     api_version: str = API_VERSION
 
     def rhs_additions(self, *, t: float, v_hat: Array, B_hat: Array, kx: Array, ky: Array, kz: Array, k2: Array, mask_dealias: Array) -> Tuple[Array, Array]:
@@ -175,4 +202,22 @@ class HallToyTerm:
         return dv, dB
 
 
-register_factory("hall_toy", lambda d_h=1e-2: HallToyTerm(d_h=d_h))
+@dataclass(frozen=True)
+class AnisotropicPressureTerm:
+    """Toy anisotropic pressure: damp parallel velocity via -chi * k_parallel^2 * v_hat."""
+
+    chi: float
+    name: str = "anisotropic_pressure"
+    api_version: str = API_VERSION
+
+    def rhs_additions(self, *, t: float, v_hat: Array, B_hat: Array, kx: Array, ky: Array, kz: Array, k2: Array, mask_dealias: Array) -> Tuple[Array, Array]:
+        _ = (t, B_hat, kx, ky, k2, mask_dealias)
+        kpar2 = kz * kz
+        dv = -self.chi * kpar2 * v_hat
+        dB = jnp.zeros_like(B_hat)
+        return dv, dB
+
+
+register_factory("hall", lambda d_h=1e-2: HallTerm(d_h=d_h))
+register_factory("hall_toy", lambda d_h=1e-2: HallTerm(d_h=d_h))
+register_factory("anisotropic_pressure", lambda chi=1e-2: AnisotropicPressureTerm(chi=chi))

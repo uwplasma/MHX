@@ -14,6 +14,7 @@ Simulation and inverse-design runs are written under:
 Files:
 
 - ``config.yaml``: full configuration (sim, objective, model, training)
+- ``api``: API versions for sim/inverse/physics/npz (inside ``config.yaml``)
 - ``history.npz``: inverse-design training history (only for inverse design)
 - ``solution_initial.npz`` / ``solution_mid.npz`` / ``solution_final.npz``:
   full diagnostics for baseline/mid/final runs
