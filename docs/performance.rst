@@ -22,14 +22,23 @@ Use the built-in timing script:
    python examples/benchmark_timings.py
    python examples/benchmark_timings.py --jit
    python examples/benchmark_timings.py --production
+   python bench/benchmark_matrix.py
+   MHX_BENCH_FAST=1 python bench/benchmark_matrix.py
 
 Outputs:
 
 - ``outputs/benchmarks/timing_table.json``
 - ``docs/_static/timing_table.rst``
+- ``outputs/benchmarks/benchmark_matrix.json``
+- ``docs/_static/benchmark_matrix.rst``
 
 If ``psutil`` is installed, the JSON also includes ``rss_mb``. The script
 always records a Python `tracemalloc` peak as ``tracemalloc_peak_mb``.
+
+Benchmark matrix
+----------------
+
+.. include:: _static/benchmark_matrix.rst
 
 Tips
 ----

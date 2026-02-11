@@ -1,43 +1,37 @@
-Benchmarks
-==========
+Benchmarks and Validation
+=========================
 
-This page collects quick validation plots for FAST settings. For publication
-benchmarks, replace FAST with production settings and regenerate figures.
+This page summarizes the automated validation checks and their tolerances.
 
-Energy evolution (FAST):
+Linear tearing benchmark (FKR)
+------------------------------
 
-.. image:: _static/energy.png
-   :width: 600
-   :alt: Energy time series
+We compare the fitted growth rate ``gamma_fit`` against the FKR estimate
+``gamma_FKR`` for a FAST configuration.
 
-Reachable region (FAST):
+Acceptance criterion (tests):
 
-.. image:: _static/fig_reachable_region.png
-   :width: 600
-   :alt: Reachable region
+- ``0.01 < gamma_fit / gamma_FKR < 100``
 
-Inverse-design cost history (FAST):
+This is intentionally loose for FAST runs where resolution and runtime are
+minimal; tighter bounds are expected for production settings.
 
-.. image:: _static/fig_cost_history.png
-   :width: 600
-   :alt: Cost history
+Manufactured-solution test
+--------------------------
 
-Timing table
-------------
+We validate spectral derivatives on a known analytic field:
 
-Generate timing data on your machine:
+``f(x,y) = sin(kx x) cos(ky y)``
 
-.. code-block:: bash
+The test checks that the max error in ``∂f/∂x`` and ``∂f/∂y`` is ``< 1e-6``.
 
-   python examples/benchmark_timings.py
-   # optionally include a production-sized run (slow):
-   python examples/benchmark_timings.py --production
-   # optionally enable JIT for timing:
-   python examples/benchmark_timings.py --jit
+Convergence and invariants
+--------------------------
 
-The generated table (FAST + small by default) is stored in:
+Automated tests also cover:
 
-- `outputs/benchmarks/timing_table.json`
-- `docs/_static/timing_table.rst`
+- time-step sensitivity for ``f_kin`` (coarse vs smaller ``dt0``)
+- energy budget sanity (finite, non-negative energies)
+- Sweet–Parker scaling consistency (``E_SP`` vs ``eta`` trend)
 
-.. include:: _static/timing_table.rst
+See ``tests/`` for the precise thresholds used in CI.
