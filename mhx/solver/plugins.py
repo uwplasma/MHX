@@ -221,3 +221,50 @@ class AnisotropicPressureTerm:
 register_factory("hall", lambda d_h=1e-2: HallTerm(d_h=d_h))
 register_factory("hall_toy", lambda d_h=1e-2: HallTerm(d_h=d_h))
 register_factory("anisotropic_pressure", lambda chi=1e-2: AnisotropicPressureTerm(chi=chi))
+
+
+@dataclass(frozen=True)
+class ElectronPressureTensorTerm:
+    """Toy electron pressure tensor term: proxy via -pe_coef * k^2 * J_hat."""
+
+    pe_coef: float
+    name: str = "electron_pressure_tensor"
+    api_version: str = API_VERSION
+
+    def rhs_additions(self, *, t: float, v_hat: Array, B_hat: Array, kx: Array, ky: Array, kz: Array, k2: Array, mask_dealias: Array) -> Tuple[Array, Array]:
+        _ = (t, v_hat, mask_dealias)
+        Bx_hat, By_hat, Bz_hat = B_hat[0], B_hat[1], B_hat[2]
+        Jx_hat = 1j * (ky * Bz_hat - kz * By_hat)
+        Jy_hat = 1j * (kz * Bx_hat - kx * Bz_hat)
+        Jz_hat = 1j * (kx * By_hat - ky * Bx_hat)
+        J_hat = jnp.stack([Jx_hat, Jy_hat, Jz_hat], axis=0)
+        dB = -self.pe_coef * k2 * J_hat
+        dv = jnp.zeros_like(v_hat)
+        return dv, dB
+
+
+@dataclass(frozen=True)
+class TwoFluidOhmTerm:
+    """Toy two-fluid Ohm's law: Hall + electron pressure proxy."""
+
+    d_h: float
+    pe_coef: float
+    name: str = "two_fluid_ohm"
+    api_version: str = API_VERSION
+
+    def rhs_additions(self, *, t: float, v_hat: Array, B_hat: Array, kx: Array, ky: Array, kz: Array, k2: Array, mask_dealias: Array) -> Tuple[Array, Array]:
+        _ = (t, v_hat, mask_dealias)
+        Bx_hat, By_hat, Bz_hat = B_hat[0], B_hat[1], B_hat[2]
+        Jx_hat = 1j * (ky * Bz_hat - kz * By_hat)
+        Jy_hat = 1j * (kz * Bx_hat - kx * Bz_hat)
+        Jz_hat = 1j * (kx * By_hat - ky * Bx_hat)
+        J_hat = jnp.stack([Jx_hat, Jy_hat, Jz_hat], axis=0)
+        dB_hall = -self.d_h * k2 * J_hat
+        dB_pe = -self.pe_coef * k2 * J_hat
+        dB = dB_hall + dB_pe
+        dv = jnp.zeros_like(v_hat)
+        return dv, dB
+
+
+register_factory("electron_pressure_tensor", lambda pe_coef=1e-2: ElectronPressureTensorTerm(pe_coef=pe_coef))
+register_factory("two_fluid_ohm", lambda d_h=1e-2, pe_coef=1e-2: TwoFluidOhmTerm(d_h=d_h, pe_coef=pe_coef))

@@ -56,7 +56,15 @@ def _save_az_midplane_gif(res, cfg: TearingSimConfig, label: str) -> None:
 
 def run_case(label: str, term_names: list[str]) -> None:
     cfg = TearingSimConfig.fast("original")
-    terms = build_terms(term_names, params={"hall": {"d_h": 1e-2}, "anisotropic_pressure": {"chi": 1e-2}})
+    terms = build_terms(
+        term_names,
+        params={
+            "hall": {"d_h": 1e-2},
+            "anisotropic_pressure": {"chi": 1e-2},
+            "electron_pressure_tensor": {"pe_coef": 1e-2},
+            "two_fluid_ohm": {"d_h": 1e-2, "pe_coef": 1e-2},
+        },
+    )
     res = _run_tearing_simulation_and_diagnostics(
         Nx=cfg.Nx,
         Ny=cfg.Ny,
@@ -87,6 +95,8 @@ def run_case(label: str, term_names: list[str]) -> None:
 def main() -> None:
     run_case("hall", ["hall"])
     run_case("anisotropic", ["anisotropic_pressure"])
+    run_case("electron_pressure", ["electron_pressure_tensor"])
+    run_case("two_fluid", ["two_fluid_ohm"])
 
 
 if __name__ == "__main__":

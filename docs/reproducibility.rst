@@ -96,6 +96,10 @@ Expected outputs:
 - `docs/_static/az_midplane_hall.gif`
 - `docs/_static/energy_anisotropic.png`
 - `docs/_static/az_midplane_anisotropic.gif`
+- `docs/_static/energy_electron_pressure.png`
+- `docs/_static/az_midplane_electron_pressure.gif`
+- `docs/_static/energy_two_fluid.png`
+- `docs/_static/az_midplane_two_fluid.gif`
 
 6) Latent ODE dataset
 ---------------------

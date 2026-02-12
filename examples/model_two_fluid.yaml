@@ -1,0 +1,7 @@
+model:
+  equilibrium_mode: original
+  rhs_terms: [two_fluid_ohm]
+  term_params:
+    two_fluid_ohm:
+      d_h: 1e-2
+      pe_coef: 1e-2

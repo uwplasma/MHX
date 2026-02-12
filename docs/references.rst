@@ -42,3 +42,11 @@ Extended-MHD and Hall reconnection:
   Living Rev. Solar Phys. DOI: https://doi.org/10.1007/s41116-022-00032-9
 - Huang, Bhattacharjee & Forbes (2013) *Magnetic reconnection mediated by hyper-resistive plasmoid instability*.
   arXiv: https://arxiv.org/abs/1308.1871
+- Liu et al. (2025) *Ohm’s Law, the Reconnection Rate, and Energy Conversion in Collisionless Magnetic Reconnection*.
+  Space Sci. Rev. DOI: https://doi.org/10.1007/s11214-025-01142-0
+- Kuznetsova, Hesse & Winske (2001) *Collisionless reconnection supported by nongyrotropic pressure effects in hybrid and particle simulations*.
+  J. Geophys. Res. DOI: https://doi.org/10.1029/1999JA001003
+- Hosseinpour (2013) *Scaling of reconnection rate in the two-fluid model of collisionless forced magnetic reconnection*.
+  J. Plasma Phys. DOI: https://doi.org/10.1017/S0022377812001201
+- Ji et al. (2018) *Two-fluid dynamics and energetics of asymmetric reconnection*.
+  Nat. Commun. DOI: https://doi.org/10.1038/s41467-018-07680-2

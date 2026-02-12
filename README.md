@@ -129,6 +129,8 @@ Generate Hall/anisotropic media (figures + GIFs):
 python examples/make_extended_mhd_media.py
 ```
 
+This also generates electron-pressure and two-fluid Ohm’s-law examples.
+
 ## Latent ODE
 
 FAST tutorial:

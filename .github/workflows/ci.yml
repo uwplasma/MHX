@@ -111,6 +111,10 @@ jobs:
           test -f docs/_static/az_midplane_hall.gif
           test -f docs/_static/energy_anisotropic.png
           test -f docs/_static/az_midplane_anisotropic.gif
+          test -f docs/_static/energy_electron_pressure.png
+          test -f docs/_static/az_midplane_electron_pressure.gif
+          test -f docs/_static/energy_two_fluid.png
+          test -f docs/_static/az_midplane_two_fluid.gif
           test -f docs/_static/latent_ode_fit.png
           test -f docs/_static/latent_ode_ablation.rst
           test -f docs/_static/latent_ode_experiment.png

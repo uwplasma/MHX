@@ -47,6 +47,8 @@ Built-in terms
 - ``hyper_resistivity``: adds ``-eta4 * k^4 * B_hat``
 - ``hall``: Hall-like term ``-d_h * k^2 * curl(B)``
 - ``anisotropic_pressure``: parallel velocity damping term
+- ``electron_pressure_tensor``: proxy term in induction equation
+- ``two_fluid_ohm``: Hall + electron-pressure proxy
 
 Plugin lint
 -----------

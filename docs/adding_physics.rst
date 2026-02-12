@@ -70,6 +70,12 @@ Outputs:
 - ``docs/_static/energy_anisotropic.png``
 - ``docs/_static/az_midplane_anisotropic.png``
 - ``docs/_static/az_midplane_anisotropic.gif``
+- ``docs/_static/energy_electron_pressure.png``
+- ``docs/_static/az_midplane_electron_pressure.png``
+- ``docs/_static/az_midplane_electron_pressure.gif``
+- ``docs/_static/energy_two_fluid.png``
+- ``docs/_static/az_midplane_two_fluid.png``
+- ``docs/_static/az_midplane_two_fluid.gif``
 
 Preview:
 
@@ -81,12 +87,22 @@ Preview:
    :width: 400
    :alt: Anisotropic pressure az midplane
 
+.. image:: _static/az_midplane_electron_pressure.gif
+   :width: 400
+   :alt: Electron pressure tensor az midplane
+
+.. image:: _static/az_midplane_two_fluid.gif
+   :width: 400
+   :alt: Two-fluid Ohm az midplane
+
 Model-config usage:
 
 .. code-block:: bash
 
    mhx simulate --fast --model-config examples/model_hall.yaml
    mhx simulate --fast --model-config examples/model_anisotropic.yaml
+   mhx simulate --fast --model-config examples/model_electron_pressure.yaml
+   mhx simulate --fast --model-config examples/model_two_fluid.yaml
 
 Literature context
 ------------------
