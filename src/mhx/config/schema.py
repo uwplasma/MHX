@@ -75,7 +75,7 @@ class TimeConfig:
     t0: float = 0.0
     t1: float = 0.1
     dt: float = 0.01
-    save_every: int = 10
+    save_every: int = 1
 
     @classmethod
     def from_mapping(cls, mapping: dict[str, Any] | None) -> TimeConfig:

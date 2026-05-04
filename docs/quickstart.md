@@ -35,6 +35,7 @@ Expected figures:
 
 - `outputs/smoke/figures/energy_history.png`
 - `outputs/smoke/figures/flux_final.png`
+- `outputs/smoke/figures/mode_amplitude.png`
 
 The current smoke run validates the JAX spectral derivative path on a periodic
 Cartesian mesh. It is deliberately small and deterministic; it is not yet the

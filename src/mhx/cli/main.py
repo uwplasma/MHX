@@ -17,7 +17,7 @@ from mhx.io import (
     write_manifest,
     write_reduced_mhd_trajectory_npz,
 )
-from mhx.plotting import plot_energy_history, plot_flux_contours
+from mhx.plotting import plot_energy_history, plot_flux_contours, plot_mode_amplitude
 from mhx.state import ReducedMHDState
 
 app = typer.Typer(no_args_is_help=True, help="MHX differentiable MHD workflows.")
@@ -116,8 +116,15 @@ def figures(
         path=figure_dir / "energy_history.png",
     )
     flux_path = plot_flux_contours(final_state, path=figure_dir / "flux_final.png")
+    mode = tuple(int(value) for value in diagnostics["diagnostic_mode"])
+    amplitude_path = plot_mode_amplitude(
+        trajectory,
+        mode=mode,
+        path=figure_dir / "mode_amplitude.png",
+    )
     typer.echo(f"wrote {energy_path}")
     typer.echo(f"wrote {flux_path}")
+    typer.echo(f"wrote {amplitude_path}")
 
 
 def main() -> None:  # pragma: no cover - exercised by console entry points.

@@ -5,7 +5,12 @@ from __future__ import annotations
 import jax.numpy as jnp
 
 from mhx.config import RunConfig
-from mhx.diagnostics import total_energy, trajectory_energies
+from mhx.diagnostics import (
+    fit_exponential_growth,
+    total_energy,
+    trajectory_energies,
+    trajectory_mode_amplitude,
+)
 from mhx.equations.reduced_mhd import reduced_mhd_rhs
 from mhx.grids import CartesianGrid
 from mhx.state import ReducedMHDParams, ReducedMHDState, ReducedMHDTrajectory
@@ -57,6 +62,8 @@ def run_linear_tearing_smoke(
         save_every=config.time.save_every,
     )
     energies = trajectory_energies(trajectory, lengths=grid.lengths)
+    mode = (1, 1)
+    amplitudes = trajectory_mode_amplitude(trajectory, mode=mode)
     diagnostics = {
         "n_steps": float(steps),
         "initial_total_energy": float(total_energy(state0, lengths=grid.lengths)),
@@ -64,5 +71,9 @@ def run_linear_tearing_smoke(
         "final_magnetic_energy": float(energies["magnetic"][-1]),
         "final_kinetic_energy": float(energies["kinetic"][-1]),
         "final_time": float(trajectory.times[-1]),
+        "diagnostic_mode": list(mode),
+        "initial_mode_amplitude": float(amplitudes[0]),
+        "final_mode_amplitude": float(amplitudes[-1]),
+        "gamma_fit": float(fit_exponential_growth(trajectory.times, amplitudes)),
     }
     return trajectory, diagnostics

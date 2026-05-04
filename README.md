@@ -62,6 +62,9 @@ Regenerate figures:
 mhx figures outputs/smoke
 ```
 
+This writes `energy_history.png`, `flux_final.png`, and `mode_amplitude.png`
+under `outputs/smoke/figures/`.
+
 ## Python API
 
 ```python

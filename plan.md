@@ -3237,3 +3237,46 @@ Every agent must append an entry here. Do not delete previous entries.
 - Add growth-rate/amplitude diagnostics for the perturbation mode.
 - Add a first deterministic benchmark report command and docs page.
 - Add basic movie/GIF support once the trajectory schema stores enough frames for useful animations.
+
+### 2026-05-04 — Agent: Codex, mode amplitude and growth-rate diagnostics
+
+**Summary**
+
+- Added standardized reduced-MHD Fourier mode amplitude diagnostics.
+- Added least-squares exponential growth-rate fitting for saved mode amplitudes.
+- Updated the FAST benchmark to save every timestep, report `diagnostic_mode`, `initial_mode_amplitude`, `final_mode_amplitude`, and `gamma_fit`.
+- Updated `mhx figures` to write `mode_amplitude.png`.
+
+**Files changed**
+
+- Updated `src/mhx/diagnostics/reduced_mhd.py`, plotting helpers, benchmark diagnostics, CLI figure generation, config defaults, example TOML, README, and docs.
+- Expanded reduced-MHD and CLI tests for amplitude/growth metrics and regenerated figures.
+
+**Tests run**
+
+- `python -m ruff check src tests examples` passed.
+- `python -m pytest --cov=mhx --cov-report=term-missing --cov-fail-under=95` passed: 30 tests, 98.43% coverage.
+- `sphinx-build -b html docs docs/_build/html` passed before the final test-only fix.
+- `mhx run examples/linear_tearing.toml --outdir outputs/smoke` passed.
+- `mhx figures outputs/smoke` passed and wrote `energy_history.png`, `flux_final.png`, and `mode_amplitude.png`.
+- Remote GitHub CI for commits `ce465e6`, `ccdfd31`, and `2205ff2` is green.
+
+**Benchmarks run**
+
+- FAST reduced-MHD smoke run only.
+
+**Decisions made**
+
+- The mode amplitude is the normalized FFT amplitude of `psi`.
+- The FAST benchmark reports `gamma_fit` for plumbing and regression only; docs explicitly warn it is not yet an FKR tearing rate.
+
+**Problems / blockers**
+
+- No validated tearing eigenmode or fit-window policy yet.
+- No benchmark report command yet.
+
+**Next steps**
+
+- Implement a deterministic benchmark report command that reads a run directory and writes a small JSON/Markdown report.
+- Add a simple GIF/movie writer using saved `psi` frames.
+- Start the theory-calibrated tearing benchmark by adding an equilibrium/eigenmode module and fit-window controls.

@@ -38,4 +38,4 @@ Expected files:
 
 - `outputs/smoke/figures/energy_history.png`
 - `outputs/smoke/figures/flux_final.png`
-
+- `outputs/smoke/figures/mode_amplitude.png`

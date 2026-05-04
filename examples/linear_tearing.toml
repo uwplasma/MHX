@@ -11,7 +11,7 @@ periodic = [true, true]
 t0 = 0.0
 t1 = 0.1
 dt = 0.01
-save_every = 10
+save_every = 1
 
 [physics]
 model = "reduced_mhd_linear_tearing"

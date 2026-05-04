@@ -23,10 +23,12 @@ def test_cli_run_writes_schema_files(tmp_path) -> None:
     assert diagnostics["grid_shape"] == [32, 32]
     assert diagnostics["mesh_lower"] == [0.0, 0.0]
     assert diagnostics["n_steps"] == 10.0
+    assert diagnostics["diagnostic_mode"] == [1, 1]
+    assert diagnostics["gamma_fit"] < 0.0
     assert diagnostics["final_total_energy"] > 0.0
     assert diagnostics["final_total_energy"] <= diagnostics["initial_total_energy"]
     trajectory, _ = read_reduced_mhd_trajectory_npz(outdir / "trajectory.npz")
-    assert trajectory.states.psi.shape == (1, 32, 32)
+    assert trajectory.states.psi.shape == (10, 32, 32)
 
 
 def test_cli_init_writes_config(tmp_path) -> None:
@@ -77,6 +79,7 @@ def test_cli_figures_regenerates_pngs(tmp_path) -> None:
     assert figure_result.exit_code == 0, figure_result.stdout
     assert (outdir / "figures" / "energy_history.png").stat().st_size > 0
     assert (outdir / "figures" / "flux_final.png").stat().st_size > 0
+    assert (outdir / "figures" / "mode_amplitude.png").stat().st_size > 0
 
 
 def test_npz_schema_constant_is_versioned() -> None:

@@ -28,6 +28,38 @@ def total_energy(state: ReducedMHDState, *, lengths: tuple[float, float]) -> Arr
     return magnetic_energy(state, lengths=lengths) + kinetic_energy(state, lengths=lengths)
 
 
+def mode_amplitude(state: ReducedMHDState, *, mode: tuple[int, int]) -> Array:
+    """Return the absolute normalized Fourier amplitude of ``psi`` for a mode."""
+    psi_hat = jnp.fft.fftn(state.psi) / state.psi.size
+    return jnp.abs(psi_hat[mode[0] % state.psi.shape[0], mode[1] % state.psi.shape[1]])
+
+
+def trajectory_mode_amplitude(
+    trajectory: ReducedMHDTrajectory,
+    *,
+    mode: tuple[int, int],
+) -> Array:
+    """Return a saved trajectory's mode-amplitude time series."""
+    return jnp.asarray(
+        [mode_amplitude(state, mode=mode) for state in _iter_states(trajectory.states)]
+    )
+
+
+def fit_exponential_growth(times: Array, amplitudes: Array) -> Array:
+    r"""Fit ``amplitude ≈ A exp(γ t)`` and return ``γ``."""
+    if times.shape[0] < 2:
+        raise ValueError("at least two samples are required for a growth-rate fit")
+    log_amplitudes = jnp.log(jnp.maximum(amplitudes, jnp.finfo(amplitudes.dtype).tiny))
+    centered_time = times - jnp.mean(times)
+    centered_log = log_amplitudes - jnp.mean(log_amplitudes)
+    denominator = jnp.sum(centered_time**2)
+    return jnp.where(
+        denominator == 0.0,
+        jnp.nan,
+        jnp.sum(centered_time * centered_log) / denominator,
+    )
+
+
 def trajectory_energies(
     trajectory: ReducedMHDTrajectory,
     *,
@@ -51,4 +83,3 @@ def trajectory_energies(
 def _iter_states(states: ReducedMHDState):
     for index in range(states.psi.shape[0]):
         yield ReducedMHDState(psi=states.psi[index], omega=states.omega[index])
-

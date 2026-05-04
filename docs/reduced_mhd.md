@@ -76,3 +76,20 @@ through a three-step RK4 solve using `jax.grad`. This is intentionally tiny but
 establishes the contract that future inverse-design objectives must remain
 differentiable unless explicitly documented otherwise.
 
+## Mode amplitude and growth rate
+
+The first tearing-oriented diagnostic tracks the normalized Fourier amplitude
+
+$$
+A_{k_x,k_y}(t) = |\hat{\psi}_{k_x,k_y}(t)|
+$$
+
+for a configured mode, currently `(1, 1)` in the FAST smoke benchmark. MHX fits
+
+$$
+A(t) \approx A_0 e^{\gamma t}
+$$
+
+by least squares on $\log A(t)$. This `gamma_fit` is useful for plumbing and
+regression tests, but it should not be interpreted as an FKR tearing rate until
+the eigenfunction, equilibrium, fit window, and parameter regime are validated.

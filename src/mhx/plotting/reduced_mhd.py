@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from mhx.diagnostics import trajectory_energies
+from mhx.diagnostics import trajectory_energies, trajectory_mode_amplitude
 from mhx.state import ReducedMHDState, ReducedMHDTrajectory
 
 
@@ -53,3 +53,24 @@ def plot_flux_contours(
     plt.close(fig)
     return output_path
 
+
+def plot_mode_amplitude(
+    trajectory: ReducedMHDTrajectory,
+    *,
+    mode: tuple[int, int],
+    path: str | Path,
+) -> Path:
+    """Plot a Fourier mode-amplitude time history."""
+    import matplotlib.pyplot as plt
+
+    output_path = Path(path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    amplitudes = trajectory_mode_amplitude(trajectory, mode=mode)
+    fig, ax = plt.subplots(figsize=(6.0, 4.0), constrained_layout=True)
+    ax.semilogy(trajectory.times, amplitudes)
+    ax.set_xlabel("time")
+    ax.set_ylabel(r"$|\hat\psi_{k_x,k_y}|$")
+    ax.set_title(f"Mode amplitude k={mode}")
+    fig.savefig(output_path, dpi=160)
+    plt.close(fig)
+    return output_path
