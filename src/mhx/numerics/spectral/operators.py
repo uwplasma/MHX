@@ -59,3 +59,28 @@ def laplacian(field: Array, *, lengths: tuple[float, ...]) -> Array:
     for axis, length in enumerate(lengths):
         result = result + fft_derivative(array, axis=axis, length=length, order=2)
     return result
+
+
+def inverse_laplacian(field: Array, *, lengths: tuple[float, ...]) -> Array:
+    """Invert the periodic Laplacian with the zero Fourier mode set to zero."""
+    array = jnp.asarray(field)
+    if len(lengths) != array.ndim:
+        raise ValueError(f"expected {array.ndim} lengths, got {len(lengths)}")
+
+    denominator = jnp.zeros(array.shape)
+    for axis, length in enumerate(lengths):
+        wavenumbers = spectral_wavenumbers(array.shape[axis], length)
+        denominator = denominator + _broadcast_wavenumbers(
+            wavenumbers**2,
+            axis=axis,
+            ndim=array.ndim,
+        )
+
+    transformed = jnp.fft.fftn(array)
+    zero_mode = denominator == 0.0
+    safe_denominator = jnp.where(zero_mode, 1.0, denominator)
+    inverse_hat = jnp.where(zero_mode, 0.0, -transformed / safe_denominator)
+    inverse = jnp.fft.ifftn(inverse_hat)
+    if jnp.isrealobj(array):
+        return jnp.real(inverse)
+    return inverse

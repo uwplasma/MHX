@@ -19,7 +19,9 @@ def test_cli_run_writes_schema_files(tmp_path) -> None:
     assert manifest["schema"] == "mhx.manifest.v1"
     assert manifest["hashes"]["diagnostics"]
     assert diagnostics["grid_shape"] == [32, 32]
-    assert diagnostics["spectral_smoke_max_error"] < 1.0e-10
+    assert diagnostics["n_steps"] == 10.0
+    assert diagnostics["final_total_energy"] > 0.0
+    assert diagnostics["final_total_energy"] <= diagnostics["initial_total_energy"]
 
 
 def test_cli_init_writes_config(tmp_path) -> None:
@@ -48,6 +50,10 @@ def test_cli_run_uses_config_output_dir(tmp_path) -> None:
         "lower = [0.0, 0.0]\n"
         "upper = [6.283185307179586, 6.283185307179586]\n"
         "periodic = [true, true]\n"
+        "\n[time]\n"
+        "t1 = 0.02\n"
+        "dt = 0.01\n"
+        "save_every = 1\n"
     )
     config_path.write_text(text)
     result = CliRunner().invoke(app, ["run", str(config_path)])

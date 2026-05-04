@@ -16,7 +16,7 @@ This rebuild is intentionally starting from a small, tested core:
 - `mhx` CLI with `mhx version`, `mhx init`, and `mhx run`.
 - TOML configuration loading.
 - Periodic Cartesian grids.
-- JAX spectral derivative operators.
+- JAX spectral derivative, inverse-Laplacian, and reduced-MHD RHS operators.
 - Sphinx/MyST documentation skeleton.
 - CI for linting, tests, coverage, and docs.
 
@@ -43,7 +43,7 @@ Create a starter config:
 mhx init examples/linear_tearing.toml
 ```
 
-Run the deterministic smoke workflow:
+Run the deterministic reduced-MHD smoke workflow:
 
 ```bash
 mhx run examples/linear_tearing.toml --outdir outputs/smoke
@@ -68,6 +68,17 @@ x, _ = grid.mesh()
 dfdx = fft_derivative(x * 0.0, axis=0, length=grid.lengths[0])
 ```
 
+For a real time-dependent smoke run from Python:
+
+```python
+from mhx.benchmarks import run_linear_tearing_smoke
+from mhx.config import load_config
+
+cfg = load_config("examples/linear_tearing.toml")
+trajectory, diagnostics = run_linear_tearing_smoke(cfg)
+print(diagnostics["final_total_energy"])
+```
+
 ## Roadmap
 
 The full rebuild plan and execution log live in `plan.md`. Major milestones:
@@ -83,4 +94,3 @@ The full rebuild plan and execution log live in `plan.md`. Major milestones:
 
 MHX is not yet release-citable. Until a tagged release and `CITATION.cff` are
 created for the rebuilt package, cite the repository URL and commit SHA.
-

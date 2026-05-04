@@ -9,7 +9,7 @@ periodic = [true, true]
 
 [time]
 t0 = 0.0
-t1 = 1.0
+t1 = 0.1
 dt = 0.01
 save_every = 10
 
@@ -25,4 +25,3 @@ enable_jit = true
 
 [diagnostics]
 quantities = ["energy", "divergence_error"]
-

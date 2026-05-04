@@ -10,7 +10,15 @@
 .. automodule:: mhx.numerics.spectral
    :members:
 
+.. automodule:: mhx.equations.reduced_mhd
+   :members:
+
+.. automodule:: mhx.diagnostics
+   :members:
+
+.. automodule:: mhx.benchmarks
+   :members:
+
 .. automodule:: mhx.io
    :members:
 ```
-

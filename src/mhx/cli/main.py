@@ -9,10 +9,9 @@ from typing import Annotated
 import typer
 
 from mhx._version import __version__
+from mhx.benchmarks import run_linear_tearing_smoke
 from mhx.config import RunConfig, load_config
-from mhx.grids import CartesianGrid
 from mhx.io import write_manifest
-from mhx.numerics.spectral import fft_derivative
 
 app = typer.Typer(no_args_is_help=True, help="MHX differentiable MHD workflows.")
 
@@ -54,24 +53,15 @@ def run(
 
     run_dir = cfg.output_dir
     run_dir.mkdir(parents=True, exist_ok=True)
-    grid = CartesianGrid.from_mesh_config(cfg.mesh)
-    length = grid.lengths[0]
-    field = grid.sinusoid(mode=(1, 0))
-    dfdx = fft_derivative(field, axis=0, length=length)
-    expected = (2.0 * 3.141592653589793 / length) * grid.cosinusoid(mode=(1, 0))
-    max_error = float(abs(dfdx - expected).max())
+    _, diagnostics = run_linear_tearing_smoke(cfg)
 
     config_path = run_dir / "config_effective.json"
     diagnostics_path = run_dir / "diagnostics.json"
     manifest_path = run_dir / "manifest.json"
 
     config_path.write_text(json.dumps(cfg.to_dict(), indent=2, sort_keys=True), encoding="utf-8")
-    diagnostics = {
-        "grid_shape": list(grid.shape),
-        "cell_volume": grid.cell_volume,
-        "spectral_smoke_max_error": max_error,
-        "quantities": list(cfg.diagnostics.quantities),
-    }
+    diagnostics["grid_shape"] = list(cfg.mesh.shape)
+    diagnostics["quantities"] = list(cfg.diagnostics.quantities)
     diagnostics_path.write_text(json.dumps(diagnostics, indent=2, sort_keys=True), encoding="utf-8")
     write_manifest(
         manifest_path,

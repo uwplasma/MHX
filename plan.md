@@ -3146,3 +3146,50 @@ Every agent must append an entry here. Do not delete previous entries.
 - Commit and push this migration/skeleton chunk.
 - Implement the first spectral reduced-MHD state, Poisson solve/operator utilities, linear tearing RHS, deterministic FAST integration, and gradient check.
 - Add a real diagnostics API before porting inverse design, scans, figures, or neural ODE components.
+
+### 2026-05-04 — Agent: Codex, reduced-MHD smoke benchmark
+
+**Summary**
+
+- Added the first active physical model: periodic pseudo-spectral reduced MHD in flux/vorticity form.
+- Added inverse-Laplacian support with safe zero-mode handling so gradients do not produce NaNs.
+- Added fixed-step differentiable RK4 evolution through `jax.lax.scan`.
+- Added reduced-MHD diagnostics and a deterministic FAST tearing-like smoke benchmark.
+- Updated the CLI so `mhx run examples/linear_tearing.toml --outdir ...` runs the reduced-MHD smoke model rather than only a derivative check.
+
+**Files changed**
+
+- Added `src/mhx/state/`, `src/mhx/equations/reduced_mhd.py`, `src/mhx/time_integrators/`, `src/mhx/diagnostics/reduced_mhd.py`, and `src/mhx/benchmarks/tearing.py`.
+- Updated spectral operators, CLI run path, example config/driver, README, API docs, architecture docs, and added `docs/reduced_mhd.md`.
+- Added `tests/test_reduced_mhd.py` and expanded spectral/CLI tests.
+
+**Tests run**
+
+- `python -m ruff check src tests examples` passed.
+- `python -m pytest --cov=mhx --cov-report=term-missing --cov-fail-under=95` passed: 23 tests, 98.04% coverage.
+- `sphinx-build -b html docs docs/_build/html` passed.
+- `python examples/run_linear_tearing.py` passed and printed reduced-MHD energy diagnostics.
+- `mhx run examples/linear_tearing.toml --outdir outputs/smoke` passed and wrote JSON outputs.
+- Manual `jax.grad` check through a three-step RK4 solve passed with finite gradient.
+
+**Benchmarks run**
+
+- FAST reduced-MHD smoke run only. It validates the execution path, energy diagnostics, and differentiability; it is not yet an FKR growth-rate benchmark.
+
+**Decisions made**
+
+- Defined the initial equations as `ψ_t + [φ,ψ] = η∇²ψ`, `ω_t + [φ,ω] = [ψ,∇²ψ] + ν∇²ω`, with `∇²φ = ω` and zero-mean inverse Laplacian.
+- Chose a smooth periodic initial condition `ψ = cos(y) + ε cos(x)cos(y)`, `ω = 0` for the FAST smoke test.
+- Kept saved diagnostics scalar/JSON-safe for now; richer array outputs will wait for the formal output schema.
+
+**Problems / blockers**
+
+- The benchmark is not yet theory-calibrated against FKR/Coppi tearing rates.
+- No plotting/movie output exists in the rebuilt active package yet.
+- Diagnostics are physically meaningful but still minimal.
+
+**Next steps**
+
+- Add formal output schema for trajectories and diagnostic time series.
+- Add growth-rate diagnostics and a small linear tearing validation target.
+- Add plotting helpers for energy history and flux contours, then a deterministic FAST figure pipeline.

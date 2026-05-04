@@ -73,7 +73,7 @@ class TimeConfig:
     """Time integration controls."""
 
     t0: float = 0.0
-    t1: float = 1.0
+    t1: float = 0.1
     dt: float = 0.01
     save_every: int = 10
 

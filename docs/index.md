@@ -11,6 +11,7 @@ under `legacy/old_mhx/`.
 
 quickstart
 architecture
+reduced_mhd
 literature
 api
 ```
