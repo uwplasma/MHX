@@ -3280,3 +3280,46 @@ Every agent must append an entry here. Do not delete previous entries.
 - Implement a deterministic benchmark report command that reads a run directory and writes a small JSON/Markdown report.
 - Add a simple GIF/movie writer using saved `psi` frames.
 - Start the theory-calibrated tearing benchmark by adding an equilibrium/eigenmode module and fit-window controls.
+
+### 2026-05-04 — Agent: Codex, reports and GIF output
+
+**Summary**
+
+- Added `mhx report <run_dir>` to generate `report.json` and `report.md` from saved diagnostics and manifest hashes.
+- Added optional `mhx figures <run_dir> --gif` support for `flux_movie.gif`.
+- Added `imageio` to plotting/dev extras.
+
+**Files changed**
+
+- Added `src/mhx/benchmarks/report.py`.
+- Updated plotting, CLI, tests, README, quickstart, output-schema docs, and `pyproject.toml`.
+
+**Tests run**
+
+- `python -m pip install -e ".[dev,docs]"` passed and installed `imageio`.
+- `python -m ruff check src tests examples` passed.
+- `python -m pytest --cov=mhx --cov-report=term-missing --cov-fail-under=95` passed: 31 tests, 98.41% coverage.
+- `sphinx-build -b html docs docs/_build/html` passed.
+- `mhx run examples/linear_tearing.toml --outdir outputs/smoke` passed.
+- `mhx figures outputs/smoke --gif` passed and wrote PNGs plus `flux_movie.gif`.
+- `mhx report outputs/smoke` passed and wrote `report.json` and `report.md`.
+
+**Benchmarks run**
+
+- FAST reduced-MHD smoke run only.
+
+**Decisions made**
+
+- Reports are regenerated artifacts, not authoritative data; source of truth remains config, diagnostics, trajectory NPZ, and manifest hashes.
+- GIF writing is opt-in with `--gif` to keep default figure generation lightweight.
+
+**Problems / blockers**
+
+- Movie output is functional but basic; it does not yet use physical coordinates or contour overlays.
+- Benchmark reports do not yet include external/theory comparison rows.
+
+**Next steps**
+
+- Add physical coordinate axes to plotting.
+- Add benchmark comparison hooks and a first theory-calibrated tearing-growth fixture.
+- Add a `mhx benchmark` command group once there is more than one benchmark.

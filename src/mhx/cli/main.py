@@ -9,7 +9,7 @@ from typing import Annotated
 import typer
 
 from mhx._version import __version__
-from mhx.benchmarks import run_linear_tearing_smoke
+from mhx.benchmarks import run_linear_tearing_smoke, write_run_report
 from mhx.config import RunConfig, load_config
 from mhx.grids import CartesianGrid
 from mhx.io import (
@@ -17,7 +17,7 @@ from mhx.io import (
     write_manifest,
     write_reduced_mhd_trajectory_npz,
 )
-from mhx.plotting import plot_energy_history, plot_flux_contours, plot_mode_amplitude
+from mhx.plotting import plot_energy_history, plot_flux_contours, plot_flux_gif, plot_mode_amplitude
 from mhx.state import ReducedMHDState
 
 app = typer.Typer(no_args_is_help=True, help="MHX differentiable MHD workflows.")
@@ -98,6 +98,7 @@ def figures(
         Path | None,
         typer.Option("--outdir", help="Figure output directory; defaults to <run>/figures."),
     ] = None,
+    gif: Annotated[bool, typer.Option("--gif", help="Also write flux_movie.gif.")] = False,
 ) -> None:
     """Regenerate deterministic figures from a saved run directory."""
     trajectory, diagnostics = read_reduced_mhd_trajectory_npz(run_dir / "trajectory.npz")
@@ -125,6 +126,19 @@ def figures(
     typer.echo(f"wrote {energy_path}")
     typer.echo(f"wrote {flux_path}")
     typer.echo(f"wrote {amplitude_path}")
+    if gif:
+        gif_path = plot_flux_gif(trajectory, path=figure_dir / "flux_movie.gif")
+        typer.echo(f"wrote {gif_path}")
+
+
+@app.command()
+def report(
+    run_dir: Annotated[Path, typer.Argument(help="Run directory containing manifest outputs.")],
+) -> None:
+    """Write a JSON and Markdown benchmark report for a run directory."""
+    json_path, markdown_path = write_run_report(run_dir)
+    typer.echo(f"wrote {json_path}")
+    typer.echo(f"wrote {markdown_path}")
 
 
 def main() -> None:  # pragma: no cover - exercised by console entry points.

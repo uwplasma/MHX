@@ -59,11 +59,17 @@ Expected files:
 Regenerate figures:
 
 ```bash
-mhx figures outputs/smoke
+mhx figures outputs/smoke --gif
 ```
 
 This writes `energy_history.png`, `flux_final.png`, and `mode_amplitude.png`
-under `outputs/smoke/figures/`.
+under `outputs/smoke/figures/`, plus `flux_movie.gif` when `--gif` is passed.
+
+Create a compact run report:
+
+```bash
+mhx report outputs/smoke
+```
 
 ## Python API
 

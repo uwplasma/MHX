@@ -75,11 +75,26 @@ def test_cli_figures_regenerates_pngs(tmp_path) -> None:
         ["run", "examples/linear_tearing.toml", "--outdir", str(outdir)],
     )
     assert run_result.exit_code == 0, run_result.stdout
-    figure_result = CliRunner().invoke(app, ["figures", str(outdir)])
+    figure_result = CliRunner().invoke(app, ["figures", str(outdir), "--gif"])
     assert figure_result.exit_code == 0, figure_result.stdout
     assert (outdir / "figures" / "energy_history.png").stat().st_size > 0
     assert (outdir / "figures" / "flux_final.png").stat().st_size > 0
     assert (outdir / "figures" / "mode_amplitude.png").stat().st_size > 0
+    assert (outdir / "figures" / "flux_movie.gif").stat().st_size > 0
+
+
+def test_cli_report_writes_json_and_markdown(tmp_path) -> None:
+    outdir = tmp_path / "smoke"
+    run_result = CliRunner().invoke(
+        app,
+        ["run", "examples/linear_tearing.toml", "--outdir", str(outdir)],
+    )
+    assert run_result.exit_code == 0, run_result.stdout
+    report_result = CliRunner().invoke(app, ["report", str(outdir)])
+    assert report_result.exit_code == 0, report_result.stdout
+    assert "gamma fit" in (outdir / "report.md").read_text()
+    report = json.loads((outdir / "report.json").read_text())
+    assert report["schema"] == "mhx.benchmark_report.v1"
 
 
 def test_npz_schema_constant_is_versioned() -> None:

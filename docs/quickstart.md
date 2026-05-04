@@ -28,7 +28,7 @@ The command writes:
 Regenerate figures from the saved run:
 
 ```bash
-mhx figures outputs/smoke
+mhx figures outputs/smoke --gif
 ```
 
 Expected figures:
@@ -36,6 +36,13 @@ Expected figures:
 - `outputs/smoke/figures/energy_history.png`
 - `outputs/smoke/figures/flux_final.png`
 - `outputs/smoke/figures/mode_amplitude.png`
+- `outputs/smoke/figures/flux_movie.gif`
+
+Create a reviewer-readable summary:
+
+```bash
+mhx report outputs/smoke
+```
 
 The current smoke run validates the JAX spectral derivative path on a periodic
 Cartesian mesh. It is deliberately small and deterministic; it is not yet the

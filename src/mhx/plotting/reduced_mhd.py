@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import numpy as np
+
 from mhx.diagnostics import trajectory_energies, trajectory_mode_amplitude
 from mhx.state import ReducedMHDState, ReducedMHDTrajectory
 
@@ -73,4 +75,35 @@ def plot_mode_amplitude(
     ax.set_title(f"Mode amplitude k={mode}")
     fig.savefig(output_path, dpi=160)
     plt.close(fig)
+    return output_path
+
+
+def plot_flux_gif(
+    trajectory: ReducedMHDTrajectory,
+    *,
+    path: str | Path,
+    duration: float = 0.15,
+) -> Path:
+    """Write an animated GIF of saved magnetic-flux frames."""
+    import imageio.v2 as imageio
+    import matplotlib.pyplot as plt
+
+    output_path = Path(path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    frames = []
+    psi_values = np.asarray(trajectory.states.psi)
+    vmin = float(np.min(psi_values))
+    vmax = float(np.max(psi_values))
+    for index, psi in enumerate(psi_values):
+        fig, ax = plt.subplots(figsize=(4.5, 4.0), constrained_layout=True)
+        image = ax.imshow(psi.T, origin="lower", cmap="viridis", vmin=vmin, vmax=vmax)
+        ax.set_title(f"Magnetic flux frame {index}")
+        ax.set_xlabel("x-index")
+        ax.set_ylabel("y-index")
+        fig.colorbar(image, ax=ax, shrink=0.8)
+        fig.canvas.draw()
+        frame = np.asarray(fig.canvas.buffer_rgba())[..., :3].copy()
+        frames.append(frame)
+        plt.close(fig)
+    imageio.mimsave(output_path, frames, duration=duration)
     return output_path

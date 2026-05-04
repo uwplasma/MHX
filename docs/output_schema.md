@@ -31,7 +31,7 @@ The reduced-MHD v1 trajectory file contains:
 Figures are regenerated from saved data:
 
 ```bash
-mhx figures outputs/smoke
+mhx figures outputs/smoke --gif
 ```
 
 Expected files:
@@ -39,3 +39,17 @@ Expected files:
 - `outputs/smoke/figures/energy_history.png`
 - `outputs/smoke/figures/flux_final.png`
 - `outputs/smoke/figures/mode_amplitude.png`
+- `outputs/smoke/figures/flux_movie.gif`
+
+## Reports
+
+Run summaries are regenerated from saved outputs:
+
+```bash
+mhx report outputs/smoke
+```
+
+Expected files:
+
+- `outputs/smoke/report.json`
+- `outputs/smoke/report.md`
