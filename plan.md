@@ -3367,3 +3367,43 @@ Every agent must append an entry here. Do not delete previous entries.
 - Add a fit-window policy and a calibrated linear tearing fixture.
 - Add benchmark artifact upload to CI once the active benchmark pipeline is stable on GitHub Actions.
 - Add the first physics plugin API after the benchmark API stabilizes.
+
+### 2026-05-04 — Agent: Codex, fit-window policy for growth diagnostics
+
+**Summary**
+
+- Added explicit diagnostics config fields for Fourier mode and growth-fit time window.
+- Updated FAST benchmark diagnostics to record `fit_time_window` and `fit_sample_count`.
+- Added fit-window selection tests and config validation.
+- Updated docs to make growth-rate fitting auditable and reproducible.
+
+**Files changed**
+
+- Updated `src/mhx/config/schema.py`, `src/mhx/diagnostics/reduced_mhd.py`, `src/mhx/benchmarks/tearing.py`, `examples/linear_tearing.toml`, tests, and docs.
+
+**Tests run**
+
+- `python -m ruff check src tests examples` passed.
+- `python -m pytest --cov=mhx --cov-report=term-missing --cov-fail-under=95` passed: 36 tests, 98.00% coverage.
+- `sphinx-build -b html docs docs/_build/html` passed.
+- `mhx benchmark run --config examples/linear_tearing.toml --outdir outputs/benchmarks/linear_tearing_fast --gif` passed.
+- `mhx benchmark validate outputs/benchmarks/linear_tearing_fast` passed.
+
+**Benchmarks run**
+
+- FAST reduced-MHD benchmark pipeline only.
+
+**Decisions made**
+
+- Growth-rate fit windows live under `[diagnostics]` in TOML, because they define how diagnostics are interpreted rather than how the solver evolves.
+- If no fit window is supplied, MHX fits all saved samples.
+
+**Problems / blockers**
+
+- The fit policy is now explicit, but the fitted FAST mode remains a smoke diagnostic, not a calibrated FKR rate.
+
+**Next steps**
+
+- Add a synthetic eigenmode/growth fixture with known gamma to test the complete report path.
+- Add CI artifact upload for benchmark outputs.
+- Start the physics plugin interface after the benchmark/report/validation workflow is stable.

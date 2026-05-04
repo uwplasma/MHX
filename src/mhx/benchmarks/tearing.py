@@ -7,6 +7,7 @@ import jax.numpy as jnp
 from mhx.config import RunConfig
 from mhx.diagnostics import (
     fit_exponential_growth,
+    select_fit_window,
     total_energy,
     trajectory_energies,
     trajectory_mode_amplitude,
@@ -62,8 +63,13 @@ def run_linear_tearing_smoke(
         save_every=config.time.save_every,
     )
     energies = trajectory_energies(trajectory, lengths=grid.lengths)
-    mode = (1, 1)
+    mode = config.diagnostics.mode
     amplitudes = trajectory_mode_amplitude(trajectory, mode=mode)
+    fit_times, fit_amplitudes = select_fit_window(
+        trajectory.times,
+        amplitudes,
+        window=config.diagnostics.fit_time_window,
+    )
     diagnostics = {
         "n_steps": float(steps),
         "initial_total_energy": float(total_energy(state0, lengths=grid.lengths)),
@@ -72,8 +78,14 @@ def run_linear_tearing_smoke(
         "final_kinetic_energy": float(energies["kinetic"][-1]),
         "final_time": float(trajectory.times[-1]),
         "diagnostic_mode": list(mode),
+        "fit_time_window": (
+            None
+            if config.diagnostics.fit_time_window is None
+            else list(config.diagnostics.fit_time_window)
+        ),
+        "fit_sample_count": float(fit_times.shape[0]),
         "initial_mode_amplitude": float(amplitudes[0]),
         "final_mode_amplitude": float(amplitudes[-1]),
-        "gamma_fit": float(fit_exponential_growth(trajectory.times, amplitudes)),
+        "gamma_fit": float(fit_exponential_growth(fit_times, fit_amplitudes)),
     }
     return trajectory, diagnostics

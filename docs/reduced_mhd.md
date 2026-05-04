@@ -93,3 +93,14 @@ $$
 by least squares on $\log A(t)$. This `gamma_fit` is useful for plumbing and
 regression tests, but it should not be interpreted as an FKR tearing rate until
 the eigenfunction, equilibrium, fit window, and parameter regime are validated.
+
+The fit window is an explicit config field:
+
+```toml
+[diagnostics]
+mode = [1, 1]
+fit_time_window = [0.02, 0.1]
+```
+
+MHX records `fit_time_window` and `fit_sample_count` in `diagnostics.json`, so
+growth-rate comparisons are auditable and reproducible.

@@ -24,6 +24,8 @@ def test_cli_run_writes_schema_files(tmp_path) -> None:
     assert diagnostics["mesh_lower"] == [0.0, 0.0]
     assert diagnostics["n_steps"] == 10.0
     assert diagnostics["diagnostic_mode"] == [1, 1]
+    assert diagnostics["fit_time_window"] == [0.02, 0.1]
+    assert diagnostics["fit_sample_count"] == 9.0
     assert diagnostics["gamma_fit"] < 0.0
     assert diagnostics["final_total_energy"] > 0.0
     assert diagnostics["final_total_energy"] <= diagnostics["initial_total_energy"]

@@ -145,12 +145,38 @@ class DiagnosticsConfig:
     """Diagnostics requested for a run."""
 
     quantities: tuple[str, ...] = ("energy", "divergence_error")
+    mode: tuple[int, int] = (1, 1)
+    fit_time_window: tuple[float, float] | None = None
 
     @classmethod
     def from_mapping(cls, mapping: dict[str, Any] | None) -> DiagnosticsConfig:
         mapping = mapping or {}
         quantities = mapping.get("quantities", cls.quantities)
-        return cls(quantities=tuple(str(item) for item in quantities))
+        fit_time_window = mapping.get("fit_time_window", cls.fit_time_window)
+        return cls(
+            quantities=tuple(str(item) for item in quantities),
+            mode=_tuple_from(
+                mapping.get("mode", cls.mode),
+                length=2,
+                name="diagnostics.mode",
+                cast=int,
+            ),
+            fit_time_window=(
+                None
+                if fit_time_window is None
+                else _tuple_from(
+                    fit_time_window,
+                    length=2,
+                    name="diagnostics.fit_time_window",
+                    cast=float,
+                )
+            ),
+        ).validated()
+
+    def validated(self) -> DiagnosticsConfig:
+        if self.fit_time_window is not None and self.fit_time_window[1] <= self.fit_time_window[0]:
+            raise ValueError("diagnostics.fit_time_window upper bound must exceed lower bound")
+        return self
 
 
 @dataclass(frozen=True)
@@ -194,6 +220,11 @@ class RunConfig:
     def to_toml(self) -> str:
         """Serialize a stable starter TOML representation."""
         data = self.to_dict()
+        fit_time_window_line = (
+            ""
+            if data["diagnostics"]["fit_time_window"] is None
+            else f"fit_time_window = {data['diagnostics']['fit_time_window']}\n"
+        )
         return (
             f'name = "{data["name"]}"\n'
             f'output_dir = "{data["output_dir"]}"\n\n'
@@ -217,6 +248,8 @@ class RunConfig:
             f"enable_jit = {str(data['numerics']['enable_jit']).lower()}\n\n"
             "[diagnostics]\n"
             f"quantities = {data['diagnostics']['quantities']}\n"
+            f"mode = {data['diagnostics']['mode']}\n"
+            f"{fit_time_window_line}"
         )
 
 

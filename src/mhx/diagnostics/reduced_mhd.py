@@ -60,6 +60,22 @@ def fit_exponential_growth(times: Array, amplitudes: Array) -> Array:
     )
 
 
+def select_fit_window(
+    times: Array,
+    amplitudes: Array,
+    *,
+    window: tuple[float, float] | None,
+) -> tuple[Array, Array]:
+    """Select samples inside an inclusive fit-time window."""
+    if window is None:
+        return times, amplitudes
+    start, stop = window
+    if stop <= start:
+        raise ValueError("fit window stop must exceed start")
+    mask = (times >= start) & (times <= stop)
+    return times[mask], amplitudes[mask]
+
+
 def trajectory_energies(
     trajectory: ReducedMHDTrajectory,
     *,

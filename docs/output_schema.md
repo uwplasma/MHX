@@ -26,6 +26,10 @@ The reduced-MHD v1 trajectory file contains:
 | `config_json` | JSON-encoded effective run config. |
 | `diagnostics_json` | JSON-encoded scalar diagnostics. |
 
+Important scalar diagnostics include `diagnostic_mode`, `fit_time_window`,
+`fit_sample_count`, and `gamma_fit`. These fields are saved so growth-rate plots
+and comparisons can be audited.
+
 ## Figures
 
 Figures are regenerated from saved data:

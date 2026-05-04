@@ -10,6 +10,7 @@ from mhx.diagnostics import (
     fit_exponential_growth,
     magnetic_energy,
     mode_amplitude,
+    select_fit_window,
     total_energy,
     trajectory_energies,
     trajectory_mode_amplitude,
@@ -104,11 +105,20 @@ def test_mode_amplitude_and_growth_fit() -> None:
     gamma = 0.4
     amplitudes = 2.0 * jnp.exp(gamma * times)
     assert float(fit_exponential_growth(times, amplitudes)) == pytest.approx(gamma)
+    selected_times, selected_amplitudes = select_fit_window(
+        times,
+        amplitudes,
+        window=(0.25, 0.75),
+    )
+    assert selected_times.shape[0] == 4
+    assert selected_amplitudes.shape == selected_times.shape
 
 
 def test_growth_fit_requires_two_samples() -> None:
     with pytest.raises(ValueError, match="at least two samples"):
         fit_exponential_growth(jnp.asarray([0.0]), jnp.asarray([1.0]))
+    with pytest.raises(ValueError, match="fit window"):
+        select_fit_window(jnp.asarray([0.0, 1.0]), jnp.asarray([1.0, 2.0]), window=(1.0, 0.0))
 
 
 def test_trajectory_mode_amplitude_shape() -> None:
