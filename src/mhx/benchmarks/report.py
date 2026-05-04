@@ -7,6 +7,39 @@ from pathlib import Path
 from typing import Any
 
 
+def validate_run(
+    run_dir: str | Path,
+    *,
+    max_relative_energy_growth: float = 1.0e-10,
+    require_finite_gamma: bool = True,
+) -> tuple[Path, dict[str, Any]]:
+    """Validate a run directory against lightweight regression checks."""
+    directory = Path(run_dir)
+    diagnostics = json.loads((directory / "diagnostics.json").read_text(encoding="utf-8"))
+    initial_energy = float(diagnostics["initial_total_energy"])
+    final_energy = float(diagnostics["final_total_energy"])
+    relative_growth = (final_energy - initial_energy) / max(abs(initial_energy), 1.0e-300)
+    checks = {
+        "finite_positive_initial_energy": initial_energy > 0.0,
+        "finite_positive_final_energy": final_energy > 0.0,
+        "energy_growth_within_tolerance": relative_growth <= max_relative_energy_growth,
+        "finite_gamma_fit": (
+            _is_finite_number(diagnostics["gamma_fit"]) if require_finite_gamma else True
+        ),
+    }
+    result = {
+        "schema": "mhx.validation.v1",
+        "run_dir": str(directory),
+        "passed": all(checks.values()),
+        "checks": checks,
+        "relative_energy_growth": relative_growth,
+        "max_relative_energy_growth": max_relative_energy_growth,
+    }
+    output_path = directory / "validation.json"
+    output_path.write_text(json.dumps(result, indent=2, sort_keys=True), encoding="utf-8")
+    return output_path, result
+
+
 def write_run_report(run_dir: str | Path) -> tuple[Path, Path]:
     """Write JSON and Markdown summaries for a completed run directory."""
     directory = Path(run_dir)
@@ -47,3 +80,7 @@ def _report_markdown(report: dict[str, Any]) -> str:
         "This FAST report verifies plumbing and regression behavior. It is not yet a "
         "validated FKR tearing benchmark.\n"
     )
+
+
+def _is_finite_number(value: Any) -> bool:
+    return isinstance(value, int | float) and value == value and abs(value) != float("inf")

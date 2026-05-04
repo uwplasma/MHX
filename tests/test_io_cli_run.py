@@ -97,5 +97,44 @@ def test_cli_report_writes_json_and_markdown(tmp_path) -> None:
     assert report["schema"] == "mhx.benchmark_report.v1"
 
 
+def test_benchmark_pipeline_and_validation(tmp_path) -> None:
+    outdir = tmp_path / "benchmark"
+    run_result = CliRunner().invoke(
+        app,
+        [
+            "benchmark",
+            "run",
+            "--config",
+            "examples/linear_tearing.toml",
+            "--outdir",
+            str(outdir),
+            "--gif",
+        ],
+    )
+    assert run_result.exit_code == 0, run_result.stdout
+    assert (outdir / "manifest.json").exists()
+    assert (outdir / "figures" / "energy_history.png").exists()
+    assert (outdir / "figures" / "flux_movie.gif").exists()
+    assert (outdir / "report.md").exists()
+    validate_result = CliRunner().invoke(app, ["benchmark", "validate", str(outdir)])
+    assert validate_result.exit_code == 0, validate_result.stdout
+    validation = json.loads((outdir / "validation.json").read_text())
+    assert validation["passed"] is True
+
+
+def test_benchmark_validation_failure_exits_nonzero(tmp_path) -> None:
+    outdir = tmp_path / "benchmark"
+    run_result = CliRunner().invoke(
+        app,
+        ["benchmark", "run", "--outdir", str(outdir), "--no-figures", "--no-report"],
+    )
+    assert run_result.exit_code == 0, run_result.stdout
+    result = CliRunner().invoke(
+        app,
+        ["benchmark", "validate", str(outdir), "--max-relative-energy-growth", "-1.0"],
+    )
+    assert result.exit_code == 1
+
+
 def test_npz_schema_constant_is_versioned() -> None:
     assert REDUCED_MHD_TRAJECTORY_SCHEMA == "mhx.reduced_mhd.trajectory.v1"

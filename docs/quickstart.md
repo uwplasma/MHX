@@ -44,6 +44,13 @@ Create a reviewer-readable summary:
 mhx report outputs/smoke
 ```
 
+Run the same workflow through the benchmark command group:
+
+```bash
+mhx benchmark run --config examples/linear_tearing.toml --outdir outputs/benchmarks/linear_tearing_fast --gif
+mhx benchmark validate outputs/benchmarks/linear_tearing_fast
+```
+
 The current smoke run validates the JAX spectral derivative path on a periodic
 Cartesian mesh. It is deliberately small and deterministic; it is not yet the
 full tearing benchmark.

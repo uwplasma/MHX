@@ -3323,3 +3323,47 @@ Every agent must append an entry here. Do not delete previous entries.
 - Add physical coordinate axes to plotting.
 - Add benchmark comparison hooks and a first theory-calibrated tearing-growth fixture.
 - Add a `mhx benchmark` command group once there is more than one benchmark.
+
+### 2026-05-04 — Agent: Codex, benchmark command group and theory scaffolds
+
+**Summary**
+
+- Added first-class `mhx benchmark run` and `mhx benchmark validate` commands.
+- Added physical-coordinate plotting for flux contours and GIF frames.
+- Added validation output `validation.json` with lightweight energy/growth checks.
+- Added analytic benchmark-planning scaffolds for FKR constant-psi tearing, Loureiro plasmoid scaling, and Pucci-Velli ideal-tearing aspect ratio.
+- Added a benchmark docs page with equations, command sequence, expected artifacts, and linked references.
+
+**Files changed**
+
+- Added `src/mhx/benchmarks/theory.py`, `docs/benchmarks.md`, and `tests/test_benchmark_theory.py`.
+- Updated `src/mhx/cli/main.py`, `src/mhx/benchmarks/report.py`, plotting helpers, README, quickstart, API docs, and CLI tests.
+
+**Tests run**
+
+- `python -m ruff check src tests examples` passed.
+- `python -m pytest --cov=mhx --cov-report=term-missing --cov-fail-under=95` passed: 36 tests, 97.93% coverage.
+- `sphinx-build -b html docs docs/_build/html` passed.
+- `mhx benchmark run --config examples/linear_tearing.toml --outdir outputs/benchmarks/linear_tearing_fast --gif` passed.
+- `mhx benchmark validate outputs/benchmarks/linear_tearing_fast` passed.
+
+**Benchmarks run**
+
+- FAST reduced-MHD benchmark pipeline only.
+
+**Decisions made**
+
+- Benchmark theory functions are scaling estimates only; docs explicitly avoid claiming calibrated validation.
+- `mhx benchmark validate` writes machine-readable `validation.json` and exits nonzero on failed checks.
+- Physical coordinates now appear in regenerated flux figures when mesh metadata is available.
+
+**Problems / blockers**
+
+- FKR/Coppi validation is still a future benchmark; the current theory code only provides planning estimates.
+- There is still only one active benchmark, so `mhx benchmark` is intentionally small.
+
+**Next steps**
+
+- Add a fit-window policy and a calibrated linear tearing fixture.
+- Add benchmark artifact upload to CI once the active benchmark pipeline is stable on GitHub Actions.
+- Add the first physics plugin API after the benchmark API stabilizes.

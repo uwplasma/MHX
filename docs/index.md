@@ -13,6 +13,7 @@ quickstart
 architecture
 reduced_mhd
 output_schema
+benchmarks
 literature
 api
 ```

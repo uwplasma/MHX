@@ -71,6 +71,13 @@ Create a compact run report:
 mhx report outputs/smoke
 ```
 
+Run the same workflow as a benchmark:
+
+```bash
+mhx benchmark run --config examples/linear_tearing.toml --outdir outputs/benchmarks/linear_tearing_fast --gif
+mhx benchmark validate outputs/benchmarks/linear_tearing_fast
+```
+
 ## Python API
 
 ```python

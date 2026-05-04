@@ -39,6 +39,8 @@ def plot_flux_contours(
     state: ReducedMHDState,
     *,
     path: str | Path,
+    x: np.ndarray | None = None,
+    y: np.ndarray | None = None,
 ) -> Path:
     """Plot final magnetic flux contours."""
     import matplotlib.pyplot as plt
@@ -46,10 +48,17 @@ def plot_flux_contours(
     output_path = Path(path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     fig, ax = plt.subplots(figsize=(5.0, 4.5), constrained_layout=True)
-    contours = ax.contour(state.psi, levels=20, linewidths=0.8)
+    psi = np.asarray(state.psi)
+    if x is None or y is None:
+        contours = ax.contour(psi, levels=20, linewidths=0.8)
+        ax.set_xlabel("grid x-index")
+        ax.set_ylabel("grid y-index")
+    else:
+        x_mesh, y_mesh = np.meshgrid(np.asarray(x), np.asarray(y), indexing="ij")
+        contours = ax.contour(x_mesh, y_mesh, psi, levels=20, linewidths=0.8)
+        ax.set_xlabel("x")
+        ax.set_ylabel("y")
     ax.clabel(contours, inline=True, fontsize=6)
-    ax.set_xlabel("grid x-index")
-    ax.set_ylabel("grid y-index")
     ax.set_title("Final magnetic flux")
     fig.savefig(output_path, dpi=160)
     plt.close(fig)
@@ -82,6 +91,7 @@ def plot_flux_gif(
     trajectory: ReducedMHDTrajectory,
     *,
     path: str | Path,
+    extent: tuple[float, float, float, float] | None = None,
     duration: float = 0.15,
 ) -> Path:
     """Write an animated GIF of saved magnetic-flux frames."""
@@ -96,10 +106,17 @@ def plot_flux_gif(
     vmax = float(np.max(psi_values))
     for index, psi in enumerate(psi_values):
         fig, ax = plt.subplots(figsize=(4.5, 4.0), constrained_layout=True)
-        image = ax.imshow(psi.T, origin="lower", cmap="viridis", vmin=vmin, vmax=vmax)
+        image = ax.imshow(
+            psi.T,
+            origin="lower",
+            cmap="viridis",
+            vmin=vmin,
+            vmax=vmax,
+            extent=extent,
+        )
         ax.set_title(f"Magnetic flux frame {index}")
-        ax.set_xlabel("x-index")
-        ax.set_ylabel("y-index")
+        ax.set_xlabel("x")
+        ax.set_ylabel("y")
         fig.colorbar(image, ax=ax, shrink=0.8)
         fig.canvas.draw()
         frame = np.asarray(fig.canvas.buffer_rgba())[..., :3].copy()
