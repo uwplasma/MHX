@@ -23,8 +23,19 @@ The command writes:
 - `config_effective.json`
 - `diagnostics.json`
 - `manifest.json`
+- `trajectory.npz`
+
+Regenerate figures from the saved run:
+
+```bash
+mhx figures outputs/smoke
+```
+
+Expected figures:
+
+- `outputs/smoke/figures/energy_history.png`
+- `outputs/smoke/figures/flux_final.png`
 
 The current smoke run validates the JAX spectral derivative path on a periodic
 Cartesian mesh. It is deliberately small and deterministic; it is not yet the
 full tearing benchmark.
-

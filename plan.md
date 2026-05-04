@@ -3193,3 +3193,47 @@ Every agent must append an entry here. Do not delete previous entries.
 - Add formal output schema for trajectories and diagnostic time series.
 - Add growth-rate diagnostics and a small linear tearing validation target.
 - Add plotting helpers for energy history and flux contours, then a deterministic FAST figure pipeline.
+
+### 2026-05-04 — Agent: Codex, trajectory schema and figures
+
+**Summary**
+
+- Added the first versioned active output schema: `mhx.reduced_mhd.trajectory.v1`.
+- Added NPZ write/read utilities for reduced-MHD trajectories with config and diagnostics JSON payloads.
+- Updated `mhx run` to write `trajectory.npz` and include it in `manifest.json` hashes.
+- Added `mhx figures <run_dir>` to regenerate deterministic `energy_history.png` and `flux_final.png` from saved outputs.
+
+**Files changed**
+
+- Added `src/mhx/io/trajectory.py`, `src/mhx/plotting/reduced_mhd.py`, `tests/test_io_schema.py`, and `docs/output_schema.md`.
+- Updated CLI, IO exports, plotting exports, README, quickstart docs, docs index, and CLI/IO tests.
+
+**Tests run**
+
+- `python -m ruff check src tests examples` passed.
+- `python -m pytest --cov=mhx --cov-report=term-missing --cov-fail-under=95` passed: 27 tests, 98.33% coverage.
+- `sphinx-build -b html docs docs/_build/html` passed.
+- `mhx run examples/linear_tearing.toml --outdir outputs/smoke` passed.
+- `mhx figures outputs/smoke` passed and wrote `energy_history.png` and `flux_final.png`.
+
+**Benchmarks run**
+
+- FAST reduced-MHD smoke run only.
+
+**Decisions made**
+
+- Used compressed NPZ for the first active array schema because it is simple, inspectable, and sufficient for FAST workflows.
+- Kept manifests JSON-only with SHA-256 hashes for reproducible diffs.
+- Kept plotting regenerated from saved data rather than storing figures as authoritative data.
+
+**Problems / blockers**
+
+- No movie writer yet.
+- No growth-rate extraction or validated tearing-rate benchmark yet.
+- The current figure path uses index-space flux contours; physical coordinate axes should be added with the plotting API upgrade.
+
+**Next steps**
+
+- Add growth-rate/amplitude diagnostics for the perturbation mode.
+- Add a first deterministic benchmark report command and docs page.
+- Add basic movie/GIF support once the trajectory schema stores enough frames for useful animations.

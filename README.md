@@ -53,7 +53,14 @@ Expected files:
 
 - `outputs/smoke/config_effective.json`
 - `outputs/smoke/diagnostics.json`
+- `outputs/smoke/trajectory.npz`
 - `outputs/smoke/manifest.json`
+
+Regenerate figures:
+
+```bash
+mhx figures outputs/smoke
+```
 
 ## Python API
 

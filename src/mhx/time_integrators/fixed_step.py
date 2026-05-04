@@ -56,6 +56,7 @@ def evolve_rk4(
         raise ValueError("dt must be positive")
     if save_every < 1:
         raise ValueError("save_every must be >= 1")
+    stride = min(save_every, steps)
 
     def scan_step(carry: StateT, step_index: Any) -> tuple[StateT, StateT]:
         del step_index
@@ -63,9 +64,6 @@ def evolve_rk4(
         return next_state, next_state
 
     _, states = jax.lax.scan(scan_step, state0, jnp.arange(steps))
-    saved_states = jax.tree_util.tree_map(
-        lambda values: values[save_every - 1 :: save_every],
-        states,
-    )
-    times = dt * jnp.arange(save_every, steps + 1, save_every)
+    saved_states = jax.tree_util.tree_map(lambda values: values[stride - 1 :: stride], states)
+    times = dt * jnp.arange(stride, steps + 1, stride)
     return ReducedMHDTrajectory(times=times, states=saved_states)

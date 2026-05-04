@@ -11,7 +11,14 @@ import typer
 from mhx._version import __version__
 from mhx.benchmarks import run_linear_tearing_smoke
 from mhx.config import RunConfig, load_config
-from mhx.io import write_manifest
+from mhx.grids import CartesianGrid
+from mhx.io import (
+    read_reduced_mhd_trajectory_npz,
+    write_manifest,
+    write_reduced_mhd_trajectory_npz,
+)
+from mhx.plotting import plot_energy_history, plot_flux_contours
+from mhx.state import ReducedMHDState
 
 app = typer.Typer(no_args_is_help=True, help="MHX differentiable MHD workflows.")
 
@@ -53,25 +60,64 @@ def run(
 
     run_dir = cfg.output_dir
     run_dir.mkdir(parents=True, exist_ok=True)
-    _, diagnostics = run_linear_tearing_smoke(cfg)
+    trajectory, diagnostics = run_linear_tearing_smoke(cfg)
 
     config_path = run_dir / "config_effective.json"
     diagnostics_path = run_dir / "diagnostics.json"
+    trajectory_path = run_dir / "trajectory.npz"
     manifest_path = run_dir / "manifest.json"
 
     config_path.write_text(json.dumps(cfg.to_dict(), indent=2, sort_keys=True), encoding="utf-8")
     diagnostics["grid_shape"] = list(cfg.mesh.shape)
+    diagnostics["mesh_lower"] = list(cfg.mesh.lower)
+    diagnostics["mesh_upper"] = list(cfg.mesh.upper)
     diagnostics["quantities"] = list(cfg.diagnostics.quantities)
     diagnostics_path.write_text(json.dumps(diagnostics, indent=2, sort_keys=True), encoding="utf-8")
+    write_reduced_mhd_trajectory_npz(
+        trajectory_path,
+        trajectory=trajectory,
+        config=cfg.to_dict(),
+        diagnostics=diagnostics,
+    )
     write_manifest(
         manifest_path,
         config=cfg.to_dict(),
         outputs={
             "config": str(config_path.name),
             "diagnostics": str(diagnostics_path.name),
+            "trajectory": str(trajectory_path.name),
         },
     )
     typer.echo(f"wrote {manifest_path}")
+
+
+@app.command()
+def figures(
+    run_dir: Annotated[Path, typer.Argument(help="Run directory containing trajectory.npz.")],
+    outdir: Annotated[
+        Path | None,
+        typer.Option("--outdir", help="Figure output directory; defaults to <run>/figures."),
+    ] = None,
+) -> None:
+    """Regenerate deterministic figures from a saved run directory."""
+    trajectory, diagnostics = read_reduced_mhd_trajectory_npz(run_dir / "trajectory.npz")
+    figure_dir = outdir or (run_dir / "figures")
+    shape = tuple(int(value) for value in diagnostics["grid_shape"])
+    lower = tuple(float(value) for value in diagnostics["mesh_lower"])
+    upper = tuple(float(value) for value in diagnostics["mesh_upper"])
+    grid = CartesianGrid(shape=shape, lower=lower, upper=upper)
+    final_state = ReducedMHDState(
+        psi=trajectory.states.psi[-1],
+        omega=trajectory.states.omega[-1],
+    )
+    energy_path = plot_energy_history(
+        trajectory,
+        lengths=grid.lengths,
+        path=figure_dir / "energy_history.png",
+    )
+    flux_path = plot_flux_contours(final_state, path=figure_dir / "flux_final.png")
+    typer.echo(f"wrote {energy_path}")
+    typer.echo(f"wrote {flux_path}")
 
 
 def main() -> None:  # pragma: no cover - exercised by console entry points.
