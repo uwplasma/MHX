@@ -1,28 +1,27 @@
-import os
+"""Sphinx configuration for MHX."""
+
+from __future__ import annotations
+
 import sys
-from datetime import datetime
+from pathlib import Path
 
-# Add project root to path
-sys.path.insert(0, os.path.abspath('..'))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-project = 'MHX'
-author = 'UW Plasma'
-year = datetime.now().year
-copyright = f"{year}, {author}"
-
+project = "MHX"
+author = "UW Plasma Group"
+copyright = "2026, UW Plasma Group"
 extensions = [
-    'sphinx.ext.autodoc',
-    'sphinx.ext.napoleon',
-    'sphinx.ext.mathjax',
-    'sphinx.ext.viewcode',
-    'sphinx.ext.autosummary',
+    "myst_parser",
+    "sphinx.ext.autodoc",
+    "sphinx.ext.napoleon",
+    "sphinx_autodoc_typehints",
 ]
+source_suffix = {
+    ".rst": "restructuredtext",
+    ".md": "markdown",
+}
+html_theme = "alabaster"
+html_static_path: list[str] = []
+autodoc_typehints = "description"
+myst_enable_extensions = ["dollarmath", "amsmath"]
 
-autosummary_generate = True
-
-templates_path = ['_templates']
-exclude_patterns = ['_build']
-
-html_theme = 'sphinx_rtd_theme'
-
-# Ensure notebooks not required

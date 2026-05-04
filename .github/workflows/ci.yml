@@ -10,10 +10,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.11"]
+        python-version: ["3.10", "3.11"]
     env:
       JAX_PLATFORM_NAME: cpu
-      JAX_DISABLE_JIT: "1"
       JAX_ENABLE_X64: "1"
     steps:
       - uses: actions/checkout@v4
@@ -23,25 +22,19 @@ jobs:
       - name: Install
         run: |
           python -m pip install --upgrade pip
-          python -m pip install "jax[cpu]==0.6.1" -f https://storage.googleapis.com/jax-releases/jax_releases.html
-          python -m pip install -r requirements-ci.txt
-          python -m pip install -e . --no-deps
-      - name: Lint (package only)
+          python -m pip install -e ".[dev]"
+      - name: Lint
         run: |
-          python -m ruff check mhx tests
-      - name: Check legacy imports
-        run: |
-          python tools/check_legacy_imports.py
+          python -m ruff check src tests examples
       - name: Tests
         run: |
-          python -m pytest -q
+          python -m pytest --cov=mhx --cov-report=term-missing --cov-fail-under=95
 
   docs:
     runs-on: ubuntu-latest
     env:
       JAX_PLATFORM_NAME: cpu
       JAX_ENABLE_X64: "1"
-      JAX_DISABLE_JIT: "1"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -50,98 +43,7 @@ jobs:
       - name: Install
         run: |
           python -m pip install --upgrade pip
-          python -m pip install "jax[cpu]==0.6.1" -f https://storage.googleapis.com/jax-releases/jax_releases.html
-          python -m pip install -r requirements-ci.txt
-          python -m pip install -e . --no-deps
+          python -m pip install -e ".[docs]"
       - name: Build docs
         run: |
           sphinx-build -b html docs docs/_build/html
-
-  media:
-    runs-on: ubuntu-latest
-    env:
-      JAX_PLATFORM_NAME: cpu
-      JAX_ENABLE_X64: "1"
-      JAX_DISABLE_JIT: "1"
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-      - name: Install
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install "jax[cpu]==0.6.1" -f https://storage.googleapis.com/jax-releases/jax_releases.html
-          python -m pip install -r requirements-ci.txt
-          python -m pip install -e . --no-deps
-      - name: Generate media
-        run: |
-          python examples/make_inverse_design_media.py
-      - name: Validate outputs
-        run: |
-          test -f docs/_static/fig_reachable_heatmap.png
-          test -f docs/_static/fig_reachable_region.png
-          test -f docs/_static/fig_cost_history.png
-
-  paper:
-    runs-on: ubuntu-latest
-    env:
-      JAX_PLATFORM_NAME: cpu
-      JAX_ENABLE_X64: "1"
-      JAX_DISABLE_JIT: "1"
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-      - name: Install
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install "jax[cpu]==0.6.1" -f https://storage.googleapis.com/jax-releases/jax_releases.html
-          python -m pip install -r requirements-ci.txt
-          python -m pip install -e . --no-deps
-      - name: Run paper pipeline (FAST)
-        run: |
-          python examples/reproduce_figures.py
-      - name: Validate manifest and outputs
-        run: |
-          test -f outputs/manifest.json
-          test -f docs/_static/energy.png
-          test -f docs/_static/energy_hall.png
-          test -f docs/_static/az_midplane_hall.gif
-          test -f docs/_static/energy_anisotropic.png
-          test -f docs/_static/az_midplane_anisotropic.gif
-          test -f docs/_static/energy_electron_pressure.png
-          test -f docs/_static/az_midplane_electron_pressure.gif
-          test -f docs/_static/energy_two_fluid.png
-          test -f docs/_static/az_midplane_two_fluid.gif
-          test -f docs/_static/latent_ode_fit.png
-          test -f docs/_static/latent_ode_ablation.rst
-          test -f docs/_static/latent_ode_experiment.png
-          test -f docs/_static/latent_ode_calibration.png
-          test -f docs/_static/latent_ode_failure.png
-          test -f docs/_static/benchmark_matrix.rst
-          test -f outputs/benchmarks/latent_ode_ablation.json
-          test -f outputs/benchmarks/latent_ode_experiment.json
-          test -f outputs/benchmarks/benchmark_matrix.json
-          test -f outputs/datasets/latent_ode_dataset.npz
-          test -f outputs/figures/fig_inverse_vs_grid_forcefree.png
-      - name: Validate manifest hashes
-        run: |
-          python - <<'PY'
-          import json
-          from pathlib import Path
-          data = json.loads(Path("outputs/manifest.json").read_text())
-          assert "hashes" in data and data["hashes"]
-          assert "run_configs" in data
-          PY
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: paper-artifacts
-          path: |
-            outputs/manifest.json
-            outputs/run_configs
-            outputs/benchmarks
-            outputs/figures
-            docs/_static

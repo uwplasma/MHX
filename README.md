@@ -1,194 +1,86 @@
 # MHX
 
-Differentiable pseudo-spectral reduced MHD tearing/plasmoid solver and analysis tools (JAX-based).
+[![CI](https://github.com/uwplasma/MHX/actions/workflows/ci.yml/badge.svg)](https://github.com/uwplasma/MHX/actions/workflows/ci.yml)
+[![Documentation Status](https://readthedocs.org/projects/mhx/badge/?version=latest)](https://mhx.readthedocs.io/)
+
+**MHX is being rebuilt as a JAX-native, differentiable plasma and magnetohydrodynamics framework for magnetic reconnection, tearing modes, turbulence, validation, and inverse design.**
+
+The previous reduced-MHD tearing/plasmoid code has been preserved under
+`legacy/old_mhx/`. The active package is a clean rebuild under `src/mhx/`.
+
+## Current status
+
+This rebuild is intentionally starting from a small, tested core:
+
+- Python 3.10+ package with `src/` layout.
+- `mhx` CLI with `mhx version`, `mhx init`, and `mhx run`.
+- TOML configuration loading.
+- Periodic Cartesian grids.
+- JAX spectral derivative operators.
+- Sphinx/MyST documentation skeleton.
+- CI for linting, tests, coverage, and docs.
+
+The first scientific target is a small spectral tearing benchmark with gradient
+checks. Hall, radiative terms, 3D, finite-volume shock-capturing MHD, and neural
+ODE workflows will be added after the core API is stable.
 
 ## Install
 
 ```bash
-pip install -e .
+git clone https://github.com/uwplasma/MHX.git
+cd MHX
+python -m pip install -e ".[dev,docs]"
 ```
 
-Inverse design / ML extras:
+JAX accelerator wheels are platform-specific. For GPU/TPU installs, follow the
+official JAX instructions and then install MHX.
+
+## Quickstart
+
+Create a starter config:
 
 ```bash
-pip install -e ".[ml]"
+mhx init examples/linear_tearing.toml
 ```
 
-Docs extras:
+Run the deterministic smoke workflow:
 
 ```bash
-pip install -e ".[docs]"
+mhx run examples/linear_tearing.toml --outdir outputs/smoke
 ```
 
-CI/repro pinned set:
+Expected files:
 
-```bash
-pip install -r requirements-ci.txt
+- `outputs/smoke/config_effective.json`
+- `outputs/smoke/diagnostics.json`
+- `outputs/smoke/manifest.json`
+
+## Python API
+
+```python
+from mhx.config import load_config
+from mhx.grids import CartesianGrid
+from mhx.numerics.spectral import fft_derivative
+
+cfg = load_config("examples/linear_tearing.toml")
+grid = CartesianGrid.from_mesh_config(cfg.mesh)
+x, _ = grid.mesh()
+dfdx = fft_derivative(x * 0.0, axis=0, length=grid.lengths[0])
 ```
 
-## Quickstart (FAST)
+## Roadmap
 
-Run a tiny simulation (seconds) and generate figures:
+The full rebuild plan and execution log live in `plan.md`. Major milestones:
 
-```bash
-mhx simulate --fast --equilibrium original --eta 1e-3 --nu 1e-3
-mhx figures --run outputs/runs/<timestamp>_simulate
-```
-
-Run a tiny scan and inverse design (requires `pip install -e ".[ml]"`):
-
-```bash
-mhx scan --equilibrium forcefree --grid 4x4
-mhx inverse-design --equilibrium forcefree --steps 2 --fast
-```
-
-## Figures & Movies
-
-Energy evolution (FAST example):
-
-![Energy time series](docs/_static/energy.png)
-
-Midplane flux evolution (FAST example):
-
-![Az midplane evolution](docs/_static/az_midplane.gif)
-
-Reachable region (FAST example):
-
-![Reachable region](docs/_static/fig_reachable_region.png)
-
-Cost history (FAST example):
-
-![Cost history](docs/_static/fig_cost_history.png)
-
-## Outputs
-
-Runs are written under:
-
-```
-outputs/runs/<timestamp>_<tag>/
-  config.yaml
-  history.npz
-  solution_initial.npz
-  solution_mid.npz
-  solution_final.npz
-  figures/
-```
-
-Grid scans and figure outputs:
-
-```
-outputs/scans/reachable_region_scan_<eq_mode>.npz
-outputs/figures/*.png
-```
-
-## Objective consistency (important)
-
-The inverse-design objective is persisted into `history.npz` (`target_f_kin`,
-`target_complexity`, `lambda_complexity`). The figure generator will load these
-values by default to avoid apples-to-oranges comparisons.
-
-## Source code links
-
-- Diagnostics API: [mhx/solver/diagnostics.py](https://github.com/uwplasma/MHX/blob/main/mhx/solver/diagnostics.py)
-- Core solver: [mhx/solver/tearing.py](https://github.com/uwplasma/MHX/blob/main/mhx/solver/tearing.py)
-- Inverse design training: [mhx/inverse_design/train.py](https://github.com/uwplasma/MHX/blob/main/mhx/inverse_design/train.py)
+1. Clean package skeleton and validation-first numerics.
+2. Spectral reduced-MHD tearing benchmark plus gradient checks.
+3. Plugin-style physics terms and standardized diagnostics.
+4. Finite-volume MHD, constrained transport, and external-code comparisons.
+5. Neural ODE and differentiable inverse-design workflows.
+6. Manuscript-grade docs, figures, movies, and reproducibility pipelines.
 
 ## Citation
 
-If you use MHX, please cite it. See `CITATION.cff`.
+MHX is not yet release-citable. Until a tagged release and `CITATION.cff` are
+created for the rebuilt package, cite the repository URL and commit SHA.
 
-## Notes
-
-- Many scripts assume 64-bit JAX. Enable with:
-
-```bash
-export JAX_ENABLE_X64=1
-```
-
-## Legacy scripts
-
-Legacy scripts have been moved to `scripts/legacy/`. Root-level files now
-provide deprecation shims for backward compatibility.
-See `docs/migration.rst` for the old → new command mapping.
-
-## Physics plugins
-
-Define additive physics terms via `PhysicsTerm` and pass them to the solver.
-See `examples/physics_plugin_minimal.py` and `examples/physics_plugin_extended_mhd.py`
-for toy terms (`hall`, `hyper_resistivity`, `anisotropic_pressure`).
-
-Validate plugin metadata/signatures with:
-
-```bash
-mhx plugin lint
-```
-
-Generate Hall/anisotropic media (figures + GIFs):
-
-```bash
-python examples/make_extended_mhd_media.py
-```
-
-This also generates electron-pressure and two-fluid Ohm’s-law examples.
-
-## Latent ODE
-
-FAST tutorial:
-
-```bash
-python examples/latent_ode_fast.py
-```
-
-This generates `docs/_static/latent_ode_fit.png` and an ablation table
-`docs/_static/latent_ode_ablation.rst`.
-
-Baseline experiment:
-
-```bash
-python examples/latent_ode_experiment.py
-```
-
-This generates `docs/_static/latent_ode_experiment.png` and
-`docs/_static/latent_ode_experiment.rst`, plus calibration and failure-case
-plots.
-
-Dataset generator:
-
-```bash
-python examples/latent_ode_dataset.py
-```
-
-## Reproduce all figures (FAST)
-
-```bash
-python examples/reproduce_figures.py
-```
-
-Expected outputs include `outputs/manifest.json` plus figures under `docs/_static/`.
-
-## Reproducibility
-
-See `docs/reproducibility.rst` for exact command sequences and expected outputs.
-
-Output schema details are documented in `docs/output_schema.rst`.
-To enforce API compatibility during loading, set `MHX_API_VERSION` (see
-`docs/api_versioning.rst`).
-
-## Model configuration
-
-```bash
-mhx simulate --fast --model-config model.yaml
-```
-
-Example YAML:
-
-```yaml
-model:
-  equilibrium_mode: original
-  rhs_terms: [linear_drag, hyper_resistivity]
-  term_params:
-    linear_drag:
-      mu: 0.05
-    hyper_resistivity:
-      eta4: 1e-3
-```
