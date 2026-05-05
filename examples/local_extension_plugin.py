@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 from typing import ClassVar
 
 import jax.numpy as jnp
@@ -48,6 +49,27 @@ def _final_flux_l2(context: DiagnosticContext) -> dict[str, float]:
     return {"final_flux_l2": float(jnp.sqrt(jnp.mean(psi**2)))}
 
 
+def _plot_flux_l2_history(
+    context: DiagnosticContext,
+    diagnostics: dict[str, float],
+    figure_dir: Path,
+) -> dict[str, Path]:
+    del diagnostics
+    import matplotlib.pyplot as plt
+
+    figure_dir.mkdir(parents=True, exist_ok=True)
+    path = figure_dir / "final_flux_l2_history.png"
+    values = jnp.sqrt(jnp.mean(context.trajectory.states.psi**2, axis=(1, 2)))
+    fig, ax = plt.subplots(figsize=(6.2, 4.0), constrained_layout=True)
+    ax.plot(context.trajectory.times, values, "o-", color="#3266a8")
+    ax.set_xlabel("time")
+    ax.set_ylabel(r"$\langle \psi^2\rangle^{1/2}$")
+    ax.set_title("Plugin diagnostic: flux RMS")
+    fig.savefig(path, dpi=180)
+    plt.close(fig)
+    return {"final_flux_l2_history": path}
+
+
 def register_physics(registry: PhysicsRegistry) -> None:
     """Register the example RHS term with an MHX physics registry."""
     registry.register("example_flux_drive", _flux_drive_factory)
@@ -61,5 +83,6 @@ def register_diagnostics(registry: DiagnosticsRegistry) -> None:
             description="Root-mean-square magnetic flux at the final saved frame.",
             output_keys=("final_flux_l2",),
             compute=_final_flux_l2,
+            figure=_plot_flux_l2_history,
         )
     )

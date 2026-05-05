@@ -121,6 +121,7 @@ jobs:
           test -f outputs/ci/plugin_demo/report.md
           test -f outputs/ci/plugin_demo/figures/flux_final.png
           test -f outputs/ci/plugin_demo/figures/flux_movie.gif
+          test -f outputs/ci/plugin_demo/figures/diagnostics/final_flux_l2_history.png
       - uses: actions/upload-artifact@v7.0.1
         with:
           name: mhx-fast-artifacts

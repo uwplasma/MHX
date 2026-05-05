@@ -110,6 +110,30 @@ registry.register(
 The callable receives a `DiagnosticContext` with the saved trajectory, initial
 state, domain lengths, diagnostic Fourier mode, and fit-time window.
 
+Diagnostics can also provide optional report figures by passing a `figure`
+callable. The hook receives the same `DiagnosticContext`, the scalar diagnostic
+dictionary, and an output directory. It should write deterministic files and
+return a mapping from figure key to path:
+
+```python
+from pathlib import Path
+
+def plot_my_metric(context, diagnostics, figure_dir: Path):
+    path = figure_dir / "my_metric.png"
+    # write figure to path
+    return {"my_metric_history": path}
+
+registry.register(
+    DiagnosticSpec(
+        name="my_metric",
+        description="Example metric with a report figure.",
+        output_keys=("my_metric",),
+        compute=compute_my_metric,
+        figure=plot_my_metric,
+    )
+)
+```
+
 ## Config-loaded diagnostics plugins
 
 A local module can expose diagnostics without modifying MHX source code:
@@ -162,6 +186,12 @@ Reports also reconstruct diagnostic registry metadata from
 at report time, `report.json` contains `diagnostic_metadata`, and `report.md`
 renders a table of selected diagnostic descriptions and output keys. If a plugin
 cannot be imported, the report still writes but records a warning.
+
+If a selected diagnostic defines a figure hook, `mhx report` writes the files
+under `figures/diagnostics/` and records them in `report.json` as
+`diagnostic_figures`. The local plugin example writes
+`figures/diagnostics/final_flux_l2_history.png`, which is checked in CI as part
+of the FAST artifact pipeline.
 
 ## Source links
 

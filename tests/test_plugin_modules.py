@@ -249,10 +249,22 @@ def test_plugin_demo_example_runs_and_cli_lists_plugins(tmp_path) -> None:
     assert report_result.exit_code == 0, report_result.stdout
     report = json.loads((outdir / "report.json").read_text())
     assert report["additional_scalar_diagnostics"]["final_flux_l2"] > 0.0
+    assert report["diagnostic_figures"] == [
+        {
+            "key": "final_flux_l2_history",
+            "path": "figures/diagnostics/final_flux_l2_history.png",
+        }
+    ]
     assert report["warnings"] == []
-    assert any(item["name"] == "final_flux_l2" for item in report["diagnostic_metadata"])
+    assert any(
+        item["name"] == "final_flux_l2" and item["has_figure"] is True
+        for item in report["diagnostic_metadata"]
+    )
+    assert (outdir / "figures" / "diagnostics" / "final_flux_l2_history.png").stat().st_size > 0
     assert "`final_flux_l2`" in (outdir / "report.md").read_text()
     assert "Diagnostic registry metadata" in (outdir / "report.md").read_text()
+    assert "Diagnostic figures" in (outdir / "report.md").read_text()
+    assert "![final_flux_l2_history]" in (outdir / "report.md").read_text()
 
     physics_lint_result = runner.invoke(
         app,

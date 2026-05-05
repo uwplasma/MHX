@@ -40,6 +40,9 @@ class DiagnosticSpec:
     description: str
     output_keys: tuple[str, ...]
     compute: Callable[[DiagnosticContext], dict[str, Any]]
+    figure: Callable[[DiagnosticContext, dict[str, Any], Path], dict[str, str | Path]] | None = (
+        None
+    )
 
 
 class DiagnosticsRegistry:
@@ -73,6 +76,7 @@ class DiagnosticsRegistry:
                 "name": spec.name,
                 "description": spec.description,
                 "output_keys": list(spec.output_keys),
+                "has_figure": spec.figure is not None,
             }
             for spec in (self._items[name] for name in self.names())
         )
@@ -87,6 +91,25 @@ class DiagnosticsRegistry:
         for name in names:
             diagnostics.update(self.get(name).compute(context))
         return diagnostics
+
+    def write_figures(
+        self,
+        names: tuple[str, ...],
+        context: DiagnosticContext,
+        diagnostics: dict[str, Any],
+        figure_dir: str | Path,
+    ) -> dict[str, Path]:
+        """Write selected diagnostic figures and return paths by figure key."""
+        output_dir = Path(figure_dir)
+        output_dir.mkdir(parents=True, exist_ok=True)
+        figures: dict[str, Path] = {}
+        for name in names:
+            spec = self.get(name)
+            if spec.figure is None:
+                continue
+            for key, path in spec.figure(context, diagnostics, output_dir).items():
+                figures[key] = Path(path)
+        return figures
 
 
 def magnetic_energy(state: ReducedMHDState, *, lengths: tuple[float, float]) -> Array:

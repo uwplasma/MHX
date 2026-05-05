@@ -4288,3 +4288,59 @@ Every agent must append an entry here. Do not delete previous entries.
 - Add a validation-summary manifest/table for all benchmark schemas and figures.
 - Start a calibrated nonzero-equilibrium tearing eigenmode benchmark with a
   conservative literature-anchored gate.
+
+### 2026-05-05 — Agent: Codex, diagnostic figure hooks
+
+**Summary**
+
+- Extended `DiagnosticSpec` with an optional figure hook so diagnostics can
+  write deterministic report figures in addition to scalar outputs.
+- Added registry-level figure dispatch and `mhx report` integration. Reports now
+  include `diagnostic_figures` in `report.json` and embed generated figures in
+  `report.md`.
+- Updated `examples.local_extension_plugin` so `final_flux_l2` writes a
+  `final_flux_l2_history.png` figure under `figures/diagnostics/`.
+- Added CI artifact checks, tests, README notes, diagnostics docs, and output
+  schema documentation for diagnostic figure hooks.
+
+**Files changed**
+
+- Updated diagnostics registry, report generation, local extension plugin,
+  CI, README, diagnostics docs, output schema docs, and plugin tests.
+
+**Tests run**
+
+- `python -m ruff check src tests examples` passed.
+- `python -m pytest tests/test_plugin_modules.py tests/test_io_cli_run.py -q`
+  passed: 16 tests.
+- `python -m pytest --cov=mhx --cov-report=term-missing --cov-fail-under=95`
+  passed: 89 tests, 96.38% coverage.
+- `sphinx-build -b html docs docs/_build/html` passed.
+- CI-equivalent artifact sequence passed locally and wrote
+  `outputs/ci/artifact_manifest.json` covering 80 files.
+
+**Decisions made**
+
+- Figure hooks live on diagnostics, not reports, because the diagnostic owns the
+  semantics of what should be plotted. Reports only reconstruct context,
+  dispatch selected hooks, and record paths.
+- The hook receives the existing `DiagnosticContext`, the scalar diagnostics
+  dictionary, and an output directory; this keeps third-party plugins simple
+  while preserving reproducible output paths.
+
+**Problems / blockers**
+
+- Figure hooks are currently run during report generation, not during `mhx
+  figures`. A future plotting registry can unify core figures and plugin
+  diagnostic figures.
+
+**Progress**
+
+- Estimated plan completion: 67%.
+
+**Next steps**
+
+- Add a validation-summary manifest/table for all benchmark schemas and figures.
+- Add a plotting registry so `mhx figures` can discover extension figures
+  directly.
+- Start the first nonzero-equilibrium tearing eigenmode validation gate.

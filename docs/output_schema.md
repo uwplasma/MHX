@@ -92,6 +92,10 @@ schema. `report.md` renders the same values in an `Additional scalar
 diagnostics` table. Reports also include `diagnostic_metadata` when MHX can
 reconstruct the selected diagnostic registry from `config_effective.json`; any
 import or registry reconstruction failures are recorded in `warnings`.
+Diagnostics may also provide optional figure hooks. `mhx report` writes those
+figures under `figures/diagnostics/` and records a `diagnostic_figures` list in
+`report.json`, with each entry containing a stable figure `key` and run-relative
+`path`.
 
 ## Artifact manifests
 

@@ -124,6 +124,10 @@ mhx diagnostics list-with-plugins --entry-point-group mhx.diagnostics
 
 Use `examples/plugin_template/` as the starting layout for an external plugin
 repository with entry points, source modules, and tests.
+The local plugin also demonstrates diagnostic figure hooks:
+`mhx report outputs/plugin_demo` writes
+`outputs/plugin_demo/figures/diagnostics/final_flux_l2_history.png` and records
+it in `report.json`.
 
 ## Python API
 
