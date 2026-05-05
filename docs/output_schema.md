@@ -108,6 +108,20 @@ mhx artifact-manifest outputs/smoke
 This writes `outputs/smoke/artifact_manifest.json` with schema
 `mhx.artifacts.v1`, file paths, byte sizes, and SHA-256 hashes.
 
+## Validation-suite outputs
+
+`mhx validate all --outdir outputs/validation_suite` executes the active FAST
+validation gates and writes:
+
+- `validation_suite.json`: schema `mhx.validation.suite.v1`, aggregate pass/fail
+  status, case list, per-case validation schemas, checks, and relative paths.
+- `validation_suite.md`: reviewer-readable pass/fail summary table.
+- `artifact_manifest.json`: recursive checksum manifest for every generated
+  validation artifact.
+- `manifest.json`: top-level manifest for the suite summary files.
+- one subdirectory per case, for example `resistive_decay/`,
+  `cosine_equilibrium_linearization/`, and `arnoldi/`.
+
 ## Exact-decay validation outputs
 
 `mhx benchmark decay --outdir outputs/benchmarks/resistive_decay` writes:

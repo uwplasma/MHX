@@ -24,6 +24,7 @@ from mhx.benchmarks import (
     write_resistive_decay_validation,
     write_run_report,
     write_timing_benchmark,
+    write_validation_suite,
 )
 from mhx.config import RunConfig, load_config
 from mhx.diagnostics import (
@@ -60,9 +61,11 @@ app = typer.Typer(no_args_is_help=True, help="MHX differentiable MHD workflows."
 benchmark_app = typer.Typer(no_args_is_help=True, help="Benchmark workflows.")
 physics_app = typer.Typer(no_args_is_help=True, help="Physics plugin inspection.")
 diagnostics_app = typer.Typer(no_args_is_help=True, help="Diagnostic registry inspection.")
+validate_app = typer.Typer(no_args_is_help=True, help="Validation-suite workflows.")
 app.add_typer(benchmark_app, name="benchmark")
 app.add_typer(physics_app, name="physics")
 app.add_typer(diagnostics_app, name="diagnostics")
+app.add_typer(validate_app, name="validate")
 
 
 @app.command()
@@ -437,6 +440,20 @@ def benchmark_timing(
     """Run FAST benchmark timing and Python-memory measurements."""
     manifest_path, _ = write_timing_benchmark(outdir, repeats=repeats, warmups=warmups)
     typer.echo(f"wrote {manifest_path}")
+
+
+@validate_app.command("all")
+def validate_all(
+    outdir: Annotated[
+        Path,
+        typer.Option("--outdir", help="Output directory for validation-suite artifacts."),
+    ] = Path("outputs/validation_suite"),
+) -> None:
+    """Run the active deterministic FAST validation suite."""
+    summary_path, summary = write_validation_suite(outdir)
+    typer.echo(f"wrote {summary_path}")
+    if not summary["passed"]:
+        raise typer.Exit(code=1)
 
 
 @physics_app.command("list")

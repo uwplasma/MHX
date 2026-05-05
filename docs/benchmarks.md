@@ -149,6 +149,7 @@ mhx benchmark power-iteration --outdir outputs/ci/power_iteration
 mhx benchmark arnoldi --outdir outputs/ci/arnoldi
 mhx benchmark timing --outdir outputs/ci/timing --repeats 1 --warmups 0
 mhx benchmark catalog --outdir outputs/ci/catalog
+mhx validate all --outdir outputs/ci/validation_suite
 mhx run examples/linear_tearing_twofluid_toy.toml --outdir outputs/ci/twofluid_toy
 mhx figures outputs/ci/twofluid_toy --gif
 mhx report outputs/ci/twofluid_toy
@@ -165,6 +166,20 @@ commit under test.
 
 The catalog file `outputs/ci/catalog/benchmark_catalog.md` gives reviewers a
 single table of active FAST gates, schemas, commands, and expected artifacts.
+
+For a single reviewer-facing pass/fail bundle, run:
+
+```bash
+mhx validate all --outdir outputs/validation_suite
+```
+
+This command executes the active deterministic FAST validation gates and writes:
+
+- `outputs/validation_suite/validation_suite.json`
+- `outputs/validation_suite/validation_suite.md`
+- `outputs/validation_suite/artifact_manifest.json`
+- one subdirectory per validation case, each with its own `validation.json`
+  and `manifest.json`.
 
 ## FAST timing benchmark
 

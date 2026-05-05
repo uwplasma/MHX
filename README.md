@@ -88,6 +88,7 @@ mhx benchmark power-iteration --outdir outputs/benchmarks/power_iteration
 mhx benchmark arnoldi --outdir outputs/benchmarks/arnoldi
 mhx benchmark timing --outdir outputs/benchmarks/timing --repeats 3 --warmups 1
 mhx benchmark catalog --outdir outputs/benchmarks/catalog
+mhx validate all --outdir outputs/validation_suite
 ```
 
 Inspect configurable physics terms:

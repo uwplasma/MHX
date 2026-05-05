@@ -4521,3 +4521,62 @@ Every agent must append an entry here. Do not delete previous entries.
   validation catalog and writes a single validation summary.
 - Start a calibrated tearing eigenmode benchmark with a documented asymptotic
   regime and tolerances.
+
+### 2026-05-05 — Agent: Codex, validation-suite runner
+
+**Summary**
+
+- Added a reviewer-facing `mhx validate all` command that executes the active
+  deterministic FAST validation gates and writes a single pass/fail summary.
+- Added `mhx.validation.suite.v1` outputs:
+  `validation_suite.json`, `validation_suite.md`, `artifact_manifest.json`,
+  `manifest.json`, and one subdirectory per validation case.
+- Wired the validation suite into CI artifacts and docs so reviewers can run
+  one command instead of manually invoking every gate.
+
+**Files changed**
+
+- Added `src/mhx/benchmarks/suite.py` and `tests/test_validation_suite.py`.
+- Updated benchmark exports, CLI, CI, README, benchmark docs, validation docs,
+  and output-schema docs.
+
+**Tests run**
+
+- `python -m ruff check src tests examples` passed.
+- `python -m pytest tests/test_validation_suite.py tests/test_import_cli.py -q`
+  passed: 5 tests.
+- `mhx validate all --outdir outputs/dev/validation_suite` passed and wrote
+  a 10-case summary.
+- `python -m pytest --cov=mhx --cov-report=term-missing --cov-fail-under=95`
+  passed: 94 tests, 96.41% coverage.
+- `sphinx-build -b html docs docs/_build/html` passed.
+- CI-equivalent artifact sequence passed locally and wrote
+  `outputs/ci/artifact_manifest.json` covering 146 files.
+- CI artifact file-set validation passed, including the new
+  validation-suite summary and cosine-equilibrium figure.
+
+**Decisions made**
+
+- The suite includes deterministic validation gates, not the timing benchmark
+  as a pass/fail case. Timing remains an artifact-only performance tracker to
+  avoid brittle CI failures.
+- The linear-tearing smoke case writes the same stable run files as the CLI and
+  then applies the existing lightweight run validator.
+
+**Problems / blockers**
+
+- The validation suite is now a strong reviewer entry point, but it still lacks
+  a calibrated FKR/Coppi eigenvalue benchmark.
+
+**Progress**
+
+- Estimated plan completion: 74%.
+
+**Next steps**
+
+- Add release notes/changelog entries summarizing the validation and extension
+  APIs.
+- Start a calibrated tearing eigenmode benchmark with a documented asymptotic
+  regime and tolerances.
+- Add a migration/deprecation cleanup pass for legacy scripts once the new
+  command surface is stable.

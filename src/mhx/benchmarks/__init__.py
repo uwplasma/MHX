@@ -55,6 +55,12 @@ from mhx.benchmarks.scaling import (
     run_reconnection_scaling_validation,
     write_reconnection_scaling_validation,
 )
+from mhx.benchmarks.suite import (
+    VALIDATION_SUITE_SCHEMA,
+    ValidationSuiteCase,
+    validation_suite_cases,
+    write_validation_suite,
+)
 from mhx.benchmarks.tearing import linear_tearing_initial_state, run_linear_tearing_smoke
 from mhx.benchmarks.theory import (
     FKRConstantPsiEstimate,
@@ -93,11 +99,13 @@ __all__ = [
     "RECONNECTION_SCALING_SCHEMA",
     "RESISTIVE_DECAY_SCHEMA",
     "TIMING_BENCHMARK_SCHEMA",
+    "VALIDATION_SUITE_SCHEMA",
     "ReconnectionScalingResult",
     "ReducedMHDLinearEigenmodeResult",
     "ResistiveDecayResult",
     "TimingBenchmarkResult",
     "TimingCaseResult",
+    "ValidationSuiteCase",
     "fkr_constant_psi_estimate",
     "harris_sheet_delta_prime",
     "ideal_tearing_aspect_ratio",
@@ -118,6 +126,7 @@ __all__ = [
     "run_timing_benchmark",
     "validate_run",
     "validation_catalog_entries",
+    "validation_suite_cases",
     "write_benchmark_catalog",
     "write_arnoldi_validation",
     "write_cosine_equilibrium_linearization_validation",
@@ -130,4 +139,5 @@ __all__ = [
     "write_resistive_decay_validation",
     "write_run_report",
     "write_timing_benchmark",
+    "write_validation_suite",
 ]

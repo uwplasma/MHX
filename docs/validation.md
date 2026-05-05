@@ -57,6 +57,16 @@ Regenerate the documentation figures:
 python examples/make_validation_media.py
 ```
 
+Run every active FAST validation gate and write a single reviewer-facing
+summary:
+
+```bash
+mhx validate all --outdir outputs/validation_suite
+```
+
+The suite writes `validation_suite.json`, `validation_suite.md`,
+`artifact_manifest.json`, and one subdirectory per validation case.
+
 ## Publication figures
 
 The numerical mode amplitude is visually indistinguishable from
