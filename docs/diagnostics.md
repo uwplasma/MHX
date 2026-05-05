@@ -187,15 +187,17 @@ at report time, `report.json` contains `diagnostic_metadata`, and `report.md`
 renders a table of selected diagnostic descriptions and output keys. If a plugin
 cannot be imported, the report still writes but records a warning.
 
-If a selected diagnostic defines a figure hook, `mhx report` writes the files
-under `figures/diagnostics/` and records them in `report.json` as
-`diagnostic_figures`. The local plugin example writes
+If a selected diagnostic defines a figure hook, `mhx figures <run-dir>` writes
+the files under `figures/diagnostics/`. `mhx report <run-dir>` dispatches the
+same hooks and records them in `report.json` as `diagnostic_figures`. The local
+plugin example writes
 `figures/diagnostics/final_flux_l2_history.png`, which is checked in CI as part
 of the FAST artifact pipeline.
 
 ## Source links
 
 - [Diagnostics implementation](https://github.com/uwplasma/MHX/blob/main/src/mhx/diagnostics/reduced_mhd.py)
+- [Diagnostic figure dispatch](https://github.com/uwplasma/MHX/blob/main/src/mhx/plotting/diagnostics.py)
 - [Diagnostics tests](https://github.com/uwplasma/MHX/blob/main/tests/test_reduced_mhd.py)
 - [Plugin-module tests](https://github.com/uwplasma/MHX/blob/main/tests/test_plugin_modules.py)
 - [Local plugin example](https://github.com/uwplasma/MHX/blob/main/examples/local_extension_plugin.py)

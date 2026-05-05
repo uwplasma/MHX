@@ -4394,3 +4394,64 @@ Every agent must append an entry here. Do not delete previous entries.
   directly.
 - Start a calibrated nonzero-equilibrium tearing eigenmode validation gate.
 - Add release notes/changelog entries summarizing the new validation stack.
+
+### 2026-05-05 — Agent: Codex, diagnostic figures in `mhx figures`
+
+**Summary**
+
+- Extracted diagnostic figure dispatch into `mhx.plotting.diagnostics` so
+  extension diagnostics are plotted by the figure-generation path, not only by
+  reports.
+- Updated `mhx figures <run-dir>` to call selected diagnostic figure hooks and
+  write plugin plots under `figures/diagnostics/`.
+- Kept `mhx report <run-dir>` on the same shared dispatch path so `report.json`
+  and `report.md` continue to record deterministic `diagnostic_figures`.
+- Added CI coverage that checks the plugin diagnostic figure exists immediately
+  after `mhx figures`, before report generation.
+
+**Files changed**
+
+- Added `src/mhx/plotting/diagnostics.py`.
+- Updated `src/mhx/cli/main.py`, `src/mhx/benchmarks/report.py`,
+  `src/mhx/plotting/__init__.py`, `.github/workflows/ci.yml`,
+  `tests/test_plugin_modules.py`, README, diagnostics docs, and output-schema
+  docs.
+
+**Tests run**
+
+- `python -m ruff check src tests examples` passed.
+- `python -m pytest tests/test_plugin_modules.py tests/test_io_cli_run.py -q`
+  passed: 16 tests.
+- `python -m pytest --cov=mhx --cov-report=term-missing --cov-fail-under=95`
+  passed: 91 tests, 96.36% coverage.
+- `sphinx-build -b html docs docs/_build/html` passed.
+- CI-equivalent artifact sequence passed locally and wrote
+  `outputs/ci/artifact_manifest.json` covering 83 files.
+- CI artifact file-set validation passed, including
+  `outputs/ci/plugin_demo/figures/diagnostics/final_flux_l2_history.png`.
+
+**Decisions made**
+
+- Diagnostic figure dispatch is a plotting API (`mhx.plotting`) rather than a
+  benchmark-report private helper. This keeps extension figures available to
+  normal users through `mhx figures` and keeps reports as a metadata/summary
+  layer.
+- Optional plugin import failures remain warnings rather than fatal plotting
+  errors, so core figures can still be regenerated from saved trajectories.
+
+**Problems / blockers**
+
+- None in this chunk. The remaining scientific gap is a calibrated nonzero
+  equilibrium tearing eigenmode validation gate.
+
+**Progress**
+
+- Estimated plan completion: 70%.
+
+**Next steps**
+
+- Start a calibrated nonzero-equilibrium tearing eigenmode validation gate.
+- Add release notes/changelog entries summarizing the validation and extension
+  APIs.
+- Add a reviewer-oriented `mhx validate all` command that executes the active
+  validation catalog rather than only listing it.

@@ -51,6 +51,7 @@ from mhx.plotting import (
     plot_flux_contours,
     plot_flux_gif,
     plot_mode_amplitude,
+    write_diagnostic_figures_for_run,
 )
 from mhx.state import ReducedMHDState
 
@@ -172,6 +173,14 @@ def figures(
     typer.echo(f"wrote {energy_path}")
     typer.echo(f"wrote {flux_path}")
     typer.echo(f"wrote {amplitude_path}")
+    diagnostic_figures, diagnostic_warnings = write_diagnostic_figures_for_run(
+        run_dir,
+        figure_dir=figure_dir / "diagnostics",
+    )
+    for item in diagnostic_figures:
+        typer.echo(f"wrote diagnostic figure {item['path']}")
+    for warning in diagnostic_warnings:
+        typer.echo(f"warning: {warning}", err=True)
     if gif:
         extent = (lower[0], upper[0], lower[1], upper[1])
         gif_path = plot_flux_gif(trajectory, path=figure_dir / "flux_movie.gif", extent=extent)

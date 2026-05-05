@@ -81,6 +81,7 @@ jobs:
           mhx report outputs/ci/twofluid_toy
           mhx run examples/linear_tearing_plugin_demo.toml --outdir outputs/ci/plugin_demo
           mhx figures outputs/ci/plugin_demo --gif
+          test -f outputs/ci/plugin_demo/figures/diagnostics/final_flux_l2_history.png
           mhx report outputs/ci/plugin_demo
           mhx artifact-manifest outputs/ci
       - name: Validate artifact file set

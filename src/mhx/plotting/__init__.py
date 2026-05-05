@@ -1,5 +1,6 @@
 """Plotting helpers."""
 
+from mhx.plotting.diagnostics import write_diagnostic_figures_for_run
 from mhx.plotting.reduced_mhd import (
     plot_arnoldi_ritz_values,
     plot_decay_amplitude,
@@ -38,4 +39,5 @@ __all__ = [
     "plot_power_iteration_history",
     "plot_reduced_mhd_eigenmode_errors",
     "plot_timing_summary",
+    "write_diagnostic_figures_for_run",
 ]

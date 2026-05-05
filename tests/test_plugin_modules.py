@@ -245,6 +245,13 @@ def test_plugin_demo_example_runs_and_cli_lists_plugins(tmp_path) -> None:
     assert diagnostics_lint_result.exit_code == 0, diagnostics_lint_result.stdout
     assert "final_flux_l2: ok" in diagnostics_lint_result.stdout
 
+    figures_result = runner.invoke(app, ["figures", str(outdir)])
+    assert figures_result.exit_code == 0, figures_result.stdout
+    assert "wrote diagnostic figure figures/diagnostics/final_flux_l2_history.png" in (
+        figures_result.stdout
+    )
+    assert (outdir / "figures" / "diagnostics" / "final_flux_l2_history.png").stat().st_size > 0
+
     report_result = runner.invoke(app, ["report", str(outdir)])
     assert report_result.exit_code == 0, report_result.stdout
     report = json.loads((outdir / "report.json").read_text())

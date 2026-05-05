@@ -6,16 +6,13 @@ import json
 from pathlib import Path
 from typing import Any
 
-from mhx.config import DiagnosticsConfig, RunConfig
+from mhx.config import DiagnosticsConfig
 from mhx.diagnostics import (
-    DiagnosticContext,
     default_diagnostics_registry,
     load_diagnostics_entry_points,
     load_diagnostics_plugin_modules,
 )
-from mhx.grids import CartesianGrid
-from mhx.io import read_reduced_mhd_trajectory_npz
-from mhx.state import ReducedMHDState
+from mhx.plotting import write_diagnostic_figures_for_run
 
 
 def validate_run(
@@ -58,7 +55,7 @@ def write_run_report(run_dir: str | Path) -> tuple[Path, Path]:
     manifest = json.loads((directory / "manifest.json").read_text(encoding="utf-8"))
     additional_scalar_diagnostics = _additional_scalar_diagnostics(diagnostics)
     diagnostic_metadata, warnings = _diagnostic_metadata(directory, diagnostics)
-    diagnostic_figures, figure_warnings = _diagnostic_figures(directory, diagnostics)
+    diagnostic_figures, figure_warnings = write_diagnostic_figures_for_run(directory)
     warnings.extend(figure_warnings)
     report = {
         "schema": "mhx.benchmark_report.v1",
@@ -209,65 +206,6 @@ def _diagnostic_metadata_markdown(metadata: list[dict[str, Any]]) -> str:
         "| --- | --- | --- | --- |\n"
         f"{rows}\n"
     )
-
-
-def _diagnostic_figures(
-    directory: Path,
-    diagnostics: dict[str, Any],
-) -> tuple[list[dict[str, str]], list[str]]:
-    config_path = directory / "config_effective.json"
-    trajectory_path = directory / "trajectory.npz"
-    quantities = tuple(str(item) for item in diagnostics.get("diagnostic_quantities", ()))
-    if not quantities:
-        return [], ["diagnostic_quantities missing; cannot write diagnostic figures"]
-    if not config_path.exists():
-        return [], ["config_effective.json missing; cannot write diagnostic figures"]
-    if not trajectory_path.exists():
-        return [], ["trajectory.npz missing; cannot write diagnostic figures"]
-    try:
-        config = RunConfig.from_mapping(json.loads(config_path.read_text(encoding="utf-8")))
-        trajectory, _ = read_reduced_mhd_trajectory_npz(trajectory_path)
-        grid = CartesianGrid.from_mesh_config(config.mesh)
-        initial_state = ReducedMHDState(
-            psi=trajectory.states.psi[0],
-            omega=trajectory.states.omega[0],
-        )
-        context = DiagnosticContext(
-            trajectory=trajectory,
-            initial_state=initial_state,
-            lengths=grid.lengths,
-            mode=config.diagnostics.mode,
-            fit_time_window=config.diagnostics.fit_time_window,
-        )
-        registry = default_diagnostics_registry()
-        load_diagnostics_entry_points(
-            registry,
-            config.diagnostics.plugin_entry_point_groups,
-        )
-        load_diagnostics_plugin_modules(registry, config.diagnostics.plugin_modules)
-        figure_paths = registry.write_figures(
-            quantities,
-            context,
-            diagnostics,
-            directory / "figures" / "diagnostics",
-        )
-        figures = [
-            {
-                "key": key,
-                "path": _path_for_report(directory, path),
-            }
-            for key, path in sorted(figure_paths.items())
-        ]
-        return figures, []
-    except Exception as exc:
-        return [], [f"could not write diagnostic figures: {exc}"]
-
-
-def _path_for_report(directory: Path, path: Path) -> str:
-    try:
-        return path.relative_to(directory).as_posix()
-    except ValueError:
-        return str(path)
 
 
 def _diagnostic_figures_markdown(figures: list[dict[str, str]]) -> str:
