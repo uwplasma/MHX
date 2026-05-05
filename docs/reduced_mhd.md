@@ -84,7 +84,8 @@ $$
 A_{k_x,k_y}(t) = |\hat{\psi}_{k_x,k_y}(t)|
 $$
 
-for a configured mode, currently `(1, 1)` in the FAST smoke benchmark. MHX fits
+for a configured mode through the [diagnostics registry](diagnostics.md),
+currently `(1, 1)` in the FAST smoke benchmark. MHX fits
 
 $$
 A(t) \approx A_0 e^{\gamma t}
@@ -98,6 +99,7 @@ The fit window is an explicit config field:
 
 ```toml
 [diagnostics]
+quantities = ["energy", "mode_growth", "divergence_error"]
 mode = [1, 1]
 fit_time_window = [0.02, 0.1]
 ```

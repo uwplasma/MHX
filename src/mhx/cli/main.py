@@ -18,6 +18,7 @@ from mhx.benchmarks import (
     write_timing_benchmark,
 )
 from mhx.config import RunConfig, load_config
+from mhx.diagnostics import default_diagnostics_registry
 from mhx.grids import CartesianGrid
 from mhx.io import (
     read_reduced_mhd_trajectory_npz,
@@ -37,8 +38,10 @@ from mhx.state import ReducedMHDState
 app = typer.Typer(no_args_is_help=True, help="MHX differentiable MHD workflows.")
 benchmark_app = typer.Typer(no_args_is_help=True, help="Benchmark workflows.")
 physics_app = typer.Typer(no_args_is_help=True, help="Physics plugin inspection.")
+diagnostics_app = typer.Typer(no_args_is_help=True, help="Diagnostic registry inspection.")
 app.add_typer(benchmark_app, name="benchmark")
 app.add_typer(physics_app, name="physics")
+app.add_typer(diagnostics_app, name="diagnostics")
 
 
 @app.command()
@@ -305,6 +308,14 @@ def physics_lint(
             f"{name!r} uses {term.api_version!r}, expected {PHYSICS_API_VERSION!r}"
         )
     typer.echo(f"{name}: ok ({term.api_version})")
+
+
+@diagnostics_app.command("list")
+def diagnostics_list() -> None:
+    """List registered reduced-MHD diagnostics and output keys."""
+    for item in default_diagnostics_registry().metadata():
+        keys = ", ".join(item["output_keys"])
+        typer.echo(f"- {item['name']}: {item['description']} [{keys}]")
 
 
 def main() -> None:  # pragma: no cover - exercised by console entry points.

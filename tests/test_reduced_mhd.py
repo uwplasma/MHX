@@ -4,10 +4,15 @@ import jax
 import jax.numpy as jnp
 import pytest
 
-from mhx.benchmarks import run_linear_tearing_smoke
+from mhx.benchmarks import linear_tearing_initial_state, run_linear_tearing_smoke
 from mhx.config import MeshConfig, PhysicsConfig, RunConfig, TimeConfig
 from mhx.diagnostics import (
+    DiagnosticContext,
+    DiagnosticSpec,
+    compute_reduced_mhd_diagnostics,
+    default_diagnostics_registry,
     fit_exponential_growth,
+    magnetic_divergence_linf,
     magnetic_energy,
     mode_amplitude,
     select_fit_window,
@@ -66,6 +71,12 @@ def test_linear_tearing_smoke_runs_and_reports_energy() -> None:
     assert diagnostics["final_total_energy"] <= diagnostics["initial_total_energy"]
     assert diagnostics["diagnostic_mode"] == [1, 1]
     assert diagnostics["gamma_fit"] < 0.0
+    assert diagnostics["diagnostic_quantities"] == [
+        "energy",
+        "mode_growth",
+        "divergence_error",
+    ]
+    assert diagnostics["final_magnetic_divergence_linf"] < 1.0e-10
     assert energies["total"].shape == (2,)
 
 
@@ -130,3 +141,64 @@ def test_trajectory_mode_amplitude_shape() -> None:
     trajectory, _ = run_linear_tearing_smoke(cfg)
     amplitudes = trajectory_mode_amplitude(trajectory, mode=(1, 1))
     assert amplitudes.shape == (2,)
+
+
+def test_diagnostics_registry_selects_output_sets() -> None:
+    cfg = RunConfig(
+        mesh=MeshConfig(shape=(16, 16)),
+        time=TimeConfig(t1=0.02, dt=0.01, save_every=1),
+        physics=PhysicsConfig(resistivity=1.0e-3, viscosity=1.0e-3),
+    )
+    trajectory, _ = run_linear_tearing_smoke(cfg)
+    grid = CartesianGrid.from_mesh_config(cfg.mesh)
+    state0 = linear_tearing_initial_state(grid)
+    energy_only = compute_reduced_mhd_diagnostics(
+        trajectory,
+        initial_state=state0,
+        lengths=grid.lengths,
+        quantities=("energy",),
+        mode=(1, 1),
+        fit_time_window=None,
+    )
+    assert energy_only["diagnostic_quantities"] == ["energy"]
+    assert "final_total_energy" in energy_only
+    assert "gamma_fit" not in energy_only
+
+    registry = default_diagnostics_registry()
+    assert registry.names() == ("divergence_error", "energy", "mode_growth")
+    metadata = registry.metadata()
+    assert {item["name"] for item in metadata} == set(registry.names())
+    with pytest.raises(ValueError, match="already registered"):
+        registry.register(
+            DiagnosticSpec(
+                name="energy",
+                description="duplicate",
+                output_keys=("duplicate",),
+                compute=lambda context: {"duplicate": 0.0},
+            )
+        )
+    full = registry.compute(
+        ("energy", "mode_growth", "divergence_error"),
+        context=compute_diagnostics_context_for_test(trajectory, state0, grid),
+    )
+    assert full["gamma_fit"] < 0.0
+    assert full["final_magnetic_divergence_linf"] < 1.0e-10
+    with pytest.raises(KeyError, match="unknown diagnostic"):
+        registry.get("not_registered")
+
+
+def test_magnetic_divergence_error_is_spectral_zero() -> None:
+    grid = CartesianGrid.from_mesh_config(MeshConfig(shape=(16, 16)))
+    psi = grid.sinusoid(mode=(2, 1))
+    state = ReducedMHDState(psi=psi, omega=jnp.zeros_like(psi))
+    assert float(magnetic_divergence_linf(state, lengths=grid.lengths)) < 1.0e-10
+
+
+def compute_diagnostics_context_for_test(trajectory, state0, grid):
+    return DiagnosticContext(
+        trajectory=trajectory,
+        initial_state=state0,
+        lengths=grid.lengths,
+        mode=(1, 1),
+        fit_time_window=None,
+    )

@@ -47,6 +47,18 @@ This is intentionally explicit. Saved run directories include
 `config_effective.json`, `diagnostics.json`, and `manifest.json`, so a figure or
 benchmark report can be traced back to the exact assembled model.
 
+Diagnostics are assembled the same way:
+
+```toml
+[diagnostics]
+quantities = ["energy", "mode_growth", "divergence_error"]
+mode = [1, 1]
+fit_time_window = [0.02, 0.1]
+```
+
+Use `mhx diagnostics list` to inspect names and output keys. The built-in
+registry is documented in [Diagnostics registry](diagnostics.md).
+
 ## Built-in equilibria
 
 Use `mhx physics equilibria` to inspect available equilibria.

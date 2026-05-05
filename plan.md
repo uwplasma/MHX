@@ -3791,3 +3791,47 @@ Every agent must append an entry here. Do not delete previous entries.
 - Add a diagnostics registry so configs can select diagnostic sets explicitly.
 - Add a calibrated linear eigenmode or matrix-free growth-rate benchmark against FKR/Coppi regimes.
 - Expand performance benchmarking into FAST/medium/production × JIT on/off and record tables as CI artifacts.
+
+### 2026-05-04 — Agent: Codex, config-selectable diagnostics registry
+
+**Summary**
+
+- Added a public reduced-MHD diagnostics registry with `DiagnosticContext`, `DiagnosticSpec`, and `DiagnosticsRegistry`.
+- Moved smoke-run scalar diagnostics behind registry-selected quantities: `energy`, `mode_growth`, and `divergence_error`.
+- Added `mhx diagnostics list` to expose diagnostic names, descriptions, and output keys from the CLI.
+- Added a `docs/diagnostics.md` page with equations for energy, Fourier-mode growth fitting, and the reduced-MHD divergence consistency check.
+- Updated default TOML examples so diagnostics are explicit and auditable in saved configs.
+
+**Files changed**
+
+- Updated `src/mhx/diagnostics/reduced_mhd.py`, diagnostics exports, run benchmark plumbing, CLI, config defaults, example TOMLs, docs, and tests.
+- Added documentation for the diagnostics registry and output-schema keys.
+
+**Tests run**
+
+- `python -m ruff check src tests examples` passed.
+- `python -m pytest --cov=mhx --cov-report=term-missing --cov-fail-under=95` passed: 67 tests, 98.19% coverage.
+- `sphinx-build -b html docs docs/_build/html` passed.
+- CI-equivalent artifact sequence passed locally and wrote `outputs/ci/artifact_manifest.json` covering 39 files.
+- `mhx diagnostics list` printed all built-in diagnostics and output keys.
+
+**Decisions made**
+
+- The default diagnostic set is now `["energy", "mode_growth", "divergence_error"]` to preserve the existing report/figure schema while making the selection explicit.
+- The divergence diagnostic evaluates the spectral mixed-derivative identity directly in Fourier space, avoiding roundoff from repeated real-projected derivative calls.
+- Existing report code still assumes the default `energy` and `mode_growth` outputs; fully optional report templates remain future work.
+
+**Problems / blockers**
+
+- Custom diagnostic registration is available in Python, but loading third-party diagnostic plugins from TOML is not implemented yet.
+- Reports and figures are not yet dynamically generated from arbitrary diagnostic metadata.
+
+**Progress**
+
+- Estimated plan completion: 45%.
+
+**Next steps**
+
+- Add a calibrated linear eigenmode or matrix-free growth-rate benchmark against FKR/Coppi regimes.
+- Allow third-party diagnostics to be registered from package entry points or config modules.
+- Expand the timing benchmark into a FAST/medium/production × JIT matrix.

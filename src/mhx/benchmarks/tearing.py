@@ -3,13 +3,7 @@
 from __future__ import annotations
 
 from mhx.config import RunConfig
-from mhx.diagnostics import (
-    fit_exponential_growth,
-    select_fit_window,
-    total_energy,
-    trajectory_energies,
-    trajectory_mode_amplitude,
-)
+from mhx.diagnostics import compute_reduced_mhd_diagnostics
 from mhx.equations.reduced_mhd import reduced_mhd_rhs
 from mhx.grids import CartesianGrid
 from mhx.physics import CosineTearingEquilibrium, build_equilibrium, build_physics_terms
@@ -62,33 +56,21 @@ def run_linear_tearing_smoke(
         steps=steps,
         save_every=config.time.save_every,
     )
-    energies = trajectory_energies(trajectory, lengths=grid.lengths)
-    mode = config.diagnostics.mode
-    amplitudes = trajectory_mode_amplitude(trajectory, mode=mode)
-    fit_times, fit_amplitudes = select_fit_window(
-        trajectory.times,
-        amplitudes,
-        window=config.diagnostics.fit_time_window,
-    )
     diagnostics = {
         "n_steps": float(steps),
         "equilibrium": config.physics.equilibrium,
         "equilibrium_parameters": dict(equilibrium_parameters),
         "physics_terms": list(config.physics.rhs_terms),
-        "initial_total_energy": float(total_energy(state0, lengths=grid.lengths)),
-        "final_total_energy": float(energies["total"][-1]),
-        "final_magnetic_energy": float(energies["magnetic"][-1]),
-        "final_kinetic_energy": float(energies["kinetic"][-1]),
         "final_time": float(trajectory.times[-1]),
-        "diagnostic_mode": list(mode),
-        "fit_time_window": (
-            None
-            if config.diagnostics.fit_time_window is None
-            else list(config.diagnostics.fit_time_window)
-        ),
-        "fit_sample_count": float(fit_times.shape[0]),
-        "initial_mode_amplitude": float(amplitudes[0]),
-        "final_mode_amplitude": float(amplitudes[-1]),
-        "gamma_fit": float(fit_exponential_growth(fit_times, fit_amplitudes)),
     }
+    diagnostics.update(
+        compute_reduced_mhd_diagnostics(
+            trajectory,
+            initial_state=state0,
+            lengths=grid.lengths,
+            quantities=config.diagnostics.quantities,
+            mode=config.diagnostics.mode,
+            fit_time_window=config.diagnostics.fit_time_window,
+        )
+    )
     return trajectory, diagnostics

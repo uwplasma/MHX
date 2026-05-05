@@ -28,6 +28,6 @@ enable_x64 = true
 enable_jit = true
 
 [diagnostics]
-quantities = ["energy", "divergence_error"]
+quantities = ["energy", "mode_growth", "divergence_error"]
 mode = [1, 1]
 fit_time_window = [0.02, 0.1]

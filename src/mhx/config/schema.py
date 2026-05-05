@@ -166,7 +166,7 @@ class NumericsConfig:
 class DiagnosticsConfig:
     """Diagnostics requested for a run."""
 
-    quantities: tuple[str, ...] = ("energy", "divergence_error")
+    quantities: tuple[str, ...] = ("energy", "mode_growth", "divergence_error")
     mode: tuple[int, int] = (1, 1)
     fit_time_window: tuple[float, float] | None = None
 
@@ -196,6 +196,10 @@ class DiagnosticsConfig:
         ).validated()
 
     def validated(self) -> DiagnosticsConfig:
+        if not self.quantities:
+            raise ValueError("diagnostics.quantities must not be empty")
+        if len(set(self.quantities)) != len(self.quantities):
+            raise ValueError("diagnostics.quantities entries must be unique")
         if self.fit_time_window is not None and self.fit_time_window[1] <= self.fit_time_window[0]:
             raise ValueError("diagnostics.fit_time_window upper bound must exceed lower bound")
         return self

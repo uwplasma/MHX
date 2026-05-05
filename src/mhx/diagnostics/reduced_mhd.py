@@ -2,12 +2,84 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
+from dataclasses import dataclass
+from typing import Any
+
 import jax.numpy as jnp
 from jaxtyping import Array
 
 from mhx.equations.reduced_mhd import stream_function
-from mhx.numerics.spectral import gradient
+from mhx.numerics.spectral import gradient, spectral_wavenumbers
 from mhx.state import ReducedMHDState, ReducedMHDTrajectory
+
+
+@dataclass(frozen=True)
+class DiagnosticContext:
+    """Inputs shared by reduced-MHD trajectory diagnostics."""
+
+    trajectory: ReducedMHDTrajectory
+    initial_state: ReducedMHDState
+    lengths: tuple[float, float]
+    mode: tuple[int, int]
+    fit_time_window: tuple[float, float] | None
+
+
+@dataclass(frozen=True)
+class DiagnosticSpec:
+    """Metadata and callable for one named reduced-MHD diagnostic."""
+
+    name: str
+    description: str
+    output_keys: tuple[str, ...]
+    compute: Callable[[DiagnosticContext], dict[str, Any]]
+
+
+class DiagnosticsRegistry:
+    """Registry for config-selectable reduced-MHD diagnostics."""
+
+    def __init__(self) -> None:
+        self._items: dict[str, DiagnosticSpec] = {}
+
+    def register(self, spec: DiagnosticSpec) -> None:
+        """Register a diagnostic specification by name."""
+        if spec.name in self._items:
+            raise ValueError(f"diagnostic already registered: {spec.name}")
+        self._items[spec.name] = spec
+
+    def get(self, name: str) -> DiagnosticSpec:
+        """Return a diagnostic specification, raising a clear error if absent."""
+        try:
+            return self._items[name]
+        except KeyError as exc:
+            available = ", ".join(sorted(self._items))
+            raise KeyError(f"unknown diagnostic {name!r}; available: {available}") from exc
+
+    def names(self) -> tuple[str, ...]:
+        """Return registered diagnostic names in deterministic order."""
+        return tuple(sorted(self._items))
+
+    def metadata(self) -> tuple[dict[str, Any], ...]:
+        """Return JSON-compatible diagnostic metadata."""
+        return tuple(
+            {
+                "name": spec.name,
+                "description": spec.description,
+                "output_keys": list(spec.output_keys),
+            }
+            for spec in (self._items[name] for name in self.names())
+        )
+
+    def compute(
+        self,
+        names: tuple[str, ...],
+        context: DiagnosticContext,
+    ) -> dict[str, Any]:
+        """Compute selected diagnostics and merge their output dictionaries."""
+        diagnostics: dict[str, Any] = {"diagnostic_quantities": list(names)}
+        for name in names:
+            diagnostics.update(self.get(name).compute(context))
+        return diagnostics
 
 
 def magnetic_energy(state: ReducedMHDState, *, lengths: tuple[float, float]) -> Array:
@@ -26,6 +98,17 @@ def kinetic_energy(state: ReducedMHDState, *, lengths: tuple[float, float]) -> A
 def total_energy(state: ReducedMHDState, *, lengths: tuple[float, float]) -> Array:
     """Return reduced-MHD magnetic plus kinetic energy."""
     return magnetic_energy(state, lengths=lengths) + kinetic_energy(state, lengths=lengths)
+
+
+def magnetic_divergence_linf(state: ReducedMHDState, *, lengths: tuple[float, float]) -> Array:
+    r"""Return ``||∇·B_\perp||_∞`` for ``B_\perp=(∂_yψ,-∂_xψ)``."""
+    psi = jnp.asarray(state.psi)
+    kx = spectral_wavenumbers(psi.shape[0], lengths[0]).reshape((-1, 1))
+    ky = spectral_wavenumbers(psi.shape[1], lengths[1]).reshape((1, -1))
+    psi_hat = jnp.fft.fftn(psi)
+    div_hat = (1j * kx) * (1j * ky) * psi_hat - (1j * ky) * (1j * kx) * psi_hat
+    div_b = jnp.fft.ifftn(div_hat)
+    return jnp.max(jnp.abs(div_b))
 
 
 def mode_amplitude(state: ReducedMHDState, *, mode: tuple[int, int]) -> Array:
@@ -93,6 +176,111 @@ def trajectory_energies(
         "magnetic": magnetic,
         "kinetic": kinetic,
         "total": magnetic + kinetic,
+    }
+
+
+def compute_reduced_mhd_diagnostics(
+    trajectory: ReducedMHDTrajectory,
+    *,
+    initial_state: ReducedMHDState,
+    lengths: tuple[float, float],
+    quantities: tuple[str, ...],
+    mode: tuple[int, int],
+    fit_time_window: tuple[float, float] | None,
+    registry: DiagnosticsRegistry | None = None,
+) -> dict[str, Any]:
+    """Compute selected reduced-MHD diagnostics through the registry API."""
+    diagnostic_registry = registry or default_diagnostics_registry()
+    context = DiagnosticContext(
+        trajectory=trajectory,
+        initial_state=initial_state,
+        lengths=lengths,
+        mode=mode,
+        fit_time_window=fit_time_window,
+    )
+    return diagnostic_registry.compute(quantities, context)
+
+
+def default_diagnostics_registry() -> DiagnosticsRegistry:
+    """Return the built-in reduced-MHD diagnostics registry."""
+    registry = DiagnosticsRegistry()
+    registry.register(
+        DiagnosticSpec(
+            name="energy",
+            description="Initial/final magnetic, kinetic, and total reduced-MHD energies.",
+            output_keys=(
+                "initial_total_energy",
+                "final_total_energy",
+                "final_magnetic_energy",
+                "final_kinetic_energy",
+            ),
+            compute=_energy_diagnostics,
+        )
+    )
+    registry.register(
+        DiagnosticSpec(
+            name="mode_growth",
+            description="Fourier-mode amplitude and exponential growth/decay fit.",
+            output_keys=(
+                "diagnostic_mode",
+                "fit_time_window",
+                "fit_sample_count",
+                "initial_mode_amplitude",
+                "final_mode_amplitude",
+                "gamma_fit",
+            ),
+            compute=_mode_growth_diagnostics,
+        )
+    )
+    registry.register(
+        DiagnosticSpec(
+            name="divergence_error",
+            description="Final spectral divergence error of B_perp = (d_y psi, -d_x psi).",
+            output_keys=("final_magnetic_divergence_linf",),
+            compute=_divergence_error_diagnostics,
+        )
+    )
+    return registry
+
+
+def _energy_diagnostics(context: DiagnosticContext) -> dict[str, Any]:
+    energies = trajectory_energies(context.trajectory, lengths=context.lengths)
+    return {
+        "initial_total_energy": float(total_energy(context.initial_state, lengths=context.lengths)),
+        "final_total_energy": float(energies["total"][-1]),
+        "final_magnetic_energy": float(energies["magnetic"][-1]),
+        "final_kinetic_energy": float(energies["kinetic"][-1]),
+    }
+
+
+def _mode_growth_diagnostics(context: DiagnosticContext) -> dict[str, Any]:
+    amplitudes = trajectory_mode_amplitude(context.trajectory, mode=context.mode)
+    fit_times, fit_amplitudes = select_fit_window(
+        context.trajectory.times,
+        amplitudes,
+        window=context.fit_time_window,
+    )
+    return {
+        "diagnostic_mode": list(context.mode),
+        "fit_time_window": (
+            None if context.fit_time_window is None else list(context.fit_time_window)
+        ),
+        "fit_sample_count": float(fit_times.shape[0]),
+        "initial_mode_amplitude": float(amplitudes[0]),
+        "final_mode_amplitude": float(amplitudes[-1]),
+        "gamma_fit": float(fit_exponential_growth(fit_times, fit_amplitudes)),
+    }
+
+
+def _divergence_error_diagnostics(context: DiagnosticContext) -> dict[str, Any]:
+    final_state = ReducedMHDState(
+        psi=context.trajectory.states.psi[-1],
+        omega=context.trajectory.states.omega[-1],
+    )
+    return {
+        "final_magnetic_divergence_linf": float(
+            magnetic_divergence_linf(final_state, lengths=context.lengths)
+        )
     }
 
 

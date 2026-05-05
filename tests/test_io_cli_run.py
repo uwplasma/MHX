@@ -24,6 +24,12 @@ def test_cli_run_writes_schema_files(tmp_path) -> None:
     assert diagnostics["mesh_lower"] == [0.0, 0.0]
     assert diagnostics["n_steps"] == 10.0
     assert diagnostics["diagnostic_mode"] == [1, 1]
+    assert diagnostics["diagnostic_quantities"] == [
+        "energy",
+        "mode_growth",
+        "divergence_error",
+    ]
+    assert diagnostics["final_magnetic_divergence_linf"] < 1.0e-10
     assert diagnostics["fit_time_window"] == [0.02, 0.1]
     assert diagnostics["fit_sample_count"] == 9.0
     assert diagnostics["gamma_fit"] < 0.0
@@ -140,3 +146,11 @@ def test_benchmark_validation_failure_exits_nonzero(tmp_path) -> None:
 
 def test_npz_schema_constant_is_versioned() -> None:
     assert REDUCED_MHD_TRAJECTORY_SCHEMA == "mhx.reduced_mhd.trajectory.v1"
+
+
+def test_cli_diagnostics_list() -> None:
+    result = CliRunner().invoke(app, ["diagnostics", "list"])
+    assert result.exit_code == 0
+    assert "energy" in result.output
+    assert "mode_growth" in result.output
+    assert "divergence_error" in result.output

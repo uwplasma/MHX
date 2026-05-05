@@ -12,6 +12,7 @@ under `legacy/old_mhx/`.
 quickstart
 architecture
 reduced_mhd
+diagnostics
 output_schema
 benchmarks
 performance

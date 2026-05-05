@@ -19,6 +19,7 @@ def test_load_example_config() -> None:
     assert cfg.physics.equilibrium == "cosine_tearing"
     assert cfg.physics.equilibrium_parameters["perturbation_amplitude"] == pytest.approx(1.0e-3)
     assert cfg.physics.resistivity == pytest.approx(1.0e-3)
+    assert cfg.diagnostics.quantities == ("energy", "mode_growth", "divergence_error")
     assert cfg.diagnostics.mode == (1, 1)
     assert cfg.diagnostics.fit_time_window == (0.02, 0.1)
 
@@ -27,6 +28,7 @@ def test_config_roundtrip_dict_and_toml() -> None:
     cfg = RunConfig()
     data = cfg.to_dict()
     assert data["mesh"]["shape"] == [32, 32]
+    assert data["diagnostics"]["quantities"] == ["energy", "mode_growth", "divergence_error"]
     assert data["diagnostics"]["mode"] == [1, 1]
     assert data["diagnostics"]["fit_time_window"] is None
     assert "[mesh]" in cfg.to_toml()
@@ -56,3 +58,7 @@ def test_config_validation_errors() -> None:
         PhysicsConfig(viscosity=-1.0).validated()
     with pytest.raises(ValueError, match="fit_time_window"):
         DiagnosticsConfig(fit_time_window=(1.0, 0.0)).validated()
+    with pytest.raises(ValueError, match="quantities"):
+        DiagnosticsConfig(quantities=()).validated()
+    with pytest.raises(ValueError, match="unique"):
+        DiagnosticsConfig(quantities=("energy", "energy")).validated()

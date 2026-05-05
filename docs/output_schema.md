@@ -27,9 +27,30 @@ The reduced-MHD v1 trajectory file contains:
 | `diagnostics_json` | JSON-encoded scalar diagnostics. |
 
 Important scalar diagnostics include `equilibrium`, `equilibrium_parameters`,
-`physics_terms`, `diagnostic_mode`, `fit_time_window`, `fit_sample_count`, and
-`gamma_fit`. These fields are saved so model assembly, growth-rate plots, and
+`physics_terms`, `diagnostic_quantities`, `diagnostic_mode`, `fit_time_window`,
+`fit_sample_count`, `gamma_fit`, and `final_magnetic_divergence_linf`. These
+fields are saved so model assembly, growth-rate plots, divergence checks, and
 comparisons can be audited.
+
+## `diagnostics.json` keys
+
+The default reduced-MHD run uses the diagnostic registry entries `energy`,
+`mode_growth`, and `divergence_error`. The default scalar output includes:
+
+| Key | Meaning |
+| --- | --- |
+| `diagnostic_quantities` | Diagnostic registry names evaluated for this run. |
+| `initial_total_energy` | Initial reduced-MHD total energy. |
+| `final_total_energy` | Final reduced-MHD total energy. |
+| `final_magnetic_energy` | Final mean magnetic perturbation energy. |
+| `final_kinetic_energy` | Final mean kinetic energy. |
+| `diagnostic_mode` | Fourier mode used by the mode-growth diagnostic. |
+| `fit_time_window` | Inclusive time window used for the exponential fit. |
+| `fit_sample_count` | Number of saved samples used in the fit. |
+| `initial_mode_amplitude` | Initial normalized magnetic-flux Fourier amplitude. |
+| `final_mode_amplitude` | Final normalized magnetic-flux Fourier amplitude. |
+| `gamma_fit` | Least-squares exponential growth/decay rate. |
+| `final_magnetic_divergence_linf` | Final spectral $\|\nabla\cdot B_\perp\|_\infty$ check. |
 
 ## Figures
 

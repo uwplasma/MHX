@@ -23,6 +23,7 @@ Inspect the registered model pieces used by TOML configs:
 ```bash
 mhx physics equilibria
 mhx physics list
+mhx diagnostics list
 ```
 
 The command writes:

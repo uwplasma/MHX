@@ -88,6 +88,7 @@ Inspect configurable physics terms:
 mhx physics equilibria
 mhx physics list
 mhx physics lint hyper_resistivity
+mhx diagnostics list
 ```
 
 Try a reduced-state two-fluid toy extension:
