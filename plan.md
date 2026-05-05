@@ -4773,3 +4773,72 @@ Every agent must append an entry here. Do not delete previous entries.
 - Add release notes/changelog and a legacy cleanup/deprecation checklist.
 - Begin nonlinear island-growth validation after the linear growth benchmark is
   trustworthy.
+
+### 2026-05-05 — Agent: Codex, API/release hardening and legacy guard
+
+**Summary**
+
+- Declared the rebuilt package API as `v1` with centralized version metadata in
+  `src/mhx/versioning.py`.
+- Added `MHX_API_VERSION` compatibility checks for config serialization,
+  trajectory NPZ IO, manifests, artifact manifests, and validation-suite
+  outputs.
+- Added `mhx api status` and `mhx api deprecations` so users and CI can inspect
+  package/API/schema versions from the CLI.
+- Added a CI legacy-import guard so active source, tests, examples, and tools do
+  not import archived `legacy/old_mhx` modules or old top-level script modules.
+- Added release, migration, API-policy, changelog, and citation metadata.
+
+**Files changed**
+
+- Added `src/mhx/versioning.py`, `tools/check_legacy_imports.py`,
+  `CHANGELOG.md`, `RELEASE.md`, `CITATION.cff`, `docs/api_policy.md`,
+  `docs/migration.md`, and `docs/release.md`.
+- Updated CLI, IO schema writers/readers, config serialization, validation-suite
+  summaries, CI, README, API docs, output-schema docs, and tests.
+
+**Tests run**
+
+- `python -m ruff check src tests examples tools` passed.
+- `python tools/check_legacy_imports.py` passed.
+- `python -m pytest tests/test_versioning.py tests/test_legacy_import_guard.py tests/test_io_schema.py tests/test_config.py tests/test_import_cli.py -q`
+  passed: 13 tests.
+- `python -m pytest --cov=mhx --cov-report=term-missing --cov-fail-under=95`
+  passed: 104 tests, 96.23% coverage.
+- `sphinx-build -b html docs docs/_build/html` passed.
+- `MHX_API_VERSION=v1 mhx run examples/linear_tearing.toml --outdir outputs/dev/api_release_smoke`
+  passed and wrote v1 manifests.
+- `mhx validate all --outdir outputs/dev/api_validation_suite` passed.
+- CI-equivalent benchmark-artifact pipeline passed locally and wrote
+  `outputs/ci/artifact_manifest.json` covering 166 files.
+- CI artifact file-set validation passed for 51 required files.
+
+**Decisions made**
+
+- `MHX_API_VERSION` is strict. Unsupported values fail immediately instead of
+  allowing ambiguous artifact reads/writes.
+- Legacy code remains archived for traceability, but active code is prevented
+  from importing it. This keeps the public API clean without deleting historical
+  context prematurely.
+- Added repository-level citation metadata now, while documenting that formal
+  release/DOI citation should wait for a tagged release.
+
+**Problems / blockers**
+
+- The release process is now documented, but the repository still needs the next
+  scientific validation layer: a calibrated resistive tearing growth-rate
+  benchmark, followed by nonlinear island/plasmoid validation.
+
+**Progress**
+
+- Estimated plan completion: 81%.
+
+**Next steps**
+
+- Implement the calibrated FKR/Coppi growth-rate eigenvalue benchmark or a
+  trusted reference-comparison harness.
+- Convert remaining roadmap placeholders for scan/inverse-design/neural ODE into
+  either implemented commands or explicit deferred milestones before a public
+  release.
+- Push this release-hardening commit and watch GitHub Actions to confirm remote
+  CI parity.

@@ -1,6 +1,8 @@
 # Output schema
 
 Every active MHX run writes a JSON manifest plus schema-versioned data files.
+Artifacts also record `api_version = "v1"` so loaders can enforce the public API
+contract selected by `MHX_API_VERSION`.
 
 ## Run directory
 
@@ -19,6 +21,7 @@ The reduced-MHD v1 trajectory file contains:
 | Key | Meaning |
 | --- | --- |
 | `schema` | Schema string, currently `mhx.reduced_mhd.trajectory.v1`. |
+| `api_version` | Public API version string, currently `v1`. |
 | `mhx_version` | Package version that wrote the file. |
 | `time` | Saved times. |
 | `psi` | Saved magnetic flux arrays with shape `(n_save, nx, ny)`. |
@@ -106,7 +109,7 @@ mhx artifact-manifest outputs/smoke
 ```
 
 This writes `outputs/smoke/artifact_manifest.json` with schema
-`mhx.artifacts.v1`, file paths, byte sizes, and SHA-256 hashes.
+`mhx.artifacts.v1`, API version, file paths, byte sizes, and SHA-256 hashes.
 
 ## Validation-suite outputs
 

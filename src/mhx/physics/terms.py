@@ -15,8 +15,8 @@ import jax.numpy as jnp
 
 from mhx.numerics.spectral import fft_derivative, gradient, laplacian
 from mhx.state import ReducedMHDParams, ReducedMHDState
+from mhx.versioning import PHYSICS_API_VERSION
 
-PHYSICS_API_VERSION = "mhx.physics.v1"
 PHYSICS_ENTRY_POINT_GROUP = "mhx.physics"
 
 

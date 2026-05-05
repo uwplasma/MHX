@@ -29,6 +29,13 @@ remain roadmap items.
 See `docs/audit.md` for the current skeptical validation audit and maturity
 table.
 
+The active public API is `v1`. Check it with:
+
+```bash
+mhx api status
+MHX_API_VERSION=v1 mhx api status --json
+```
+
 ## Install
 
 ```bash
@@ -51,6 +58,7 @@ mhx init examples/linear_tearing.toml
 Run the deterministic reduced-MHD smoke workflow:
 
 ```bash
+python tools/check_legacy_imports.py
 mhx run examples/linear_tearing.toml --outdir outputs/smoke
 ```
 
@@ -175,7 +183,17 @@ The full rebuild plan and execution log live in `plan.md`. Major milestones:
 5. Neural ODE and differentiable inverse-design workflows.
 6. Manuscript-grade docs, figures, movies, and reproducibility pipelines.
 
+## Release and migration
+
+- `CHANGELOG.md` records release-facing changes.
+- `RELEASE.md` defines the release checklist and deprecation policy.
+- `docs/api_policy.md` documents the v1 compatibility contract.
+- `docs/migration.md` maps archived scripts to active CLI workflows.
+- `CITATION.cff` is present for repository-level citation metadata; formal DOI
+  metadata should be updated when the first release is tagged.
+
 ## Citation
 
-MHX is not yet release-citable. Until a tagged release and `CITATION.cff` are
-created for the rebuilt package, cite the repository URL and commit SHA.
+MHX is not yet publication-release-citable. Until a tagged release and DOI are
+created for the rebuilt package, cite the repository URL and commit SHA, or use
+the provisional metadata in `CITATION.cff`.

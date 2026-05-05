@@ -42,4 +42,7 @@
 
 .. automodule:: mhx.io
    :members:
+
+.. automodule:: mhx.versioning
+   :members:
 ```

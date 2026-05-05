@@ -1,0 +1,17 @@
+cff-version: 1.2.0
+title: "MHX: validation-first differentiable magnetohydrodynamics tools"
+message: "If you use this pre-release rebuild of MHX, cite the repository commit SHA until a formal release DOI is minted."
+type: software
+authors:
+  - name: "UW Plasma Group"
+repository-code: "https://github.com/uwplasma/MHX"
+url: "https://github.com/uwplasma/MHX"
+license: MIT
+version: "0.1.0a0"
+date-released: "2026-05-05"
+keywords:
+  - magnetohydrodynamics
+  - magnetic reconnection
+  - reduced MHD
+  - differentiable programming
+  - JAX

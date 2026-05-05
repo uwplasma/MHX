@@ -27,6 +27,7 @@ def test_load_example_config() -> None:
 def test_config_roundtrip_dict_and_toml() -> None:
     cfg = RunConfig()
     data = cfg.to_dict()
+    assert data["api_version"] == "v1"
     assert data["mesh"]["shape"] == [32, 32]
     assert data["diagnostics"]["quantities"] == ["energy", "mode_growth", "divergence_error"]
     assert data["physics"]["plugin_modules"] == []

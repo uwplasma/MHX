@@ -9,6 +9,11 @@ from pathlib import Path
 from typing import Any
 
 from mhx._version import __version__
+from mhx.versioning import (
+    ARTIFACT_MANIFEST_SCHEMA,
+    MANIFEST_SCHEMA,
+    require_supported_api_version,
+)
 
 
 def _sha256_file(path: Path) -> str:
@@ -34,7 +39,8 @@ def write_manifest(
         if (run_dir / relative_path).exists()
     }
     manifest = {
-        "schema": "mhx.manifest.v1",
+        "schema": MANIFEST_SCHEMA,
+        "api_version": require_supported_api_version(context="manifest writer"),
         "created_utc": datetime.now(tz=timezone.utc).isoformat(),
         "mhx_version": __version__,
         "config": config,
@@ -68,7 +74,8 @@ def write_artifact_manifest(
             }
         )
     manifest = {
-        "schema": "mhx.artifacts.v1",
+        "schema": ARTIFACT_MANIFEST_SCHEMA,
+        "api_version": require_supported_api_version(context="artifact-manifest writer"),
         "created_utc": datetime.now(tz=timezone.utc).isoformat(),
         "mhx_version": __version__,
         "root": str(root_path),

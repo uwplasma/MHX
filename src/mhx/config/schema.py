@@ -6,6 +6,8 @@ from dataclasses import asdict, dataclass, field, replace
 from pathlib import Path
 from typing import Any
 
+from mhx.versioning import require_supported_api_version
+
 try:  # pragma: no cover - exercised only on Python 3.10.
     import tomllib
 except ModuleNotFoundError:  # pragma: no cover
@@ -267,8 +269,10 @@ class RunConfig:
 
     def to_dict(self) -> dict[str, Any]:
         """Serialize to JSON-compatible builtins."""
+        require_supported_api_version(context="RunConfig serializer")
         data = asdict(self)
         data["output_dir"] = str(self.output_dir)
+        data["api_version"] = require_supported_api_version(context="RunConfig serializer")
         for section in ("mesh", "time", "physics", "numerics", "diagnostics"):
             for key, value in data[section].items():
                 if isinstance(value, tuple):

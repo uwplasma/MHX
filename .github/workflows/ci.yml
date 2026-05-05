@@ -25,7 +25,10 @@ jobs:
           python -m pip install -e ".[dev]"
       - name: Lint
         run: |
-          python -m ruff check src tests examples
+          python -m ruff check src tests examples tools
+      - name: Legacy import guard
+        run: |
+          python tools/check_legacy_imports.py
       - name: Tests
         run: |
           python -m pytest --cov=mhx --cov-report=term-missing --cov-fail-under=95

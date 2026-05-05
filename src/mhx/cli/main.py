@@ -59,13 +59,16 @@ from mhx.plotting import (
 )
 from mhx.runtime import configure_jax
 from mhx.state import ReducedMHDState
+from mhx.versioning import api_version_info
 
 app = typer.Typer(no_args_is_help=True, help="MHX differentiable MHD workflows.")
 benchmark_app = typer.Typer(no_args_is_help=True, help="Benchmark workflows.")
+api_app = typer.Typer(no_args_is_help=True, help="Public API and schema metadata.")
 physics_app = typer.Typer(no_args_is_help=True, help="Physics plugin inspection.")
 diagnostics_app = typer.Typer(no_args_is_help=True, help="Diagnostic registry inspection.")
 validate_app = typer.Typer(no_args_is_help=True, help="Validation-suite workflows.")
 app.add_typer(benchmark_app, name="benchmark")
+app.add_typer(api_app, name="api")
 app.add_typer(physics_app, name="physics")
 app.add_typer(diagnostics_app, name="diagnostics")
 app.add_typer(validate_app, name="validate")
@@ -75,6 +78,37 @@ app.add_typer(validate_app, name="validate")
 def version() -> None:
     """Print the MHX package version."""
     typer.echo(__version__)
+
+
+@api_app.command("status")
+def api_status(
+    json_output: Annotated[
+        bool,
+        typer.Option("--json", help="Emit machine-readable JSON."),
+    ] = False,
+) -> None:
+    """Print active public API and artifact-schema versions."""
+    info = api_version_info().to_dict()
+    if json_output:
+        typer.echo(json.dumps(info, indent=2, sort_keys=True))
+        return
+    typer.echo(f"Package version: {info['package_version']}")
+    typer.echo(f"Public API: {info['public_api_version']}")
+    typer.echo(f"Supported APIs: {', '.join(info['supported_api_versions'])}")
+    typer.echo(f"Physics API: {info['physics_api_version']}")
+    typer.echo(f"Diagnostics API: {info['diagnostics_api_version']}")
+    typer.echo(f"Trajectory schema: {info['trajectory_schema']}")
+    typer.echo(f"Manifest schema: {info['manifest_schema']}")
+    typer.echo(f"Artifact manifest schema: {info['artifact_manifest_schema']}")
+    typer.echo(f"Validation-suite schema: {info['validation_suite_schema']}")
+
+
+@api_app.command("deprecations")
+def api_deprecations() -> None:
+    """Print active deprecation guidance for legacy entry points."""
+    typer.echo("Legacy scripts live under legacy/old_mhx/ and are not imported by src/mhx.")
+    typer.echo("Use mhx run, mhx benchmark, mhx validate, mhx figures, and mhx report instead.")
+    typer.echo("See docs/migration.md and RELEASE.md for the deprecation window.")
 
 
 @app.command()

@@ -10,8 +10,10 @@ import numpy as np
 
 from mhx._version import __version__
 from mhx.state import ReducedMHDState, ReducedMHDTrajectory
-
-REDUCED_MHD_TRAJECTORY_SCHEMA = "mhx.reduced_mhd.trajectory.v1"
+from mhx.versioning import (
+    REDUCED_MHD_TRAJECTORY_SCHEMA,
+    require_supported_api_version,
+)
 
 
 def write_reduced_mhd_trajectory_npz(
@@ -24,9 +26,11 @@ def write_reduced_mhd_trajectory_npz(
     """Write a reduced-MHD trajectory using the stable v1 NPZ schema."""
     output_path = Path(path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
+    api_version = require_supported_api_version(context="trajectory writer")
     np.savez_compressed(
         output_path,
         schema=np.asarray(REDUCED_MHD_TRAJECTORY_SCHEMA),
+        api_version=np.asarray(api_version),
         mhx_version=np.asarray(__version__),
         time=np.asarray(trajectory.times),
         psi=np.asarray(trajectory.states.psi),
@@ -45,6 +49,8 @@ def read_reduced_mhd_trajectory_npz(
         schema = str(data["schema"])
         if schema != REDUCED_MHD_TRAJECTORY_SCHEMA:
             raise ValueError(f"unsupported trajectory schema {schema!r}")
+        artifact_api_version = str(data["api_version"]) if "api_version" in data else "v1"
+        require_supported_api_version(artifact_api_version, context="trajectory reader")
         trajectory = ReducedMHDTrajectory(
             times=data["time"],
             states=ReducedMHDState(psi=data["psi"], omega=data["omega"]),
