@@ -153,6 +153,28 @@ def validation_catalog_entries() -> tuple[BenchmarkCatalogEntry, ...]:
             ),
         ),
         BenchmarkCatalogEntry(
+            name="periodic_current_sheet_eigenvalue",
+            command=(
+                "mhx benchmark current-sheet-eigenvalue "
+                "--outdir outputs/benchmarks/periodic_current_sheet_eigenvalue"
+            ),
+            schema="mhx.validation.periodic_current_sheet_eigenvalue.v1",
+            purpose=(
+                "Tiny dense spectrum of the nonzero periodic current-sheet JVP "
+                "with gauge-mode and no-spurious-growth gates."
+            ),
+            expected_outputs=(
+                "diagnostics.json",
+                "validation.json",
+                "periodic_current_sheet_eigenvalue.npz",
+                "figures/periodic_current_sheet_spectrum.png",
+            ),
+            literature_anchor=(
+                "Current-sheet reduced-MHD linear operator prerequisite for "
+                "calibrated FKR/Coppi tearing benchmarks."
+            ),
+        ),
+        BenchmarkCatalogEntry(
             name="diffusion_eigenvalue",
             command=(
                 "mhx benchmark diffusion-eigenvalue "

@@ -15,6 +15,7 @@ solver.
 | Analytic FKR/plasmoid/ideal-tearing scaling plots | Reproduce expected literature exponents from formulas. | Yes as analytic scaffolds; no PDE-solver claim. |
 | Matrix-free JVP and eigen scaffolds | JAX JVP, zero-state eigenmodes, Arnoldi, and power iteration are tested on controlled fixtures. | Good scaffolding; not yet a tearing spectrum. |
 | Nonzero current-sheet linearization | Exact bracket couplings around $\psi_0=A\cos y$ are tested. | Good operator gate; still not an FKR benchmark. |
+| Periodic current-sheet dense spectrum | Tiny dense spectrum around $\psi_0=A\cos y$ checks gauge modes, eigenpair residuals, and absence of spurious positive growth. | Useful stability/operator gate; not an FKR/Coppi tearing-growth validation. |
 | FAST reduced-MHD run | Produces stable outputs, diagnostics, figures, and GIFs. Kinetic energy remains tiny and mode amplitudes change weakly. | Smoke test only. |
 | Two-fluid and plugin examples | Exercise extension paths and output schemas. | API examples only; not validated extended-MHD physics. |
 | Nonlinear tearing/plasmoid dynamics | Not demonstrated by the current FAST runs. | No. |
@@ -54,6 +55,7 @@ The repository is currently defensible as a validation-first rebuild with:
 - deterministic output schemas;
 - exact linear physics gates;
 - matrix-free linearization scaffolds;
+- tiny nonzero-equilibrium dense-spectrum gate;
 - plugin and diagnostics extension examples;
 - CI-checked docs, tests, figures, GIFs, reports, and artifact manifests.
 

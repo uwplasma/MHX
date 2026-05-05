@@ -4645,3 +4645,69 @@ Every agent must append an entry here. Do not delete previous entries.
   the linear eigenvalue benchmark is stable.
 - Add release notes and deprecation cleanup for legacy scripts once the new
   command surface has enough validated coverage.
+
+### 2026-05-05 — Agent: Codex, periodic current-sheet spectrum gate
+
+**Summary**
+
+- Added a tiny dense eigenvalue benchmark for the nonzero periodic current
+  sheet `psi0 = A cos(y)`.
+- The new gate assembles the flattened reduced-MHD JVP matrix on a small grid,
+  solves the full dense spectrum, checks constant-flux and constant-vorticity
+  gauge residuals, checks the selected eigenpair residual, and fails on
+  spurious positive non-gauge growth.
+- Added a reviewer-facing figure,
+  `periodic_current_sheet_spectrum.png`, showing the complex spectrum and the
+  selected eigenpair residual against the configured gate.
+- Wired the benchmark into the CLI, validation suite, benchmark catalog,
+  GitHub Actions artifact job, README, output-schema docs, validation docs,
+  and docs media generator.
+
+**Files changed**
+
+- Added `src/mhx/benchmarks/current_sheet.py` and
+  `tests/test_current_sheet_eigenvalue_validation.py`.
+- Updated plotting helpers, benchmark exports, suite/catalog runners, CLI,
+  CI artifact checks, README, docs, and committed docs static media.
+
+**Tests run**
+
+- `python -m ruff check src tests examples` passed.
+- `python -m pytest tests/test_current_sheet_eigenvalue_validation.py tests/test_validation_suite.py tests/test_benchmark_catalog.py tests/test_import_cli.py -q`
+  passed: 9 tests.
+- `mhx validate all --outdir outputs/dev/validation_suite_current` passed with
+  11 cases.
+- `python -m pytest --cov=mhx --cov-report=term-missing --cov-fail-under=95`
+  passed: 96 tests, 96.42% coverage.
+- `sphinx-build -b html docs docs/_build/html` passed.
+- CI-equivalent artifact pipeline passed locally and wrote
+  `outputs/ci/artifact_manifest.json` covering 156 files.
+- CI artifact file-set validation passed, including the new
+  `periodic_current_sheet_eigenvalue` figure inside both direct artifacts and
+  the validation suite.
+
+**Decisions made**
+
+- The benchmark is explicitly framed as an operator-stability gate, not a
+  calibrated FKR/Coppi tearing-growth validation.
+- The dense solve is intentionally tiny and deterministic so it can run in CI
+  without SciPy or a long Krylov solve.
+
+**Problems / blockers**
+
+- A true FKR/Coppi benchmark still needs an asymptotic equilibrium, boundary
+  conditions, eigenvalue reference, resolution study, and documented
+  tolerances. The new spectrum gate reduces operator risk but does not replace
+  that scientific validation.
+
+**Progress**
+
+- Estimated plan completion: 77%.
+
+**Next steps**
+
+- Add a true calibrated tearing eigenvalue benchmark against an accepted
+  asymptotic/reference result.
+- Add release notes/changelog and a deprecation cleanup pass for legacy scripts.
+- Then start nonlinear island-growth/plasmoid validation from the calibrated
+  linear eigenmode setup.

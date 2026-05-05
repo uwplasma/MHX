@@ -121,7 +121,8 @@ validation gates and writes:
   validation artifact.
 - `manifest.json`: top-level manifest for the suite summary files.
 - one subdirectory per case, for example `resistive_decay/`,
-  `cosine_equilibrium_linearization/`, and `arnoldi/`.
+  `cosine_equilibrium_linearization/`,
+  `periodic_current_sheet_eigenvalue/`, and `arnoldi/`.
 
 ## Exact-decay validation outputs
 
@@ -196,6 +197,21 @@ writes:
 - `cosine_equilibrium_linearization.npz`: numerical and analytic JVP arrays for
   the selected flow and flux perturbations.
 - `figures/cosine_equilibrium_linearization_errors.png`: relative-error plot.
+
+## Periodic current-sheet eigenvalue outputs
+
+`mhx benchmark current-sheet-eigenvalue --outdir outputs/benchmarks/periodic_current_sheet_eigenvalue`
+writes:
+
+- `diagnostics.json`: tiny dense-spectrum diagnostics with schema
+  `mhx.validation.periodic_current_sheet_eigenvalue.v1`.
+- `validation.json`: pass/fail gates for gauge residuals, non-gauge damping,
+  spurious positive growth, and selected dense-eigenpair residual.
+- `periodic_current_sheet_eigenvalue.npz`: dense operator matrix, eigenvalue
+  real/imaginary parts, selected eigenvector real/imaginary parts, residual,
+  and leading-real-part diagnostics.
+- `figures/periodic_current_sheet_spectrum.png`: complex spectrum and
+  selected-eigenpair residual plot.
 
 ## Diffusion eigenvalue validation outputs
 

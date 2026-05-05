@@ -423,6 +423,67 @@ def plot_cosine_equilibrium_linearization_errors(
     return output_path
 
 
+def plot_periodic_current_sheet_spectrum(
+    eigenvalues,
+    *,
+    selected_eigenvalue: complex,
+    max_allowed_real_part: float,
+    residual_norm: float,
+    max_residual_norm: float,
+    path: str | Path,
+) -> Path:
+    """Plot the tiny dense spectrum for the periodic current-sheet gate."""
+    import matplotlib.pyplot as plt
+
+    output_path = Path(path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    values = np.asarray(eigenvalues)
+    fig, axes = plt.subplots(1, 2, figsize=(9.2, 3.9), constrained_layout=True)
+    axes[0].scatter(values.real, values.imag, s=14, alpha=0.72, color="#3266a8")
+    axes[0].scatter(
+        [selected_eigenvalue.real],
+        [selected_eigenvalue.imag],
+        s=52,
+        marker="x",
+        color="#b54a4a",
+        label="selected mode",
+    )
+    axes[0].axvline(
+        max_allowed_real_part,
+        color="black",
+        linestyle="--",
+        linewidth=1.0,
+        label="non-gauge gate",
+    )
+    axes[0].axhline(0.0, color="0.85", linewidth=0.8)
+    axes[0].axvline(0.0, color="0.85", linewidth=0.8)
+    axes[0].set_xlabel(r"$\operatorname{Re}\lambda$")
+    axes[0].set_ylabel(r"$\operatorname{Im}\lambda$")
+    axes[0].set_title(r"Linear spectrum around $\psi_0=\cos y$")
+    axes[0].legend(frameon=False)
+    axes[1].semilogy(
+        ["selected residual"],
+        [residual_norm],
+        "o",
+        color="#3266a8",
+        label="measured",
+    )
+    axes[1].semilogy(
+        ["selected residual"],
+        [max_residual_norm],
+        "x",
+        color="#8c4fb4",
+        label="gate",
+    )
+    axes[1].set_ylabel(r"$\|Lv-\lambda v\|_2/\|v\|_2$")
+    axes[1].set_title("Dense eigenpair residual")
+    axes[1].legend(frameon=False)
+    fig.suptitle("Periodic current-sheet eigenvalue gate")
+    fig.savefig(output_path, dpi=220)
+    plt.close(fig)
+    return output_path
+
+
 def plot_plasmoid_scaling(lundquist, gamma, fastest_mode, *, path: str | Path) -> Path:
     """Plot Loureiro Sweet-Parker plasmoid scalings."""
     import matplotlib.pyplot as plt

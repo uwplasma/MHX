@@ -72,6 +72,7 @@ jobs:
           mhx benchmark linearized-rhs --outdir outputs/ci/linearized_rhs
           mhx benchmark reduced-mhd-eigenmode --outdir outputs/ci/reduced_mhd_eigenmode
           mhx benchmark cosine-equilibrium-linearization --outdir outputs/ci/cosine_equilibrium_linearization
+          mhx benchmark current-sheet-eigenvalue --outdir outputs/ci/periodic_current_sheet_eigenvalue
           mhx benchmark diffusion-eigenvalue --outdir outputs/ci/diffusion_eigenvalue
           mhx benchmark power-iteration --outdir outputs/ci/power_iteration
           mhx benchmark arnoldi --outdir outputs/ci/arnoldi
@@ -110,6 +111,8 @@ jobs:
           test -f outputs/ci/reduced_mhd_eigenmode/figures/reduced_mhd_linear_eigenmode_errors.png
           test -f outputs/ci/cosine_equilibrium_linearization/validation.json
           test -f outputs/ci/cosine_equilibrium_linearization/figures/cosine_equilibrium_linearization_errors.png
+          test -f outputs/ci/periodic_current_sheet_eigenvalue/validation.json
+          test -f outputs/ci/periodic_current_sheet_eigenvalue/figures/periodic_current_sheet_spectrum.png
           test -f outputs/ci/diffusion_eigenvalue/validation.json
           test -f outputs/ci/diffusion_eigenvalue/figures/diffusion_eigenvalue_errors.png
           test -f outputs/ci/power_iteration/validation.json
@@ -124,6 +127,7 @@ jobs:
           test -f outputs/ci/validation_suite/validation_suite.json
           test -f outputs/ci/validation_suite/validation_suite.md
           test -f outputs/ci/validation_suite/cosine_equilibrium_linearization/figures/cosine_equilibrium_linearization_errors.png
+          test -f outputs/ci/validation_suite/periodic_current_sheet_eigenvalue/figures/periodic_current_sheet_spectrum.png
           test -f outputs/ci/twofluid_toy/manifest.json
           test -f outputs/ci/twofluid_toy/report.md
           test -f outputs/ci/twofluid_toy/figures/flux_final.png

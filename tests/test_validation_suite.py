@@ -17,6 +17,7 @@ def test_validation_suite_cases_are_unique() -> None:
     assert len(names) == len(set(names))
     assert "linear_tearing_fast" in names
     assert "cosine_equilibrium_linearization" in names
+    assert "periodic_current_sheet_eigenvalue" in names
 
 
 def test_write_validation_suite_artifacts_and_cli(tmp_path) -> None:
@@ -35,6 +36,13 @@ def test_write_validation_suite_artifacts_and_cli(tmp_path) -> None:
         / "cosine_equilibrium_linearization"
         / "figures"
         / "cosine_equilibrium_linearization_errors.png"
+    ).stat().st_size > 0
+    assert (
+        tmp_path
+        / "suite"
+        / "periodic_current_sheet_eigenvalue"
+        / "figures"
+        / "periodic_current_sheet_spectrum.png"
     ).stat().st_size > 0
     persisted = json.loads((tmp_path / "suite" / "validation_suite.json").read_text())
     assert persisted["cases"][0]["passed"] is True

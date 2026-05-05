@@ -312,6 +312,56 @@ Expected files:
 
 ![Cosine-equilibrium linearization gate](_static/validation/cosine_equilibrium_linearization/cosine_equilibrium_linearization_errors.png)
 
+## Periodic current-sheet eigenvalue gate
+
+The first nonzero-equilibrium spectrum gate now assembles the full flattened
+JVP matrix on a deliberately tiny grid for
+
+$$
+\psi_0=A\cos(2\pi y/L_y),\qquad \omega_0=0.
+$$
+
+This is still not an FKR/Coppi growth-rate claim. It is a conservative
+operator-stability gate between exact bracket tests and future asymptotic
+tearing benchmarks. The benchmark checks:
+
+$$
+\|L\,\mathbf{1}_\psi\|_2 \approx 0,\qquad
+\|L\,\mathbf{1}_\omega\|_2 \approx 0,
+$$
+
+for the two mean/gauge modes, solves the complete dense spectrum, and requires
+the non-gauge spectrum to be damped:
+
+$$
+\max_{\lambda\notin\mathrm{gauge}}\operatorname{Re}\lambda
+\le
+-c\,\min(\eta,\nu)\,k_{\min}^2,
+$$
+
+with $c=0.25$ in the FAST gate. It also stores the selected dense eigenpair and
+checks the residual
+
+$$
+\frac{\|Lv-\lambda v\|_2}{\|v\|_2}
+$$
+
+against a tight x64 tolerance.
+
+```bash
+mhx benchmark current-sheet-eigenvalue \
+  --outdir outputs/benchmarks/periodic_current_sheet_eigenvalue
+```
+
+Expected files:
+
+- `outputs/benchmarks/periodic_current_sheet_eigenvalue/diagnostics.json`
+- `outputs/benchmarks/periodic_current_sheet_eigenvalue/validation.json`
+- `outputs/benchmarks/periodic_current_sheet_eigenvalue/periodic_current_sheet_eigenvalue.npz`
+- `outputs/benchmarks/periodic_current_sheet_eigenvalue/figures/periodic_current_sheet_spectrum.png`
+
+![Periodic current-sheet eigenvalue gate](_static/validation/periodic_current_sheet_eigenvalue/periodic_current_sheet_spectrum.png)
+
 ## Diffusion eigenvalue scaffold
 
 Before applying eigenvalue machinery to tearing equilibria, MHX validates the

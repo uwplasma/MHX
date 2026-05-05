@@ -18,6 +18,7 @@ from mhx.benchmarks import (
     write_diffusion_eigenvalue_validation,
     write_fkr_window_validation,
     write_linearized_rhs_validation,
+    write_periodic_current_sheet_eigenvalue_validation,
     write_power_iteration_validation,
     write_reconnection_scaling_validation,
     write_reduced_mhd_linear_eigenmode_validation,
@@ -385,6 +386,33 @@ def benchmark_cosine_equilibrium_linearization(
     """Run the analytic nonzero-cosine-equilibrium linearized-RHS gate."""
     _configure_validation_precision()
     manifest_path, validation = write_cosine_equilibrium_linearization_validation(outdir)
+    typer.echo(f"wrote {manifest_path}")
+    if not validation["passed"]:
+        raise typer.Exit(code=1)
+
+
+@benchmark_app.command("current-sheet-eigenvalue")
+def benchmark_current_sheet_eigenvalue(
+    outdir: Annotated[
+        Path,
+        typer.Option(
+            "--outdir",
+            help="Output directory for periodic current-sheet eigenvalue artifacts.",
+        ),
+    ] = Path("outputs/benchmarks/periodic_current_sheet_eigenvalue"),
+    nx: Annotated[int, typer.Option("--nx", help="Grid points in x.")] = 8,
+    ny: Annotated[int, typer.Option("--ny", help="Grid points in y.")] = 8,
+    eta: Annotated[float, typer.Option("--eta", help="Resistivity.")] = 2.0e-2,
+    nu: Annotated[float, typer.Option("--nu", help="Viscosity.")] = 2.0e-2,
+) -> None:
+    """Run the dense tiny-grid periodic current-sheet eigenvalue gate."""
+    _configure_validation_precision()
+    manifest_path, validation = write_periodic_current_sheet_eigenvalue_validation(
+        outdir,
+        shape=(nx, ny),
+        resistivity=eta,
+        viscosity=nu,
+    )
     typer.echo(f"wrote {manifest_path}")
     if not validation["passed"]:
         raise typer.Exit(code=1)

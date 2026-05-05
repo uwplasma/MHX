@@ -6,6 +6,12 @@ from mhx.benchmarks.catalog import (
     validation_catalog_entries,
     write_benchmark_catalog,
 )
+from mhx.benchmarks.current_sheet import (
+    PERIODIC_CURRENT_SHEET_EIGENVALUE_SCHEMA,
+    PeriodicCurrentSheetEigenvalueResult,
+    run_periodic_current_sheet_eigenvalue_validation,
+    write_periodic_current_sheet_eigenvalue_validation,
+)
 from mhx.benchmarks.decay import (
     RESISTIVE_DECAY_SCHEMA,
     ResistiveDecayResult,
@@ -92,9 +98,11 @@ __all__ = [
     "FKR_WINDOW_SCHEMA",
     "LINEARIZED_RHS_SCHEMA",
     "POWER_ITERATION_SCHEMA",
+    "PERIODIC_CURRENT_SHEET_EIGENVALUE_SCHEMA",
     "REDUCED_MHD_LINEAR_EIGENMODE_SCHEMA",
     "LinearizedRHSResult",
     "PlasmoidScalingEstimate",
+    "PeriodicCurrentSheetEigenvalueResult",
     "PowerIterationValidationResult",
     "RECONNECTION_SCALING_SCHEMA",
     "RESISTIVE_DECAY_SCHEMA",
@@ -118,6 +126,7 @@ __all__ = [
     "run_diffusion_eigenvalue_validation",
     "run_fkr_window_validation",
     "run_linearized_rhs_validation",
+    "run_periodic_current_sheet_eigenvalue_validation",
     "run_power_iteration_validation",
     "run_reduced_mhd_linear_eigenmode_validation",
     "run_reconnection_scaling_validation",
@@ -133,6 +142,7 @@ __all__ = [
     "write_diffusion_eigenvalue_validation",
     "write_fkr_window_validation",
     "write_linearized_rhs_validation",
+    "write_periodic_current_sheet_eigenvalue_validation",
     "write_power_iteration_validation",
     "write_reduced_mhd_linear_eigenmode_validation",
     "write_reconnection_scaling_validation",

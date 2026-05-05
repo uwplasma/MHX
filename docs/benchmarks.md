@@ -60,6 +60,7 @@ mhx benchmark fkr-window --outdir outputs/benchmarks/fkr_window
 mhx benchmark linearized-rhs --outdir outputs/benchmarks/linearized_rhs
 mhx benchmark reduced-mhd-eigenmode --outdir outputs/benchmarks/reduced_mhd_eigenmode
 mhx benchmark cosine-equilibrium-linearization --outdir outputs/benchmarks/cosine_equilibrium_linearization
+mhx benchmark current-sheet-eigenvalue --outdir outputs/benchmarks/periodic_current_sheet_eigenvalue
 mhx benchmark diffusion-eigenvalue --outdir outputs/benchmarks/diffusion_eigenvalue
 mhx benchmark power-iteration --outdir outputs/benchmarks/power_iteration
 mhx benchmark arnoldi --outdir outputs/benchmarks/arnoldi
@@ -103,6 +104,13 @@ The cosine-equilibrium linearization command writes:
 - `cosine_equilibrium_linearization.npz`
 - `figures/cosine_equilibrium_linearization_errors.png`
 
+The periodic current-sheet eigenvalue command writes:
+
+- `diagnostics.json`
+- `validation.json`
+- `periodic_current_sheet_eigenvalue.npz`
+- `figures/periodic_current_sheet_spectrum.png`
+
 The diffusion-eigenvalue command writes:
 
 - `diagnostics.json`
@@ -144,6 +152,7 @@ mhx benchmark fkr-window --outdir outputs/ci/fkr_window
 mhx benchmark linearized-rhs --outdir outputs/ci/linearized_rhs
 mhx benchmark reduced-mhd-eigenmode --outdir outputs/ci/reduced_mhd_eigenmode
 mhx benchmark cosine-equilibrium-linearization --outdir outputs/ci/cosine_equilibrium_linearization
+mhx benchmark current-sheet-eigenvalue --outdir outputs/ci/periodic_current_sheet_eigenvalue
 mhx benchmark diffusion-eigenvalue --outdir outputs/ci/diffusion_eigenvalue
 mhx benchmark power-iteration --outdir outputs/ci/power_iteration
 mhx benchmark arnoldi --outdir outputs/ci/arnoldi
@@ -255,6 +264,12 @@ nonzero current-sheet equilibrium $\psi_0=A\cos y$. It checks two exact
 Poisson-bracket couplings: flow advection of equilibrium flux and magnetic
 tension from perturbed flux. This is a physics gate for the current-sheet terms
 that calibrated FKR eigenmode benchmarks will use next.
+
+The periodic current-sheet eigenvalue gate then assembles the tiny dense
+spectrum of that same nonzero-equilibrium operator. It verifies mean/gauge
+modes, checks the selected dense eigenpair residual, and fails if the
+non-gauge spectrum has spurious positive growth. This remains a periodic
+operator-stability gate, not a calibrated FKR/Coppi growth-rate benchmark.
 
 The diffusion-eigenvalue gate validates the Rayleigh-quotient/residual path on a
 known Fourier eigenpair before using the same matrix-free machinery for tearing
