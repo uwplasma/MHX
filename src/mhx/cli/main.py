@@ -15,6 +15,7 @@ from mhx.benchmarks import (
     write_diffusion_eigenvalue_validation,
     write_fkr_window_validation,
     write_linearized_rhs_validation,
+    write_power_iteration_validation,
     write_reconnection_scaling_validation,
     write_resistive_decay_validation,
     write_run_report,
@@ -327,6 +328,24 @@ def benchmark_diffusion_eigenvalue(
 ) -> None:
     """Run the matrix-free spectral diffusion eigenvalue gate."""
     manifest_path, validation = write_diffusion_eigenvalue_validation(outdir)
+    typer.echo(f"wrote {manifest_path}")
+    if not validation["passed"]:
+        raise typer.Exit(code=1)
+
+
+@benchmark_app.command("power-iteration")
+def benchmark_power_iteration(
+    outdir: Annotated[
+        Path,
+        typer.Option("--outdir", help="Output directory for power-iteration artifacts."),
+    ] = Path("outputs/benchmarks/power_iteration"),
+    iterations: Annotated[
+        int,
+        typer.Option("--iterations", help="Power-iteration steps."),
+    ] = 30,
+) -> None:
+    """Run the known-operator power-iteration smoke benchmark."""
+    manifest_path, validation = write_power_iteration_validation(outdir, iterations=iterations)
     typer.echo(f"wrote {manifest_path}")
     if not validation["passed"]:
         raise typer.Exit(code=1)

@@ -9,9 +9,13 @@ from mhx.benchmarks.decay import (
 )
 from mhx.benchmarks.eigenvalue import (
     DIFFUSION_EIGENVALUE_SCHEMA,
+    POWER_ITERATION_SCHEMA,
     DiffusionEigenvalueResult,
+    PowerIterationValidationResult,
     run_diffusion_eigenvalue_validation,
+    run_power_iteration_validation,
     write_diffusion_eigenvalue_validation,
+    write_power_iteration_validation,
 )
 from mhx.benchmarks.fkr import (
     FKR_WINDOW_SCHEMA,
@@ -57,8 +61,10 @@ __all__ = [
     "DiffusionEigenvalueResult",
     "FKR_WINDOW_SCHEMA",
     "LINEARIZED_RHS_SCHEMA",
+    "POWER_ITERATION_SCHEMA",
     "LinearizedRHSResult",
     "PlasmoidScalingEstimate",
+    "PowerIterationValidationResult",
     "RECONNECTION_SCALING_SCHEMA",
     "RESISTIVE_DECAY_SCHEMA",
     "TIMING_BENCHMARK_SCHEMA",
@@ -76,6 +82,7 @@ __all__ = [
     "run_diffusion_eigenvalue_validation",
     "run_fkr_window_validation",
     "run_linearized_rhs_validation",
+    "run_power_iteration_validation",
     "run_reconnection_scaling_validation",
     "run_resistive_decay_validation",
     "run_linear_tearing_smoke",
@@ -84,6 +91,7 @@ __all__ = [
     "write_diffusion_eigenvalue_validation",
     "write_fkr_window_validation",
     "write_linearized_rhs_validation",
+    "write_power_iteration_validation",
     "write_reconnection_scaling_validation",
     "write_resistive_decay_validation",
     "write_run_report",

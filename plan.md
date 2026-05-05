@@ -4107,3 +4107,65 @@ Every agent must append an entry here. Do not delete previous entries.
 - Add a small Arnoldi/power-iteration smoke test on a known block-diagonal
   operator before applying it to reduced-MHD.
 - Add plugin plotting hooks and report integration for custom diagnostics.
+
+### 2026-05-05 — Agent: Codex, reduced-MHD JVP operator and power iteration
+
+**Summary**
+
+- Added reduced-MHD state flatten/unflatten utilities so matrix-free operators
+  can act on the full $(\psi,\omega)$ state as one vector.
+- Added `linearized_reduced_mhd_operator`, a `MatrixFreeOperator` wrapper around
+  the JAX JVP reduced-MHD RHS.
+- Added deterministic power-iteration utilities and `mhx benchmark
+  power-iteration`, validating dominant-eigenpair convergence on a known
+  diagonal operator before applying eigensolver plumbing to tearing operators.
+- Wired the new benchmark into CI artifacts, output-schema docs, validation
+  docs, quickstart docs, and generated static validation media.
+
+**Files changed**
+
+- Updated state, numerics, reduced-MHD equations, benchmark exports, CLI,
+  plotting, CI, README, quickstart, benchmark docs, output-schema docs,
+  validation-media generation, and tests.
+- Added `docs/_static/validation/power_iteration/power_iteration_history.png`.
+
+**Tests run**
+
+- `python -m pytest tests/test_diffusion_eigenvalue_validation.py
+  tests/test_linearized_rhs_validation.py -q` passed locally during
+  development.
+- `python -m ruff check src tests examples` passed.
+- `python -m pytest --cov=mhx --cov-report=term-missing --cov-fail-under=95`
+  passed: 86 tests, 96.74% coverage.
+- `sphinx-build -b html docs docs/_build/html` passed.
+- CI-equivalent artifact sequence passed locally and wrote
+  `outputs/ci/artifact_manifest.json` covering 69 files.
+
+**Decisions made**
+
+- Power iteration is validated on a deliberately known finite-dimensional
+  operator first. This keeps the eigensolver loop, Rayleigh history, residual
+  gates, output schema, and plotting deterministic before a more expensive
+  calibrated tearing eigenmode benchmark.
+- The reduced-MHD operator wrapper flattens `(psi, omega)` into a single vector
+  but leaves JAX PyTree state objects at the physics-model boundary, preserving
+  extensibility for future Hall/two-fluid state variables.
+
+**Problems / blockers**
+
+- This still is not a calibrated FKR/Coppi tearing eigenvalue calculation. It is
+  the tested operator-control-path prerequisite.
+- Future generalized states will need versioned flattening schemas beyond the
+  current reduced-MHD v1 two-field state.
+
+**Progress**
+
+- Estimated plan completion: 61%.
+
+**Next steps**
+
+- Add an Arnoldi-compatible adapter or SciPy sparse-linear-operator bridge for
+  small calibrated eigenmode studies.
+- Add plugin plotting hooks and report integration for custom diagnostics.
+- Start the first numerical tearing eigenmode validation against a documented
+  asymptotic target and tolerance.

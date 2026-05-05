@@ -14,6 +14,7 @@ from mhx.plotting.reduced_mhd import (
     plot_linearized_rhs_errors,
     plot_mode_amplitude,
     plot_plasmoid_scaling,
+    plot_power_iteration_history,
     plot_timing_summary,
 )
 
@@ -31,5 +32,6 @@ __all__ = [
     "plot_linearized_rhs_errors",
     "plot_mode_amplitude",
     "plot_plasmoid_scaling",
+    "plot_power_iteration_history",
     "plot_timing_summary",
 ]

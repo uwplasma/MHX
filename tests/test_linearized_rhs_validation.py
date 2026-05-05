@@ -16,10 +16,32 @@ from mhx.cli.main import app
 from mhx.config import MeshConfig
 from mhx.equations.reduced_mhd import (
     finite_difference_linearized_reduced_mhd_rhs,
+    linearized_reduced_mhd_operator,
     linearized_reduced_mhd_rhs,
 )
 from mhx.grids import CartesianGrid
-from mhx.state import ReducedMHDParams, ReducedMHDState
+from mhx.state import (
+    ReducedMHDParams,
+    ReducedMHDState,
+    flatten_reduced_mhd_state,
+    reduced_mhd_state_size,
+    unflatten_reduced_mhd_state,
+)
+
+
+def test_reduced_mhd_state_flatten_roundtrip() -> None:
+    grid = CartesianGrid.from_mesh_config(MeshConfig(shape=(4, 6)))
+    state = ReducedMHDState(
+        psi=grid.sinusoid(mode=(1, 0)),
+        omega=grid.cosinusoid(mode=(0, 1)),
+    )
+    vector = flatten_reduced_mhd_state(state)
+    assert vector.shape == (reduced_mhd_state_size(grid.shape),)
+    restored = unflatten_reduced_mhd_state(vector, grid.shape)
+    assert jnp.allclose(restored.psi, state.psi)
+    assert jnp.allclose(restored.omega, state.omega)
+    with pytest.raises(ValueError, match="expected vector size"):
+        unflatten_reduced_mhd_state(vector[:-1], grid.shape)
 
 
 def test_linearized_rhs_api_matches_diffusion_operator() -> None:
@@ -44,6 +66,29 @@ def test_linearized_rhs_api_matches_diffusion_operator() -> None:
             lengths=grid.lengths,
             epsilon=0.0,
         )
+
+
+def test_linearized_reduced_mhd_operator_matches_jvp() -> None:
+    grid = CartesianGrid.from_mesh_config(MeshConfig(shape=(8, 8)))
+    state = ReducedMHDState(
+        psi=grid.cosinusoid(mode=(1, 0)),
+        omega=0.1 * grid.sinusoid(mode=(0, 1)),
+    )
+    perturbation = ReducedMHDState(
+        psi=grid.sinusoid(mode=(1, 1)),
+        omega=grid.cosinusoid(mode=(1, 1)),
+    )
+    params = ReducedMHDParams(resistivity=0.01, viscosity=0.02)
+    tangent = linearized_reduced_mhd_rhs(
+        state,
+        perturbation,
+        params,
+        lengths=grid.lengths,
+    )
+    operator = linearized_reduced_mhd_operator(state, params, lengths=grid.lengths)
+    vector_tangent = operator(flatten_reduced_mhd_state(perturbation))
+    assert operator.shape == (reduced_mhd_state_size(grid.shape),)
+    assert jnp.allclose(vector_tangent, flatten_reduced_mhd_state(tangent))
 
 
 def test_linearized_rhs_validation_matches_finite_difference() -> None:

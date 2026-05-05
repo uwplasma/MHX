@@ -6,9 +6,16 @@ import jax
 import jax.numpy as jnp
 from jaxtyping import Array
 
+from mhx.numerics import MatrixFreeOperator
 from mhx.numerics.spectral import gradient, inverse_laplacian, laplacian
 from mhx.physics import PhysicsTerm, apply_physics_terms
-from mhx.state import ReducedMHDParams, ReducedMHDState
+from mhx.state import (
+    ReducedMHDParams,
+    ReducedMHDState,
+    flatten_reduced_mhd_state,
+    reduced_mhd_state_size,
+    unflatten_reduced_mhd_state,
+)
 
 
 def poisson_bracket(a: Array, b: Array, *, lengths: tuple[float, float]) -> Array:
@@ -106,6 +113,35 @@ def finite_difference_linearized_reduced_mhd_rhs(
     return ReducedMHDState(
         psi=scale * (rhs_plus.psi - rhs_minus.psi),
         omega=scale * (rhs_plus.omega - rhs_minus.omega),
+    )
+
+
+def linearized_reduced_mhd_operator(
+    state: ReducedMHDState,
+    params: ReducedMHDParams,
+    *,
+    lengths: tuple[float, float],
+    terms: tuple[PhysicsTerm, ...] = (),
+) -> MatrixFreeOperator:
+    """Return a flattened matrix-free linearized reduced-MHD operator."""
+    shape = tuple(int(item) for item in state.psi.shape)
+    operator_shape = (reduced_mhd_state_size(shape),)
+
+    def matvec(vector: Array) -> Array:
+        perturbation = unflatten_reduced_mhd_state(vector, shape)
+        tangent = linearized_reduced_mhd_rhs(
+            state,
+            perturbation,
+            params,
+            lengths=lengths,
+            terms=terms,
+        )
+        return flatten_reduced_mhd_state(tangent)
+
+    return MatrixFreeOperator(
+        shape=operator_shape,
+        matvec=matvec,
+        name="linearized_reduced_mhd",
     )
 
 

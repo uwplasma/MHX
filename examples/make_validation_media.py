@@ -9,6 +9,7 @@ from mhx.benchmarks import (
     write_diffusion_eigenvalue_validation,
     write_fkr_window_validation,
     write_linearized_rhs_validation,
+    write_power_iteration_validation,
     write_reconnection_scaling_validation,
     write_resistive_decay_validation,
     write_timing_benchmark,
@@ -22,18 +23,21 @@ def main() -> None:
     fkr_window_run_dir = Path("outputs/docs_validation/fkr_window")
     linearized_run_dir = Path("outputs/docs_validation/linearized_rhs")
     diffusion_eigen_run_dir = Path("outputs/docs_validation/diffusion_eigenvalue")
+    power_iteration_run_dir = Path("outputs/docs_validation/power_iteration")
     timing_run_dir = Path("outputs/docs_validation/timing")
     decay_docs_dir = Path("docs/_static/validation/exact_decay")
     scaling_docs_dir = Path("docs/_static/validation/reconnection_scaling")
     fkr_window_docs_dir = Path("docs/_static/validation/fkr_window")
     linearized_docs_dir = Path("docs/_static/validation/linearized_rhs")
     diffusion_eigen_docs_dir = Path("docs/_static/validation/diffusion_eigenvalue")
+    power_iteration_docs_dir = Path("docs/_static/validation/power_iteration")
     timing_docs_dir = Path("docs/_static/performance")
     write_resistive_decay_validation(run_dir)
     write_reconnection_scaling_validation(scaling_run_dir)
     write_fkr_window_validation(fkr_window_run_dir)
     write_linearized_rhs_validation(linearized_run_dir)
     write_diffusion_eigenvalue_validation(diffusion_eigen_run_dir)
+    write_power_iteration_validation(power_iteration_run_dir)
     write_timing_benchmark(timing_run_dir, repeats=1, warmups=0)
     decay_docs_dir.mkdir(parents=True, exist_ok=True)
     for name in ("decay_amplitude.png", "decay_energy.png", "decay_relative_error.png"):
@@ -55,6 +59,11 @@ def main() -> None:
     shutil.copy2(
         diffusion_eigen_run_dir / "figures" / "diffusion_eigenvalue_errors.png",
         diffusion_eigen_docs_dir / "diffusion_eigenvalue_errors.png",
+    )
+    power_iteration_docs_dir.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(
+        power_iteration_run_dir / "figures" / "power_iteration_history.png",
+        power_iteration_docs_dir / "power_iteration_history.png",
     )
     timing_docs_dir.mkdir(parents=True, exist_ok=True)
     shutil.copy2(

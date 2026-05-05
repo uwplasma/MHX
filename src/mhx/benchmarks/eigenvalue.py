@@ -7,16 +7,23 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+import jax.numpy as jnp
 import numpy as np
 
 from mhx.config import MeshConfig
 from mhx.grids import CartesianGrid
 from mhx.io import write_manifest
-from mhx.numerics import MatrixFreeOperator, eigen_residual_norm, rayleigh_quotient
+from mhx.numerics import (
+    MatrixFreeOperator,
+    eigen_residual_norm,
+    power_iteration,
+    rayleigh_quotient,
+)
 from mhx.numerics.spectral import laplacian
-from mhx.plotting import plot_diffusion_eigenvalue_error
+from mhx.plotting import plot_diffusion_eigenvalue_error, plot_power_iteration_history
 
 DIFFUSION_EIGENVALUE_SCHEMA = "mhx.validation.diffusion_eigenvalue.v1"
+POWER_ITERATION_SCHEMA = "mhx.validation.power_iteration.v1"
 
 
 @dataclass(frozen=True)
@@ -29,6 +36,20 @@ class DiffusionEigenvalueResult:
     measured_eigenvalue: float
     eigenvalue_abs_error: float
     residual_norm: float
+    diagnostics: dict[str, Any]
+    validation: dict[str, Any]
+
+
+@dataclass(frozen=True)
+class PowerIterationValidationResult:
+    """Known-operator power-iteration result and validation gates."""
+
+    expected_eigenvalue: float
+    measured_eigenvalue: float
+    eigenvalue_abs_error: float
+    residual_norm: float
+    rayleigh_history: np.ndarray
+    residual_history: np.ndarray
     diagnostics: dict[str, Any]
     validation: dict[str, Any]
 
@@ -98,6 +119,65 @@ def run_diffusion_eigenvalue_validation(
     )
 
 
+def run_power_iteration_validation(
+    *,
+    iterations: int = 30,
+    max_eigenvalue_abs_error: float = 1.0e-6,
+    max_residual_norm: float = 1.0e-6,
+) -> PowerIterationValidationResult:
+    """Validate power iteration on a known diagonal matrix-free operator."""
+    eigenvalues = jnp.asarray([3.0, -1.5, 0.5, 0.1])
+    expected_eigenvalue = float(eigenvalues[0])
+    operator = MatrixFreeOperator(
+        shape=eigenvalues.shape,
+        name="diagonal_power_iteration_fixture",
+        matvec=lambda vector: eigenvalues * vector,
+    )
+    initial_vector = jnp.asarray([1.0, 0.5, -0.25, 0.125])
+    result = power_iteration(operator, initial_vector, iterations=iterations)
+    measured_eigenvalue = float(result.eigenvalue)
+    residual_norm = float(result.residual_norm)
+    eigenvalue_abs_error = abs(measured_eigenvalue - expected_eigenvalue)
+    checks = {
+        "dominant_rayleigh_quotient_matches_fixture": (
+            eigenvalue_abs_error <= max_eigenvalue_abs_error
+        ),
+        "dominant_eigen_residual_within_tolerance": residual_norm <= max_residual_norm,
+    }
+    diagnostics = {
+        "schema": POWER_ITERATION_SCHEMA,
+        "iterations": iterations,
+        "expected_eigenvalue": expected_eigenvalue,
+        "measured_eigenvalue": measured_eigenvalue,
+        "eigenvalue_abs_error": eigenvalue_abs_error,
+        "residual_norm": residual_norm,
+        "fixture_eigenvalues": [float(value) for value in eigenvalues],
+        "references": {
+            "power_iteration": "Dominant-eigenpair smoke test for matrix-free operators",
+        },
+    }
+    validation = {
+        "schema": "mhx.validation.power_iteration.gates.v1",
+        "passed": all(checks.values()),
+        "checks": checks,
+        "thresholds": {
+            "max_eigenvalue_abs_error": max_eigenvalue_abs_error,
+            "max_residual_norm": max_residual_norm,
+        },
+        "diagnostics": diagnostics,
+    }
+    return PowerIterationValidationResult(
+        expected_eigenvalue=expected_eigenvalue,
+        measured_eigenvalue=measured_eigenvalue,
+        eigenvalue_abs_error=eigenvalue_abs_error,
+        residual_norm=residual_norm,
+        rayleigh_history=np.asarray(result.rayleigh_history),
+        residual_history=np.asarray(result.residual_history),
+        diagnostics=diagnostics,
+        validation=validation,
+    )
+
+
 def write_diffusion_eigenvalue_validation(
     outdir: str | Path,
     **kwargs: Any,
@@ -145,6 +225,57 @@ def write_diffusion_eigenvalue_validation(
             "validation": validation_path.name,
             "history": history_path.name,
             "diffusion_eigenvalue_errors": str(figure_path.relative_to(output_dir)),
+        },
+    )
+    return manifest_path, result.validation
+
+
+def write_power_iteration_validation(
+    outdir: str | Path,
+    **kwargs: Any,
+) -> tuple[Path, dict[str, Any]]:
+    """Write power-iteration validation JSON, NPZ, figure, and manifest artifacts."""
+    output_dir = Path(outdir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    result = run_power_iteration_validation(**kwargs)
+
+    diagnostics_path = output_dir / "diagnostics.json"
+    validation_path = output_dir / "validation.json"
+    history_path = output_dir / "power_iteration_history.npz"
+    manifest_path = output_dir / "manifest.json"
+    diagnostics_path.write_text(
+        json.dumps(result.diagnostics, indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+    validation_path.write_text(
+        json.dumps(result.validation, indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+    iterations = np.arange(1, result.rayleigh_history.shape[0] + 1)
+    np.savez_compressed(
+        history_path,
+        schema=POWER_ITERATION_SCHEMA,
+        iterations=iterations,
+        rayleigh_history=result.rayleigh_history,
+        residual_history=result.residual_history,
+        expected_eigenvalue=result.expected_eigenvalue,
+    )
+
+    figure_path = plot_power_iteration_history(
+        iterations,
+        result.rayleigh_history,
+        result.residual_history,
+        expected_eigenvalue=result.expected_eigenvalue,
+        path=output_dir / "figures" / "power_iteration_history.png",
+    )
+    write_manifest(
+        manifest_path,
+        config=result.diagnostics,
+        outputs={
+            "diagnostics": diagnostics_path.name,
+            "validation": validation_path.name,
+            "history": history_path.name,
+            "power_iteration_history": str(figure_path.relative_to(output_dir)),
         },
     )
     return manifest_path, result.validation

@@ -163,6 +163,19 @@ writes:
   eigenvalue, and measured Rayleigh quotient.
 - `figures/diffusion_eigenvalue_errors.png`: eigenvalue/residual error plot.
 
+## Power-iteration validation outputs
+
+`mhx benchmark power-iteration --outdir outputs/benchmarks/power_iteration`
+writes:
+
+- `diagnostics.json`: dominant-eigenpair diagnostics with schema
+  `mhx.validation.power_iteration.v1`.
+- `validation.json`: pass/fail gates for dominant eigenvalue and residual
+  errors.
+- `power_iteration_history.npz`: saved iteration index, Rayleigh-quotient
+  history, residual history, and expected dominant eigenvalue.
+- `figures/power_iteration_history.png`: convergence history plot.
+
 ## Timing benchmark outputs
 
 `mhx benchmark timing --outdir outputs/benchmarks/timing` writes:

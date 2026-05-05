@@ -246,6 +246,52 @@ Expected files:
 
 ![Diffusion eigenvalue gate](_static/validation/diffusion_eigenvalue/diffusion_eigenvalue_errors.png)
 
+## Power-iteration scaffold
+
+The next eigenvalue-control-path gate validates the dominant-eigenpair iteration
+on a diagonal matrix-free operator
+
+$$
+\mathcal{A}u = \operatorname{diag}(3,-1.5,0.5,0.1)u,
+$$
+
+whose dominant eigenvalue is known exactly:
+
+$$
+\lambda_\star = 3.
+$$
+
+Power iteration repeatedly applies
+
+$$
+u_{n+1}=\frac{\mathcal{A}u_n}{\|\mathcal{A}u_n\|_2},
+$$
+
+and records the Rayleigh quotient
+
+$$
+\lambda_n = \frac{\langle u_n,\mathcal{A}u_n\rangle}{\langle u_n,u_n\rangle}
+$$
+
+plus residual $\|\mathcal{A}u_n-\lambda_nu_n\|_2$. This is intentionally a
+known finite-dimensional operator, not a tearing benchmark. It makes the
+dominant-eigenpair loop, convergence history, plotting, schemas, CLI, and CI
+artifact checks deterministic before coupling the same machinery to the
+reduced-MHD JVP operator.
+
+```bash
+mhx benchmark power-iteration --outdir outputs/benchmarks/power_iteration
+```
+
+Expected files:
+
+- `outputs/benchmarks/power_iteration/diagnostics.json`
+- `outputs/benchmarks/power_iteration/validation.json`
+- `outputs/benchmarks/power_iteration/power_iteration_history.npz`
+- `outputs/benchmarks/power_iteration/figures/power_iteration_history.png`
+
+![Power-iteration convergence gate](_static/validation/power_iteration/power_iteration_history.png)
+
 Additional source links:
 
 - [Scaling validation implementation](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/scaling.py)
@@ -256,3 +302,4 @@ Additional source links:
 - [Linearized RHS tests](https://github.com/uwplasma/MHX/blob/main/tests/test_linearized_rhs_validation.py)
 - [Diffusion eigenvalue implementation](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/eigenvalue.py)
 - [Diffusion eigenvalue tests](https://github.com/uwplasma/MHX/blob/main/tests/test_diffusion_eigenvalue_validation.py)
+- [Power-iteration utilities](https://github.com/uwplasma/MHX/blob/main/src/mhx/numerics/linear_operator.py)

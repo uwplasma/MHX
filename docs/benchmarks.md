@@ -59,6 +59,7 @@ mhx benchmark scaling --outdir outputs/benchmarks/reconnection_scaling
 mhx benchmark fkr-window --outdir outputs/benchmarks/fkr_window
 mhx benchmark linearized-rhs --outdir outputs/benchmarks/linearized_rhs
 mhx benchmark diffusion-eigenvalue --outdir outputs/benchmarks/diffusion_eigenvalue
+mhx benchmark power-iteration --outdir outputs/benchmarks/power_iteration
 ```
 
 This writes:
@@ -91,6 +92,13 @@ The diffusion-eigenvalue command writes:
 - `diffusion_eigenvalue.npz`
 - `figures/diffusion_eigenvalue_errors.png`
 
+The power-iteration command writes:
+
+- `diagnostics.json`
+- `validation.json`
+- `power_iteration_history.npz`
+- `figures/power_iteration_history.png`
+
 ## CI artifacts
 
 Every push runs a `benchmark-artifacts` CI job. It executes deterministic FAST
@@ -104,6 +112,7 @@ mhx benchmark scaling --outdir outputs/ci/reconnection_scaling
 mhx benchmark fkr-window --outdir outputs/ci/fkr_window
 mhx benchmark linearized-rhs --outdir outputs/ci/linearized_rhs
 mhx benchmark diffusion-eigenvalue --outdir outputs/ci/diffusion_eigenvalue
+mhx benchmark power-iteration --outdir outputs/ci/power_iteration
 mhx benchmark timing --outdir outputs/ci/timing --repeats 1 --warmups 0
 mhx run examples/linear_tearing_twofluid_toy.toml --outdir outputs/ci/twofluid_toy
 mhx figures outputs/ci/twofluid_toy --gif
@@ -187,6 +196,10 @@ operator-level scaffold for later calibrated tearing eigenmode benchmarks.
 The diffusion-eigenvalue gate validates the Rayleigh-quotient/residual path on a
 known Fourier eigenpair before using the same matrix-free machinery for tearing
 operators.
+
+The power-iteration gate validates a minimal dominant-eigenpair iteration on a
+known diagonal matrix-free operator. This keeps the eigensolver control path
+tested independently before later coupling to reduced-MHD tearing operators.
 
 References used for the benchmark roadmap include
 [Furth, Killeen, and Rosenbluth 1963](https://cir.nii.ac.jp/crid/1363107370207531008),

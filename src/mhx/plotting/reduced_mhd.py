@@ -305,6 +305,38 @@ def plot_diffusion_eigenvalue_error(
     return output_path
 
 
+def plot_power_iteration_history(
+    iterations,
+    rayleigh_history,
+    residual_history,
+    *,
+    expected_eigenvalue: float,
+    path: str | Path,
+) -> Path:
+    """Plot power-iteration Rayleigh quotient and eigen-residual histories."""
+    import matplotlib.pyplot as plt
+
+    output_path = Path(path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    steps = np.asarray(iterations)
+    rayleigh_values = np.asarray(rayleigh_history)
+    residual_values = np.asarray(residual_history)
+    fig, axes = plt.subplots(1, 2, figsize=(9.0, 3.8), constrained_layout=True)
+    axes[0].plot(steps, rayleigh_values, "o-", color="#3266a8")
+    axes[0].axhline(expected_eigenvalue, color="black", linestyle="--", linewidth=1.0)
+    axes[0].set_xlabel("iteration")
+    axes[0].set_ylabel("Rayleigh quotient")
+    axes[0].set_title("Dominant eigenvalue estimate")
+    axes[1].semilogy(steps, residual_values, "s-", color="#8c4fb4")
+    axes[1].set_xlabel("iteration")
+    axes[1].set_ylabel("relative residual")
+    axes[1].set_title("Eigen-residual")
+    fig.suptitle("Power-iteration smoke benchmark")
+    fig.savefig(output_path, dpi=220)
+    plt.close(fig)
+    return output_path
+
+
 def plot_plasmoid_scaling(lundquist, gamma, fastest_mode, *, path: str | Path) -> Path:
     """Plot Loureiro Sweet-Parker plasmoid scalings."""
     import matplotlib.pyplot as plt
