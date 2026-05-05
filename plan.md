@@ -4455,3 +4455,69 @@ Every agent must append an entry here. Do not delete previous entries.
   APIs.
 - Add a reviewer-oriented `mhx validate all` command that executes the active
   validation catalog rather than only listing it.
+
+### 2026-05-05 — Agent: Codex, nonzero-equilibrium linearization gate
+
+**Summary**
+
+- Added `mhx benchmark cosine-equilibrium-linearization`, a physics-gated
+  validation benchmark for the reduced-MHD JVP around the nonzero current-sheet
+  equilibrium `psi0 = A cos(y)`.
+- The gate checks exact flow-to-flux advection and magnetic-tension
+  Poisson-bracket couplings for chosen Fourier perturbations, plus the expected
+  resistive and viscous diffusion pieces.
+- Added JSON/NPZ/PNG artifacts, catalog metadata, CI artifact generation and
+  file checks, tests, docs equations, and a static documentation figure.
+
+**Files changed**
+
+- Updated `src/mhx/benchmarks/linearized.py`, benchmark exports, CLI, plotting,
+  validation media generation, benchmark catalog, CI, README, benchmark docs,
+  output-schema docs, validation docs, and linearized validation tests.
+- Added
+  `docs/_static/validation/cosine_equilibrium_linearization/cosine_equilibrium_linearization_errors.png`.
+
+**Tests run**
+
+- `python -m ruff check src tests examples` passed.
+- `python -m pytest tests/test_linearized_rhs_validation.py tests/test_benchmark_catalog.py -q`
+  passed: 9 tests.
+- `mhx benchmark cosine-equilibrium-linearization --outdir outputs/dev/cosine_equilibrium_linearization`
+  passed locally without requiring explicit x64 configuration.
+- `python examples/make_validation_media.py` regenerated the new docs figure.
+- `python -m pytest --cov=mhx --cov-report=term-missing --cov-fail-under=95`
+  passed: 92 tests, 96.39% coverage.
+- `sphinx-build -b html docs docs/_build/html` passed.
+- CI-equivalent artifact sequence passed locally and wrote
+  `outputs/ci/artifact_manifest.json` covering 88 files.
+- CI artifact file-set validation passed, including the new
+  cosine-equilibrium linearization figure.
+
+**Decisions made**
+
+- This gate deliberately validates exact nonzero-equilibrium operator couplings
+  instead of claiming a calibrated FKR eigenvalue. That keeps the scientific
+  claim narrow, testable, and reviewer-defensible while exercising the bracket
+  terms that tearing eigenmode calculations require.
+- The default gate tolerance is `1e-4` so the CLI passes in single-precision
+  default environments; the pytest suite runs with x64 and checks the same
+  formulas near roundoff.
+
+**Problems / blockers**
+
+- The repo still needs a true calibrated tearing eigenvalue benchmark against
+  FKR/Coppi theory. The current gate is the nonzero-equilibrium operator
+  prerequisite.
+
+**Progress**
+
+- Estimated plan completion: 72%.
+
+**Next steps**
+
+- Add release notes/changelog entries summarizing the validation and extension
+  APIs.
+- Add a reviewer-oriented `mhx validate all` command that executes the active
+  validation catalog and writes a single validation summary.
+- Start a calibrated tearing eigenmode benchmark with a documented asymptotic
+  regime and tolerances.

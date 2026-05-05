@@ -7,6 +7,7 @@ from pathlib import Path
 
 from mhx.benchmarks import (
     write_arnoldi_validation,
+    write_cosine_equilibrium_linearization_validation,
     write_diffusion_eigenvalue_validation,
     write_fkr_window_validation,
     write_linearized_rhs_validation,
@@ -25,6 +26,9 @@ def main() -> None:
     fkr_window_run_dir = Path("outputs/docs_validation/fkr_window")
     linearized_run_dir = Path("outputs/docs_validation/linearized_rhs")
     reduced_mhd_eigenmode_run_dir = Path("outputs/docs_validation/reduced_mhd_eigenmode")
+    cosine_linearization_run_dir = Path(
+        "outputs/docs_validation/cosine_equilibrium_linearization"
+    )
     diffusion_eigen_run_dir = Path("outputs/docs_validation/diffusion_eigenvalue")
     power_iteration_run_dir = Path("outputs/docs_validation/power_iteration")
     arnoldi_run_dir = Path("outputs/docs_validation/arnoldi")
@@ -34,6 +38,9 @@ def main() -> None:
     fkr_window_docs_dir = Path("docs/_static/validation/fkr_window")
     linearized_docs_dir = Path("docs/_static/validation/linearized_rhs")
     reduced_mhd_eigenmode_docs_dir = Path("docs/_static/validation/reduced_mhd_eigenmode")
+    cosine_linearization_docs_dir = Path(
+        "docs/_static/validation/cosine_equilibrium_linearization"
+    )
     diffusion_eigen_docs_dir = Path("docs/_static/validation/diffusion_eigenvalue")
     power_iteration_docs_dir = Path("docs/_static/validation/power_iteration")
     arnoldi_docs_dir = Path("docs/_static/validation/arnoldi")
@@ -43,6 +50,7 @@ def main() -> None:
     write_fkr_window_validation(fkr_window_run_dir)
     write_linearized_rhs_validation(linearized_run_dir)
     write_reduced_mhd_linear_eigenmode_validation(reduced_mhd_eigenmode_run_dir)
+    write_cosine_equilibrium_linearization_validation(cosine_linearization_run_dir)
     write_diffusion_eigenvalue_validation(diffusion_eigen_run_dir)
     write_power_iteration_validation(power_iteration_run_dir)
     write_arnoldi_validation(arnoldi_run_dir)
@@ -69,6 +77,13 @@ def main() -> None:
         / "figures"
         / "reduced_mhd_linear_eigenmode_errors.png",
         reduced_mhd_eigenmode_docs_dir / "reduced_mhd_linear_eigenmode_errors.png",
+    )
+    cosine_linearization_docs_dir.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(
+        cosine_linearization_run_dir
+        / "figures"
+        / "cosine_equilibrium_linearization_errors.png",
+        cosine_linearization_docs_dir / "cosine_equilibrium_linearization_errors.png",
     )
     diffusion_eigen_docs_dir.mkdir(parents=True, exist_ok=True)
     shutil.copy2(

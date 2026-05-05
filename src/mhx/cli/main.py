@@ -14,6 +14,7 @@ from mhx.benchmarks import (
     validate_run,
     write_arnoldi_validation,
     write_benchmark_catalog,
+    write_cosine_equilibrium_linearization_validation,
     write_diffusion_eigenvalue_validation,
     write_fkr_window_validation,
     write_linearized_rhs_validation,
@@ -356,6 +357,23 @@ def benchmark_reduced_mhd_eigenmode(
 ) -> None:
     """Run the zero-state reduced-MHD linear diffusion eigenmode gate."""
     manifest_path, validation = write_reduced_mhd_linear_eigenmode_validation(outdir)
+    typer.echo(f"wrote {manifest_path}")
+    if not validation["passed"]:
+        raise typer.Exit(code=1)
+
+
+@benchmark_app.command("cosine-equilibrium-linearization")
+def benchmark_cosine_equilibrium_linearization(
+    outdir: Annotated[
+        Path,
+        typer.Option(
+            "--outdir",
+            help="Output directory for nonzero-equilibrium linearization artifacts.",
+        ),
+    ] = Path("outputs/benchmarks/cosine_equilibrium_linearization"),
+) -> None:
+    """Run the analytic nonzero-cosine-equilibrium linearized-RHS gate."""
+    manifest_path, validation = write_cosine_equilibrium_linearization_validation(outdir)
     typer.echo(f"wrote {manifest_path}")
     if not validation["passed"]:
         raise typer.Exit(code=1)

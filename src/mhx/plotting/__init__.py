@@ -3,6 +3,7 @@
 from mhx.plotting.diagnostics import write_diagnostic_figures_for_run
 from mhx.plotting.reduced_mhd import (
     plot_arnoldi_ritz_values,
+    plot_cosine_equilibrium_linearization_errors,
     plot_decay_amplitude,
     plot_decay_energy,
     plot_decay_relative_error,
@@ -23,6 +24,7 @@ from mhx.plotting.reduced_mhd import (
 
 __all__ = [
     "plot_arnoldi_ritz_values",
+    "plot_cosine_equilibrium_linearization_errors",
     "plot_decay_amplitude",
     "plot_decay_energy",
     "plot_decay_relative_error",

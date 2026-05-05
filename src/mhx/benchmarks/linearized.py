@@ -20,7 +20,11 @@ from mhx.grids import CartesianGrid
 from mhx.io import write_manifest
 from mhx.numerics import eigen_residual_norm, rayleigh_quotient
 from mhx.physics import CosineTearingEquilibrium
-from mhx.plotting import plot_linearized_rhs_errors, plot_reduced_mhd_eigenmode_errors
+from mhx.plotting import (
+    plot_cosine_equilibrium_linearization_errors,
+    plot_linearized_rhs_errors,
+    plot_reduced_mhd_eigenmode_errors,
+)
 from mhx.state import (
     ReducedMHDParams,
     ReducedMHDState,
@@ -29,6 +33,9 @@ from mhx.state import (
 
 LINEARIZED_RHS_SCHEMA = "mhx.validation.linearized_rhs.v1"
 REDUCED_MHD_LINEAR_EIGENMODE_SCHEMA = "mhx.validation.reduced_mhd_linear_eigenmode.v1"
+COSINE_EQUILIBRIUM_LINEARIZATION_SCHEMA = (
+    "mhx.validation.cosine_equilibrium_linearization.v1"
+)
 
 
 @dataclass(frozen=True)
@@ -55,6 +62,19 @@ class ReducedMHDLinearEigenmodeResult:
     measured_eigenvalues: dict[str, float]
     eigenvalue_abs_errors: dict[str, float]
     residual_norms: dict[str, float]
+    diagnostics: dict[str, Any]
+    validation: dict[str, Any]
+
+
+@dataclass(frozen=True)
+class CosineEquilibriumLinearizationResult:
+    """Analytic nonzero-equilibrium linearized-RHS coupling diagnostics."""
+
+    flow_tangent: ReducedMHDState
+    expected_flow_tangent: ReducedMHDState
+    tension_tangent: ReducedMHDState
+    expected_tension_tangent: ReducedMHDState
+    relative_errors: dict[str, float]
     diagnostics: dict[str, Any]
     validation: dict[str, Any]
 
@@ -229,6 +249,132 @@ def run_reduced_mhd_linear_eigenmode_validation(
     )
 
 
+def run_cosine_equilibrium_linearization_validation(
+    *,
+    shape: tuple[int, int] = (24, 24),
+    amplitude: float = 1.0,
+    resistivity: float = 1.0e-3,
+    viscosity: float = 2.0e-3,
+    max_relative_error: float = 1.0e-4,
+) -> CosineEquilibriumLinearizationResult:
+    r"""Validate analytic linearized couplings around ``ψ₀=A cos(y)``.
+
+    The gate checks two Fourier perturbations with closed-form reduced-MHD JVPs:
+
+    - ``δω = cos(k_x x)``, ``δψ=0`` gives flow advection of the equilibrium
+      flux plus viscous vorticity diffusion.
+    - ``δψ = cos(k_x x)cos(2k_y y)``, ``δω=0`` gives magnetic-tension coupling
+      to vorticity plus resistive flux diffusion.
+    """
+    grid = CartesianGrid.from_mesh_config(MeshConfig(shape=shape))
+    x, y = grid.mesh()
+    length_x, length_y = grid.lengths
+    kx = 2.0 * jnp.pi / length_x
+    ky = 2.0 * jnp.pi / length_y
+    ky2 = 2.0 * ky
+    psi0 = amplitude * jnp.cos(ky * y)
+    zero = jnp.zeros_like(psi0)
+    base_state = ReducedMHDState(psi=psi0, omega=zero)
+    params = ReducedMHDParams(resistivity=resistivity, viscosity=viscosity)
+
+    flow_omega = jnp.cos(kx * x)
+    flow_perturbation = ReducedMHDState(psi=zero, omega=flow_omega)
+    flow_tangent = linearized_reduced_mhd_rhs(
+        base_state,
+        flow_perturbation,
+        params,
+        lengths=grid.lengths,
+    )
+    expected_flow_tangent = ReducedMHDState(
+        psi=amplitude * ky / kx * jnp.sin(kx * x) * jnp.sin(ky * y),
+        omega=-viscosity * kx**2 * flow_omega,
+    )
+
+    tension_psi = jnp.cos(kx * x) * jnp.cos(ky2 * y)
+    tension_perturbation = ReducedMHDState(psi=tension_psi, omega=zero)
+    tension_tangent = linearized_reduced_mhd_rhs(
+        base_state,
+        tension_perturbation,
+        params,
+        lengths=grid.lengths,
+    )
+    tension_wavenumber_squared = kx**2 + ky2**2
+    expected_tension_tangent = ReducedMHDState(
+        psi=-resistivity * tension_wavenumber_squared * tension_psi,
+        omega=amplitude
+        * kx
+        * ky
+        * (tension_wavenumber_squared - ky**2)
+        * jnp.sin(kx * x)
+        * jnp.sin(ky * y)
+        * jnp.cos(ky2 * y),
+    )
+
+    relative_errors = {
+        "flow_to_flux_psi": _relative_l2_error(
+            flow_tangent.psi,
+            expected_flow_tangent.psi,
+        ),
+        "flow_vorticity_diffusion": _relative_l2_error(
+            flow_tangent.omega,
+            expected_flow_tangent.omega,
+        ),
+        "tension_flux_diffusion": _relative_l2_error(
+            tension_tangent.psi,
+            expected_tension_tangent.psi,
+        ),
+        "tension_to_vorticity": _relative_l2_error(
+            tension_tangent.omega,
+            expected_tension_tangent.omega,
+        ),
+    }
+    checks = {
+        name: value <= max_relative_error for name, value in relative_errors.items()
+    }
+    diagnostics = {
+        "schema": COSINE_EQUILIBRIUM_LINEARIZATION_SCHEMA,
+        "shape": list(shape),
+        "equilibrium": "psi0 = A cos(2π y / Ly)",
+        "amplitude": amplitude,
+        "resistivity": resistivity,
+        "viscosity": viscosity,
+        "wavenumbers": {
+            "kx": float(kx),
+            "ky": float(ky),
+            "ky2": float(ky2),
+            "tension_wavenumber_squared": float(tension_wavenumber_squared),
+        },
+        "relative_errors": relative_errors,
+        "references": {
+            "reduced_mhd_linearization": (
+                "Nonzero-equilibrium JVP checks the ideal advection and "
+                "magnetic-tension brackets used by tearing eigenmode operators."
+            ),
+            "tearing_context": (
+                "The cosine current sheet is periodic and analytically tractable; "
+                "it validates current-sheet coupling terms without claiming an "
+                "FKR growth rate."
+            ),
+        },
+    }
+    validation = {
+        "schema": "mhx.validation.cosine_equilibrium_linearization.gates.v1",
+        "passed": all(checks.values()),
+        "checks": checks,
+        "thresholds": {"max_relative_error": max_relative_error},
+        "diagnostics": diagnostics,
+    }
+    return CosineEquilibriumLinearizationResult(
+        flow_tangent=flow_tangent,
+        expected_flow_tangent=expected_flow_tangent,
+        tension_tangent=tension_tangent,
+        expected_tension_tangent=expected_tension_tangent,
+        relative_errors=relative_errors,
+        diagnostics=diagnostics,
+        validation=validation,
+    )
+
+
 def write_linearized_rhs_validation(
     outdir: str | Path,
     **kwargs: Any,
@@ -343,5 +489,70 @@ def write_reduced_mhd_linear_eigenmode_validation(
     return manifest_path, result.validation
 
 
+def write_cosine_equilibrium_linearization_validation(
+    outdir: str | Path,
+    **kwargs: Any,
+) -> tuple[Path, dict[str, Any]]:
+    """Write cosine-equilibrium linearization JSON, NPZ, figure, and manifest."""
+    output_dir = Path(outdir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    result = run_cosine_equilibrium_linearization_validation(**kwargs)
+
+    diagnostics_path = output_dir / "diagnostics.json"
+    validation_path = output_dir / "validation.json"
+    history_path = output_dir / "cosine_equilibrium_linearization.npz"
+    manifest_path = output_dir / "manifest.json"
+    diagnostics_path.write_text(
+        json.dumps(result.diagnostics, indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+    validation_path.write_text(
+        json.dumps(result.validation, indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+    np.savez_compressed(
+        history_path,
+        schema=COSINE_EQUILIBRIUM_LINEARIZATION_SCHEMA,
+        flow_tangent_psi=np.asarray(result.flow_tangent.psi),
+        flow_tangent_omega=np.asarray(result.flow_tangent.omega),
+        expected_flow_tangent_psi=np.asarray(result.expected_flow_tangent.psi),
+        expected_flow_tangent_omega=np.asarray(result.expected_flow_tangent.omega),
+        tension_tangent_psi=np.asarray(result.tension_tangent.psi),
+        tension_tangent_omega=np.asarray(result.tension_tangent.omega),
+        expected_tension_tangent_psi=np.asarray(result.expected_tension_tangent.psi),
+        expected_tension_tangent_omega=np.asarray(result.expected_tension_tangent.omega),
+    )
+
+    figure_path = plot_cosine_equilibrium_linearization_errors(
+        tuple(result.relative_errors),
+        tuple(result.relative_errors.values()),
+        tuple(
+            result.validation["thresholds"]["max_relative_error"]
+            for _ in result.relative_errors
+        ),
+        path=output_dir / "figures" / "cosine_equilibrium_linearization_errors.png",
+    )
+    write_manifest(
+        manifest_path,
+        config=result.diagnostics,
+        outputs={
+            "diagnostics": diagnostics_path.name,
+            "validation": validation_path.name,
+            "history": history_path.name,
+            "cosine_equilibrium_linearization_errors": str(
+                figure_path.relative_to(output_dir)
+            ),
+        },
+    )
+    return manifest_path, result.validation
+
+
 def _l2_norm(values) -> float:
     return float(jnp.sqrt(jnp.mean(jnp.asarray(values) ** 2)))
+
+
+def _relative_l2_error(actual, expected) -> float:
+    return _l2_norm(jnp.asarray(actual) - jnp.asarray(expected)) / max(
+        _l2_norm(expected),
+        1.0e-300,
+    )

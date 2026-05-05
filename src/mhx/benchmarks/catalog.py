@@ -133,6 +133,26 @@ def validation_catalog_entries() -> tuple[BenchmarkCatalogEntry, ...]:
             literature_anchor="Linear reduced-MHD diffusion-block eigenvalues.",
         ),
         BenchmarkCatalogEntry(
+            name="cosine_equilibrium_linearization",
+            command=(
+                "mhx benchmark cosine-equilibrium-linearization "
+                "--outdir outputs/benchmarks/cosine_equilibrium_linearization"
+            ),
+            schema="mhx.validation.cosine_equilibrium_linearization.v1",
+            purpose=(
+                "Analytic nonzero-current-sheet JVP couplings around psi0=A cos(y)."
+            ),
+            expected_outputs=(
+                "diagnostics.json",
+                "validation.json",
+                "cosine_equilibrium_linearization.npz",
+                "figures/cosine_equilibrium_linearization_errors.png",
+            ),
+            literature_anchor=(
+                "Reduced-MHD Poisson-bracket linearization for tearing operators."
+            ),
+        ),
+        BenchmarkCatalogEntry(
             name="diffusion_eigenvalue",
             command=(
                 "mhx benchmark diffusion-eigenvalue "

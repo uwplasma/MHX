@@ -397,6 +397,32 @@ def plot_reduced_mhd_eigenmode_errors(
     return output_path
 
 
+def plot_cosine_equilibrium_linearization_errors(
+    quantities,
+    values,
+    thresholds,
+    *,
+    path: str | Path,
+) -> Path:
+    """Plot nonzero-equilibrium reduced-MHD linearization errors and gates."""
+    import matplotlib.pyplot as plt
+
+    output_path = Path(path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    names = list(quantities)
+    positions = np.arange(len(names))
+    fig, ax = plt.subplots(figsize=(7.6, 4.1), constrained_layout=True)
+    ax.semilogy(positions, np.asarray(values), "o", color="#3266a8", label="measured")
+    ax.semilogy(positions, np.asarray(thresholds), "x", color="#8c4fb4", label="gate")
+    ax.set_xticks(positions, labels=names, rotation=18, ha="right")
+    ax.set_ylabel("relative L2 error")
+    ax.set_title(r"Nonzero-equilibrium JVP gate for $\psi_0=A\cos y$")
+    ax.legend(frameon=False)
+    fig.savefig(output_path, dpi=220)
+    plt.close(fig)
+    return output_path
+
+
 def plot_plasmoid_scaling(lundquist, gamma, fastest_mode, *, path: str | Path) -> Path:
     """Plot Loureiro Sweet-Parker plasmoid scalings."""
     import matplotlib.pyplot as plt

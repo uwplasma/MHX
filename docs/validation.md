@@ -244,6 +244,64 @@ Expected files:
 
 ![Reduced-MHD linear eigenmode gate](_static/validation/reduced_mhd_eigenmode/reduced_mhd_linear_eigenmode_errors.png)
 
+## Nonzero cosine-equilibrium linearization gate
+
+The next step toward a tearing eigenmode calculation is to validate the
+linearized operator on a nonzero current-sheet equilibrium. MHX uses the
+periodic equilibrium
+
+$$
+\psi_0=A\cos(k_y y),\qquad \omega_0=0,
+$$
+
+and checks exact Poisson-bracket couplings for two perturbations.
+
+First, a pure vorticity perturbation $\delta\omega=\cos(k_xx)$ gives
+$\delta\phi=-\cos(k_xx)/k_x^2$. The flux equation contains flow advection of
+the equilibrium field:
+
+$$
+\partial_t\delta\psi
+=-[\delta\phi,\psi_0]
+=A\frac{k_y}{k_x}\sin(k_xx)\sin(k_yy),
+\qquad
+\partial_t\delta\omega=-\nu k_x^2\cos(k_xx).
+$$
+
+Second, a pure flux perturbation
+$\delta\psi=\cos(k_xx)\cos(2k_yy)$ checks magnetic tension:
+
+$$
+\partial_t\delta\omega
+=[\delta\psi,\nabla^2\psi_0]+[\psi_0,\nabla^2\delta\psi]
+=A k_x k_y (k_x^2+4k_y^2-k_y^2)
+  \sin(k_xx)\sin(k_yy)\cos(2k_yy),
+$$
+
+while the flux block diffuses as
+
+$$
+\partial_t\delta\psi=-\eta(k_x^2+4k_y^2)\delta\psi.
+$$
+
+This gate does not claim an FKR growth rate. It validates the exact nonzero
+equilibrium coupling terms that the FKR/plasmoid eigenmode benchmarks will
+depend on.
+
+```bash
+mhx benchmark cosine-equilibrium-linearization \
+  --outdir outputs/benchmarks/cosine_equilibrium_linearization
+```
+
+Expected files:
+
+- `outputs/benchmarks/cosine_equilibrium_linearization/diagnostics.json`
+- `outputs/benchmarks/cosine_equilibrium_linearization/validation.json`
+- `outputs/benchmarks/cosine_equilibrium_linearization/cosine_equilibrium_linearization.npz`
+- `outputs/benchmarks/cosine_equilibrium_linearization/figures/cosine_equilibrium_linearization_errors.png`
+
+![Cosine-equilibrium linearization gate](_static/validation/cosine_equilibrium_linearization/cosine_equilibrium_linearization_errors.png)
+
 ## Diffusion eigenvalue scaffold
 
 Before applying eigenvalue machinery to tearing equilibria, MHX validates the

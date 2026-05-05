@@ -8,10 +8,13 @@ import pytest
 from typer.testing import CliRunner
 
 from mhx.benchmarks import (
+    COSINE_EQUILIBRIUM_LINEARIZATION_SCHEMA,
     LINEARIZED_RHS_SCHEMA,
     REDUCED_MHD_LINEAR_EIGENMODE_SCHEMA,
+    run_cosine_equilibrium_linearization_validation,
     run_linearized_rhs_validation,
     run_reduced_mhd_linear_eigenmode_validation,
+    write_cosine_equilibrium_linearization_validation,
     write_linearized_rhs_validation,
     write_reduced_mhd_linear_eigenmode_validation,
 )
@@ -148,6 +151,39 @@ def test_reduced_mhd_linear_eigenmode_validation_and_cli(tmp_path) -> None:
     cli_result = CliRunner().invoke(
         app,
         ["benchmark", "reduced-mhd-eigenmode", "--outdir", str(outdir)],
+    )
+    assert cli_result.exit_code == 0, cli_result.stdout
+    assert (outdir / "validation.json").exists()
+
+
+def test_cosine_equilibrium_linearization_validation_and_cli(tmp_path) -> None:
+    result = run_cosine_equilibrium_linearization_validation(shape=(16, 16))
+    assert result.diagnostics["schema"] == COSINE_EQUILIBRIUM_LINEARIZATION_SCHEMA
+    assert result.validation["passed"] is True
+    assert result.relative_errors["flow_to_flux_psi"] < 1.0e-10
+    assert result.relative_errors["flow_vorticity_diffusion"] < 1.0e-10
+    assert result.relative_errors["tension_flux_diffusion"] < 1.0e-10
+    assert result.relative_errors["tension_to_vorticity"] < 1.0e-10
+
+    manifest_path, validation = write_cosine_equilibrium_linearization_validation(
+        tmp_path,
+        shape=(16, 16),
+    )
+    assert manifest_path == tmp_path / "manifest.json"
+    assert validation["passed"] is True
+    diagnostics = json.loads((tmp_path / "diagnostics.json").read_text())
+    assert diagnostics["references"]["tearing_context"].startswith("The cosine")
+    history = np.load(tmp_path / "cosine_equilibrium_linearization.npz")
+    assert history["schema"] == COSINE_EQUILIBRIUM_LINEARIZATION_SCHEMA
+    assert history["flow_tangent_psi"].shape == (16, 16)
+    assert (
+        tmp_path / "figures" / "cosine_equilibrium_linearization_errors.png"
+    ).stat().st_size > 0
+
+    outdir = tmp_path / "cli-cosine"
+    cli_result = CliRunner().invoke(
+        app,
+        ["benchmark", "cosine-equilibrium-linearization", "--outdir", str(outdir)],
     )
     assert cli_result.exit_code == 0, cli_result.stdout
     assert (outdir / "validation.json").exists()

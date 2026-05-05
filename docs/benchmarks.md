@@ -59,6 +59,7 @@ mhx benchmark scaling --outdir outputs/benchmarks/reconnection_scaling
 mhx benchmark fkr-window --outdir outputs/benchmarks/fkr_window
 mhx benchmark linearized-rhs --outdir outputs/benchmarks/linearized_rhs
 mhx benchmark reduced-mhd-eigenmode --outdir outputs/benchmarks/reduced_mhd_eigenmode
+mhx benchmark cosine-equilibrium-linearization --outdir outputs/benchmarks/cosine_equilibrium_linearization
 mhx benchmark diffusion-eigenvalue --outdir outputs/benchmarks/diffusion_eigenvalue
 mhx benchmark power-iteration --outdir outputs/benchmarks/power_iteration
 mhx benchmark arnoldi --outdir outputs/benchmarks/arnoldi
@@ -94,6 +95,13 @@ The reduced-MHD eigenmode command writes:
 - `validation.json`
 - `reduced_mhd_linear_eigenmode.npz`
 - `figures/reduced_mhd_linear_eigenmode_errors.png`
+
+The cosine-equilibrium linearization command writes:
+
+- `diagnostics.json`
+- `validation.json`
+- `cosine_equilibrium_linearization.npz`
+- `figures/cosine_equilibrium_linearization_errors.png`
 
 The diffusion-eigenvalue command writes:
 
@@ -135,6 +143,7 @@ mhx benchmark scaling --outdir outputs/ci/reconnection_scaling
 mhx benchmark fkr-window --outdir outputs/ci/fkr_window
 mhx benchmark linearized-rhs --outdir outputs/ci/linearized_rhs
 mhx benchmark reduced-mhd-eigenmode --outdir outputs/ci/reduced_mhd_eigenmode
+mhx benchmark cosine-equilibrium-linearization --outdir outputs/ci/cosine_equilibrium_linearization
 mhx benchmark diffusion-eigenvalue --outdir outputs/ci/diffusion_eigenvalue
 mhx benchmark power-iteration --outdir outputs/ci/power_iteration
 mhx benchmark arnoldi --outdir outputs/ci/arnoldi
@@ -225,6 +234,12 @@ operator-level scaffold for later calibrated tearing eigenmode benchmarks.
 The reduced-MHD eigenmode gate applies the flattened JVP operator at the
 zero-state linear limit and checks the analytic resistive and viscous Fourier
 diffusion eigenvalues for the $\psi$ and $\omega$ blocks.
+
+The cosine-equilibrium linearization gate moves the same JVP machinery to a
+nonzero current-sheet equilibrium $\psi_0=A\cos y$. It checks two exact
+Poisson-bracket couplings: flow advection of equilibrium flux and magnetic
+tension from perturbed flux. This is a physics gate for the current-sheet terms
+that calibrated FKR eigenmode benchmarks will use next.
 
 The diffusion-eigenvalue gate validates the Rayleigh-quotient/residual path on a
 known Fourier eigenpair before using the same matrix-free machinery for tearing

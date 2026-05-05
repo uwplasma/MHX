@@ -169,6 +169,19 @@ writes:
 - `figures/reduced_mhd_linear_eigenmode_errors.png`: eigenvalue/residual error
   plot.
 
+## Cosine-equilibrium linearization outputs
+
+`mhx benchmark cosine-equilibrium-linearization --outdir outputs/benchmarks/cosine_equilibrium_linearization`
+writes:
+
+- `diagnostics.json`: analytic nonzero-equilibrium linearized-RHS diagnostics
+  with schema `mhx.validation.cosine_equilibrium_linearization.v1`.
+- `validation.json`: pass/fail gates for flow-to-flux and magnetic-tension
+  coupling errors around $\psi_0=A\cos y$.
+- `cosine_equilibrium_linearization.npz`: numerical and analytic JVP arrays for
+  the selected flow and flux perturbations.
+- `figures/cosine_equilibrium_linearization_errors.png`: relative-error plot.
+
 ## Diffusion eigenvalue validation outputs
 
 `mhx benchmark diffusion-eigenvalue --outdir outputs/benchmarks/diffusion_eigenvalue`
