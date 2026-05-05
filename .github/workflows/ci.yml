@@ -4,9 +4,6 @@ on:
   push:
   pull_request:
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
-
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -18,8 +15,8 @@ jobs:
       JAX_PLATFORM_NAME: cpu
       JAX_ENABLE_X64: "1"
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v6.0.2
+      - uses: actions/setup-python@v6.2.0
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install
@@ -39,8 +36,8 @@ jobs:
       JAX_PLATFORM_NAME: cpu
       JAX_ENABLE_X64: "1"
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v6.0.2
+      - uses: actions/setup-python@v6.2.0
         with:
           python-version: "3.11"
       - name: Install
@@ -57,8 +54,8 @@ jobs:
       JAX_PLATFORM_NAME: cpu
       JAX_ENABLE_X64: "1"
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v6.0.2
+      - uses: actions/setup-python@v6.2.0
         with:
           python-version: "3.11"
       - name: Install
@@ -99,7 +96,7 @@ jobs:
           test -f outputs/ci/twofluid_toy/report.md
           test -f outputs/ci/twofluid_toy/figures/flux_final.png
           test -f outputs/ci/twofluid_toy/figures/flux_movie.gif
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7.0.1
         with:
           name: mhx-fast-artifacts
           path: outputs/ci
