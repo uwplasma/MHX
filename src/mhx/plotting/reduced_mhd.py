@@ -184,3 +184,59 @@ def plot_decay_energy(times, numerical, exact, *, path: str | Path) -> Path:
     fig.savefig(output_path, dpi=220)
     plt.close(fig)
     return output_path
+
+
+def plot_fkr_scaling(lundquist, gamma, inner_width, *, path: str | Path) -> Path:
+    """Plot FKR constant-psi tearing scalings."""
+    import matplotlib.pyplot as plt
+
+    output_path = Path(path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    s_values = np.asarray(lundquist)
+    fig, ax = plt.subplots(figsize=(6.4, 4.3), constrained_layout=True)
+    ax.loglog(s_values, np.asarray(gamma), "o-", label=r"$\gamma\tau_a \sim S_a^{-3/5}$")
+    ax.loglog(s_values, np.asarray(inner_width), "s-", label=r"$\delta/a \sim S_a^{-2/5}$")
+    ax.set_xlabel(r"local Lundquist number $S_a$")
+    ax.set_ylabel("dimensionless scaling")
+    ax.set_title(r"FKR constant-$\psi$ scaling gate")
+    ax.legend(frameon=False)
+    fig.savefig(output_path, dpi=220)
+    plt.close(fig)
+    return output_path
+
+
+def plot_plasmoid_scaling(lundquist, gamma, fastest_mode, *, path: str | Path) -> Path:
+    """Plot Loureiro Sweet-Parker plasmoid scalings."""
+    import matplotlib.pyplot as plt
+
+    output_path = Path(path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    s_values = np.asarray(lundquist)
+    fig, ax = plt.subplots(figsize=(6.4, 4.3), constrained_layout=True)
+    ax.loglog(s_values, np.asarray(gamma), "o-", label=r"$\gamma_{\max}\tau_A \sim S^{1/4}$")
+    ax.loglog(s_values, np.asarray(fastest_mode), "s-", label=r"$k_{\max}L \sim S^{3/8}$")
+    ax.set_xlabel(r"global Lundquist number $S$")
+    ax.set_ylabel("dimensionless scaling")
+    ax.set_title("Sweet-Parker plasmoid scaling gate")
+    ax.legend(frameon=False)
+    fig.savefig(output_path, dpi=220)
+    plt.close(fig)
+    return output_path
+
+
+def plot_ideal_tearing_scaling(lundquist, aspect_ratio, *, path: str | Path) -> Path:
+    """Plot Pucci-Velli ideal-tearing aspect-ratio scaling."""
+    import matplotlib.pyplot as plt
+
+    output_path = Path(path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    s_values = np.asarray(lundquist)
+    fig, ax = plt.subplots(figsize=(6.4, 4.3), constrained_layout=True)
+    ax.loglog(s_values, np.asarray(aspect_ratio), "o-", label=r"$a/L \sim S^{-1/3}$")
+    ax.set_xlabel(r"global Lundquist number $S$")
+    ax.set_ylabel(r"sheet aspect ratio $a/L$")
+    ax.set_title("Ideal-tearing aspect-ratio scaling gate")
+    ax.legend(frameon=False)
+    fig.savefig(output_path, dpi=220)
+    plt.close(fig)
+    return output_path

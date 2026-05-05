@@ -49,6 +49,24 @@ $E_B(t)=E_B(0)\exp(-2\eta |k|^2t)$. It writes:
 The same benchmark is documented with figures on the
 [validation page](validation.md).
 
+## Analytic reconnection scaling gates
+
+The benchmark roadmap also includes analytic power-law gates for the expected
+FKR, Sweet-Parker plasmoid, and ideal-tearing exponents:
+
+```bash
+mhx benchmark scaling --outdir outputs/benchmarks/reconnection_scaling
+```
+
+This writes:
+
+- `diagnostics.json`
+- `validation.json`
+- `scaling_history.npz`
+- `figures/fkr_scaling.png`
+- `figures/plasmoid_scaling.png`
+- `figures/ideal_tearing_scaling.png`
+
 ## CI artifacts
 
 Every push runs a `benchmark-artifacts` CI job. It executes two deterministic
@@ -58,6 +76,7 @@ FAST pipelines:
 mhx benchmark run --config examples/linear_tearing.toml --outdir outputs/ci/linear_tearing_fast --gif
 mhx benchmark validate outputs/ci/linear_tearing_fast
 mhx benchmark decay --outdir outputs/ci/resistive_decay
+mhx benchmark scaling --outdir outputs/ci/reconnection_scaling
 mhx run examples/linear_tearing_twofluid_toy.toml --outdir outputs/ci/twofluid_toy
 mhx figures outputs/ci/twofluid_toy --gif
 mhx report outputs/ci/twofluid_toy

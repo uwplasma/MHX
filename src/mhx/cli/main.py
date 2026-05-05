@@ -12,6 +12,7 @@ from mhx._version import __version__
 from mhx.benchmarks import (
     run_linear_tearing_smoke,
     validate_run,
+    write_reconnection_scaling_validation,
     write_resistive_decay_validation,
     write_run_report,
 )
@@ -242,6 +243,21 @@ def benchmark_decay(
         t1=t1,
         dt=dt,
     )
+    typer.echo(f"wrote {manifest_path}")
+    if not validation["passed"]:
+        raise typer.Exit(code=1)
+
+
+@benchmark_app.command("scaling")
+def benchmark_scaling(
+    outdir: Annotated[
+        Path,
+        typer.Option("--outdir", help="Output directory for analytic scaling artifacts."),
+    ] = Path("outputs/benchmarks/reconnection_scaling"),
+    ka: Annotated[float, typer.Option("--ka", help="FKR constant-psi wavenumber ka.")] = 0.5,
+) -> None:
+    """Run analytic reconnection scaling gates for FKR/plasmoid/ideal-tearing theory."""
+    manifest_path, validation = write_reconnection_scaling_validation(outdir, ka=ka)
     typer.echo(f"wrote {manifest_path}")
     if not validation["passed"]:
         raise typer.Exit(code=1)

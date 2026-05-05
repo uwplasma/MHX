@@ -3696,3 +3696,54 @@ Every agent must append an entry here. Do not delete previous entries.
 - Add a diagnostics registry so configs can select diagnostic sets explicitly.
 - Add a calibrated linear-mode/eigenvalue validation fixture and compare against FKR scaling.
 - Add a timing/performance table to the CI artifact bundle.
+
+### 2026-05-04 — Agent: Codex, reconnection scaling validation gates
+
+**Summary**
+
+- Added analytic reconnection scaling gates for FKR constant-psi tearing, Loureiro plasmoid instability, and Pucci-Velli ideal-tearing aspect ratio.
+- Added `mhx benchmark scaling` with diagnostics JSON, validation JSON, NPZ history, manifest, and three publication-style PNG figures.
+- Added docs figures for FKR, plasmoid, and ideal-tearing scalings under `docs/_static/validation/reconnection_scaling/`.
+- Expanded `docs/validation.md` with equations, literature exponents, source links, expected outputs, and explicit limitations.
+- Updated CI artifact generation to include the scaling validation benchmark and checksum bundle.
+
+**Files changed**
+
+- Added `src/mhx/benchmarks/scaling.py` and `tests/test_reconnection_scaling_validation.py`.
+- Updated plotting helpers, benchmark exports, CLI, CI workflow, README, API docs, benchmark docs, quickstart, output schema, validation docs, validation media script, and docs figures.
+
+**Tests run**
+
+- `python -m ruff check src tests examples` passed.
+- `python -m pytest --cov=mhx --cov-report=term-missing --cov-fail-under=95` passed: 60 tests, 98.01% coverage.
+- `sphinx-build -b html docs docs/_build/html` passed and copied six validation figures.
+- CI-equivalent artifact sequence passed locally and wrote `outputs/ci/artifact_manifest.json` covering 35 files.
+- `python examples/make_validation_media.py` regenerated exact-decay and reconnection-scaling docs figures.
+
+**Benchmarks run**
+
+- FAST reduced-MHD smoke benchmark.
+- Exact single-mode resistive-decay validation.
+- Analytic FKR/plasmoid/ideal-tearing scaling validation.
+- FAST two-fluid toy plugin example.
+
+**Decisions made**
+
+- These are analytic scaling gates, not PDE eigenmode validation. The docs state this explicitly.
+- The gates fix the expected literature exponents now so future numerical eigenmode/nonlinear benchmarks have reviewable targets.
+- Log-log slope checks are intentionally tight because they are computed from closed-form benchmark scaffolds.
+
+**Problems / blockers**
+
+- A calibrated FKR eigenmode solve is still required before claiming the solver reproduces FKR growth rates.
+- Current scaling plots validate benchmark scaffolding and reviewer targets, not nonlinear plasmoid dynamics.
+
+**Progress**
+
+- Estimated plan completion: 42%.
+
+**Next steps**
+
+- Add a calibrated linear eigenmode or matrix-free growth-rate benchmark against FKR/Coppi regimes.
+- Add a diagnostics registry so configs can select diagnostics explicitly.
+- Add timing/performance tables to the CI artifact bundle.

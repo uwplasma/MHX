@@ -81,3 +81,14 @@ This writes `outputs/smoke/artifact_manifest.json` with schema
   and relative-error arrays.
 - `figures/decay_amplitude.png`, `figures/decay_energy.png`, and
   `figures/decay_relative_error.png`.
+
+## Reconnection scaling validation outputs
+
+`mhx benchmark scaling --outdir outputs/benchmarks/reconnection_scaling` writes:
+
+- `diagnostics.json`: fitted and expected log-log slopes with schema
+  `mhx.validation.reconnection_scaling.v1`.
+- `validation.json`: pass/fail slope gates and tolerances.
+- `scaling_history.npz`: Lundquist samples and analytic scaling arrays.
+- `figures/fkr_scaling.png`, `figures/plasmoid_scaling.png`, and
+  `figures/ideal_tearing_scaling.png`.

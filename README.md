@@ -78,6 +78,7 @@ Run the same workflow as a benchmark:
 mhx benchmark run --config examples/linear_tearing.toml --outdir outputs/benchmarks/linear_tearing_fast --gif
 mhx benchmark validate outputs/benchmarks/linear_tearing_fast
 mhx benchmark decay --outdir outputs/benchmarks/resistive_decay
+mhx benchmark scaling --outdir outputs/benchmarks/reconnection_scaling
 ```
 
 Inspect configurable physics terms:

@@ -58,6 +58,7 @@ Run the same workflow through the benchmark command group:
 mhx benchmark run --config examples/linear_tearing.toml --outdir outputs/benchmarks/linear_tearing_fast --gif
 mhx benchmark validate outputs/benchmarks/linear_tearing_fast
 mhx benchmark decay --outdir outputs/benchmarks/resistive_decay
+mhx benchmark scaling --outdir outputs/benchmarks/reconnection_scaling
 ```
 
 The smoke run validates the JAX spectral derivative path on a periodic

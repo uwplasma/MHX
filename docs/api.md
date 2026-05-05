@@ -25,6 +25,9 @@
 .. automodule:: mhx.benchmarks.decay
    :members:
 
+.. automodule:: mhx.benchmarks.scaling
+   :members:
+
 .. automodule:: mhx.physics
    :members:
 
