@@ -22,6 +22,9 @@
 .. automodule:: mhx.benchmarks.theory
    :members:
 
+.. automodule:: mhx.benchmarks.decay
+   :members:
+
 .. automodule:: mhx.physics
    :members:
 

@@ -57,8 +57,10 @@ Run the same workflow through the benchmark command group:
 ```bash
 mhx benchmark run --config examples/linear_tearing.toml --outdir outputs/benchmarks/linear_tearing_fast --gif
 mhx benchmark validate outputs/benchmarks/linear_tearing_fast
+mhx benchmark decay --outdir outputs/benchmarks/resistive_decay
 ```
 
-The current smoke run validates the JAX spectral derivative path on a periodic
-Cartesian mesh. It is deliberately small and deterministic; it is not yet the
-full tearing benchmark.
+The smoke run validates the JAX spectral derivative path on a periodic
+Cartesian mesh. The exact-decay benchmark adds a physics gate for
+$\psi_k(t)=\psi_k(0)\exp(-\eta |k|^2t)$. These are deliberately small and
+deterministic; they are not yet the full tearing benchmark.

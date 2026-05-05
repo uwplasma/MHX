@@ -3645,3 +3645,54 @@ Every agent must append an entry here. Do not delete previous entries.
 - Add configurable diagnostics registry.
 - Add exact-decay/manufactured-solution validation for the solver.
 - Add a lightweight performance/timing report to the artifact bundle.
+
+### 2026-05-04 — Agent: Codex, exact resistive-decay validation gates
+
+**Summary**
+
+- Added a literature-anchored exact resistive-decay benchmark for one Fourier mode.
+- Added physics gates for amplitude decay, magnetic-energy decay, fitted decay rate, monotone energy, and final-field L2 error.
+- Added `mhx benchmark decay` with JSON diagnostics, JSON validation gates, NPZ history, manifest, and three publication-style PNG figures.
+- Added documentation figures under `docs/_static/validation/exact_decay/` and a new `docs/validation.md` page with equations, references, expected files, source links, and reproduction command.
+- Added `examples/make_validation_media.py` to regenerate the validation figures for docs.
+- Wired the exact-decay benchmark into the CI artifact job and artifact checksum manifest.
+
+**Files changed**
+
+- Added `src/mhx/benchmarks/decay.py`, `tests/test_resistive_decay_validation.py`, `docs/validation.md`, `examples/make_validation_media.py`, and docs PNG figures.
+- Updated plotting helpers, benchmark exports, CLI, CI workflow, README, API docs, benchmark docs, quickstart, output schema, Sphinx config, and docs index.
+
+**Tests run**
+
+- `python -m ruff check src tests examples` passed.
+- `python -m pytest --cov=mhx --cov-report=term-missing --cov-fail-under=95` passed: 55 tests, 97.98% coverage.
+- `sphinx-build -b html docs docs/_build/html` passed and copied the validation figures.
+- CI-equivalent artifact sequence passed locally and wrote `outputs/ci/artifact_manifest.json` covering 28 files.
+- `python examples/make_validation_media.py` regenerated docs validation figures.
+
+**Benchmarks run**
+
+- FAST reduced-MHD smoke benchmark.
+- Exact single-mode resistive-decay validation.
+- FAST two-fluid toy plugin example.
+
+**Decisions made**
+
+- The exact-decay benchmark forces JAX X64 internally because this is a numerical-validation gate, not a performance demo.
+- The first hard physics gate targets the resistive induction operator before attempting calibrated tearing/plasmoid claims.
+- Documentation figures are committed as small PNGs so ReadTheDocs pages are informative without running simulations during the docs build.
+
+**Problems / blockers**
+
+- This validates the linear resistive-diffusion limit, not an FKR eigenmode yet.
+- Strict bitwise image hashes are still avoided because matplotlib/imageio rendering can vary across environments.
+
+**Progress**
+
+- Estimated plan completion: 40%.
+
+**Next steps**
+
+- Add a diagnostics registry so configs can select diagnostic sets explicitly.
+- Add a calibrated linear-mode/eigenvalue validation fixture and compare against FKR scaling.
+- Add a timing/performance table to the CI artifact bundle.

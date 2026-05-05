@@ -26,6 +26,29 @@ Expected files include:
 - `report.md`
 - `validation.json`
 
+## Exact-decay validation benchmark
+
+The first physics-gated numerical validation is a single Fourier mode in the
+resistive induction limit:
+
+```bash
+mhx benchmark decay --outdir outputs/benchmarks/resistive_decay
+```
+
+This checks the literature-standard diffusion law
+$\psi_k(t)=\psi_k(0)\exp(-\eta |k|^2t)$ and
+$E_B(t)=E_B(0)\exp(-2\eta |k|^2t)$. It writes:
+
+- `diagnostics.json`
+- `validation.json`
+- `decay_history.npz`
+- `figures/decay_amplitude.png`
+- `figures/decay_energy.png`
+- `figures/decay_relative_error.png`
+
+The same benchmark is documented with figures on the
+[validation page](validation.md).
+
 ## CI artifacts
 
 Every push runs a `benchmark-artifacts` CI job. It executes two deterministic
@@ -34,6 +57,7 @@ FAST pipelines:
 ```bash
 mhx benchmark run --config examples/linear_tearing.toml --outdir outputs/ci/linear_tearing_fast --gif
 mhx benchmark validate outputs/ci/linear_tearing_fast
+mhx benchmark decay --outdir outputs/ci/resistive_decay
 mhx run examples/linear_tearing_twofluid_toy.toml --outdir outputs/ci/twofluid_toy
 mhx figures outputs/ci/twofluid_toy --gif
 mhx report outputs/ci/twofluid_toy

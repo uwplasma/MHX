@@ -69,3 +69,15 @@ mhx artifact-manifest outputs/smoke
 
 This writes `outputs/smoke/artifact_manifest.json` with schema
 `mhx.artifacts.v1`, file paths, byte sizes, and SHA-256 hashes.
+
+## Exact-decay validation outputs
+
+`mhx benchmark decay --outdir outputs/benchmarks/resistive_decay` writes:
+
+- `diagnostics.json`: scalar decay-rate and error diagnostics with schema
+  `mhx.validation.resistive_decay.v1`.
+- `validation.json`: pass/fail physics gates and thresholds.
+- `decay_history.npz`: time, numerical/exact amplitude, numerical/exact energy,
+  and relative-error arrays.
+- `figures/decay_amplitude.png`, `figures/decay_energy.png`, and
+  `figures/decay_relative_error.png`.

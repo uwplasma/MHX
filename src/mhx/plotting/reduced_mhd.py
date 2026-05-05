@@ -124,3 +124,63 @@ def plot_flux_gif(
         plt.close(fig)
     imageio.mimsave(output_path, frames, duration=duration)
     return output_path
+
+
+def plot_decay_amplitude(times, numerical, exact, *, path: str | Path) -> Path:
+    """Plot exact and numerical resistive-decay mode amplitudes."""
+    import matplotlib.pyplot as plt
+
+    output_path = Path(path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    fig, ax = plt.subplots(figsize=(6.2, 4.0), constrained_layout=True)
+    ax.semilogy(np.asarray(times), np.asarray(numerical), "o", label="MHX RK4")
+    ax.semilogy(np.asarray(times), np.asarray(exact), "-", label=r"exact $A_0 e^{-\eta k^2 t}$")
+    ax.set_xlabel("time")
+    ax.set_ylabel(r"$|\hat\psi_k|$")
+    ax.set_title("Exact resistive decay gate")
+    ax.legend(frameon=False)
+    fig.savefig(output_path, dpi=220)
+    plt.close(fig)
+    return output_path
+
+
+def plot_decay_relative_error(
+    times,
+    amplitude_error,
+    energy_error,
+    *,
+    path: str | Path,
+) -> Path:
+    """Plot relative errors for exact resistive-decay validation."""
+    import matplotlib.pyplot as plt
+
+    output_path = Path(path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    fig, ax = plt.subplots(figsize=(6.2, 4.0), constrained_layout=True)
+    ax.semilogy(np.asarray(times), np.asarray(amplitude_error), "o-", label="amplitude")
+    ax.semilogy(np.asarray(times), np.asarray(energy_error), "s-", label="energy")
+    ax.set_xlabel("time")
+    ax.set_ylabel("relative error")
+    ax.set_title("Resistive decay numerical error")
+    ax.legend(frameon=False)
+    fig.savefig(output_path, dpi=220)
+    plt.close(fig)
+    return output_path
+
+
+def plot_decay_energy(times, numerical, exact, *, path: str | Path) -> Path:
+    """Plot exact and numerical magnetic-energy decay."""
+    import matplotlib.pyplot as plt
+
+    output_path = Path(path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    fig, ax = plt.subplots(figsize=(6.2, 4.0), constrained_layout=True)
+    ax.semilogy(np.asarray(times), np.asarray(numerical), "o", label="MHX RK4")
+    ax.semilogy(np.asarray(times), np.asarray(exact), "-", label=r"exact $E_0 e^{-2\eta k^2 t}$")
+    ax.set_xlabel("time")
+    ax.set_ylabel(r"$E_B$")
+    ax.set_title("Magnetic-energy decay")
+    ax.legend(frameon=False)
+    fig.savefig(output_path, dpi=220)
+    plt.close(fig)
+    return output_path

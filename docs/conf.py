@@ -21,7 +21,6 @@ source_suffix = {
     ".md": "markdown",
 }
 html_theme = "alabaster"
-html_static_path: list[str] = []
+html_static_path = ["_static"]
 autodoc_typehints = "description"
 myst_enable_extensions = ["dollarmath", "amsmath"]
-

@@ -9,7 +9,12 @@ from typing import Annotated
 import typer
 
 from mhx._version import __version__
-from mhx.benchmarks import run_linear_tearing_smoke, validate_run, write_run_report
+from mhx.benchmarks import (
+    run_linear_tearing_smoke,
+    validate_run,
+    write_resistive_decay_validation,
+    write_run_report,
+)
 from mhx.config import RunConfig, load_config
 from mhx.grids import CartesianGrid
 from mhx.io import (
@@ -211,6 +216,34 @@ def benchmark_validate(
     )
     typer.echo(f"wrote {output_path}")
     if not result["passed"]:
+        raise typer.Exit(code=1)
+
+
+@benchmark_app.command("decay")
+def benchmark_decay(
+    outdir: Annotated[
+        Path,
+        typer.Option("--outdir", help="Output directory for exact decay artifacts."),
+    ] = Path("outputs/benchmarks/resistive_decay"),
+    nx: Annotated[int, typer.Option("--nx", help="Grid points in x.")] = 32,
+    ny: Annotated[int, typer.Option("--ny", help="Grid points in y.")] = 32,
+    mode_x: Annotated[int, typer.Option("--mode-x", help="Fourier mode in x.")] = 1,
+    mode_y: Annotated[int, typer.Option("--mode-y", help="Fourier mode in y.")] = 0,
+    eta: Annotated[float, typer.Option("--eta", help="Resistivity.")] = 5.0e-2,
+    t1: Annotated[float, typer.Option("--t1", help="Final time.")] = 1.0,
+    dt: Annotated[float, typer.Option("--dt", help="Fixed RK4 step.")] = 1.0e-2,
+) -> None:
+    """Run the exact single-mode resistive-decay validation benchmark."""
+    manifest_path, validation = write_resistive_decay_validation(
+        outdir,
+        shape=(nx, ny),
+        mode=(mode_x, mode_y),
+        resistivity=eta,
+        t1=t1,
+        dt=dt,
+    )
+    typer.echo(f"wrote {manifest_path}")
+    if not validation["passed"]:
         raise typer.Exit(code=1)
 
 

@@ -66,6 +66,7 @@ jobs:
         run: |
           mhx benchmark run --config examples/linear_tearing.toml --outdir outputs/ci/linear_tearing_fast --gif
           mhx benchmark validate outputs/ci/linear_tearing_fast
+          mhx benchmark decay --outdir outputs/ci/resistive_decay
           mhx run examples/linear_tearing_twofluid_toy.toml --outdir outputs/ci/twofluid_toy
           mhx figures outputs/ci/twofluid_toy --gif
           mhx report outputs/ci/twofluid_toy
@@ -78,6 +79,10 @@ jobs:
           test -f outputs/ci/linear_tearing_fast/report.md
           test -f outputs/ci/linear_tearing_fast/figures/energy_history.png
           test -f outputs/ci/linear_tearing_fast/figures/flux_movie.gif
+          test -f outputs/ci/resistive_decay/validation.json
+          test -f outputs/ci/resistive_decay/figures/decay_amplitude.png
+          test -f outputs/ci/resistive_decay/figures/decay_energy.png
+          test -f outputs/ci/resistive_decay/figures/decay_relative_error.png
           test -f outputs/ci/twofluid_toy/manifest.json
           test -f outputs/ci/twofluid_toy/report.md
           test -f outputs/ci/twofluid_toy/figures/flux_final.png

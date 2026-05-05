@@ -77,6 +77,7 @@ Run the same workflow as a benchmark:
 ```bash
 mhx benchmark run --config examples/linear_tearing.toml --outdir outputs/benchmarks/linear_tearing_fast --gif
 mhx benchmark validate outputs/benchmarks/linear_tearing_fast
+mhx benchmark decay --outdir outputs/benchmarks/resistive_decay
 ```
 
 Inspect configurable physics terms:
