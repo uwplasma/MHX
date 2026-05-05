@@ -3503,3 +3503,52 @@ Every agent must append an entry here. Do not delete previous entries.
 - Add a first extended-MHD-inspired toy term within the current reduced-state API.
 - Add CI artifact upload for FAST benchmark outputs.
 - Start separating diagnostics into a configurable registry similar to equilibria and RHS terms.
+
+### 2026-05-04 — Agent: Codex, extended-MHD-inspired toy plugins
+
+**Summary**
+
+- Added `electron_pressure_tensor`, an anisotropic current-smoothing closure motivated by the pressure-divergence term in generalized Ohm's law.
+- Added `toy_hall_ohm`, a reduced-state Hall-like bracket for exercising two-fluid plugin wiring.
+- Added `examples/linear_tearing_twofluid_toy.toml` and documented a complete run/figures/report sequence.
+- Expanded plugin and model-assembly docs with equations, links to GEM/Hall reconnection context, and explicit limitations.
+- Added unit tests for term metadata, sign/shape behavior, mixed-mode Hall bracket behavior, config parsing, and CLI visibility.
+
+**Files changed**
+
+- Updated `src/mhx/physics/terms.py`, `src/mhx/physics/__init__.py`, plugin/model docs, literature docs, README, and physics-term tests.
+- Added `examples/linear_tearing_twofluid_toy.toml`.
+
+**Tests run**
+
+- `python -m ruff check src tests examples` passed.
+- `python -m pytest --cov=mhx --cov-report=term-missing --cov-fail-under=95` passed: 48 tests, 98.06% coverage.
+- `sphinx-build -b html docs docs/_build/html` passed.
+- `mhx run examples/linear_tearing_twofluid_toy.toml --outdir outputs/twofluid_smoke` passed.
+- `mhx figures outputs/twofluid_smoke --gif` passed and wrote PNG/GIF media.
+- `mhx report outputs/twofluid_smoke` passed.
+
+**Benchmarks run**
+
+- FAST reduced-MHD smoke run with pressure-tensor and Hall-like toy RHS terms.
+
+**Decisions made**
+
+- These plugins are explicitly labeled toy reduced-state closures; they are not marketed as validated Hall/two-fluid reconnection models.
+- The electron-pressure term reuses the current reduced-MHD fields by modeling pressure-divergence as anisotropic current smoothing.
+- The Hall-like term exercises two-fluid bracket plumbing while documenting that full Hall-MHD needs additional evolved fields.
+
+**Problems / blockers**
+
+- Validated GEM/Hall reconnection still requires expanding the state beyond `psi` and `omega`.
+- The toy terms need regression artifacts before they can support reviewer-facing claims.
+
+**Progress**
+
+- Estimated plan completion: 35%.
+
+**Next steps**
+
+- Add a CI paper/benchmark artifact job that runs a FAST benchmark, writes figures, and uploads artifacts.
+- Add a diagnostics registry so configs can select diagnostics the same way they select equilibria and RHS terms.
+- Start a validated manufactured-solution test for the reduced-MHD RHS/integrator.

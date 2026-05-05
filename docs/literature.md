@@ -22,6 +22,20 @@ instability, ideal tearing, GEM-style Hall reconnection, and generalized Ohm's
 law terms. Extended-MHD examples will be added only with explicit assumptions,
 equations, tests, and limitations.
 
+For generalized Ohm's law and collisionless/two-fluid reconnection context:
+
+- [Birn et al. (2001), GEM magnetic reconnection challenge](https://www.mendeley.com/catalogue/92e8f29f-a6d8-3c8d-a0fa-b24bf4cb8c88/)
+  compares resistive tearing, anisotropic pressure, and Hall effects in a
+  common Harris-sheet setup.
+- [Shay et al. (2001), Alfvénic collisionless reconnection and the Hall term](https://ftp.bartol.udel.edu/whm/GEM/GEM-reconnection/shayEA-JGR-106-3759-2001.pdf)
+  is a standard reference for Hall-mediated fast reconnection in the GEM
+  challenge family.
+- [Rogers et al. (2001), Role of dispersive waves in collisionless reconnection](https://terpconnect.umd.edu/~drake/publications/reconnection/rogers01.pdf)
+  connects Hall/two-fluid terms with whistler/kinetic-Alfvén dispersive physics.
+- [Liu et al. (2024), Ohm's law and reconnection rate](https://arxiv.org/abs/2406.00875)
+  provides a modern review of the generalized Ohm's-law terms that break
+  frozen-in flux in collisionless reconnection.
+
 ## External comparison codes
 
 MHX will document comparison workflows against public or widely used codes:
@@ -33,4 +47,3 @@ MHX will document comparison workflows against public or widely used codes:
 - [OpenMHD](https://sci.nao.ac.jp/MEMBER/zenitani/openmhd-e.html)
 - [Dedalus](https://dedalus-project.org/)
 - [Gkeyll](https://gkeyll.readthedocs.io/)
-

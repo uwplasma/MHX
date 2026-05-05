@@ -8,7 +8,7 @@ from typing import Any, ClassVar, Protocol
 
 import jax.numpy as jnp
 
-from mhx.numerics.spectral import laplacian
+from mhx.numerics.spectral import fft_derivative, gradient, laplacian
 from mhx.state import ReducedMHDParams, ReducedMHDState
 
 PHYSICS_API_VERSION = "mhx.physics.v1"
@@ -92,6 +92,70 @@ class VorticityDragTerm:
         )
 
 
+@dataclass(frozen=True)
+class ElectronPressureTensorTerm:
+    r"""Toy pressure-tensor Ohm's-law closure using anisotropic current smoothing."""
+
+    chi_x: float = 0.0
+    chi_y: float = 0.0
+
+    name: ClassVar[str] = "electron_pressure_tensor"
+    api_version: ClassVar[str] = PHYSICS_API_VERSION
+    description: ClassVar[str] = (
+        "Adds an anisotropic electron-pressure-tensor closure to the flux equation."
+    )
+
+    def rhs_addition(
+        self,
+        state: ReducedMHDState,
+        params: ReducedMHDParams,
+        *,
+        lengths: tuple[float, float],
+    ) -> ReducedMHDState:
+        del params
+        current = -laplacian(state.psi, lengths=lengths)
+        pressure_divergence = self.chi_x * fft_derivative(
+            current,
+            axis=0,
+            length=lengths[0],
+            order=2,
+        ) + self.chi_y * fft_derivative(
+            current,
+            axis=1,
+            length=lengths[1],
+            order=2,
+        )
+        return ReducedMHDState(
+            psi=pressure_divergence,
+            omega=jnp.zeros_like(state.omega),
+        )
+
+
+@dataclass(frozen=True)
+class ToyHallOhmTerm:
+    r"""Reduced-state toy Hall Ohm's-law term ``d_i [j,\psi]``."""
+
+    ion_skin_depth: float = 0.0
+
+    name: ClassVar[str] = "toy_hall_ohm"
+    api_version: ClassVar[str] = PHYSICS_API_VERSION
+    description: ClassVar[str] = "Adds a reduced-state toy Hall bracket to the flux equation."
+
+    def rhs_addition(
+        self,
+        state: ReducedMHDState,
+        params: ReducedMHDParams,
+        *,
+        lengths: tuple[float, float],
+    ) -> ReducedMHDState:
+        del params
+        current = -laplacian(state.psi, lengths=lengths)
+        return ReducedMHDState(
+            psi=self.ion_skin_depth * _poisson_bracket(current, state.psi, lengths=lengths),
+            omega=jnp.zeros_like(state.omega),
+        )
+
+
 TermFactory = Callable[[Mapping[str, Any]], PhysicsTerm]
 
 
@@ -137,7 +201,9 @@ class PhysicsRegistry:
 def default_physics_registry() -> PhysicsRegistry:
     """Return the built-in physics-term registry."""
     registry = PhysicsRegistry()
+    registry.register("electron_pressure_tensor", _electron_pressure_tensor_factory)
     registry.register("hyper_resistivity", _hyper_resistivity_factory)
+    registry.register("toy_hall_ohm", _toy_hall_ohm_factory)
     registry.register("vorticity_drag", _vorticity_drag_factory)
     return registry
 
@@ -182,10 +248,37 @@ def _vorticity_drag_factory(parameters: Mapping[str, Any]) -> VorticityDragTerm:
     return VorticityDragTerm(rate=float(parameters.get("rate", 0.0)))
 
 
+def _electron_pressure_tensor_factory(
+    parameters: Mapping[str, Any],
+) -> ElectronPressureTensorTerm:
+    return ElectronPressureTensorTerm(
+        chi_x=float(parameters.get("chi_x", 0.0)),
+        chi_y=float(parameters.get("chi_y", 0.0)),
+    )
+
+
+def _toy_hall_ohm_factory(parameters: Mapping[str, Any]) -> ToyHallOhmTerm:
+    return ToyHallOhmTerm(ion_skin_depth=float(parameters.get("ion_skin_depth", 0.0)))
+
+
+def _poisson_bracket(
+    a: jnp.ndarray,
+    b: jnp.ndarray,
+    *,
+    lengths: tuple[float, float],
+) -> jnp.ndarray:
+    da_dx, da_dy = gradient(a, lengths=lengths)
+    db_dx, db_dy = gradient(b, lengths=lengths)
+    return da_dx * db_dy - da_dy * db_dx
+
+
 def _term_parameters(term: PhysicsTerm) -> dict[str, float]:
     if isinstance(term, HyperResistivityTerm):
         return {"eta4": term.eta4, "nu4": term.nu4}
     if isinstance(term, VorticityDragTerm):
         return {"rate": term.rate}
+    if isinstance(term, ElectronPressureTensorTerm):
+        return {"chi_x": term.chi_x, "chi_y": term.chi_y}
+    if isinstance(term, ToyHallOhmTerm):
+        return {"ion_skin_depth": term.ion_skin_depth}
     return {}
-

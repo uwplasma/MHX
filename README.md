@@ -86,6 +86,13 @@ mhx physics list
 mhx physics lint hyper_resistivity
 ```
 
+Try a reduced-state two-fluid toy extension:
+
+```bash
+mhx run examples/linear_tearing_twofluid_toy.toml --outdir outputs/twofluid_toy
+mhx figures outputs/twofluid_toy --gif
+```
+
 ## Python API
 
 ```python

@@ -69,10 +69,16 @@ The current built-ins are:
 
 - `hyper_resistivity`: fourth-order damping of $\psi$ and $\omega$.
 - `vorticity_drag`: linear damping of $\omega$.
+- `electron_pressure_tensor`: anisotropic current-smoothing closure motivated
+  by the pressure-divergence term in generalized Ohm's law.
+- `toy_hall_ohm`: reduced-state Hall-like bracket for exercising two-fluid
+  plugin wiring.
 
 These are deliberately simple terms. They test the extension path without
 claiming validated Hall, anisotropic-pressure, or two-fluid reconnection
-physics.
+physics. The pressure-tensor and Hall examples are useful templates for API
+extension, but reviewer-facing physics claims require additional evolved fields
+and validation against Hall/two-fluid benchmarks.
 
 ## Reproducible command
 
