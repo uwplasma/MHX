@@ -13,6 +13,7 @@ solver.
 | RK4 smoke integration | Runs deterministically and preserves expected dissipative trends in tiny examples. | Engineering-grade only. |
 | Exact resistive decay | Matches $\psi_k(t)=\psi_k(0)e^{-\eta |k|^2t}$ and $E_B(t)=E_B(0)e^{-2\eta |k|^2t}$ with x64 validation. | Yes for this linear limit. |
 | Analytic FKR/plasmoid/ideal-tearing scaling plots | Reproduce expected literature exponents from formulas. | Yes as analytic scaffolds; no PDE-solver claim. |
+| Harris-sheet $\Delta'$ outer solve | Numerically integrates the ideal outer tearing ODE and recovers $\Delta'a=2[(ka)^{-1}-ka]$. | Yes for outer-region matching; not a growth-rate eigenvalue. |
 | Matrix-free JVP and eigen scaffolds | JAX JVP, zero-state eigenmodes, Arnoldi, and power iteration are tested on controlled fixtures. | Good scaffolding; not yet a tearing spectrum. |
 | Nonzero current-sheet linearization | Exact bracket couplings around $\psi_0=A\cos y$ are tested. | Good operator gate; still not an FKR benchmark. |
 | Periodic current-sheet dense spectrum | Tiny dense spectrum around $\psi_0=A\cos y$ checks gauge modes, eigenpair residuals, and absence of spurious positive growth. | Useful stability/operator gate; not an FKR/Coppi tearing-growth validation. |
@@ -54,6 +55,7 @@ The repository is currently defensible as a validation-first rebuild with:
 - installable package and CLI;
 - deterministic output schemas;
 - exact linear physics gates;
+- numerical Harris-sheet outer matching gate;
 - matrix-free linearization scaffolds;
 - tiny nonzero-equilibrium dense-spectrum gate;
 - plugin and diagnostics extension examples;

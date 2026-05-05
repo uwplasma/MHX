@@ -16,6 +16,7 @@ def test_validation_catalog_entries_cover_expected_gates() -> None:
     entries = validation_catalog_entries()
     names = {entry.name for entry in entries}
     assert "resistive_decay" in names
+    assert "harris_delta_prime" in names
     assert "reduced_mhd_eigenmode" in names
     assert "periodic_current_sheet_eigenvalue" in names
     assert "arnoldi" in names

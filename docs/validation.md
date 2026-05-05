@@ -186,6 +186,50 @@ Expected files:
 
 ![FKR constant-psi regime window](_static/validation/fkr_window/fkr_constant_psi_window.png)
 
+## Harris-sheet Delta-prime gate
+
+The first numerical tearing-specific validation is the Harris-sheet ideal outer
+equation. With
+
+$$
+B_y/B_0=\tanh(x/a),\qquad \xi=x/a,
+$$
+
+the zero-inertia outer equation for the tearing-parity flux eigenfunction is
+
+$$
+\frac{d^2\psi}{d\xi^2}
+-
+\left[(ka)^2 - 2\,\operatorname{sech}^2\xi\right]\psi=0.
+$$
+
+The decaying solution on each side of the sheet gives the FKR matching
+parameter
+
+$$
+\Delta'a =
+2\frac{\psi'(0^+)}{\psi(0)}
+=2\left[(ka)^{-1}-ka\right].
+$$
+
+MHX now integrates this outer ODE numerically from large positive $\xi$ back to
+the resonant surface and gates the recovered $\Delta'a$ against the analytic
+formula. This is more substantial than plotting the formula, but it still is
+not the full resistive inner-layer eigenvalue solve.
+
+```bash
+mhx benchmark harris-delta-prime --outdir outputs/benchmarks/harris_delta_prime
+```
+
+Expected files:
+
+- `outputs/benchmarks/harris_delta_prime/diagnostics.json`
+- `outputs/benchmarks/harris_delta_prime/validation.json`
+- `outputs/benchmarks/harris_delta_prime/harris_delta_prime.npz`
+- `outputs/benchmarks/harris_delta_prime/figures/harris_delta_prime.png`
+
+![Harris-sheet Delta-prime gate](_static/validation/harris_delta_prime/harris_delta_prime.png)
+
 ## Matrix-free linearized RHS
 
 Tearing eigenmode calculations require a linearized operator

@@ -104,6 +104,27 @@ def validation_catalog_entries() -> tuple[BenchmarkCatalogEntry, ...]:
             literature_anchor="FKR constant-psi and Coppi-regime separation.",
         ),
         BenchmarkCatalogEntry(
+            name="harris_delta_prime",
+            command=(
+                "mhx benchmark harris-delta-prime "
+                "--outdir outputs/benchmarks/harris_delta_prime"
+            ),
+            schema="mhx.validation.harris_delta_prime.v1",
+            purpose=(
+                "Numerical Harris-sheet outer-region Delta-prime solve against "
+                "the analytic FKR matching formula."
+            ),
+            expected_outputs=(
+                "diagnostics.json",
+                "validation.json",
+                "harris_delta_prime.npz",
+                "figures/harris_delta_prime.png",
+            ),
+            literature_anchor=(
+                "Harris-sheet outer tearing equation and FKR constant-psi matching."
+            ),
+        ),
+        BenchmarkCatalogEntry(
             name="linearized_rhs",
             command="mhx benchmark linearized-rhs --outdir outputs/benchmarks/linearized_rhs",
             schema="mhx.validation.linearized_rhs.v1",

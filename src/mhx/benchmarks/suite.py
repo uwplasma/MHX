@@ -17,7 +17,10 @@ from mhx.benchmarks.eigenvalue import (
     write_diffusion_eigenvalue_validation,
     write_power_iteration_validation,
 )
-from mhx.benchmarks.fkr import write_fkr_window_validation
+from mhx.benchmarks.fkr import (
+    write_fkr_window_validation,
+    write_harris_delta_prime_validation,
+)
 from mhx.benchmarks.linearized import (
     write_cosine_equilibrium_linearization_validation,
     write_linearized_rhs_validation,
@@ -68,6 +71,11 @@ def validation_suite_cases() -> tuple[ValidationSuiteCase, ...]:
             name="fkr_window",
             command="mhx benchmark fkr-window",
             runner=write_fkr_window_validation,
+        ),
+        ValidationSuiteCase(
+            name="harris_delta_prime",
+            command="mhx benchmark harris-delta-prime",
+            runner=write_harris_delta_prime_validation,
         ),
         ValidationSuiteCase(
             name="linearized_rhs",

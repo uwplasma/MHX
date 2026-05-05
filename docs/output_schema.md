@@ -121,6 +121,7 @@ validation gates and writes:
   validation artifact.
 - `manifest.json`: top-level manifest for the suite summary files.
 - one subdirectory per case, for example `resistive_decay/`,
+  `harris_delta_prime/`,
   `cosine_equilibrium_linearization/`,
   `periodic_current_sheet_eigenvalue/`, and `arnoldi/`.
 
@@ -158,6 +159,20 @@ validation gates and writes:
 - `fkr_window.npz`: sampled `ka`, `gamma_tau_a`, `inner_width_a`,
   `delta_prime_a`, and `constant_psi_product` arrays.
 - `figures/fkr_constant_psi_window.png`: publication-style regime-window plot.
+
+## Harris Delta-prime validation outputs
+
+`mhx benchmark harris-delta-prime --outdir outputs/benchmarks/harris_delta_prime`
+writes:
+
+- `diagnostics.json`: numerical Harris outer-region matching diagnostics with
+  schema `mhx.validation.harris_delta_prime.v1`.
+- `validation.json`: pass/fail gates for finite positive $\Delta'a$,
+  monotonicity, and relative error against the analytic Harris formula.
+- `harris_delta_prime.npz`: sampled `ka`, numerical and analytic
+  `delta_prime_a`, and relative-error arrays.
+- `figures/harris_delta_prime.png`: numerical-vs-analytic matching plot and
+  relative-error gate.
 
 ## Linearized-RHS validation outputs
 

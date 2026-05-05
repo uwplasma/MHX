@@ -57,6 +57,7 @@ FKR, Sweet-Parker plasmoid, and ideal-tearing exponents:
 ```bash
 mhx benchmark scaling --outdir outputs/benchmarks/reconnection_scaling
 mhx benchmark fkr-window --outdir outputs/benchmarks/fkr_window
+mhx benchmark harris-delta-prime --outdir outputs/benchmarks/harris_delta_prime
 mhx benchmark linearized-rhs --outdir outputs/benchmarks/linearized_rhs
 mhx benchmark reduced-mhd-eigenmode --outdir outputs/benchmarks/reduced_mhd_eigenmode
 mhx benchmark cosine-equilibrium-linearization --outdir outputs/benchmarks/cosine_equilibrium_linearization
@@ -82,6 +83,13 @@ The FKR-window command writes:
 - `validation.json`
 - `fkr_window.npz`
 - `figures/fkr_constant_psi_window.png`
+
+The Harris Delta-prime command writes:
+
+- `diagnostics.json`
+- `validation.json`
+- `harris_delta_prime.npz`
+- `figures/harris_delta_prime.png`
 
 The linearized-RHS command writes:
 
@@ -149,6 +157,7 @@ mhx benchmark validate outputs/ci/linear_tearing_fast
 mhx benchmark decay --outdir outputs/ci/resistive_decay
 mhx benchmark scaling --outdir outputs/ci/reconnection_scaling
 mhx benchmark fkr-window --outdir outputs/ci/fkr_window
+mhx benchmark harris-delta-prime --outdir outputs/ci/harris_delta_prime
 mhx benchmark linearized-rhs --outdir outputs/ci/linearized_rhs
 mhx benchmark reduced-mhd-eigenmode --outdir outputs/ci/reduced_mhd_eigenmode
 mhx benchmark cosine-equilibrium-linearization --outdir outputs/ci/cosine_equilibrium_linearization
@@ -250,6 +259,12 @@ The separate FKR-window gate checks the sampled constant-$\psi$ regime by
 plotting $\gamma\tau_a$ and $\Delta'\delta$ versus $ka$ at fixed $S_a$. This
 prevents future numerical tearing comparisons from silently mixing FKR and
 large-$\Delta'$ Coppi regimes.
+
+The Harris Delta-prime gate numerically integrates the ideal outer tearing
+equation for a Harris sheet and recovers
+$\Delta'a=2[(ka)^{-1}-ka]$. This is the first numerical tearing-specific
+matching benchmark; it validates the outer-region target but still does not
+solve the resistive FKR inner-layer eigenvalue problem.
 
 The linearized-RHS gate compares JAX's matrix-free Jacobian-vector product
 against a centered finite difference of the reduced-MHD RHS. This is the

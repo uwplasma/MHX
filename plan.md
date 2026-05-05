@@ -4711,3 +4711,65 @@ Every agent must append an entry here. Do not delete previous entries.
 - Add release notes/changelog and a deprecation cleanup pass for legacy scripts.
 - Then start nonlinear island-growth/plasmoid validation from the calibrated
   linear eigenmode setup.
+
+### 2026-05-05 — Agent: Codex, Harris outer-region Delta-prime gate
+
+**Summary**
+
+- Added a numerical Harris-sheet outer-region tearing validation gate. It
+  integrates the ideal outer ODE for the Harris equilibrium and recovers
+  `Delta' a = 2[(ka)^(-1)-ka]`.
+- This is the first numerical tearing-specific matching benchmark. It is more
+  substantial than analytic scaling plots, but it is still not the full
+  resistive FKR/Coppi growth-rate eigenproblem.
+- Added `mhx benchmark harris-delta-prime`, a committed documentation figure,
+  output-schema documentation, validation-suite integration, benchmark catalog
+  metadata, CI artifact checks, and tests.
+
+**Files changed**
+
+- Updated `src/mhx/benchmarks/fkr.py` with `HarrisDeltaPrimeResult`,
+  `run_harris_delta_prime_validation`, and
+  `write_harris_delta_prime_validation`.
+- Updated plotting, benchmark exports, suite/catalog runners, CLI, CI, README,
+  validation docs, output-schema docs, audit docs, examples media generation,
+  and tests.
+
+**Tests run**
+
+- `python -m ruff check src tests examples` passed.
+- `python -m pytest tests/test_fkr_window_validation.py tests/test_validation_suite.py tests/test_benchmark_catalog.py -q`
+  passed: 10 tests.
+- `mhx benchmark harris-delta-prime --outdir outputs/dev/harris_delta_prime`
+  passed with maximum relative `Delta'` error about `3.8e-11`.
+- `python -m pytest --cov=mhx --cov-report=term-missing --cov-fail-under=95`
+  passed: 99 tests, 96.48% coverage.
+- `sphinx-build -b html docs docs/_build/html` passed.
+- CI-equivalent artifact pipeline passed locally and wrote
+  `outputs/ci/artifact_manifest.json` covering 166 files.
+- CI artifact file-set validation passed, including direct and validation-suite
+  Harris Delta-prime figures.
+
+**Decisions made**
+
+- The gate uses a small deterministic RK4 backward integration from large
+  positive `x/a`, avoiding SciPy and keeping CI runtime low.
+- The documentation explicitly states that this validates the outer matching
+  target, not the resistive inner-layer eigenvalue.
+
+**Problems / blockers**
+
+- The next benchmark must solve or compare the actual resistive tearing
+  eigenvalue, including inner-layer physics and a resolution/tolerance study.
+
+**Progress**
+
+- Estimated plan completion: 79%.
+
+**Next steps**
+
+- Build the calibrated FKR/Coppi growth-rate eigenvalue benchmark using the
+  newly validated Harris outer matching target.
+- Add release notes/changelog and a legacy cleanup/deprecation checklist.
+- Begin nonlinear island-growth validation after the linear growth benchmark is
+  trustworthy.

@@ -248,6 +248,58 @@ def plot_fkr_validity_window(
     return output_path
 
 
+def plot_harris_delta_prime(
+    ka,
+    numerical_delta_prime,
+    analytic_delta_prime,
+    relative_error,
+    *,
+    max_relative_error: float,
+    path: str | Path,
+) -> Path:
+    """Plot numerical Harris-sheet outer-region Delta-prime validation."""
+    import matplotlib.pyplot as plt
+
+    output_path = Path(path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    ka_values = np.asarray(ka)
+    fig, axes = plt.subplots(1, 2, figsize=(9.2, 3.8), constrained_layout=True)
+    axes[0].plot(
+        ka_values,
+        np.asarray(analytic_delta_prime),
+        "-",
+        color="black",
+        label=r"analytic $2[(ka)^{-1}-ka]$",
+    )
+    axes[0].plot(
+        ka_values,
+        np.asarray(numerical_delta_prime),
+        "o",
+        color="#3266a8",
+        label="numerical outer solve",
+    )
+    axes[0].set_xlabel(r"$ka$")
+    axes[0].set_ylabel(r"$\Delta' a$")
+    axes[0].set_title("Harris-sheet outer matching")
+    axes[0].legend(frameon=False)
+    axes[1].semilogy(ka_values, np.asarray(relative_error), "o-", color="#8c4fb4")
+    axes[1].axhline(
+        max_relative_error,
+        color="black",
+        linestyle="--",
+        linewidth=1.0,
+        label="gate",
+    )
+    axes[1].set_xlabel(r"$ka$")
+    axes[1].set_ylabel("relative error")
+    axes[1].set_title(r"Numerical $\Delta'$ error")
+    axes[1].legend(frameon=False)
+    fig.suptitle(r"FKR Harris-sheet $\Delta'$ gate")
+    fig.savefig(output_path, dpi=220)
+    plt.close(fig)
+    return output_path
+
+
 def plot_linearized_rhs_errors(
     component_names,
     relative_errors,

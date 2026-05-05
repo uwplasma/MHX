@@ -16,6 +16,7 @@ def test_validation_suite_cases_are_unique() -> None:
     names = [case.name for case in validation_suite_cases()]
     assert len(names) == len(set(names))
     assert "linear_tearing_fast" in names
+    assert "harris_delta_prime" in names
     assert "cosine_equilibrium_linearization" in names
     assert "periodic_current_sheet_eigenvalue" in names
 
@@ -30,6 +31,13 @@ def test_write_validation_suite_artifacts_and_cli(tmp_path) -> None:
     assert (tmp_path / "suite" / "validation_suite.md").stat().st_size > 0
     assert (tmp_path / "suite" / "artifact_manifest.json").exists()
     assert (tmp_path / "suite" / "manifest.json").exists()
+    assert (
+        tmp_path
+        / "suite"
+        / "harris_delta_prime"
+        / "figures"
+        / "harris_delta_prime.png"
+    ).stat().st_size > 0
     assert (
         tmp_path
         / "suite"

@@ -17,6 +17,7 @@ from mhx.benchmarks import (
     write_cosine_equilibrium_linearization_validation,
     write_diffusion_eigenvalue_validation,
     write_fkr_window_validation,
+    write_harris_delta_prime_validation,
     write_linearized_rhs_validation,
     write_periodic_current_sheet_eigenvalue_validation,
     write_power_iteration_validation,
@@ -331,6 +332,30 @@ def benchmark_fkr_window(
     """Run the analytic FKR constant-psi regime-window gate."""
     _configure_validation_precision()
     manifest_path, validation = write_fkr_window_validation(outdir, lundquist=lundquist)
+    typer.echo(f"wrote {manifest_path}")
+    if not validation["passed"]:
+        raise typer.Exit(code=1)
+
+
+@benchmark_app.command("harris-delta-prime")
+def benchmark_harris_delta_prime(
+    outdir: Annotated[
+        Path,
+        typer.Option("--outdir", help="Output directory for Harris Delta-prime artifacts."),
+    ] = Path("outputs/benchmarks/harris_delta_prime"),
+    steps: Annotated[int, typer.Option("--steps", help="Backward RK4 outer-ODE steps.")] = 4000,
+    xmax_over_a: Annotated[
+        float,
+        typer.Option("--xmax-over-a", help="Positive integration boundary in sheet widths."),
+    ] = 18.0,
+) -> None:
+    """Run the numerical Harris-sheet outer-region Delta-prime gate."""
+    _configure_validation_precision()
+    manifest_path, validation = write_harris_delta_prime_validation(
+        outdir,
+        steps=steps,
+        xmax_over_a=xmax_over_a,
+    )
     typer.echo(f"wrote {manifest_path}")
     if not validation["passed"]:
         raise typer.Exit(code=1)
