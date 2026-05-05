@@ -4230,3 +4230,61 @@ Every agent must append an entry here. Do not delete previous entries.
 - Add diagnostic plotting hooks so plugin diagnostics can emit report figures.
 - Add a benchmark manifest table that lists validation schemas and generated
   figures for all current gates.
+
+### 2026-05-05 — Agent: Codex, reduced-MHD linear eigenmode gate
+
+**Summary**
+
+- Added `mhx benchmark reduced-mhd-eigenmode`, applying the flattened
+  `linearized_reduced_mhd_operator` to zero-state reduced-MHD Fourier
+  eigenmodes.
+- Validated the analytic decoupled linear limit
+  $\lambda_\psi=-\eta k^2$ and $\lambda_\omega=-\nu k^2$ with Rayleigh
+  quotients and relative eigen-residuals.
+- Added JSON diagnostics, validation gates, NPZ outputs, manifest writing, and a
+  publication-style error figure.
+- Wired the benchmark into CLI, tests, docs media, validation docs,
+  output-schema docs, quickstart/README commands, and CI artifact checks.
+
+**Files changed**
+
+- Updated `src/mhx/benchmarks/linearized.py`, benchmark exports, CLI, plotting,
+  CI, README, quickstart, benchmark docs, output-schema docs, validation docs,
+  validation-media generation, and linearized RHS tests.
+- Added
+  `docs/_static/validation/reduced_mhd_eigenmode/reduced_mhd_linear_eigenmode_errors.png`.
+
+**Tests run**
+
+- `python -m ruff check src tests examples` passed.
+- `python -m pytest tests/test_linearized_rhs_validation.py -q` passed.
+- `python -m pytest --cov=mhx --cov-report=term-missing --cov-fail-under=95`
+  passed: 89 tests, 96.69% coverage.
+- `sphinx-build -b html docs docs/_build/html` passed.
+- CI-equivalent artifact sequence passed locally and wrote
+  `outputs/ci/artifact_manifest.json` covering 79 files.
+
+**Decisions made**
+
+- The first physics-facing eigenmode gate uses the zero-state diffusion limit,
+  not a nonzero tearing equilibrium. This isolates flattened reduced-MHD JVP
+  eigen-operator correctness before adding outer-region and inner-layer tearing
+  physics tolerances.
+
+**Problems / blockers**
+
+- The validated eigenvalues are diffusion-block eigenvalues, not FKR/Coppi
+  tearing growth rates.
+- A nonzero-equilibrium tearing eigenmode benchmark still needs a carefully
+  documented asymptotic regime and tolerance.
+
+**Progress**
+
+- Estimated plan completion: 65%.
+
+**Next steps**
+
+- Add plugin plotting hooks and report integration for custom diagnostics.
+- Add a validation-summary manifest/table for all benchmark schemas and figures.
+- Start a calibrated nonzero-equilibrium tearing eigenmode benchmark with a
+  conservative literature-anchored gate.

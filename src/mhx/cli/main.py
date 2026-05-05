@@ -18,6 +18,7 @@ from mhx.benchmarks import (
     write_linearized_rhs_validation,
     write_power_iteration_validation,
     write_reconnection_scaling_validation,
+    write_reduced_mhd_linear_eigenmode_validation,
     write_resistive_decay_validation,
     write_run_report,
     write_timing_benchmark,
@@ -315,6 +316,23 @@ def benchmark_linearized_rhs(
 ) -> None:
     """Run the matrix-free reduced-MHD linearized-RHS consistency gate."""
     manifest_path, validation = write_linearized_rhs_validation(outdir, epsilon=epsilon)
+    typer.echo(f"wrote {manifest_path}")
+    if not validation["passed"]:
+        raise typer.Exit(code=1)
+
+
+@benchmark_app.command("reduced-mhd-eigenmode")
+def benchmark_reduced_mhd_eigenmode(
+    outdir: Annotated[
+        Path,
+        typer.Option(
+            "--outdir",
+            help="Output directory for reduced-MHD linear eigenmode artifacts.",
+        ),
+    ] = Path("outputs/benchmarks/reduced_mhd_eigenmode"),
+) -> None:
+    """Run the zero-state reduced-MHD linear diffusion eigenmode gate."""
+    manifest_path, validation = write_reduced_mhd_linear_eigenmode_validation(outdir)
     typer.echo(f"wrote {manifest_path}")
     if not validation["passed"]:
         raise typer.Exit(code=1)

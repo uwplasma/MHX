@@ -208,6 +208,42 @@ Expected files:
 
 ![Linearized RHS consistency](_static/validation/linearized_rhs/linearized_rhs_errors.png)
 
+## Reduced-MHD linear eigenmode gate
+
+At zero flux and zero flow, the reduced-MHD JVP operator decouples into two
+Fourier diffusion blocks:
+
+$$
+\partial_t\delta\psi = \eta\nabla^2\delta\psi,\qquad
+\partial_t\delta\omega = \nu\nabla^2\delta\omega.
+$$
+
+For a periodic Fourier mode $\sin(k_xx+k_yy)$, the expected eigenvalues are
+
+$$
+\lambda_\psi = -\eta(k_x^2+k_y^2),\qquad
+\lambda_\omega = -\nu(k_x^2+k_y^2).
+$$
+
+This gate applies `linearized_reduced_mhd_operator` to flattened
+$(\delta\psi,\delta\omega)$ vectors and checks Rayleigh quotients and
+eigen-residuals for both blocks. It is the first physics-facing use of the full
+flattened reduced-MHD linear operator; nonzero-equilibrium tearing eigenmodes
+will build on this path.
+
+```bash
+mhx benchmark reduced-mhd-eigenmode --outdir outputs/benchmarks/reduced_mhd_eigenmode
+```
+
+Expected files:
+
+- `outputs/benchmarks/reduced_mhd_eigenmode/diagnostics.json`
+- `outputs/benchmarks/reduced_mhd_eigenmode/validation.json`
+- `outputs/benchmarks/reduced_mhd_eigenmode/reduced_mhd_linear_eigenmode.npz`
+- `outputs/benchmarks/reduced_mhd_eigenmode/figures/reduced_mhd_linear_eigenmode_errors.png`
+
+![Reduced-MHD linear eigenmode gate](_static/validation/reduced_mhd_eigenmode/reduced_mhd_linear_eigenmode_errors.png)
+
 ## Diffusion eigenvalue scaffold
 
 Before applying eigenvalue machinery to tearing equilibria, MHX validates the
@@ -348,6 +384,7 @@ Additional source links:
 - [FKR window tests](https://github.com/uwplasma/MHX/blob/main/tests/test_fkr_window_validation.py)
 - [Linearized RHS implementation](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/linearized.py)
 - [Linearized RHS tests](https://github.com/uwplasma/MHX/blob/main/tests/test_linearized_rhs_validation.py)
+- [Reduced-MHD linear eigenmode implementation](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/linearized.py)
 - [Diffusion eigenvalue implementation](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/eigenvalue.py)
 - [Diffusion eigenvalue tests](https://github.com/uwplasma/MHX/blob/main/tests/test_diffusion_eigenvalue_validation.py)
 - [Power-iteration utilities](https://github.com/uwplasma/MHX/blob/main/src/mhx/numerics/linear_operator.py)

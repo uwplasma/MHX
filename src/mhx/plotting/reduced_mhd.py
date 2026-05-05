@@ -371,6 +371,32 @@ def plot_arnoldi_ritz_values(
     return output_path
 
 
+def plot_reduced_mhd_eigenmode_errors(
+    quantities,
+    values,
+    thresholds,
+    *,
+    path: str | Path,
+) -> Path:
+    """Plot reduced-MHD linear eigenmode validation errors and gates."""
+    import matplotlib.pyplot as plt
+
+    output_path = Path(path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    names = list(quantities)
+    positions = np.arange(len(names))
+    fig, ax = plt.subplots(figsize=(6.8, 4.0), constrained_layout=True)
+    ax.semilogy(positions, np.asarray(values), "o", color="#3266a8", label="measured")
+    ax.semilogy(positions, np.asarray(thresholds), "x", color="#8c4fb4", label="gate")
+    ax.set_xticks(positions, labels=names, rotation=15, ha="right")
+    ax.set_ylabel("absolute / relative error")
+    ax.set_title("Reduced-MHD linear eigenmode gate")
+    ax.legend(frameon=False)
+    fig.savefig(output_path, dpi=220)
+    plt.close(fig)
+    return output_path
+
+
 def plot_plasmoid_scaling(lundquist, gamma, fastest_mode, *, path: str | Path) -> Path:
     """Plot Loureiro Sweet-Parker plasmoid scalings."""
     import matplotlib.pyplot as plt

@@ -58,6 +58,7 @@ FKR, Sweet-Parker plasmoid, and ideal-tearing exponents:
 mhx benchmark scaling --outdir outputs/benchmarks/reconnection_scaling
 mhx benchmark fkr-window --outdir outputs/benchmarks/fkr_window
 mhx benchmark linearized-rhs --outdir outputs/benchmarks/linearized_rhs
+mhx benchmark reduced-mhd-eigenmode --outdir outputs/benchmarks/reduced_mhd_eigenmode
 mhx benchmark diffusion-eigenvalue --outdir outputs/benchmarks/diffusion_eigenvalue
 mhx benchmark power-iteration --outdir outputs/benchmarks/power_iteration
 mhx benchmark arnoldi --outdir outputs/benchmarks/arnoldi
@@ -85,6 +86,13 @@ The linearized-RHS command writes:
 - `validation.json`
 - `linearized_rhs.npz`
 - `figures/linearized_rhs_errors.png`
+
+The reduced-MHD eigenmode command writes:
+
+- `diagnostics.json`
+- `validation.json`
+- `reduced_mhd_linear_eigenmode.npz`
+- `figures/reduced_mhd_linear_eigenmode_errors.png`
 
 The diffusion-eigenvalue command writes:
 
@@ -119,6 +127,7 @@ mhx benchmark decay --outdir outputs/ci/resistive_decay
 mhx benchmark scaling --outdir outputs/ci/reconnection_scaling
 mhx benchmark fkr-window --outdir outputs/ci/fkr_window
 mhx benchmark linearized-rhs --outdir outputs/ci/linearized_rhs
+mhx benchmark reduced-mhd-eigenmode --outdir outputs/ci/reduced_mhd_eigenmode
 mhx benchmark diffusion-eigenvalue --outdir outputs/ci/diffusion_eigenvalue
 mhx benchmark power-iteration --outdir outputs/ci/power_iteration
 mhx benchmark arnoldi --outdir outputs/ci/arnoldi
@@ -201,6 +210,10 @@ large-$\Delta'$ Coppi regimes.
 The linearized-RHS gate compares JAX's matrix-free Jacobian-vector product
 against a centered finite difference of the reduced-MHD RHS. This is the
 operator-level scaffold for later calibrated tearing eigenmode benchmarks.
+
+The reduced-MHD eigenmode gate applies the flattened JVP operator at the
+zero-state linear limit and checks the analytic resistive and viscous Fourier
+diffusion eigenvalues for the $\psi$ and $\omega$ blocks.
 
 The diffusion-eigenvalue gate validates the Rayleigh-quotient/residual path on a
 known Fourier eigenpair before using the same matrix-free machinery for tearing

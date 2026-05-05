@@ -151,6 +151,20 @@ writes:
 - `figures/linearized_rhs_errors.png`: relative-error plot with the configured
   gate.
 
+## Reduced-MHD linear eigenmode outputs
+
+`mhx benchmark reduced-mhd-eigenmode --outdir outputs/benchmarks/reduced_mhd_eigenmode`
+writes:
+
+- `diagnostics.json`: zero-state linear eigenmode diagnostics with schema
+  `mhx.validation.reduced_mhd_linear_eigenmode.v1`.
+- `validation.json`: pass/fail gates for resistive $\psi$ and viscous $\omega$
+  Fourier diffusion eigenvalues and residuals.
+- `reduced_mhd_linear_eigenmode.npz`: saved eigenfunctions, flattened operator
+  actions, expected eigenvalues, and measured Rayleigh quotients.
+- `figures/reduced_mhd_linear_eigenmode_errors.png`: eigenvalue/residual error
+  plot.
+
 ## Diffusion eigenvalue validation outputs
 
 `mhx benchmark diffusion-eigenvalue --outdir outputs/benchmarks/diffusion_eigenvalue`

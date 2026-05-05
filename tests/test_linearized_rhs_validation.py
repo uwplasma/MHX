@@ -9,8 +9,11 @@ from typer.testing import CliRunner
 
 from mhx.benchmarks import (
     LINEARIZED_RHS_SCHEMA,
+    REDUCED_MHD_LINEAR_EIGENMODE_SCHEMA,
     run_linearized_rhs_validation,
+    run_reduced_mhd_linear_eigenmode_validation,
     write_linearized_rhs_validation,
+    write_reduced_mhd_linear_eigenmode_validation,
 )
 from mhx.cli.main import app
 from mhx.config import MeshConfig
@@ -113,4 +116,38 @@ def test_write_linearized_rhs_validation_artifacts_and_cli(tmp_path) -> None:
     outdir = tmp_path / "cli"
     result = CliRunner().invoke(app, ["benchmark", "linearized-rhs", "--outdir", str(outdir)])
     assert result.exit_code == 0, result.stdout
+    assert (outdir / "validation.json").exists()
+
+
+def test_reduced_mhd_linear_eigenmode_validation_and_cli(tmp_path) -> None:
+    result = run_reduced_mhd_linear_eigenmode_validation(shape=(16, 16), mode=(2, 1))
+    assert result.diagnostics["schema"] == REDUCED_MHD_LINEAR_EIGENMODE_SCHEMA
+    assert result.validation["passed"] is True
+    assert result.eigenvalue_abs_errors["psi"] < 1.0e-6
+    assert result.eigenvalue_abs_errors["omega"] < 1.0e-6
+    assert result.residual_norms["psi"] < 5.0e-6
+    assert result.residual_norms["omega"] < 5.0e-6
+
+    manifest_path, validation = write_reduced_mhd_linear_eigenmode_validation(
+        tmp_path,
+        shape=(16, 16),
+        mode=(2, 1),
+    )
+    assert manifest_path == tmp_path / "manifest.json"
+    assert validation["passed"] is True
+    diagnostics = json.loads((tmp_path / "diagnostics.json").read_text())
+    assert diagnostics["references"]["tearing_context"].startswith("This validates")
+    history = np.load(tmp_path / "reduced_mhd_linear_eigenmode.npz")
+    assert history["schema"] == REDUCED_MHD_LINEAR_EIGENMODE_SCHEMA
+    assert history["psi_eigenfunction"].shape == (16, 16)
+    assert (
+        tmp_path / "figures" / "reduced_mhd_linear_eigenmode_errors.png"
+    ).stat().st_size > 0
+
+    outdir = tmp_path / "cli-eigenmode"
+    cli_result = CliRunner().invoke(
+        app,
+        ["benchmark", "reduced-mhd-eigenmode", "--outdir", str(outdir)],
+    )
+    assert cli_result.exit_code == 0, cli_result.stdout
     assert (outdir / "validation.json").exists()

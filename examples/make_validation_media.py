@@ -12,6 +12,7 @@ from mhx.benchmarks import (
     write_linearized_rhs_validation,
     write_power_iteration_validation,
     write_reconnection_scaling_validation,
+    write_reduced_mhd_linear_eigenmode_validation,
     write_resistive_decay_validation,
     write_timing_benchmark,
 )
@@ -23,6 +24,7 @@ def main() -> None:
     scaling_run_dir = Path("outputs/docs_validation/reconnection_scaling")
     fkr_window_run_dir = Path("outputs/docs_validation/fkr_window")
     linearized_run_dir = Path("outputs/docs_validation/linearized_rhs")
+    reduced_mhd_eigenmode_run_dir = Path("outputs/docs_validation/reduced_mhd_eigenmode")
     diffusion_eigen_run_dir = Path("outputs/docs_validation/diffusion_eigenvalue")
     power_iteration_run_dir = Path("outputs/docs_validation/power_iteration")
     arnoldi_run_dir = Path("outputs/docs_validation/arnoldi")
@@ -31,6 +33,7 @@ def main() -> None:
     scaling_docs_dir = Path("docs/_static/validation/reconnection_scaling")
     fkr_window_docs_dir = Path("docs/_static/validation/fkr_window")
     linearized_docs_dir = Path("docs/_static/validation/linearized_rhs")
+    reduced_mhd_eigenmode_docs_dir = Path("docs/_static/validation/reduced_mhd_eigenmode")
     diffusion_eigen_docs_dir = Path("docs/_static/validation/diffusion_eigenvalue")
     power_iteration_docs_dir = Path("docs/_static/validation/power_iteration")
     arnoldi_docs_dir = Path("docs/_static/validation/arnoldi")
@@ -39,6 +42,7 @@ def main() -> None:
     write_reconnection_scaling_validation(scaling_run_dir)
     write_fkr_window_validation(fkr_window_run_dir)
     write_linearized_rhs_validation(linearized_run_dir)
+    write_reduced_mhd_linear_eigenmode_validation(reduced_mhd_eigenmode_run_dir)
     write_diffusion_eigenvalue_validation(diffusion_eigen_run_dir)
     write_power_iteration_validation(power_iteration_run_dir)
     write_arnoldi_validation(arnoldi_run_dir)
@@ -58,6 +62,13 @@ def main() -> None:
     shutil.copy2(
         linearized_run_dir / "figures" / "linearized_rhs_errors.png",
         linearized_docs_dir / "linearized_rhs_errors.png",
+    )
+    reduced_mhd_eigenmode_docs_dir.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(
+        reduced_mhd_eigenmode_run_dir
+        / "figures"
+        / "reduced_mhd_linear_eigenmode_errors.png",
+        reduced_mhd_eigenmode_docs_dir / "reduced_mhd_linear_eigenmode_errors.png",
     )
     diffusion_eigen_docs_dir.mkdir(parents=True, exist_ok=True)
     shutil.copy2(

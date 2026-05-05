@@ -29,9 +29,13 @@ from mhx.benchmarks.fkr import (
 )
 from mhx.benchmarks.linearized import (
     LINEARIZED_RHS_SCHEMA,
+    REDUCED_MHD_LINEAR_EIGENMODE_SCHEMA,
     LinearizedRHSResult,
+    ReducedMHDLinearEigenmodeResult,
     run_linearized_rhs_validation,
+    run_reduced_mhd_linear_eigenmode_validation,
     write_linearized_rhs_validation,
+    write_reduced_mhd_linear_eigenmode_validation,
 )
 from mhx.benchmarks.report import validate_run, write_run_report
 from mhx.benchmarks.scaling import (
@@ -68,6 +72,7 @@ __all__ = [
     "FKR_WINDOW_SCHEMA",
     "LINEARIZED_RHS_SCHEMA",
     "POWER_ITERATION_SCHEMA",
+    "REDUCED_MHD_LINEAR_EIGENMODE_SCHEMA",
     "LinearizedRHSResult",
     "PlasmoidScalingEstimate",
     "PowerIterationValidationResult",
@@ -75,6 +80,7 @@ __all__ = [
     "RESISTIVE_DECAY_SCHEMA",
     "TIMING_BENCHMARK_SCHEMA",
     "ReconnectionScalingResult",
+    "ReducedMHDLinearEigenmodeResult",
     "ResistiveDecayResult",
     "TimingBenchmarkResult",
     "TimingCaseResult",
@@ -90,6 +96,7 @@ __all__ = [
     "run_fkr_window_validation",
     "run_linearized_rhs_validation",
     "run_power_iteration_validation",
+    "run_reduced_mhd_linear_eigenmode_validation",
     "run_reconnection_scaling_validation",
     "run_resistive_decay_validation",
     "run_linear_tearing_smoke",
@@ -100,6 +107,7 @@ __all__ = [
     "write_fkr_window_validation",
     "write_linearized_rhs_validation",
     "write_power_iteration_validation",
+    "write_reduced_mhd_linear_eigenmode_validation",
     "write_reconnection_scaling_validation",
     "write_resistive_decay_validation",
     "write_run_report",
