@@ -78,6 +78,13 @@ mhx benchmark run --config examples/linear_tearing.toml --outdir outputs/benchma
 mhx benchmark validate outputs/benchmarks/linear_tearing_fast
 ```
 
+Inspect configurable physics terms:
+
+```bash
+mhx physics list
+mhx physics lint hyper_resistivity
+```
+
 ## Python API
 
 ```python

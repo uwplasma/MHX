@@ -17,6 +17,7 @@ from mhx.io import (
     write_manifest,
     write_reduced_mhd_trajectory_npz,
 )
+from mhx.physics import PHYSICS_API_VERSION, default_physics_registry
 from mhx.plotting import (
     plot_energy_history,
     plot_flux_contours,
@@ -27,7 +28,9 @@ from mhx.state import ReducedMHDState
 
 app = typer.Typer(no_args_is_help=True, help="MHX differentiable MHD workflows.")
 benchmark_app = typer.Typer(no_args_is_help=True, help="Benchmark workflows.")
+physics_app = typer.Typer(no_args_is_help=True, help="Physics plugin inspection.")
 app.add_typer(benchmark_app, name="benchmark")
+app.add_typer(physics_app, name="physics")
 
 
 @app.command()
@@ -194,6 +197,28 @@ def benchmark_validate(
     typer.echo(f"wrote {output_path}")
     if not result["passed"]:
         raise typer.Exit(code=1)
+
+
+@physics_app.command("list")
+def physics_list() -> None:
+    """List registered built-in physics terms."""
+    typer.echo(f"Physics API: {PHYSICS_API_VERSION}")
+    for item in default_physics_registry().metadata():
+        typer.echo(f"- {item.name}: {item.description}")
+
+
+@physics_app.command("lint")
+def physics_lint(
+    name: Annotated[str, typer.Argument(help="Registered physics term name.")],
+) -> None:
+    """Validate a registered physics term's API metadata."""
+    registry = default_physics_registry()
+    term = registry.create(name)
+    if term.api_version != PHYSICS_API_VERSION:
+        raise typer.BadParameter(
+            f"{name!r} uses {term.api_version!r}, expected {PHYSICS_API_VERSION!r}"
+        )
+    typer.echo(f"{name}: ok ({term.api_version})")
 
 
 def main() -> None:  # pragma: no cover - exercised by console entry points.

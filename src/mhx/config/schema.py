@@ -104,6 +104,8 @@ class PhysicsConfig:
     model: str = "reduced_mhd_linear_tearing"
     resistivity: float = 1.0e-3
     viscosity: float = 1.0e-3
+    rhs_terms: tuple[str, ...] = ()
+    term_parameters: dict[str, dict[str, float]] = field(default_factory=dict)
 
     @classmethod
     def from_mapping(cls, mapping: dict[str, Any] | None) -> PhysicsConfig:
@@ -112,6 +114,11 @@ class PhysicsConfig:
             model=str(mapping.get("model", cls.model)),
             resistivity=float(mapping.get("resistivity", cls.resistivity)),
             viscosity=float(mapping.get("viscosity", cls.viscosity)),
+            rhs_terms=tuple(str(item) for item in mapping.get("rhs_terms", cls.rhs_terms)),
+            term_parameters={
+                str(name): {str(key): float(value) for key, value in parameters.items()}
+                for name, parameters in mapping.get("term_parameters", {}).items()
+            },
         ).validated()
 
     def validated(self) -> PhysicsConfig:
@@ -119,6 +126,12 @@ class PhysicsConfig:
             raise ValueError("physics.resistivity must be non-negative")
         if self.viscosity < 0.0:
             raise ValueError("physics.viscosity must be non-negative")
+        unknown_parameters = sorted(set(self.term_parameters) - set(self.rhs_terms))
+        if unknown_parameters:
+            raise ValueError(
+                "physics.term_parameters contains entries not listed in physics.rhs_terms: "
+                + ", ".join(unknown_parameters)
+            )
         return self
 
 
@@ -225,6 +238,11 @@ class RunConfig:
             if data["diagnostics"]["fit_time_window"] is None
             else f"fit_time_window = {data['diagnostics']['fit_time_window']}\n"
         )
+        term_parameter_lines = ""
+        for term_name, parameters in sorted(data["physics"]["term_parameters"].items()):
+            term_parameter_lines += f"\n[physics.term_parameters.{term_name}]\n"
+            for key, value in sorted(parameters.items()):
+                term_parameter_lines += f"{key} = {value}\n"
         return (
             f'name = "{data["name"]}"\n'
             f'output_dir = "{data["output_dir"]}"\n\n'
@@ -241,7 +259,9 @@ class RunConfig:
             "[physics]\n"
             f'model = "{data["physics"]["model"]}"\n'
             f"resistivity = {data['physics']['resistivity']}\n"
-            f"viscosity = {data['physics']['viscosity']}\n\n"
+            f"viscosity = {data['physics']['viscosity']}\n"
+            f"rhs_terms = {data['physics']['rhs_terms']}\n\n"
+            f"{term_parameter_lines}"
             "[numerics]\n"
             f"method = \"{data['numerics']['method']}\"\n"
             f"enable_x64 = {str(data['numerics']['enable_x64']).lower()}\n"

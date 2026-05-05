@@ -14,6 +14,7 @@ from mhx.diagnostics import (
 )
 from mhx.equations.reduced_mhd import reduced_mhd_rhs
 from mhx.grids import CartesianGrid
+from mhx.physics import build_physics_terms
 from mhx.state import ReducedMHDParams, ReducedMHDState, ReducedMHDTrajectory
 from mhx.time_integrators import evolve_rk4
 
@@ -51,9 +52,11 @@ def run_linear_tearing_smoke(
         resistivity=config.physics.resistivity,
         viscosity=config.physics.viscosity,
     )
+    terms = build_physics_terms(config.physics.rhs_terms, config.physics.term_parameters)
     steps = max(1, round((config.time.t1 - config.time.t0) / config.time.dt))
+
     def rhs(state: ReducedMHDState) -> ReducedMHDState:
-        return reduced_mhd_rhs(state, params, lengths=grid.lengths)
+        return reduced_mhd_rhs(state, params, lengths=grid.lengths, terms=terms)
 
     trajectory = evolve_rk4(
         state0,
@@ -72,6 +75,7 @@ def run_linear_tearing_smoke(
     )
     diagnostics = {
         "n_steps": float(steps),
+        "physics_terms": list(config.physics.rhs_terms),
         "initial_total_energy": float(total_energy(state0, lengths=grid.lengths)),
         "final_total_energy": float(energies["total"][-1]),
         "final_magnetic_energy": float(energies["magnetic"][-1]),

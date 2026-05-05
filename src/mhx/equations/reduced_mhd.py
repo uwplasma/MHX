@@ -6,6 +6,7 @@ import jax.numpy as jnp
 from jaxtyping import Array
 
 from mhx.numerics.spectral import gradient, inverse_laplacian, laplacian
+from mhx.physics import PhysicsTerm, apply_physics_terms
 from mhx.state import ReducedMHDParams, ReducedMHDState
 
 
@@ -31,6 +32,7 @@ def reduced_mhd_rhs(
     params: ReducedMHDParams,
     *,
     lengths: tuple[float, float],
+    terms: tuple[PhysicsTerm, ...] = (),
 ) -> ReducedMHDState:
     r"""Return the resistive-viscous reduced-MHD right-hand side.
 
@@ -51,10 +53,10 @@ def reduced_mhd_rhs(
         + poisson_bracket(state.psi, lap_psi, lengths=lengths)
         + params.viscosity * lap_omega
     )
-    return ReducedMHDState(psi=dpsi, omega=domega)
+    base_rhs = ReducedMHDState(psi=dpsi, omega=domega)
+    return apply_physics_terms(base_rhs, terms, state, params, lengths=lengths)
 
 
 def reduced_mhd_residual_norm(state: ReducedMHDState) -> Array:
     """Return a scalar finite-state sanity norm for debugging."""
     return jnp.sqrt(jnp.mean(state.psi**2) + jnp.mean(state.omega**2))
-

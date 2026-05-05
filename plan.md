@@ -3407,3 +3407,51 @@ Every agent must append an entry here. Do not delete previous entries.
 - Add a synthetic eigenmode/growth fixture with known gamma to test the complete report path.
 - Add CI artifact upload for benchmark outputs.
 - Start the physics plugin interface after the benchmark/report/validation workflow is stable.
+
+### 2026-05-04 — Agent: Codex, versioned physics plugin API
+
+**Summary**
+
+- Added a stable `mhx.physics.v1` plugin contract for RHS extension terms.
+- Added built-in `hyper_resistivity` and `vorticity_drag` terms with registry metadata and CLI linting.
+- Wired configured physics terms into the reduced-MHD RHS and benchmark diagnostics.
+- Added TOML-driven model assembly via `[physics] rhs_terms` and `[physics.term_parameters.<term>]`.
+- Added a plugin example, user-facing docs, API docs, README quickstart notes, and regression tests.
+
+**Files changed**
+
+- Added `src/mhx/physics/terms.py`, `docs/plugins.md`, `examples/linear_tearing_hyper.toml`, and `tests/test_physics_terms.py`.
+- Updated `src/mhx/physics/__init__.py`, `src/mhx/config/schema.py`, `src/mhx/equations/reduced_mhd.py`, `src/mhx/benchmarks/tearing.py`, `src/mhx/cli/main.py`, README, docs index, and API docs.
+
+**Tests run**
+
+- `python -m ruff check src tests examples` passed.
+- `python -m pytest --cov=mhx --cov-report=term-missing --cov-fail-under=95` passed: 42 tests, 97.86% coverage.
+- `sphinx-build -b html docs docs/_build/html` passed.
+- `mhx run examples/linear_tearing_hyper.toml --outdir outputs/plugin_smoke` passed.
+- `mhx physics list` and `mhx physics lint hyper_resistivity` passed.
+
+**Benchmarks run**
+
+- FAST reduced-MHD benchmark with configured hyper-resistivity and vorticity drag only.
+
+**Decisions made**
+
+- The v1 extension point is an additive RHS contribution over `ReducedMHDState`, which is simple to test and keeps the core integrator unchanged.
+- Built-in terms are registered by name and assembled from TOML so users can change physics without editing Python.
+- Config validation rejects parameter tables for inactive terms, but it does not reject unknown term names so third-party registries can be introduced later.
+
+**Problems / blockers**
+
+- The current registry is process-local and built-in only; external package discovery is still future work.
+- The plugin API covers RHS additions but not new evolved fields yet.
+
+**Progress**
+
+- Estimated plan completion: 31%.
+
+**Next steps**
+
+- Add external plugin loading and a `ModelConfig`-style registry object for equilibria, terms, and diagnostics.
+- Add the first nontrivial extended-MHD toy term that approximates Hall/two-fluid effects within the current reduced-state API.
+- Add benchmark artifact upload in CI and expand validation beyond smoke energy checks.

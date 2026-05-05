@@ -22,6 +22,9 @@
 .. automodule:: mhx.benchmarks.theory
    :members:
 
+.. automodule:: mhx.physics
+   :members:
+
 .. automodule:: mhx.io
    :members:
 ```
