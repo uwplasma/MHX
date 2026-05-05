@@ -83,6 +83,7 @@ mhx benchmark fkr-window --outdir outputs/benchmarks/fkr_window
 mhx benchmark linearized-rhs --outdir outputs/benchmarks/linearized_rhs
 mhx benchmark diffusion-eigenvalue --outdir outputs/benchmarks/diffusion_eigenvalue
 mhx benchmark power-iteration --outdir outputs/benchmarks/power_iteration
+mhx benchmark arnoldi --outdir outputs/benchmarks/arnoldi
 mhx benchmark timing --outdir outputs/benchmarks/timing --repeats 3 --warmups 1
 ```
 

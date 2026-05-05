@@ -337,6 +337,40 @@ def plot_power_iteration_history(
     return output_path
 
 
+def plot_arnoldi_ritz_values(
+    expected_eigenvalues,
+    ritz_values,
+    residual_estimates,
+    *,
+    path: str | Path,
+) -> Path:
+    """Plot Arnoldi Ritz values and residual estimates for validation."""
+    import matplotlib.pyplot as plt
+
+    output_path = Path(path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    expected = np.asarray(expected_eigenvalues)
+    measured = np.asarray(ritz_values)
+    residuals = np.asarray(residual_estimates)
+    fig, axes = plt.subplots(1, 2, figsize=(9.2, 3.8), constrained_layout=True)
+    axes[0].scatter(expected.real, expected.imag, marker="x", color="black", label="expected")
+    axes[0].scatter(measured.real, measured.imag, marker="o", color="#3266a8", label="Ritz")
+    axes[0].axhline(0.0, color="0.8", linewidth=0.8)
+    axes[0].axvline(0.0, color="0.8", linewidth=0.8)
+    axes[0].set_xlabel(r"$\operatorname{Re}\lambda$")
+    axes[0].set_ylabel(r"$\operatorname{Im}\lambda$")
+    axes[0].set_title("Fixture spectrum")
+    axes[0].legend(frameon=False)
+    axes[1].semilogy(np.arange(1, residuals.size + 1), residuals, "o-", color="#8c4fb4")
+    axes[1].set_xlabel("Ritz value index")
+    axes[1].set_ylabel("Arnoldi residual estimate")
+    axes[1].set_title("Ritz residual estimates")
+    fig.suptitle("Arnoldi matrix-free eigensolver gate")
+    fig.savefig(output_path, dpi=220)
+    plt.close(fig)
+    return output_path
+
+
 def plot_plasmoid_scaling(lundquist, gamma, fastest_mode, *, path: str | Path) -> Path:
     """Plot Loureiro Sweet-Parker plasmoid scalings."""
     import matplotlib.pyplot as plt

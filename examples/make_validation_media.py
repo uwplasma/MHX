@@ -6,6 +6,7 @@ import shutil
 from pathlib import Path
 
 from mhx.benchmarks import (
+    write_arnoldi_validation,
     write_diffusion_eigenvalue_validation,
     write_fkr_window_validation,
     write_linearized_rhs_validation,
@@ -24,6 +25,7 @@ def main() -> None:
     linearized_run_dir = Path("outputs/docs_validation/linearized_rhs")
     diffusion_eigen_run_dir = Path("outputs/docs_validation/diffusion_eigenvalue")
     power_iteration_run_dir = Path("outputs/docs_validation/power_iteration")
+    arnoldi_run_dir = Path("outputs/docs_validation/arnoldi")
     timing_run_dir = Path("outputs/docs_validation/timing")
     decay_docs_dir = Path("docs/_static/validation/exact_decay")
     scaling_docs_dir = Path("docs/_static/validation/reconnection_scaling")
@@ -31,6 +33,7 @@ def main() -> None:
     linearized_docs_dir = Path("docs/_static/validation/linearized_rhs")
     diffusion_eigen_docs_dir = Path("docs/_static/validation/diffusion_eigenvalue")
     power_iteration_docs_dir = Path("docs/_static/validation/power_iteration")
+    arnoldi_docs_dir = Path("docs/_static/validation/arnoldi")
     timing_docs_dir = Path("docs/_static/performance")
     write_resistive_decay_validation(run_dir)
     write_reconnection_scaling_validation(scaling_run_dir)
@@ -38,6 +41,7 @@ def main() -> None:
     write_linearized_rhs_validation(linearized_run_dir)
     write_diffusion_eigenvalue_validation(diffusion_eigen_run_dir)
     write_power_iteration_validation(power_iteration_run_dir)
+    write_arnoldi_validation(arnoldi_run_dir)
     write_timing_benchmark(timing_run_dir, repeats=1, warmups=0)
     decay_docs_dir.mkdir(parents=True, exist_ok=True)
     for name in ("decay_amplitude.png", "decay_energy.png", "decay_relative_error.png"):
@@ -64,6 +68,11 @@ def main() -> None:
     shutil.copy2(
         power_iteration_run_dir / "figures" / "power_iteration_history.png",
         power_iteration_docs_dir / "power_iteration_history.png",
+    )
+    arnoldi_docs_dir.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(
+        arnoldi_run_dir / "figures" / "arnoldi_ritz_values.png",
+        arnoldi_docs_dir / "arnoldi_ritz_values.png",
     )
     timing_docs_dir.mkdir(parents=True, exist_ok=True)
     shutil.copy2(

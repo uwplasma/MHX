@@ -8,12 +8,16 @@ from mhx.benchmarks.decay import (
     write_resistive_decay_validation,
 )
 from mhx.benchmarks.eigenvalue import (
+    ARNOLDI_SCHEMA,
     DIFFUSION_EIGENVALUE_SCHEMA,
     POWER_ITERATION_SCHEMA,
+    ArnoldiValidationResult,
     DiffusionEigenvalueResult,
     PowerIterationValidationResult,
+    run_arnoldi_validation,
     run_diffusion_eigenvalue_validation,
     run_power_iteration_validation,
+    write_arnoldi_validation,
     write_diffusion_eigenvalue_validation,
     write_power_iteration_validation,
 )
@@ -55,6 +59,8 @@ from mhx.benchmarks.timing import (
 )
 
 __all__ = [
+    "ARNOLDI_SCHEMA",
+    "ArnoldiValidationResult",
     "FKRConstantPsiEstimate",
     "FKRWindowResult",
     "DIFFUSION_EIGENVALUE_SCHEMA",
@@ -79,6 +85,7 @@ __all__ = [
     "linear_tearing_initial_state",
     "loureiro_plasmoid_estimate",
     "resistive_decay_rate",
+    "run_arnoldi_validation",
     "run_diffusion_eigenvalue_validation",
     "run_fkr_window_validation",
     "run_linearized_rhs_validation",
@@ -88,6 +95,7 @@ __all__ = [
     "run_linear_tearing_smoke",
     "run_timing_benchmark",
     "validate_run",
+    "write_arnoldi_validation",
     "write_diffusion_eigenvalue_validation",
     "write_fkr_window_validation",
     "write_linearized_rhs_validation",

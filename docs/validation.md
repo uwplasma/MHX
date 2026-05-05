@@ -292,6 +292,54 @@ Expected files:
 
 ![Power-iteration convergence gate](_static/validation/power_iteration/power_iteration_history.png)
 
+## Arnoldi Ritz-spectrum scaffold
+
+Tearing eigenmode validation needs more than a dominant-mode iteration: the
+linearized reduced-MHD operator can be non-normal, and nearby Ritz values must
+be handled explicitly. MHX therefore includes a deterministic Arnoldi gate on a
+small non-normal upper-triangular fixture,
+
+$$
+\mathcal{A} =
+\begin{bmatrix}
+2 & 0.4 & 0 & 0 \\
+0 & 1 & 0.1 & 0 \\
+0 & 0 & -0.5 & 0.2 \\
+0 & 0 & 0 & 0.1
+\end{bmatrix},
+$$
+
+whose exact spectrum is the diagonal:
+
+$$
+\sigma(\mathcal{A}) = \{2, 1, -0.5, 0.1\}.
+$$
+
+The Arnoldi process constructs an orthonormal Krylov basis $Q_m$ and projected
+Hessenberg matrix $H_m$,
+
+$$
+\mathcal{A}Q_m = Q_mH_m + h_{m+1,m}q_{m+1}e_m^\top.
+$$
+
+The eigenvalues of $H_m$ are Ritz values approximating the spectrum of
+$\mathcal{A}$. The validation gate checks the recovered fixture spectrum,
+negligible imaginary parts for this real fixture, and residual estimates
+$|h_{m+1,m}e_m^\top y_i|$.
+
+```bash
+mhx benchmark arnoldi --outdir outputs/benchmarks/arnoldi
+```
+
+Expected files:
+
+- `outputs/benchmarks/arnoldi/diagnostics.json`
+- `outputs/benchmarks/arnoldi/validation.json`
+- `outputs/benchmarks/arnoldi/arnoldi_spectrum.npz`
+- `outputs/benchmarks/arnoldi/figures/arnoldi_ritz_values.png`
+
+![Arnoldi Ritz-spectrum gate](_static/validation/arnoldi/arnoldi_ritz_values.png)
+
 Additional source links:
 
 - [Scaling validation implementation](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/scaling.py)
@@ -303,3 +351,4 @@ Additional source links:
 - [Diffusion eigenvalue implementation](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/eigenvalue.py)
 - [Diffusion eigenvalue tests](https://github.com/uwplasma/MHX/blob/main/tests/test_diffusion_eigenvalue_validation.py)
 - [Power-iteration utilities](https://github.com/uwplasma/MHX/blob/main/src/mhx/numerics/linear_operator.py)
+- [Arnoldi benchmark implementation](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/eigenvalue.py)

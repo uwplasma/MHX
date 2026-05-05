@@ -12,6 +12,7 @@ from mhx._version import __version__
 from mhx.benchmarks import (
     run_linear_tearing_smoke,
     validate_run,
+    write_arnoldi_validation,
     write_diffusion_eigenvalue_validation,
     write_fkr_window_validation,
     write_linearized_rhs_validation,
@@ -346,6 +347,20 @@ def benchmark_power_iteration(
 ) -> None:
     """Run the known-operator power-iteration smoke benchmark."""
     manifest_path, validation = write_power_iteration_validation(outdir, iterations=iterations)
+    typer.echo(f"wrote {manifest_path}")
+    if not validation["passed"]:
+        raise typer.Exit(code=1)
+
+
+@benchmark_app.command("arnoldi")
+def benchmark_arnoldi(
+    outdir: Annotated[
+        Path,
+        typer.Option("--outdir", help="Output directory for Arnoldi artifacts."),
+    ] = Path("outputs/benchmarks/arnoldi"),
+) -> None:
+    """Run the known-operator Arnoldi Ritz-spectrum smoke benchmark."""
+    manifest_path, validation = write_arnoldi_validation(outdir)
     typer.echo(f"wrote {manifest_path}")
     if not validation["passed"]:
         raise typer.Exit(code=1)

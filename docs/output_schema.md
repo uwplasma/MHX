@@ -176,6 +176,19 @@ writes:
   history, residual history, and expected dominant eigenvalue.
 - `figures/power_iteration_history.png`: convergence history plot.
 
+## Arnoldi validation outputs
+
+`mhx benchmark arnoldi --outdir outputs/benchmarks/arnoldi` writes:
+
+- `diagnostics.json`: Krylov Ritz-spectrum diagnostics with schema
+  `mhx.validation.arnoldi.v1`.
+- `validation.json`: pass/fail gates for fixture Ritz-value, imaginary-part,
+  and residual-estimate errors.
+- `arnoldi_spectrum.npz`: expected eigenvalues, measured Ritz values, Arnoldi
+  residual estimates, and the projected Hessenberg matrix.
+- `figures/arnoldi_ritz_values.png`: complex-plane Ritz spectrum and residual
+  estimate plot.
+
 ## Timing benchmark outputs
 
 `mhx benchmark timing --outdir outputs/benchmarks/timing` writes:

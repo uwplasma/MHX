@@ -60,6 +60,7 @@ mhx benchmark fkr-window --outdir outputs/benchmarks/fkr_window
 mhx benchmark linearized-rhs --outdir outputs/benchmarks/linearized_rhs
 mhx benchmark diffusion-eigenvalue --outdir outputs/benchmarks/diffusion_eigenvalue
 mhx benchmark power-iteration --outdir outputs/benchmarks/power_iteration
+mhx benchmark arnoldi --outdir outputs/benchmarks/arnoldi
 ```
 
 This writes:
@@ -99,6 +100,13 @@ The power-iteration command writes:
 - `power_iteration_history.npz`
 - `figures/power_iteration_history.png`
 
+The Arnoldi command writes:
+
+- `diagnostics.json`
+- `validation.json`
+- `arnoldi_spectrum.npz`
+- `figures/arnoldi_ritz_values.png`
+
 ## CI artifacts
 
 Every push runs a `benchmark-artifacts` CI job. It executes deterministic FAST
@@ -113,6 +121,7 @@ mhx benchmark fkr-window --outdir outputs/ci/fkr_window
 mhx benchmark linearized-rhs --outdir outputs/ci/linearized_rhs
 mhx benchmark diffusion-eigenvalue --outdir outputs/ci/diffusion_eigenvalue
 mhx benchmark power-iteration --outdir outputs/ci/power_iteration
+mhx benchmark arnoldi --outdir outputs/ci/arnoldi
 mhx benchmark timing --outdir outputs/ci/timing --repeats 1 --warmups 0
 mhx run examples/linear_tearing_twofluid_toy.toml --outdir outputs/ci/twofluid_toy
 mhx figures outputs/ci/twofluid_toy --gif
@@ -200,6 +209,11 @@ operators.
 The power-iteration gate validates a minimal dominant-eigenpair iteration on a
 known diagonal matrix-free operator. This keeps the eigensolver control path
 tested independently before later coupling to reduced-MHD tearing operators.
+
+The Arnoldi gate validates a small Krylov Ritz-spectrum path on a known
+non-normal upper-triangular operator. It is the direct scaffold for future
+matrix-free tearing eigenmode calculations where the linearized reduced-MHD JVP
+is too large to assemble explicitly.
 
 References used for the benchmark roadmap include
 [Furth, Killeen, and Rosenbluth 1963](https://cir.nii.ac.jp/crid/1363107370207531008),

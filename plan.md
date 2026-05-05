@@ -4169,3 +4169,64 @@ Every agent must append an entry here. Do not delete previous entries.
 - Add plugin plotting hooks and report integration for custom diagnostics.
 - Start the first numerical tearing eigenmode validation against a documented
   asymptotic target and tolerance.
+
+### 2026-05-05 — Agent: Codex, Arnoldi eigenmode scaffold
+
+**Summary**
+
+- Added `arnoldi_iteration`, a modified-Gram-Schmidt Krylov eigensolver helper
+  that returns Ritz values, residual estimates, the projected Hessenberg matrix,
+  and the Krylov basis.
+- Added `to_scipy_linear_operator`, a lazy SciPy adapter so MHX matrix-free
+  operators can be handed to ARPACK-style workflows without importing SciPy at
+  MHX import time.
+- Added `mhx benchmark arnoldi`, validating a non-normal upper-triangular
+  fixture with known spectrum, JSON diagnostics, validation gates, NPZ history,
+  manifest, and a publication-style Ritz/residual plot.
+- Wired the Arnoldi gate into tests, generated documentation media,
+  benchmark/output-schema docs, quickstart commands, and CI artifact checks.
+
+**Files changed**
+
+- Updated `src/mhx/numerics/linear_operator.py`, benchmark exports,
+  `src/mhx/benchmarks/eigenvalue.py`, CLI, plotting, CI, README, quickstart,
+  benchmark docs, output-schema docs, validation docs, validation-media
+  generation, and eigenvalue tests.
+- Added `docs/_static/validation/arnoldi/arnoldi_ritz_values.png`.
+
+**Tests run**
+
+- `python -m pytest tests/test_diffusion_eigenvalue_validation.py -q` passed.
+- `python -m ruff check src tests examples` passed.
+- `python -m pytest --cov=mhx --cov-report=term-missing --cov-fail-under=95`
+  passed: 88 tests, 96.68% coverage.
+- `sphinx-build -b html docs docs/_build/html` passed.
+- CI-equivalent artifact sequence passed locally and wrote
+  `outputs/ci/artifact_manifest.json` covering 74 files.
+
+**Decisions made**
+
+- The Arnoldi validation uses a known non-normal matrix rather than a reduced-MHD
+  operator so reviewer-facing eigensolver gates isolate Krylov machinery from
+  physics-model errors.
+- The SciPy adapter is lazy and optional at import time; MHX owns its small
+  deterministic Arnoldi gate while still supporting standard external sparse
+  eigensolver workflows.
+
+**Problems / blockers**
+
+- The next physics validation step is a calibrated reduced-MHD linear tearing
+  eigenmode benchmark, not just an operator-control-path fixture.
+- Generalized state flattening is still reduced-MHD v1 only.
+
+**Progress**
+
+- Estimated plan completion: 63%.
+
+**Next steps**
+
+- Build the first tiny reduced-MHD eigenmode benchmark around
+  `linearized_reduced_mhd_operator`.
+- Add diagnostic plotting hooks so plugin diagnostics can emit report figures.
+- Add a benchmark manifest table that lists validation schemas and generated
+  figures for all current gates.

@@ -15,15 +15,21 @@ from mhx.grids import CartesianGrid
 from mhx.io import write_manifest
 from mhx.numerics import (
     MatrixFreeOperator,
+    arnoldi_iteration,
     eigen_residual_norm,
     power_iteration,
     rayleigh_quotient,
 )
 from mhx.numerics.spectral import laplacian
-from mhx.plotting import plot_diffusion_eigenvalue_error, plot_power_iteration_history
+from mhx.plotting import (
+    plot_arnoldi_ritz_values,
+    plot_diffusion_eigenvalue_error,
+    plot_power_iteration_history,
+)
 
 DIFFUSION_EIGENVALUE_SCHEMA = "mhx.validation.diffusion_eigenvalue.v1"
 POWER_ITERATION_SCHEMA = "mhx.validation.power_iteration.v1"
+ARNOLDI_SCHEMA = "mhx.validation.arnoldi.v1"
 
 
 @dataclass(frozen=True)
@@ -50,6 +56,21 @@ class PowerIterationValidationResult:
     residual_norm: float
     rayleigh_history: np.ndarray
     residual_history: np.ndarray
+    diagnostics: dict[str, Any]
+    validation: dict[str, Any]
+
+
+@dataclass(frozen=True)
+class ArnoldiValidationResult:
+    """Known-operator Arnoldi result and validation gates."""
+
+    expected_eigenvalues: np.ndarray
+    ritz_values: np.ndarray
+    max_ritz_abs_error: float
+    max_imag_abs: float
+    max_residual_estimate: float
+    residual_estimates: np.ndarray
+    hessenberg: np.ndarray
     diagnostics: dict[str, Any]
     validation: dict[str, Any]
 
@@ -178,6 +199,83 @@ def run_power_iteration_validation(
     )
 
 
+def run_arnoldi_validation(
+    *,
+    krylov_dim: int = 4,
+    max_ritz_abs_error: float = 1.0e-6,
+    max_imag_abs: float = 1.0e-8,
+    max_residual_estimate: float = 1.0e-6,
+) -> ArnoldiValidationResult:
+    """Validate Arnoldi Ritz values on a known non-normal upper-triangular operator."""
+    if krylov_dim != 4:
+        raise ValueError("krylov_dim must be 4 for the full-spectrum Arnoldi fixture")
+    matrix = jnp.asarray(
+        [
+            [2.0, 0.4, 0.0, 0.0],
+            [0.0, 1.0, 0.1, 0.0],
+            [0.0, 0.0, -0.5, 0.2],
+            [0.0, 0.0, 0.0, 0.1],
+        ]
+    )
+    expected_eigenvalues = np.asarray([2.0, 1.0, -0.5, 0.1])
+    operator = MatrixFreeOperator(
+        shape=(matrix.shape[0],),
+        name="upper_triangular_arnoldi_fixture",
+        matvec=lambda vector: matrix @ vector,
+    )
+    initial_vector = jnp.asarray([1.0, 0.3, -0.2, 0.1])
+    result = arnoldi_iteration(operator, initial_vector, krylov_dim=krylov_dim)
+    ritz_values = np.asarray(result.ritz_values)
+    sorted_ritz = np.sort(ritz_values.real)
+    sorted_expected = np.sort(expected_eigenvalues)
+    ritz_error = float(np.max(np.abs(sorted_ritz - sorted_expected)))
+    imag_error = float(np.max(np.abs(ritz_values.imag)))
+    residual_error = float(np.max(np.asarray(result.residual_estimates)))
+    checks = {
+        "ritz_values_match_fixture_spectrum": ritz_error <= max_ritz_abs_error,
+        "ritz_imaginary_parts_negligible": imag_error <= max_imag_abs,
+        "arnoldi_residual_estimates_within_tolerance": (
+            residual_error <= max_residual_estimate
+        ),
+    }
+    diagnostics = {
+        "schema": ARNOLDI_SCHEMA,
+        "krylov_dim": krylov_dim,
+        "expected_eigenvalues": [float(value) for value in expected_eigenvalues],
+        "ritz_values_real": [float(value) for value in ritz_values.real],
+        "ritz_values_imag": [float(value) for value in ritz_values.imag],
+        "max_ritz_abs_error": ritz_error,
+        "max_imag_abs": imag_error,
+        "max_residual_estimate": residual_error,
+        "references": {
+            "arnoldi": "Krylov Ritz-value scaffold for matrix-free tearing eigenmodes",
+            "fixture": "Non-normal upper-triangular matrix with known diagonal spectrum",
+        },
+    }
+    validation = {
+        "schema": "mhx.validation.arnoldi.gates.v1",
+        "passed": all(checks.values()),
+        "checks": checks,
+        "thresholds": {
+            "max_ritz_abs_error": max_ritz_abs_error,
+            "max_imag_abs": max_imag_abs,
+            "max_residual_estimate": max_residual_estimate,
+        },
+        "diagnostics": diagnostics,
+    }
+    return ArnoldiValidationResult(
+        expected_eigenvalues=expected_eigenvalues,
+        ritz_values=ritz_values,
+        max_ritz_abs_error=ritz_error,
+        max_imag_abs=imag_error,
+        max_residual_estimate=residual_error,
+        residual_estimates=np.asarray(result.residual_estimates),
+        hessenberg=np.asarray(result.hessenberg),
+        diagnostics=diagnostics,
+        validation=validation,
+    )
+
+
 def write_diffusion_eigenvalue_validation(
     outdir: str | Path,
     **kwargs: Any,
@@ -225,6 +323,55 @@ def write_diffusion_eigenvalue_validation(
             "validation": validation_path.name,
             "history": history_path.name,
             "diffusion_eigenvalue_errors": str(figure_path.relative_to(output_dir)),
+        },
+    )
+    return manifest_path, result.validation
+
+
+def write_arnoldi_validation(
+    outdir: str | Path,
+    **kwargs: Any,
+) -> tuple[Path, dict[str, Any]]:
+    """Write Arnoldi validation JSON, NPZ, figure, and manifest artifacts."""
+    output_dir = Path(outdir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    result = run_arnoldi_validation(**kwargs)
+
+    diagnostics_path = output_dir / "diagnostics.json"
+    validation_path = output_dir / "validation.json"
+    history_path = output_dir / "arnoldi_spectrum.npz"
+    manifest_path = output_dir / "manifest.json"
+    diagnostics_path.write_text(
+        json.dumps(result.diagnostics, indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+    validation_path.write_text(
+        json.dumps(result.validation, indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+    np.savez_compressed(
+        history_path,
+        schema=ARNOLDI_SCHEMA,
+        expected_eigenvalues=result.expected_eigenvalues,
+        ritz_values=result.ritz_values,
+        residual_estimates=result.residual_estimates,
+        hessenberg=result.hessenberg,
+    )
+
+    figure_path = plot_arnoldi_ritz_values(
+        result.expected_eigenvalues,
+        result.ritz_values,
+        result.residual_estimates,
+        path=output_dir / "figures" / "arnoldi_ritz_values.png",
+    )
+    write_manifest(
+        manifest_path,
+        config=result.diagnostics,
+        outputs={
+            "diagnostics": diagnostics_path.name,
+            "validation": validation_path.name,
+            "history": history_path.name,
+            "arnoldi_ritz_values": str(figure_path.relative_to(output_dir)),
         },
     )
     return manifest_path, result.validation
