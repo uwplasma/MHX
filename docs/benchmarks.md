@@ -62,6 +62,7 @@ mhx benchmark reduced-mhd-eigenmode --outdir outputs/benchmarks/reduced_mhd_eige
 mhx benchmark diffusion-eigenvalue --outdir outputs/benchmarks/diffusion_eigenvalue
 mhx benchmark power-iteration --outdir outputs/benchmarks/power_iteration
 mhx benchmark arnoldi --outdir outputs/benchmarks/arnoldi
+mhx benchmark catalog --outdir outputs/benchmarks/catalog
 ```
 
 This writes:
@@ -115,6 +116,12 @@ The Arnoldi command writes:
 - `arnoldi_spectrum.npz`
 - `figures/arnoldi_ritz_values.png`
 
+The catalog command writes:
+
+- `benchmark_catalog.json`
+- `benchmark_catalog.md`
+- `manifest.json`
+
 ## CI artifacts
 
 Every push runs a `benchmark-artifacts` CI job. It executes deterministic FAST
@@ -132,6 +139,7 @@ mhx benchmark diffusion-eigenvalue --outdir outputs/ci/diffusion_eigenvalue
 mhx benchmark power-iteration --outdir outputs/ci/power_iteration
 mhx benchmark arnoldi --outdir outputs/ci/arnoldi
 mhx benchmark timing --outdir outputs/ci/timing --repeats 1 --warmups 0
+mhx benchmark catalog --outdir outputs/ci/catalog
 mhx run examples/linear_tearing_twofluid_toy.toml --outdir outputs/ci/twofluid_toy
 mhx figures outputs/ci/twofluid_toy --gif
 mhx report outputs/ci/twofluid_toy
@@ -145,6 +153,9 @@ The job uploads `outputs/ci` as the `mhx-fast-artifacts` GitHub Actions
 artifact. Reviewers can download it to inspect manifests, reports, PNG figures,
 GIF movies, and `artifact_manifest.json` checksums generated from the exact
 commit under test.
+
+The catalog file `outputs/ci/catalog/benchmark_catalog.md` gives reviewers a
+single table of active FAST gates, schemas, commands, and expected artifacts.
 
 ## FAST timing benchmark
 

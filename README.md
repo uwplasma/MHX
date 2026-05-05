@@ -86,6 +86,7 @@ mhx benchmark diffusion-eigenvalue --outdir outputs/benchmarks/diffusion_eigenva
 mhx benchmark power-iteration --outdir outputs/benchmarks/power_iteration
 mhx benchmark arnoldi --outdir outputs/benchmarks/arnoldi
 mhx benchmark timing --outdir outputs/benchmarks/timing --repeats 3 --warmups 1
+mhx benchmark catalog --outdir outputs/benchmarks/catalog
 ```
 
 Inspect configurable physics terms:

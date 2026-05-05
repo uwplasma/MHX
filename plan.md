@@ -4344,3 +4344,53 @@ Every agent must append an entry here. Do not delete previous entries.
 - Add a plotting registry so `mhx figures` can discover extension figures
   directly.
 - Start the first nonzero-equilibrium tearing eigenmode validation gate.
+
+### 2026-05-05 — Agent: Codex, validation benchmark catalog
+
+**Summary**
+
+- Added `mhx benchmark catalog`, which writes a reviewer-facing
+  `benchmark_catalog.json`, `benchmark_catalog.md`, and manifest.
+- The catalog lists every active FAST validation gate with schema, command,
+  purpose, expected outputs, and literature/numerics anchor.
+- Wired the catalog into CI artifacts, README/quickstart commands, benchmark
+  docs, output-schema docs, and unit tests.
+
+**Files changed**
+
+- Added `src/mhx/benchmarks/catalog.py` and
+  `tests/test_benchmark_catalog.py`.
+- Updated benchmark exports, CLI, CI, README, quickstart, benchmark docs, and
+  output-schema docs.
+
+**Tests run**
+
+- `python -m pytest tests/test_benchmark_catalog.py -q` passed.
+- `python -m ruff check src tests examples` passed after manual style fixes.
+- `python -m pytest --cov=mhx --cov-report=term-missing --cov-fail-under=95`
+  passed: 91 tests, 96.44% coverage.
+- `sphinx-build -b html docs docs/_build/html` passed.
+- CI-equivalent artifact sequence passed locally and wrote
+  `outputs/ci/artifact_manifest.json` covering 83 files.
+
+**Decisions made**
+
+- The catalog is generated from static metadata rather than scraping docs or CI
+  YAML. This keeps the reviewer-facing table deterministic and preserves clear
+  human-written purpose/literature-anchor text.
+
+**Problems / blockers**
+
+- The catalog is an index of current gates; it does not itself execute them.
+  CI remains the execution source of truth.
+
+**Progress**
+
+- Estimated plan completion: 68%.
+
+**Next steps**
+
+- Add a plotting registry so `mhx figures` can discover extension figures
+  directly.
+- Start a calibrated nonzero-equilibrium tearing eigenmode validation gate.
+- Add release notes/changelog entries summarizing the new validation stack.

@@ -1,5 +1,11 @@
 """Benchmark problem builders."""
 
+from mhx.benchmarks.catalog import (
+    BENCHMARK_CATALOG_SCHEMA,
+    BenchmarkCatalogEntry,
+    validation_catalog_entries,
+    write_benchmark_catalog,
+)
 from mhx.benchmarks.decay import (
     RESISTIVE_DECAY_SCHEMA,
     ResistiveDecayResult,
@@ -64,7 +70,9 @@ from mhx.benchmarks.timing import (
 
 __all__ = [
     "ARNOLDI_SCHEMA",
+    "BENCHMARK_CATALOG_SCHEMA",
     "ArnoldiValidationResult",
+    "BenchmarkCatalogEntry",
     "FKRConstantPsiEstimate",
     "FKRWindowResult",
     "DIFFUSION_EIGENVALUE_SCHEMA",
@@ -102,6 +110,8 @@ __all__ = [
     "run_linear_tearing_smoke",
     "run_timing_benchmark",
     "validate_run",
+    "validation_catalog_entries",
+    "write_benchmark_catalog",
     "write_arnoldi_validation",
     "write_diffusion_eigenvalue_validation",
     "write_fkr_window_validation",

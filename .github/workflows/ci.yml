@@ -75,6 +75,7 @@ jobs:
           mhx benchmark power-iteration --outdir outputs/ci/power_iteration
           mhx benchmark arnoldi --outdir outputs/ci/arnoldi
           mhx benchmark timing --outdir outputs/ci/timing --repeats 1 --warmups 0
+          mhx benchmark catalog --outdir outputs/ci/catalog
           mhx run examples/linear_tearing_twofluid_toy.toml --outdir outputs/ci/twofluid_toy
           mhx figures outputs/ci/twofluid_toy --gif
           mhx report outputs/ci/twofluid_toy
@@ -113,6 +114,8 @@ jobs:
           test -f outputs/ci/timing/timing.json
           test -f outputs/ci/timing/timing.md
           test -f outputs/ci/timing/figures/timing_summary.png
+          test -f outputs/ci/catalog/benchmark_catalog.json
+          test -f outputs/ci/catalog/benchmark_catalog.md
           test -f outputs/ci/twofluid_toy/manifest.json
           test -f outputs/ci/twofluid_toy/report.md
           test -f outputs/ci/twofluid_toy/figures/flux_final.png

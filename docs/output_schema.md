@@ -221,3 +221,14 @@ writes:
 Absolute timings are machine-dependent. The schema is meant for artifact
 comparison across commits on the same runner class, not as a universal
 performance guarantee.
+
+## Benchmark catalog outputs
+
+`mhx benchmark catalog --outdir outputs/benchmarks/catalog` writes:
+
+- `benchmark_catalog.json`: schema `mhx.benchmark_catalog.v1`, active FAST
+  validation entries, commands, output schemas, expected files, and literature
+  anchors.
+- `benchmark_catalog.md`: reviewer-readable table generated from the same
+  catalog entries.
+- `manifest.json`: hashes for the generated catalog files.

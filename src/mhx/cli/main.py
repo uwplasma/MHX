@@ -13,6 +13,7 @@ from mhx.benchmarks import (
     run_linear_tearing_smoke,
     validate_run,
     write_arnoldi_validation,
+    write_benchmark_catalog,
     write_diffusion_eigenvalue_validation,
     write_fkr_window_validation,
     write_linearized_rhs_validation,
@@ -222,6 +223,19 @@ def benchmark_run(
         figures(outdir, gif=gif)
     if report_enabled:
         report(outdir)
+
+
+@benchmark_app.command("catalog")
+def benchmark_catalog(
+    outdir: Annotated[
+        Path,
+        typer.Option("--outdir", help="Output directory for validation catalog artifacts."),
+    ] = Path("outputs/benchmarks/catalog"),
+) -> None:
+    """Write a reviewer-facing validation benchmark catalog."""
+    json_path, markdown_path = write_benchmark_catalog(outdir)
+    typer.echo(f"wrote {json_path}")
+    typer.echo(f"wrote {markdown_path}")
 
 
 @benchmark_app.command("validate")
