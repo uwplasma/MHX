@@ -163,6 +163,20 @@ validation gates and writes:
   `delta_prime_a`, and `constant_psi_product` arrays.
 - `figures/fkr_constant_psi_window.png`: publication-style regime-window plot.
 
+## FKR growth-rate validation outputs
+
+`mhx benchmark fkr-growth --outdir outputs/benchmarks/fkr_growth_rate` writes:
+
+- `diagnostics.json`: asymptotic FKR growth-rate diagnostics with schema
+  `mhx.validation.fkr_growth_rate.v1`.
+- `validation.json`: pass/fail gates for the $S_a^{-3/5}$ slope,
+  $(\Delta'a)^{4/5}$ response, numerical-$\Delta'$ propagation error, and the
+  constant-$\psi$ window.
+- `fkr_growth_rate.npz`: sampled `lundquist`, `gamma_vs_lundquist`, `ka`,
+  `numerical_delta_prime_a`, `gamma_vs_delta_prime`, and
+  `gamma_relative_error` arrays.
+- `figures/fkr_growth_rate.png`: growth-rate scaling and error-gate plot.
+
 ## Harris Delta-prime validation outputs
 
 `mhx benchmark harris-delta-prime --outdir outputs/benchmarks/harris_delta_prime`

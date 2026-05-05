@@ -7,10 +7,13 @@ import pytest
 from typer.testing import CliRunner
 
 from mhx.benchmarks import (
+    FKR_GROWTH_RATE_SCHEMA,
     FKR_WINDOW_SCHEMA,
     HARRIS_DELTA_PRIME_SCHEMA,
+    run_fkr_growth_rate_validation,
     run_fkr_window_validation,
     run_harris_delta_prime_validation,
+    write_fkr_growth_rate_validation,
     write_fkr_window_validation,
     write_harris_delta_prime_validation,
 )
@@ -45,6 +48,34 @@ def test_harris_delta_prime_validation_matches_outer_formula() -> None:
     assert np.all(result.numerical_delta_prime_a > 0.0)
     assert np.all(np.diff(result.numerical_delta_prime_a) < 0.0)
     assert np.max(result.relative_error) < 1.0e-8
+
+
+def test_fkr_growth_rate_validation_gates_asymptotic_exponents() -> None:
+    result = run_fkr_growth_rate_validation(steps=2500)
+    assert result.diagnostics["schema"] == FKR_GROWTH_RATE_SCHEMA
+    assert result.validation["passed"] is True
+    assert all(result.validation["checks"].values())
+    assert np.all(result.gamma_vs_lundquist > 0.0)
+    assert np.all(result.gamma_vs_delta_prime > 0.0)
+    assert result.diagnostics["lundquist_slope"] == pytest.approx(-3.0 / 5.0)
+    assert result.diagnostics["delta_prime_slope"] == pytest.approx(4.0 / 5.0)
+    assert np.max(result.gamma_relative_error) < 1.0e-7
+
+
+def test_fkr_growth_rate_validation_rejects_invalid_inputs() -> None:
+    with pytest.raises(ValueError, match="at least three lundquist"):
+        run_fkr_growth_rate_validation(lundquist=(1.0e4, 1.0e5))
+    with pytest.raises(ValueError, match="lundquist samples must be positive"):
+        run_fkr_growth_rate_validation(lundquist=(0.0, 1.0e4, 1.0e5))
+    with pytest.raises(ValueError, match="strictly increasing"):
+        run_fkr_growth_rate_validation(lundquist=(1.0e4, 1.0e5, 3.0e4))
+    with pytest.raises(ValueError, match="fixed_ka"):
+        run_fkr_growth_rate_validation(fixed_ka=1.0)
+    with pytest.raises(ValueError, match="fixed_lundquist"):
+        run_fkr_growth_rate_validation(fixed_lundquist=0.0)
+    result = run_fkr_growth_rate_validation(max_constant_psi_product=1.0e-9)
+    assert result.validation["passed"] is False
+    assert result.validation["checks"]["constant_psi_window"] is False
 
 
 def test_harris_delta_prime_validation_rejects_invalid_inputs() -> None:
@@ -83,6 +114,34 @@ def test_write_harris_delta_prime_validation_artifacts_and_cli(tmp_path) -> None
             str(outdir),
             "--steps",
             "2500",
+        ],
+    )
+    assert result.exit_code == 0, result.stdout
+    assert (outdir / "validation.json").exists()
+
+
+def test_write_fkr_growth_rate_validation_artifacts_and_cli(tmp_path) -> None:
+    manifest_path, validation = write_fkr_growth_rate_validation(tmp_path, steps=2500)
+    assert manifest_path == tmp_path / "manifest.json"
+    assert validation["passed"] is True
+    diagnostics = json.loads((tmp_path / "diagnostics.json").read_text())
+    assert diagnostics["references"]["fkr_growth"].startswith("Furth")
+    history = np.load(tmp_path / "fkr_growth_rate.npz")
+    assert history["schema"] == FKR_GROWTH_RATE_SCHEMA
+    assert history["lundquist"].shape[0] == 5
+    assert history["ka"].shape[0] == 5
+    assert (tmp_path / "figures" / "fkr_growth_rate.png").stat().st_size > 0
+
+    outdir = tmp_path / "cli-growth"
+    result = CliRunner().invoke(
+        app,
+        [
+            "benchmark",
+            "fkr-growth",
+            "--outdir",
+            str(outdir),
+            "--fixed-ka",
+            "0.35",
         ],
     )
     assert result.exit_code == 0, result.stdout

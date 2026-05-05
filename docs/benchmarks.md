@@ -57,6 +57,7 @@ FKR, Sweet-Parker plasmoid, and ideal-tearing exponents:
 ```bash
 mhx benchmark scaling --outdir outputs/benchmarks/reconnection_scaling
 mhx benchmark fkr-window --outdir outputs/benchmarks/fkr_window
+mhx benchmark fkr-growth --outdir outputs/benchmarks/fkr_growth_rate
 mhx benchmark harris-delta-prime --outdir outputs/benchmarks/harris_delta_prime
 mhx benchmark linearized-rhs --outdir outputs/benchmarks/linearized_rhs
 mhx benchmark reduced-mhd-eigenmode --outdir outputs/benchmarks/reduced_mhd_eigenmode

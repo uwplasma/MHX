@@ -9,6 +9,7 @@ from mhx.benchmarks import (
     write_arnoldi_validation,
     write_cosine_equilibrium_linearization_validation,
     write_diffusion_eigenvalue_validation,
+    write_fkr_growth_rate_validation,
     write_fkr_window_validation,
     write_harris_delta_prime_validation,
     write_linearized_rhs_validation,
@@ -26,6 +27,7 @@ def main() -> None:
     run_dir = Path("outputs/docs_validation/resistive_decay")
     scaling_run_dir = Path("outputs/docs_validation/reconnection_scaling")
     fkr_window_run_dir = Path("outputs/docs_validation/fkr_window")
+    fkr_growth_run_dir = Path("outputs/docs_validation/fkr_growth_rate")
     harris_delta_prime_run_dir = Path("outputs/docs_validation/harris_delta_prime")
     linearized_run_dir = Path("outputs/docs_validation/linearized_rhs")
     reduced_mhd_eigenmode_run_dir = Path("outputs/docs_validation/reduced_mhd_eigenmode")
@@ -42,6 +44,7 @@ def main() -> None:
     decay_docs_dir = Path("docs/_static/validation/exact_decay")
     scaling_docs_dir = Path("docs/_static/validation/reconnection_scaling")
     fkr_window_docs_dir = Path("docs/_static/validation/fkr_window")
+    fkr_growth_docs_dir = Path("docs/_static/validation/fkr_growth_rate")
     harris_delta_prime_docs_dir = Path("docs/_static/validation/harris_delta_prime")
     linearized_docs_dir = Path("docs/_static/validation/linearized_rhs")
     reduced_mhd_eigenmode_docs_dir = Path("docs/_static/validation/reduced_mhd_eigenmode")
@@ -58,6 +61,7 @@ def main() -> None:
     write_resistive_decay_validation(run_dir)
     write_reconnection_scaling_validation(scaling_run_dir)
     write_fkr_window_validation(fkr_window_run_dir)
+    write_fkr_growth_rate_validation(fkr_growth_run_dir)
     write_harris_delta_prime_validation(harris_delta_prime_run_dir)
     write_linearized_rhs_validation(linearized_run_dir)
     write_reduced_mhd_linear_eigenmode_validation(reduced_mhd_eigenmode_run_dir)
@@ -77,6 +81,11 @@ def main() -> None:
     shutil.copy2(
         fkr_window_run_dir / "figures" / "fkr_constant_psi_window.png",
         fkr_window_docs_dir / "fkr_constant_psi_window.png",
+    )
+    fkr_growth_docs_dir.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(
+        fkr_growth_run_dir / "figures" / "fkr_growth_rate.png",
+        fkr_growth_docs_dir / "fkr_growth_rate.png",
     )
     harris_delta_prime_docs_dir.mkdir(parents=True, exist_ok=True)
     shutil.copy2(

@@ -125,6 +125,25 @@ def validation_catalog_entries() -> tuple[BenchmarkCatalogEntry, ...]:
             ),
         ),
         BenchmarkCatalogEntry(
+            name="fkr_growth_rate",
+            command="mhx benchmark fkr-growth --outdir outputs/benchmarks/fkr_growth_rate",
+            schema="mhx.validation.fkr_growth_rate.v1",
+            purpose=(
+                "Asymptotic FKR growth-rate gate assembled from numerical "
+                "Harris Delta-prime matching."
+            ),
+            expected_outputs=(
+                "diagnostics.json",
+                "validation.json",
+                "fkr_growth_rate.npz",
+                "figures/fkr_growth_rate.png",
+            ),
+            literature_anchor=(
+                "FKR constant-psi growth gamma tau_a ~ "
+                "S_a^(-3/5)(ka)^(2/5)(Delta'a)^(4/5)."
+            ),
+        ),
+        BenchmarkCatalogEntry(
             name="linearized_rhs",
             command="mhx benchmark linearized-rhs --outdir outputs/benchmarks/linearized_rhs",
             schema="mhx.validation.linearized_rhs.v1",

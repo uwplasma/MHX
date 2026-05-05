@@ -186,6 +186,44 @@ Expected files:
 
 ![FKR constant-psi regime window](_static/validation/fkr_window/fkr_constant_psi_window.png)
 
+## FKR growth-rate gate
+
+The next layer converts the numerically recovered Harris outer-region
+$\Delta'a$ into the FKR constant-$\psi$ growth-rate estimate. MHX gates
+
+$$
+\gamma\tau_a \propto S_a^{-3/5}
+$$
+
+at fixed $ka$ and
+
+$$
+\frac{\gamma\tau_a}{(ka)^{2/5}} \propto (\Delta'a)^{4/5}
+$$
+
+at fixed $S_a$. The $\Delta'a$ values used in the second scan come from the
+same backward-integration outer solve used by the Harris Delta-prime gate, so
+the benchmark now checks propagation from numerical outer matching into the
+growth-rate assembly.
+
+```bash
+mhx benchmark fkr-growth --outdir outputs/benchmarks/fkr_growth_rate
+```
+
+Expected files:
+
+- `outputs/benchmarks/fkr_growth_rate/diagnostics.json`
+- `outputs/benchmarks/fkr_growth_rate/validation.json`
+- `outputs/benchmarks/fkr_growth_rate/fkr_growth_rate.npz`
+- `outputs/benchmarks/fkr_growth_rate/figures/fkr_growth_rate.png`
+
+![FKR growth-rate gate](_static/validation/fkr_growth_rate/fkr_growth_rate.png)
+
+This is still an asymptotic growth-rate gate, not a full resistive inner-layer
+or global eigenvalue solve. It narrows the remaining gap: the next research
+benchmark should solve the eigenproblem and verify that measured growth rates
+approach this target under a documented resolution/asymptotic study.
+
 ## Harris-sheet Delta-prime gate
 
 The first numerical tearing-specific validation is the Harris-sheet ideal outer

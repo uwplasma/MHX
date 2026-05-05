@@ -17,6 +17,7 @@ def test_validation_suite_cases_are_unique() -> None:
     assert len(names) == len(set(names))
     assert "linear_tearing_fast" in names
     assert "harris_delta_prime" in names
+    assert "fkr_growth_rate" in names
     assert "cosine_equilibrium_linearization" in names
     assert "periodic_current_sheet_eigenvalue" in names
 
@@ -37,6 +38,9 @@ def test_write_validation_suite_artifacts_and_cli(tmp_path) -> None:
         / "harris_delta_prime"
         / "figures"
         / "harris_delta_prime.png"
+    ).stat().st_size > 0
+    assert (
+        tmp_path / "suite" / "fkr_growth_rate" / "figures" / "fkr_growth_rate.png"
     ).stat().st_size > 0
     assert (
         tmp_path

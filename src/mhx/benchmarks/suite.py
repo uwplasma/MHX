@@ -18,6 +18,7 @@ from mhx.benchmarks.eigenvalue import (
     write_power_iteration_validation,
 )
 from mhx.benchmarks.fkr import (
+    write_fkr_growth_rate_validation,
     write_fkr_window_validation,
     write_harris_delta_prime_validation,
 )
@@ -70,6 +71,11 @@ def validation_suite_cases() -> tuple[ValidationSuiteCase, ...]:
             name="fkr_window",
             command="mhx benchmark fkr-window",
             runner=write_fkr_window_validation,
+        ),
+        ValidationSuiteCase(
+            name="fkr_growth_rate",
+            command="mhx benchmark fkr-growth",
+            runner=write_fkr_growth_rate_validation,
         ),
         ValidationSuiteCase(
             name="harris_delta_prime",

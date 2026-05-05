@@ -248,6 +248,72 @@ def plot_fkr_validity_window(
     return output_path
 
 
+def plot_fkr_growth_rate_validation(
+    lundquist,
+    gamma_vs_lundquist,
+    ka,
+    delta_prime,
+    gamma_vs_delta_prime,
+    gamma_relative_error,
+    *,
+    max_gamma_relative_error: float,
+    path: str | Path,
+) -> Path:
+    """Plot the FKR growth-rate scaling validation."""
+    import matplotlib.pyplot as plt
+
+    output_path = Path(path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    s_values = np.asarray(lundquist)
+    gamma_s = np.asarray(gamma_vs_lundquist)
+    ka_values = np.asarray(ka)
+    delta_prime_values = np.asarray(delta_prime)
+    gamma_delta = np.asarray(gamma_vs_delta_prime)
+    relative_error = np.asarray(gamma_relative_error)
+    fig, axes = plt.subplots(1, 3, figsize=(12.6, 3.8), constrained_layout=True)
+    axes[0].loglog(s_values, gamma_s, "o-", color="#3266a8", label="assembled FKR")
+    reference = gamma_s[0] * (s_values / s_values[0]) ** (-3.0 / 5.0)
+    axes[0].loglog(s_values, reference, "--", color="black", label=r"$S_a^{-3/5}$")
+    axes[0].set_xlabel(r"$S_a$")
+    axes[0].set_ylabel(r"$\gamma\tau_a$")
+    axes[0].set_title("Lundquist scaling")
+    axes[0].legend(frameon=False)
+
+    normalized = gamma_delta / (ka_values ** (2.0 / 5.0))
+    axes[1].loglog(delta_prime_values, normalized, "s-", color="#4b8f5a")
+    reference_delta = normalized[0] * (delta_prime_values / delta_prime_values[0]) ** (
+        4.0 / 5.0
+    )
+    axes[1].loglog(
+        delta_prime_values,
+        reference_delta,
+        "--",
+        color="black",
+        label=r"$(\Delta'a)^{4/5}$",
+    )
+    axes[1].set_xlabel(r"numerical $\Delta'a$")
+    axes[1].set_ylabel(r"$\gamma\tau_a/(ka)^{2/5}$")
+    axes[1].set_title(r"$\Delta'$ response")
+    axes[1].legend(frameon=False)
+
+    axes[2].semilogy(ka_values, relative_error, "o-", color="#8c4fb4")
+    axes[2].axhline(
+        max_gamma_relative_error,
+        color="black",
+        linestyle="--",
+        linewidth=1.0,
+        label="gate",
+    )
+    axes[2].set_xlabel(r"$ka$")
+    axes[2].set_ylabel("relative growth error")
+    axes[2].set_title("Numerical Δ′ propagation")
+    axes[2].legend(frameon=False)
+    fig.suptitle(r"FKR constant-$\psi$ growth-rate gate")
+    fig.savefig(output_path, dpi=220)
+    plt.close(fig)
+    return output_path
+
+
 def plot_harris_delta_prime(
     ka,
     numerical_delta_prime,

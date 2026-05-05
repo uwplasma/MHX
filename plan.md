@@ -4842,3 +4842,71 @@ Every agent must append an entry here. Do not delete previous entries.
   release.
 - Push this release-hardening commit and watch GitHub Actions to confirm remote
   CI parity.
+
+### 2026-05-05 — Agent: Codex, FKR asymptotic growth-rate gate
+
+**Summary**
+
+- Added `mhx benchmark fkr-growth`, a deterministic FKR constant-psi
+  growth-rate validation gate.
+- The benchmark uses the numerical Harris outer-region `Delta'` solve and gates
+  propagation into the asymptotic FKR estimate
+  `gamma tau_a ~ S_a^(-3/5)(ka)^(2/5)(Delta'a)^(4/5)`.
+- Added a three-panel documentation figure for Lundquist scaling,
+  `Delta'` response, and numerical-`Delta'` propagation error.
+- Integrated the new gate into the validation suite, benchmark catalog, CI
+  artifact pipeline, README, output schema docs, validation docs, audit docs,
+  and tests.
+
+**Files changed**
+
+- Updated `src/mhx/benchmarks/fkr.py` with `FKRGrowthRateResult`,
+  `run_fkr_growth_rate_validation`, and `write_fkr_growth_rate_validation`.
+- Updated plotting, benchmark exports, suite/catalog runners, CLI, CI, README,
+  validation/output-schema/benchmark/audit docs, docs media generation, and
+  tests.
+- Added `docs/_static/validation/fkr_growth_rate/fkr_growth_rate.png`.
+
+**Tests run**
+
+- `python -m ruff check src tests examples tools` passed.
+- `python tools/check_legacy_imports.py` passed.
+- `python -m pytest tests/test_fkr_window_validation.py tests/test_validation_suite.py tests/test_benchmark_catalog.py -q`
+  passed: 13 tests.
+- `mhx benchmark fkr-growth --outdir outputs/dev/fkr_growth_rate` passed with
+  Lundquist slope `-0.6`, `Delta'` slope `0.8`, and maximum growth propagation
+  relative error about `3.1e-11`.
+- `python -m pytest --cov=mhx --cov-report=term-missing --cov-fail-under=95`
+  passed: 107 tests, 96.14% coverage.
+- `sphinx-build -b html docs docs/_build/html` passed.
+- `mhx validate all --outdir outputs/dev/fkr_growth_validation_suite` passed.
+- CI-equivalent benchmark-artifact pipeline passed locally and wrote
+  `outputs/ci/artifact_manifest.json` covering 176 files.
+- CI artifact file-set validation passed for 54 required files.
+
+**Decisions made**
+
+- This gate is explicitly labeled an asymptotic growth-rate target, not a direct
+  resistive eigenvalue solve. That keeps the scientific claim defensible.
+- The benchmark uses the existing numerical Harris `Delta'` solve rather than a
+  purely analytic `Delta'` table, so it exercises the numerical matching path
+  before growth-rate assembly.
+
+**Problems / blockers**
+
+- A true calibrated FKR/Coppi growth-rate eigenvalue benchmark is still the next
+  hard validation step. It requires solving or comparing a resistive inner-layer
+  or global eigenproblem with documented boundary conditions and convergence.
+
+**Progress**
+
+- Estimated plan completion: 83%.
+
+**Next steps**
+
+- Implement the actual resistive tearing eigenvalue/reference-comparison harness
+  against the FKR target now documented by `mhx benchmark fkr-growth`.
+- Add nonlinear island-growth validation only after the linear growth benchmark
+  is numerically credible.
+- Keep scan/inverse-design/neural-ODE work deferred until the growth benchmark
+  and nonlinear validation are strong enough to support optimization claims.

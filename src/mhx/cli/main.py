@@ -16,6 +16,7 @@ from mhx.benchmarks import (
     write_benchmark_catalog,
     write_cosine_equilibrium_linearization_validation,
     write_diffusion_eigenvalue_validation,
+    write_fkr_growth_rate_validation,
     write_fkr_window_validation,
     write_harris_delta_prime_validation,
     write_linearized_rhs_validation,
@@ -366,6 +367,33 @@ def benchmark_fkr_window(
     """Run the analytic FKR constant-psi regime-window gate."""
     _configure_validation_precision()
     manifest_path, validation = write_fkr_window_validation(outdir, lundquist=lundquist)
+    typer.echo(f"wrote {manifest_path}")
+    if not validation["passed"]:
+        raise typer.Exit(code=1)
+
+
+@benchmark_app.command("fkr-growth")
+def benchmark_fkr_growth(
+    outdir: Annotated[
+        Path,
+        typer.Option("--outdir", help="Output directory for FKR growth-rate artifacts."),
+    ] = Path("outputs/benchmarks/fkr_growth_rate"),
+    fixed_ka: Annotated[
+        float,
+        typer.Option("--fixed-ka", help="ka used for the Lundquist-number scan."),
+    ] = 0.35,
+    fixed_lundquist: Annotated[
+        float,
+        typer.Option("--fixed-lundquist", help="S_a used for the Delta-prime scan."),
+    ] = 1.0e6,
+) -> None:
+    """Run the calibrated asymptotic FKR growth-rate gate."""
+    _configure_validation_precision()
+    manifest_path, validation = write_fkr_growth_rate_validation(
+        outdir,
+        fixed_ka=fixed_ka,
+        fixed_lundquist=fixed_lundquist,
+    )
     typer.echo(f"wrote {manifest_path}")
     if not validation["passed"]:
         raise typer.Exit(code=1)
