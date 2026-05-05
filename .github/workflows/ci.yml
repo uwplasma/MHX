@@ -72,6 +72,9 @@ jobs:
           mhx run examples/linear_tearing_twofluid_toy.toml --outdir outputs/ci/twofluid_toy
           mhx figures outputs/ci/twofluid_toy --gif
           mhx report outputs/ci/twofluid_toy
+          mhx run examples/linear_tearing_plugin_demo.toml --outdir outputs/ci/plugin_demo
+          mhx figures outputs/ci/plugin_demo --gif
+          mhx report outputs/ci/plugin_demo
           mhx artifact-manifest outputs/ci
       - name: Validate artifact file set
         run: |
@@ -96,6 +99,10 @@ jobs:
           test -f outputs/ci/twofluid_toy/report.md
           test -f outputs/ci/twofluid_toy/figures/flux_final.png
           test -f outputs/ci/twofluid_toy/figures/flux_movie.gif
+          test -f outputs/ci/plugin_demo/manifest.json
+          test -f outputs/ci/plugin_demo/report.md
+          test -f outputs/ci/plugin_demo/figures/flux_final.png
+          test -f outputs/ci/plugin_demo/figures/flux_movie.gif
       - uses: actions/upload-artifact@v7.0.1
         with:
           name: mhx-fast-artifacts

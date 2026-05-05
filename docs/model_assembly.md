@@ -30,6 +30,7 @@ model = "reduced_mhd_linear_tearing"
 equilibrium = "cosine_tearing"
 resistivity = 0.001
 viscosity = 0.001
+plugin_modules = []
 rhs_terms = ["hyper_resistivity", "vorticity_drag"]
 
 [physics.equilibrium_parameters]
@@ -52,12 +53,18 @@ Diagnostics are assembled the same way:
 ```toml
 [diagnostics]
 quantities = ["energy", "mode_growth", "divergence_error"]
+plugin_modules = []
 mode = [1, 1]
 fit_time_window = [0.02, 0.1]
 ```
 
 Use `mhx diagnostics list` to inspect names and output keys. The built-in
 registry is documented in [Diagnostics registry](diagnostics.md).
+
+`plugin_modules` accepts importable Python modules exposing
+`register_physics(registry)` or `register_diagnostics(registry)`. The demo
+`examples/linear_tearing_plugin_demo.toml` shows a local physics term and a local
+diagnostic assembled entirely from TOML.
 
 ## Built-in equilibria
 

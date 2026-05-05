@@ -69,3 +69,15 @@ $\psi_k(t)=\psi_k(0)\exp(-\eta |k|^2t)$. These are deliberately small and
 deterministic; they are not yet the full tearing benchmark. The timing
 benchmark records wall-clock and Python-allocation summaries for comparing
 changes on the same machine or CI runner.
+
+Try a local extension module without editing MHX source:
+
+```bash
+mhx run examples/linear_tearing_plugin_demo.toml --outdir outputs/plugin_demo
+mhx figures outputs/plugin_demo --gif
+mhx physics list-with-plugins --plugin-module examples.local_extension_plugin
+mhx diagnostics list-with-plugins --plugin-module examples.local_extension_plugin
+```
+
+This demo registers a toy flux-drive physics term and a `final_flux_l2`
+diagnostic from `examples/local_extension_plugin.py`.

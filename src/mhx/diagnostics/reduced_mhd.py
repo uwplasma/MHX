@@ -2,8 +2,12 @@
 
 from __future__ import annotations
 
+import importlib
+import importlib.util
+import sys
 from collections.abc import Callable
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 import jax.numpy as jnp
@@ -188,9 +192,12 @@ def compute_reduced_mhd_diagnostics(
     mode: tuple[int, int],
     fit_time_window: tuple[float, float] | None,
     registry: DiagnosticsRegistry | None = None,
+    plugin_modules: tuple[str, ...] = (),
 ) -> dict[str, Any]:
     """Compute selected reduced-MHD diagnostics through the registry API."""
     diagnostic_registry = registry or default_diagnostics_registry()
+    if plugin_modules:
+        load_diagnostics_plugin_modules(diagnostic_registry, plugin_modules)
     context = DiagnosticContext(
         trajectory=trajectory,
         initial_state=initial_state,
@@ -199,6 +206,45 @@ def compute_reduced_mhd_diagnostics(
         fit_time_window=fit_time_window,
     )
     return diagnostic_registry.compute(quantities, context)
+
+
+def load_diagnostics_plugin_modules(
+    registry: DiagnosticsRegistry,
+    module_names: tuple[str, ...],
+) -> DiagnosticsRegistry:
+    """Load user diagnostics plugins exposing ``register_diagnostics(registry)``."""
+    for module_name in module_names:
+        module = _import_user_module(module_name)
+        register = getattr(module, "register_diagnostics", None)
+        if register is None:
+            raise AttributeError(
+                "diagnostics plugin module "
+                f"{module_name!r} must define register_diagnostics(registry)"
+            )
+        register(registry)
+    return registry
+
+
+def _import_user_module(module_name: str):
+    try:
+        return importlib.import_module(module_name)
+    except ModuleNotFoundError:
+        cwd = str(Path.cwd())
+        if cwd not in sys.path:
+            sys.path.insert(0, cwd)
+        try:
+            return importlib.import_module(module_name)
+        except ModuleNotFoundError:
+            module_path = Path.cwd().joinpath(*module_name.split(".")).with_suffix(".py")
+            if not module_path.exists():
+                raise
+            spec = importlib.util.spec_from_file_location(module_name, module_path)
+            if spec is None or spec.loader is None:
+                raise
+            module = importlib.util.module_from_spec(spec)
+            sys.modules[module_name] = module
+            spec.loader.exec_module(module)
+            return module
 
 
 def default_diagnostics_registry() -> DiagnosticsRegistry:

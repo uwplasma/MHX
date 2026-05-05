@@ -2,8 +2,12 @@
 
 from __future__ import annotations
 
+import importlib
+import importlib.util
+import sys
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, ClassVar, Protocol
 
 import jax.numpy as jnp
@@ -208,14 +212,55 @@ def default_physics_registry() -> PhysicsRegistry:
     return registry
 
 
+def load_physics_plugin_modules(
+    registry: PhysicsRegistry,
+    module_names: tuple[str, ...],
+) -> PhysicsRegistry:
+    """Load user physics plugins that expose ``register_physics(registry)``."""
+    for module_name in module_names:
+        module = _import_user_module(module_name)
+        register = getattr(module, "register_physics", None)
+        if register is None:
+            raise AttributeError(
+                f"physics plugin module {module_name!r} must define register_physics(registry)"
+            )
+        register(registry)
+    return registry
+
+
+def _import_user_module(module_name: str):
+    try:
+        return importlib.import_module(module_name)
+    except ModuleNotFoundError:
+        cwd = str(Path.cwd())
+        if cwd not in sys.path:
+            sys.path.insert(0, cwd)
+        try:
+            return importlib.import_module(module_name)
+        except ModuleNotFoundError:
+            module_path = Path.cwd().joinpath(*module_name.split(".")).with_suffix(".py")
+            if not module_path.exists():
+                raise
+            spec = importlib.util.spec_from_file_location(module_name, module_path)
+            if spec is None or spec.loader is None:
+                raise
+            module = importlib.util.module_from_spec(spec)
+            sys.modules[module_name] = module
+            spec.loader.exec_module(module)
+            return module
+
+
 def build_physics_terms(
     names: tuple[str, ...],
     term_parameters: Mapping[str, Mapping[str, Any]],
     *,
     registry: PhysicsRegistry | None = None,
+    plugin_modules: tuple[str, ...] = (),
 ) -> tuple[PhysicsTerm, ...]:
     """Build configured terms from names and per-term parameter mappings."""
     active_registry = registry or default_physics_registry()
+    if plugin_modules:
+        load_physics_plugin_modules(active_registry, plugin_modules)
     return tuple(active_registry.create(name, term_parameters.get(name, {})) for name in names)
 
 

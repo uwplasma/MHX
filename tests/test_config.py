@@ -29,9 +29,12 @@ def test_config_roundtrip_dict_and_toml() -> None:
     data = cfg.to_dict()
     assert data["mesh"]["shape"] == [32, 32]
     assert data["diagnostics"]["quantities"] == ["energy", "mode_growth", "divergence_error"]
+    assert data["physics"]["plugin_modules"] == []
+    assert data["diagnostics"]["plugin_modules"] == []
     assert data["diagnostics"]["mode"] == [1, 1]
     assert data["diagnostics"]["fit_time_window"] is None
     assert "[mesh]" in cfg.to_toml()
+    assert "plugin_modules = []" in cfg.to_toml()
     assert cfg.with_output_dir("outputs/other").output_dir.as_posix() == "outputs/other"
 
 

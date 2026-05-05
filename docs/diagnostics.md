@@ -15,6 +15,7 @@ Inspect registered diagnostics from the CLI:
 
 ```bash
 mhx diagnostics list
+mhx diagnostics list-with-plugins --plugin-module examples.local_extension_plugin
 ```
 
 ## Built-in diagnostics
@@ -108,8 +109,44 @@ registry.register(
 The callable receives a `DiagnosticContext` with the saved trajectory, initial
 state, domain lengths, diagnostic Fourier mode, and fit-time window.
 
+## Config-loaded diagnostics plugins
+
+A local module can expose diagnostics without modifying MHX source code:
+
+```python
+from mhx.diagnostics import DiagnosticSpec
+
+def compute_metric(context):
+    return {"my_metric": 0.0}
+
+def register_diagnostics(registry):
+    registry.register(
+        DiagnosticSpec(
+            name="my_metric",
+            description="Example metric.",
+            output_keys=("my_metric",),
+            compute=compute_metric,
+        )
+    )
+```
+
+Then enable it in TOML:
+
+```toml
+[diagnostics]
+quantities = ["energy", "mode_growth", "my_metric"]
+plugin_modules = ["my_project.mhx_diagnostics"]
+```
+
+The demo `examples/linear_tearing_plugin_demo.toml` loads
+`examples.local_extension_plugin`, which registers `final_flux_l2`. The output
+schema records `diagnostic_plugin_modules` and `diagnostic_quantities` to keep
+extension-derived figures auditable.
+
 ## Source links
 
 - [Diagnostics implementation](https://github.com/uwplasma/MHX/blob/main/src/mhx/diagnostics/reduced_mhd.py)
 - [Diagnostics tests](https://github.com/uwplasma/MHX/blob/main/tests/test_reduced_mhd.py)
+- [Plugin-module tests](https://github.com/uwplasma/MHX/blob/main/tests/test_plugin_modules.py)
+- [Local plugin example](https://github.com/uwplasma/MHX/blob/main/examples/local_extension_plugin.py)
 - [Run integration](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/tearing.py)

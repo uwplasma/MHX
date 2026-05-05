@@ -106,6 +106,7 @@ class PhysicsConfig:
     equilibrium_parameters: dict[str, float] = field(default_factory=dict)
     resistivity: float = 1.0e-3
     viscosity: float = 1.0e-3
+    plugin_modules: tuple[str, ...] = ()
     rhs_terms: tuple[str, ...] = ()
     term_parameters: dict[str, dict[str, float]] = field(default_factory=dict)
 
@@ -121,6 +122,9 @@ class PhysicsConfig:
             },
             resistivity=float(mapping.get("resistivity", cls.resistivity)),
             viscosity=float(mapping.get("viscosity", cls.viscosity)),
+            plugin_modules=tuple(
+                str(item) for item in mapping.get("plugin_modules", cls.plugin_modules)
+            ),
             rhs_terms=tuple(str(item) for item in mapping.get("rhs_terms", cls.rhs_terms)),
             term_parameters={
                 str(name): {str(key): float(value) for key, value in parameters.items()}
@@ -135,6 +139,8 @@ class PhysicsConfig:
             raise ValueError("physics.resistivity must be non-negative")
         if self.viscosity < 0.0:
             raise ValueError("physics.viscosity must be non-negative")
+        if len(set(self.plugin_modules)) != len(self.plugin_modules):
+            raise ValueError("physics.plugin_modules entries must be unique")
         unknown_parameters = sorted(set(self.term_parameters) - set(self.rhs_terms))
         if unknown_parameters:
             raise ValueError(
@@ -167,6 +173,7 @@ class DiagnosticsConfig:
     """Diagnostics requested for a run."""
 
     quantities: tuple[str, ...] = ("energy", "mode_growth", "divergence_error")
+    plugin_modules: tuple[str, ...] = ()
     mode: tuple[int, int] = (1, 1)
     fit_time_window: tuple[float, float] | None = None
 
@@ -177,6 +184,9 @@ class DiagnosticsConfig:
         fit_time_window = mapping.get("fit_time_window", cls.fit_time_window)
         return cls(
             quantities=tuple(str(item) for item in quantities),
+            plugin_modules=tuple(
+                str(item) for item in mapping.get("plugin_modules", cls.plugin_modules)
+            ),
             mode=_tuple_from(
                 mapping.get("mode", cls.mode),
                 length=2,
@@ -200,6 +210,8 @@ class DiagnosticsConfig:
             raise ValueError("diagnostics.quantities must not be empty")
         if len(set(self.quantities)) != len(self.quantities):
             raise ValueError("diagnostics.quantities entries must be unique")
+        if len(set(self.plugin_modules)) != len(self.plugin_modules):
+            raise ValueError("diagnostics.plugin_modules entries must be unique")
         if self.fit_time_window is not None and self.fit_time_window[1] <= self.fit_time_window[0]:
             raise ValueError("diagnostics.fit_time_window upper bound must exceed lower bound")
         return self
@@ -279,6 +291,7 @@ class RunConfig:
             f'equilibrium = "{data["physics"]["equilibrium"]}"\n'
             f"resistivity = {data['physics']['resistivity']}\n"
             f"viscosity = {data['physics']['viscosity']}\n"
+            f"plugin_modules = {data['physics']['plugin_modules']}\n"
             f"rhs_terms = {data['physics']['rhs_terms']}\n\n"
             f"{equilibrium_parameter_lines}"
             f"{term_parameter_lines}"
@@ -288,6 +301,7 @@ class RunConfig:
             f"enable_jit = {str(data['numerics']['enable_jit']).lower()}\n\n"
             "[diagnostics]\n"
             f"quantities = {data['diagnostics']['quantities']}\n"
+            f"plugin_modules = {data['diagnostics']['plugin_modules']}\n"
             f"mode = {data['diagnostics']['mode']}\n"
             f"{fit_time_window_line}"
         )

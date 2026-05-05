@@ -27,10 +27,11 @@ The reduced-MHD v1 trajectory file contains:
 | `diagnostics_json` | JSON-encoded scalar diagnostics. |
 
 Important scalar diagnostics include `equilibrium`, `equilibrium_parameters`,
-`physics_terms`, `diagnostic_quantities`, `diagnostic_mode`, `fit_time_window`,
+`physics_plugin_modules`, `physics_terms`, `diagnostic_plugin_modules`,
+`diagnostic_quantities`, `diagnostic_mode`, `fit_time_window`,
 `fit_sample_count`, `gamma_fit`, and `final_magnetic_divergence_linf`. These
-fields are saved so model assembly, growth-rate plots, divergence checks, and
-comparisons can be audited.
+fields are saved so model assembly, extension modules, growth-rate plots,
+divergence checks, and comparisons can be audited.
 
 ## `diagnostics.json` keys
 
@@ -40,6 +41,8 @@ The default reduced-MHD run uses the diagnostic registry entries `energy`,
 | Key | Meaning |
 | --- | --- |
 | `diagnostic_quantities` | Diagnostic registry names evaluated for this run. |
+| `diagnostic_plugin_modules` | Importable modules used to register custom diagnostics. |
+| `physics_plugin_modules` | Importable modules used to register custom RHS physics terms. |
 | `initial_total_energy` | Initial reduced-MHD total energy. |
 | `final_total_energy` | Final reduced-MHD total energy. |
 | `final_magnetic_energy` | Final mean magnetic perturbation energy. |

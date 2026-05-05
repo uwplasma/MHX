@@ -1,0 +1,39 @@
+name = "linear_tearing_plugin_demo"
+output_dir = "outputs/linear_tearing_plugin_demo"
+
+[mesh]
+shape = [32, 32]
+lower = [0.0, 0.0]
+upper = [6.283185307179586, 6.283185307179586]
+periodic = [true, true]
+
+[time]
+t0 = 0.0
+t1 = 0.1
+dt = 0.01
+save_every = 1
+
+[physics]
+model = "reduced_mhd_linear_tearing"
+equilibrium = "cosine_tearing"
+resistivity = 0.001
+viscosity = 0.001
+plugin_modules = ["examples.local_extension_plugin"]
+rhs_terms = ["example_flux_drive"]
+
+[physics.equilibrium_parameters]
+perturbation_amplitude = 0.001
+
+[physics.term_parameters.example_flux_drive]
+amplitude = 1e-5
+
+[numerics]
+method = "spectral"
+enable_x64 = true
+enable_jit = true
+
+[diagnostics]
+quantities = ["energy", "mode_growth", "divergence_error", "final_flux_l2"]
+plugin_modules = ["examples.local_extension_plugin"]
+mode = [1, 1]
+fit_time_window = [0.02, 0.1]

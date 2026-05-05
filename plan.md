@@ -3835,3 +3835,49 @@ Every agent must append an entry here. Do not delete previous entries.
 - Add a calibrated linear eigenmode or matrix-free growth-rate benchmark against FKR/Coppi regimes.
 - Allow third-party diagnostics to be registered from package entry points or config modules.
 - Expand the timing benchmark into a FAST/medium/production × JIT matrix.
+
+### 2026-05-05 — Agent: Codex, config-loaded physics and diagnostics plugins
+
+**Summary**
+
+- Added config-loaded local plugin modules for both RHS physics terms and reduced-MHD diagnostics.
+- Added `plugin_modules` to `[physics]` and `[diagnostics]` TOML sections, with duplicate-module validation and JSON serialization.
+- Added `mhx physics list-with-plugins --plugin-module ...` and `mhx diagnostics list-with-plugins --plugin-module ...`.
+- Added `examples/local_extension_plugin.py`, which registers a toy `example_flux_drive` physics term and `final_flux_l2` diagnostic.
+- Added `examples/linear_tearing_plugin_demo.toml` as an end-to-end extension example that runs, plots, reports, and records plugin provenance in `diagnostics.json`.
+- Expanded CI artifact generation to run the plugin demo and upload its figures, GIF, report, manifest, and checksums.
+
+**Files changed**
+
+- Updated config schema, physics registry loading, diagnostics registry loading, tearing benchmark diagnostics, CLI, CI workflow, README, docs, tests, and examples.
+- Added `tests/test_plugin_modules.py`, `examples/__init__.py`, `examples/local_extension_plugin.py`, and `examples/linear_tearing_plugin_demo.toml`.
+
+**Tests run**
+
+- `python -m ruff check src tests examples` passed.
+- `python -m pytest --cov=mhx --cov-report=term-missing --cov-fail-under=95` passed: 72 tests, 97.78% coverage.
+- `sphinx-build -b html docs docs/_build/html` passed.
+- CI-equivalent artifact sequence passed locally and wrote `outputs/ci/artifact_manifest.json` covering 49 files, including `outputs/ci/plugin_demo/figures/flux_movie.gif`.
+- `mhx run examples/linear_tearing_plugin_demo.toml --outdir /tmp/mhx_plugin_demo` passed and wrote `final_flux_l2`.
+
+**Decisions made**
+
+- Local importable modules are the first stable third-party extension path; package entry-point discovery remains deferred until the v1 API is fully frozen.
+- Plugin provenance is saved in diagnostics as `physics_plugin_modules` and `diagnostic_plugin_modules`.
+- The example plugin is deliberately toy physics: it demonstrates extension mechanics without making reconnection-model validation claims.
+
+**Problems / blockers**
+
+- Entry-point based plugin discovery is not implemented yet.
+- Reports and figures still assume the default energy/mode diagnostics; arbitrary plugin diagnostics are saved but not automatically plotted.
+- The next physics-validation step remains a calibrated eigenmode or matrix-free growth-rate benchmark.
+
+**Progress**
+
+- Estimated plan completion: 48%.
+
+**Next steps**
+
+- Add entry-point discovery for installed physics/diagnostics plugins.
+- Add a calibrated linear eigenmode or matrix-free growth-rate benchmark against FKR/Coppi regimes.
+- Make report templates dynamically include plugin diagnostic scalars.

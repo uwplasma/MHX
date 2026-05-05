@@ -13,6 +13,7 @@ List built-in equilibria and terms:
 mhx physics equilibria
 mhx physics list
 mhx physics lint hyper_resistivity
+mhx physics list-with-plugins --plugin-module examples.local_extension_plugin
 ```
 
 ## Equilibrium contract
@@ -60,6 +61,41 @@ def rhs_addition(
 The returned `ReducedMHDState` is added to the base reduced-MHD RHS. Terms must
 not mutate inputs. They should be JAX-compatible and should avoid hidden global
 state.
+
+## Local plugin modules
+
+Users can now load local extension modules directly from TOML. A physics plugin
+module must expose:
+
+```python
+def register_physics(registry):
+    registry.register("my_term", my_factory)
+```
+
+The factory receives the TOML parameter mapping and returns an object satisfying
+the `PhysicsTerm` protocol. `examples/local_extension_plugin.py` is a minimal
+working example. It registers `example_flux_drive`, a small deterministic
+`cos(x)cos(y)` source for extension tutorials:
+
+```toml
+[physics]
+plugin_modules = ["examples.local_extension_plugin"]
+rhs_terms = ["example_flux_drive"]
+
+[physics.term_parameters.example_flux_drive]
+amplitude = 1e-5
+```
+
+Run the end-to-end demo:
+
+```bash
+mhx run examples/linear_tearing_plugin_demo.toml --outdir outputs/plugin_demo
+mhx figures outputs/plugin_demo --gif
+mhx report outputs/plugin_demo
+```
+
+The saved `diagnostics.json` records `physics_plugin_modules` and
+`physics_terms`, so reviewer artifacts show exactly which extensions were active.
 
 ## Built-in terms
 
@@ -155,8 +191,9 @@ For in-tree terms:
 4. Add docs with equations and limitations.
 5. Run `mhx physics lint <name>`, `pytest`, and `ruff`.
 
-Third-party plugin discovery is not enabled yet. The current stable surface is
-the protocol, metadata fields, and config-driven in-tree registry.
+Config-loaded local modules are the current stable third-party extension path.
+Package entry-point discovery is intentionally deferred until the v1 API is
+fully frozen.
 
 ## Adding an equilibrium
 

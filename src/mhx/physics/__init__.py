@@ -21,6 +21,7 @@ from mhx.physics.terms import (
     apply_physics_terms,
     build_physics_terms,
     default_physics_registry,
+    load_physics_plugin_modules,
 )
 
 __all__ = [
@@ -42,4 +43,5 @@ __all__ = [
     "build_physics_terms",
     "default_equilibrium_registry",
     "default_physics_registry",
+    "load_physics_plugin_modules",
 ]

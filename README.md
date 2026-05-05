@@ -98,6 +98,14 @@ mhx run examples/linear_tearing_twofluid_toy.toml --outdir outputs/twofluid_toy
 mhx figures outputs/twofluid_toy --gif
 ```
 
+Try a local plugin module that registers both a physics term and a diagnostic:
+
+```bash
+mhx run examples/linear_tearing_plugin_demo.toml --outdir outputs/plugin_demo
+mhx figures outputs/plugin_demo --gif
+mhx diagnostics list-with-plugins --plugin-module examples.local_extension_plugin
+```
+
 ## Python API
 
 ```python

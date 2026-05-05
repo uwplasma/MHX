@@ -18,7 +18,7 @@ from mhx.benchmarks import (
     write_timing_benchmark,
 )
 from mhx.config import RunConfig, load_config
-from mhx.diagnostics import default_diagnostics_registry
+from mhx.diagnostics import default_diagnostics_registry, load_diagnostics_plugin_modules
 from mhx.grids import CartesianGrid
 from mhx.io import (
     read_reduced_mhd_trajectory_npz,
@@ -26,7 +26,12 @@ from mhx.io import (
     write_manifest,
     write_reduced_mhd_trajectory_npz,
 )
-from mhx.physics import PHYSICS_API_VERSION, default_equilibrium_registry, default_physics_registry
+from mhx.physics import (
+    PHYSICS_API_VERSION,
+    default_equilibrium_registry,
+    default_physics_registry,
+    load_physics_plugin_modules,
+)
 from mhx.plotting import (
     plot_energy_history,
     plot_flux_contours,
@@ -289,6 +294,21 @@ def physics_list() -> None:
         typer.echo(f"- {item.name}: {item.description}")
 
 
+@physics_app.command("list-with-plugins")
+def physics_list_with_plugins(
+    plugin_module: Annotated[
+        list[str] | None,
+        typer.Option("--plugin-module", help="Import module exposing register_physics(registry)."),
+    ] = None,
+) -> None:
+    """List physics terms after loading optional user plugin modules."""
+    registry = default_physics_registry()
+    load_physics_plugin_modules(registry, tuple(plugin_module or ()))
+    typer.echo(f"Physics API: {PHYSICS_API_VERSION}")
+    for item in registry.metadata():
+        typer.echo(f"- {item.name}: {item.description}")
+
+
 @physics_app.command("equilibria")
 def physics_equilibria() -> None:
     """List registered reduced-MHD equilibria."""
@@ -314,6 +334,24 @@ def physics_lint(
 def diagnostics_list() -> None:
     """List registered reduced-MHD diagnostics and output keys."""
     for item in default_diagnostics_registry().metadata():
+        keys = ", ".join(item["output_keys"])
+        typer.echo(f"- {item['name']}: {item['description']} [{keys}]")
+
+
+@diagnostics_app.command("list-with-plugins")
+def diagnostics_list_with_plugins(
+    plugin_module: Annotated[
+        list[str] | None,
+        typer.Option(
+            "--plugin-module",
+            help="Import module exposing register_diagnostics(registry).",
+        ),
+    ] = None,
+) -> None:
+    """List diagnostics after loading optional user plugin modules."""
+    registry = default_diagnostics_registry()
+    load_diagnostics_plugin_modules(registry, tuple(plugin_module or ()))
+    for item in registry.metadata():
         keys = ", ".join(item["output_keys"])
         typer.echo(f"- {item['name']}: {item['description']} [{keys}]")
 
