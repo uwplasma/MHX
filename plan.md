@@ -3552,3 +3552,50 @@ Every agent must append an entry here. Do not delete previous entries.
 - Add a CI paper/benchmark artifact job that runs a FAST benchmark, writes figures, and uploads artifacts.
 - Add a diagnostics registry so configs can select diagnostics the same way they select equilibria and RHS terms.
 - Start a validated manufactured-solution test for the reduced-MHD RHS/integrator.
+
+### 2026-05-04 — Agent: Codex, CI benchmark artifact pipeline
+
+**Summary**
+
+- Added a `benchmark-artifacts` GitHub Actions job.
+- The job runs the FAST reduced-MHD benchmark with GIF generation and validation.
+- The job also runs the two-fluid toy example, regenerates figures/GIF, writes a report, validates expected files, and uploads `outputs/ci`.
+- Updated benchmark docs to document the exact CI artifact command sequence and expected artifact name.
+
+**Files changed**
+
+- Updated `.github/workflows/ci.yml`, `docs/benchmarks.md`, and `plan.md`.
+
+**Tests run**
+
+- Local workflow-equivalent command sequence passed:
+  - `mhx benchmark run --config examples/linear_tearing.toml --outdir outputs/ci/linear_tearing_fast --gif`
+  - `mhx benchmark validate outputs/ci/linear_tearing_fast`
+  - `mhx run examples/linear_tearing_twofluid_toy.toml --outdir outputs/ci/twofluid_toy`
+  - `mhx figures outputs/ci/twofluid_toy --gif`
+  - `mhx report outputs/ci/twofluid_toy`
+- Local shell checks confirmed all expected artifact files exist.
+
+**Benchmarks run**
+
+- FAST reduced-MHD benchmark and FAST two-fluid toy plugin example.
+
+**Decisions made**
+
+- CI artifacts are generated in a separate job instead of the unit-test matrix to keep tests focused and make downloadable review artifacts obvious.
+- The artifact job installs `.[dev]` because it needs plotting, image writing, and test/dev tooling.
+
+**Problems / blockers**
+
+- Artifact checks currently validate filenames and successful generation, not bit-for-bit figure hashes.
+- GitHub Actions reports Node 20 deprecation warnings for current action versions; this is not failing CI.
+
+**Progress**
+
+- Estimated plan completion: 36%.
+
+**Next steps**
+
+- Add an artifact manifest with figure/report checksums for reproducible diffs.
+- Add a diagnostics registry and config-selected diagnostics.
+- Add a manufactured-solution or exact-decay validation test.

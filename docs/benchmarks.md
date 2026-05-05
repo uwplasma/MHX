@@ -26,6 +26,23 @@ Expected files include:
 - `report.md`
 - `validation.json`
 
+## CI artifacts
+
+Every push runs a `benchmark-artifacts` CI job. It executes two deterministic
+FAST pipelines:
+
+```bash
+mhx benchmark run --config examples/linear_tearing.toml --outdir outputs/ci/linear_tearing_fast --gif
+mhx benchmark validate outputs/ci/linear_tearing_fast
+mhx run examples/linear_tearing_twofluid_toy.toml --outdir outputs/ci/twofluid_toy
+mhx figures outputs/ci/twofluid_toy --gif
+mhx report outputs/ci/twofluid_toy
+```
+
+The job uploads `outputs/ci` as the `mhx-fast-artifacts` GitHub Actions
+artifact. Reviewers can download it to inspect manifests, reports, PNG figures,
+and GIF movies generated from the exact commit under test.
+
 ## Theory scaffolds
 
 MHX includes analytic scaling estimates for benchmark planning and reports. They
@@ -60,4 +77,3 @@ References used for the benchmark roadmap include
 [Furth, Killeen, and Rosenbluth 1963](https://cir.nii.ac.jp/crid/1363107370207531008),
 [Loureiro, Schekochihin, and Cowley 2007](https://arxiv.org/abs/astro-ph/0703631),
 and [Pucci and Velli ideal tearing context](https://arxiv.org/abs/1704.08793).
-
