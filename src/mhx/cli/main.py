@@ -55,6 +55,7 @@ from mhx.plotting import (
     plot_mode_amplitude,
     write_diagnostic_figures_for_run,
 )
+from mhx.runtime import configure_jax
 from mhx.state import ReducedMHDState
 
 app = typer.Typer(no_args_is_help=True, help="MHX differentiable MHD workflows.")
@@ -105,6 +106,7 @@ def run(
 
 def _run_config(config: Path, *, outdir: Path | None = None) -> Path:
     cfg = load_config(config)
+    configure_jax(enable_x64=cfg.numerics.enable_x64)
     if outdir is not None:
         cfg = cfg.with_output_dir(outdir)
 
@@ -284,6 +286,7 @@ def benchmark_decay(
     dt: Annotated[float, typer.Option("--dt", help="Fixed RK4 step.")] = 1.0e-2,
 ) -> None:
     """Run the exact single-mode resistive-decay validation benchmark."""
+    _configure_validation_precision()
     manifest_path, validation = write_resistive_decay_validation(
         outdir,
         shape=(nx, ny),
@@ -306,6 +309,7 @@ def benchmark_scaling(
     ka: Annotated[float, typer.Option("--ka", help="FKR constant-psi wavenumber ka.")] = 0.5,
 ) -> None:
     """Run analytic reconnection scaling gates for FKR/plasmoid/ideal-tearing theory."""
+    _configure_validation_precision()
     manifest_path, validation = write_reconnection_scaling_validation(outdir, ka=ka)
     typer.echo(f"wrote {manifest_path}")
     if not validation["passed"]:
@@ -324,6 +328,7 @@ def benchmark_fkr_window(
     ] = 1.0e6,
 ) -> None:
     """Run the analytic FKR constant-psi regime-window gate."""
+    _configure_validation_precision()
     manifest_path, validation = write_fkr_window_validation(outdir, lundquist=lundquist)
     typer.echo(f"wrote {manifest_path}")
     if not validation["passed"]:
@@ -342,6 +347,7 @@ def benchmark_linearized_rhs(
     ] = 1.0e-3,
 ) -> None:
     """Run the matrix-free reduced-MHD linearized-RHS consistency gate."""
+    _configure_validation_precision()
     manifest_path, validation = write_linearized_rhs_validation(outdir, epsilon=epsilon)
     typer.echo(f"wrote {manifest_path}")
     if not validation["passed"]:
@@ -359,6 +365,7 @@ def benchmark_reduced_mhd_eigenmode(
     ] = Path("outputs/benchmarks/reduced_mhd_eigenmode"),
 ) -> None:
     """Run the zero-state reduced-MHD linear diffusion eigenmode gate."""
+    _configure_validation_precision()
     manifest_path, validation = write_reduced_mhd_linear_eigenmode_validation(outdir)
     typer.echo(f"wrote {manifest_path}")
     if not validation["passed"]:
@@ -376,6 +383,7 @@ def benchmark_cosine_equilibrium_linearization(
     ] = Path("outputs/benchmarks/cosine_equilibrium_linearization"),
 ) -> None:
     """Run the analytic nonzero-cosine-equilibrium linearized-RHS gate."""
+    _configure_validation_precision()
     manifest_path, validation = write_cosine_equilibrium_linearization_validation(outdir)
     typer.echo(f"wrote {manifest_path}")
     if not validation["passed"]:
@@ -390,6 +398,7 @@ def benchmark_diffusion_eigenvalue(
     ] = Path("outputs/benchmarks/diffusion_eigenvalue"),
 ) -> None:
     """Run the matrix-free spectral diffusion eigenvalue gate."""
+    _configure_validation_precision()
     manifest_path, validation = write_diffusion_eigenvalue_validation(outdir)
     typer.echo(f"wrote {manifest_path}")
     if not validation["passed"]:
@@ -408,6 +417,7 @@ def benchmark_power_iteration(
     ] = 30,
 ) -> None:
     """Run the known-operator power-iteration smoke benchmark."""
+    _configure_validation_precision()
     manifest_path, validation = write_power_iteration_validation(outdir, iterations=iterations)
     typer.echo(f"wrote {manifest_path}")
     if not validation["passed"]:
@@ -422,6 +432,7 @@ def benchmark_arnoldi(
     ] = Path("outputs/benchmarks/arnoldi"),
 ) -> None:
     """Run the known-operator Arnoldi Ritz-spectrum smoke benchmark."""
+    _configure_validation_precision()
     manifest_path, validation = write_arnoldi_validation(outdir)
     typer.echo(f"wrote {manifest_path}")
     if not validation["passed"]:
@@ -454,6 +465,10 @@ def validate_all(
     typer.echo(f"wrote {summary_path}")
     if not summary["passed"]:
         raise typer.Exit(code=1)
+
+
+def _configure_validation_precision() -> None:
+    configure_jax(enable_x64=True)
 
 
 @physics_app.command("list")

@@ -7,7 +7,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-import jax
 import jax.numpy as jnp
 import numpy as np
 from jaxtyping import Array
@@ -22,6 +21,7 @@ from mhx.equations.reduced_mhd import reduced_mhd_rhs
 from mhx.grids import CartesianGrid
 from mhx.io import write_manifest
 from mhx.plotting import plot_decay_amplitude, plot_decay_energy, plot_decay_relative_error
+from mhx.runtime import configure_jax
 from mhx.state import ReducedMHDParams, ReducedMHDState, ReducedMHDTrajectory
 from mhx.time_integrators import evolve_rk4
 
@@ -69,7 +69,7 @@ def run_resistive_decay_validation(
     max_decay_rate_relative_error: float = 1.0e-6,
 ) -> ResistiveDecayResult:
     """Run a literature-anchored exact Fourier-mode resistive-diffusion gate."""
-    jax.config.update("jax_enable_x64", True)
+    jax_enable_x64 = configure_jax(enable_x64=True)
     grid = CartesianGrid(shape=shape, lower=(0.0, 0.0), upper=(2.0 * np.pi, 2.0 * np.pi))
     psi0 = grid.cosinusoid(mode=mode)
     state0 = ReducedMHDState(psi=psi0, omega=jnp.zeros_like(psi0))
@@ -131,6 +131,7 @@ def run_resistive_decay_validation(
         "shape": list(shape),
         "mode": list(mode),
         "resistivity": resistivity,
+        "jax_enable_x64": jax_enable_x64,
         "t1": float(t1),
         "dt": float(dt),
         "save_every": int(save_every),

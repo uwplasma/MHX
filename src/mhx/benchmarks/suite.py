@@ -29,6 +29,7 @@ from mhx.io import (
     write_manifest,
     write_reduced_mhd_trajectory_npz,
 )
+from mhx.runtime import configure_jax
 
 VALIDATION_SUITE_SCHEMA = "mhx.validation.suite.v1"
 
@@ -106,6 +107,7 @@ def write_validation_suite(
     """Run all selected FAST validation gates and write a suite summary."""
     output_dir = Path(outdir)
     output_dir.mkdir(parents=True, exist_ok=True)
+    jax_enable_x64 = configure_jax(enable_x64=True)
     selected_cases = cases or validation_suite_cases()
     case_results = []
     for case in selected_cases:
@@ -127,6 +129,7 @@ def write_validation_suite(
         "schema": VALIDATION_SUITE_SCHEMA,
         "passed": all(item["passed"] for item in case_results),
         "case_count": len(case_results),
+        "jax_enable_x64": jax_enable_x64,
         "cases": case_results,
     }
     summary_path = output_dir / "validation_suite.json"

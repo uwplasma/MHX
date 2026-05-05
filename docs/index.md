@@ -17,6 +17,7 @@ output_schema
 benchmarks
 performance
 validation
+audit
 model_assembly
 plugins
 literature

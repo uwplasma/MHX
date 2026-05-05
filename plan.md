@@ -4580,3 +4580,68 @@ Every agent must append an entry here. Do not delete previous entries.
   regime and tolerances.
 - Add a migration/deprecation cleanup pass for legacy scripts once the new
   command surface is stable.
+
+### 2026-05-05 — Agent: Codex, skeptical validation audit
+
+**Summary**
+
+- Regenerated the full FAST validation and artifact set, including solver
+  smoke runs, exact linear gates, analytic scaling figures, plugin examples,
+  GIFs, reports, and manifests.
+- Created contact sheets from the generated plots and inspected them directly
+  with a skeptical standard. The exact resistive-decay and matrix-free
+  validation plots are strong; the FAST reduced-MHD runs are stable smoke
+  tests only, with tiny kinetic energy and weak mode-amplitude changes.
+- Added `docs/audit.md` to document what is currently research-grade, what is
+  only engineering scaffolding, and what must not be overclaimed.
+- Fixed a hidden validation-order issue: one benchmark previously enabled JAX
+  x64 globally, so later gates could inherit precision depending on command
+  order. Validation precision is now configured explicitly through
+  `mhx.runtime.configure_jax`, and validation suite outputs record
+  `jax_enable_x64`.
+
+**Files changed**
+
+- Added `src/mhx/runtime.py` and `docs/audit.md`.
+- Updated benchmark precision setup, CLI validation commands, validation-suite
+  metadata, output-schema docs, validation docs, README, and x64 assertions in
+  tests.
+
+**Tests run**
+
+- `python -m ruff check src tests examples` passed.
+- `python -m pytest tests/test_resistive_decay_validation.py tests/test_validation_suite.py tests/test_import_cli.py -q`
+  passed: 10 tests.
+- `python -m pytest --cov=mhx --cov-report=term-missing --cov-fail-under=95`
+  passed: 94 tests, 96.41% coverage.
+- `sphinx-build -b html docs docs/_build/html` passed.
+- CI-equivalent artifact pipeline passed locally and wrote
+  `outputs/ci/artifact_manifest.json` covering 146 files.
+- CI artifact file-set validation passed.
+
+**Decisions made**
+
+- Be explicit that CI passing means the documented gates passed, not that MHX
+  is already a publication-grade nonlinear reconnection solver.
+- Treat analytic FKR/plasmoid/ideal-tearing figures as reference scaffolds, not
+  PDE-solver recovery of those regimes.
+- Keep timing outputs as artifacts, not pass/fail scientific validations.
+
+**Problems / blockers**
+
+- The rebuilt core still needs calibrated FKR/Coppi tearing eigenvalues,
+  nonlinear island/plasmoid studies, and neural-ODE benchmark evidence before
+  publication-grade scientific claims are defensible.
+
+**Progress**
+
+- Estimated plan completion: 75%.
+
+**Next steps**
+
+- Implement a calibrated tearing eigenmode benchmark with documented
+  equilibrium, resolution study, fit window, and tolerance.
+- Add nonlinear magnetic-island growth and plasmoid validation cases only after
+  the linear eigenvalue benchmark is stable.
+- Add release notes and deprecation cleanup for legacy scripts once the new
+  command surface has enough validated coverage.

@@ -67,7 +67,7 @@ mhx validate all --outdir outputs/validation_suite
 The suite writes `validation_suite.json`, `validation_suite.md`,
 `artifact_manifest.json`, and one subdirectory per validation case.
 
-## Publication figures
+## Validation figures
 
 The numerical mode amplitude is visually indistinguishable from
 $A_0\exp(-\eta |k|^2t)$ at FAST settings.

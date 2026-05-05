@@ -114,7 +114,8 @@ This writes `outputs/smoke/artifact_manifest.json` with schema
 validation gates and writes:
 
 - `validation_suite.json`: schema `mhx.validation.suite.v1`, aggregate pass/fail
-  status, case list, per-case validation schemas, checks, and relative paths.
+  status, `jax_enable_x64`, case list, per-case validation schemas, checks, and
+  relative paths.
 - `validation_suite.md`: reviewer-readable pass/fail summary table.
 - `artifact_manifest.json`: recursive checksum manifest for every generated
   validation artifact.

@@ -24,6 +24,7 @@ def test_write_validation_suite_artifacts_and_cli(tmp_path) -> None:
     assert summary_path == tmp_path / "suite" / "validation_suite.json"
     assert summary["schema"] == VALIDATION_SUITE_SCHEMA
     assert summary["passed"] is True
+    assert summary["jax_enable_x64"] is True
     assert summary["case_count"] == len(validation_suite_cases())
     assert (tmp_path / "suite" / "validation_suite.md").stat().st_size > 0
     assert (tmp_path / "suite" / "artifact_manifest.json").exists()

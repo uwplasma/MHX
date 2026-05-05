@@ -3,7 +3,7 @@
 [![CI](https://github.com/uwplasma/MHX/actions/workflows/ci.yml/badge.svg)](https://github.com/uwplasma/MHX/actions/workflows/ci.yml)
 [![Documentation Status](https://readthedocs.org/projects/mhx/badge/?version=latest)](https://mhx.readthedocs.io/)
 
-**MHX is being rebuilt as a JAX-native, differentiable plasma and magnetohydrodynamics framework for magnetic reconnection, tearing modes, turbulence, validation, and inverse design.**
+**MHX is being rebuilt as a JAX-native, differentiable plasma and magnetohydrodynamics framework for magnetic reconnection, tearing modes, validation, extension experiments, and eventually inverse design.**
 
 The previous reduced-MHD tearing/plasmoid code has been preserved under
 `legacy/old_mhx/`. The active package is a clean rebuild under `src/mhx/`.
@@ -20,9 +20,14 @@ This rebuild is intentionally starting from a small, tested core:
 - Sphinx/MyST documentation skeleton.
 - CI for linting, tests, coverage, and docs.
 
-The first scientific target is a small spectral tearing benchmark with gradient
-checks. Hall, radiative terms, 3D, finite-volume shock-capturing MHD, and neural
-ODE workflows will be added after the core API is stable.
+The current FAST reduced-MHD runs are smoke tests, not nonlinear reconnection
+claims. The strongest current results are exact linear validation gates,
+matrix-free operator checks, and extension APIs. Calibrated FKR/Coppi tearing
+eigenvalues, nonlinear plasmoid dynamics, and neural-ODE inverse-design claims
+remain roadmap items.
+
+See `docs/audit.md` for the current skeptical validation audit and maturity
+table.
 
 ## Install
 

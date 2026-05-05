@@ -25,6 +25,7 @@ def test_resistive_decay_validation_has_physics_gates() -> None:
     diagnostics = result.diagnostics
     validation = result.validation
     assert diagnostics["schema"] == RESISTIVE_DECAY_SCHEMA
+    assert diagnostics["jax_enable_x64"] is True
     assert diagnostics["decay_rate_eta_k_squared"] == pytest.approx(0.05)
     assert diagnostics["fitted_decay_rate"] == pytest.approx(0.05, rel=1.0e-7)
     assert diagnostics["max_relative_amplitude_error"] < 1.0e-8
@@ -56,6 +57,7 @@ def test_write_resistive_decay_validation_artifacts(tmp_path) -> None:
     assert manifest_path == tmp_path / "manifest.json"
     assert validation["passed"] is True
     diagnostics = json.loads((tmp_path / "diagnostics.json").read_text())
+    assert diagnostics["jax_enable_x64"] is True
     assert diagnostics["reference"] == (
         "single Fourier mode of resistive reduced-MHD induction equation"
     )
