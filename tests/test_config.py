@@ -30,11 +30,14 @@ def test_config_roundtrip_dict_and_toml() -> None:
     assert data["mesh"]["shape"] == [32, 32]
     assert data["diagnostics"]["quantities"] == ["energy", "mode_growth", "divergence_error"]
     assert data["physics"]["plugin_modules"] == []
+    assert data["physics"]["plugin_entry_point_groups"] == []
     assert data["diagnostics"]["plugin_modules"] == []
+    assert data["diagnostics"]["plugin_entry_point_groups"] == []
     assert data["diagnostics"]["mode"] == [1, 1]
     assert data["diagnostics"]["fit_time_window"] is None
     assert "[mesh]" in cfg.to_toml()
     assert "plugin_modules = []" in cfg.to_toml()
+    assert "plugin_entry_point_groups = []" in cfg.to_toml()
     assert cfg.with_output_dir("outputs/other").output_dir.as_posix() == "outputs/other"
 
 
@@ -59,9 +62,13 @@ def test_config_validation_errors() -> None:
         PhysicsConfig(resistivity=-1.0).validated()
     with pytest.raises(ValueError, match="viscosity"):
         PhysicsConfig(viscosity=-1.0).validated()
+    with pytest.raises(ValueError, match="plugin_entry_point_groups"):
+        PhysicsConfig(plugin_entry_point_groups=("group", "group")).validated()
     with pytest.raises(ValueError, match="fit_time_window"):
         DiagnosticsConfig(fit_time_window=(1.0, 0.0)).validated()
     with pytest.raises(ValueError, match="quantities"):
         DiagnosticsConfig(quantities=()).validated()
     with pytest.raises(ValueError, match="unique"):
         DiagnosticsConfig(quantities=("energy", "energy")).validated()
+    with pytest.raises(ValueError, match="plugin_entry_point_groups"):
+        DiagnosticsConfig(plugin_entry_point_groups=("group", "group")).validated()

@@ -56,6 +56,7 @@ FKR, Sweet-Parker plasmoid, and ideal-tearing exponents:
 
 ```bash
 mhx benchmark scaling --outdir outputs/benchmarks/reconnection_scaling
+mhx benchmark fkr-window --outdir outputs/benchmarks/fkr_window
 ```
 
 This writes:
@@ -67,6 +68,13 @@ This writes:
 - `figures/plasmoid_scaling.png`
 - `figures/ideal_tearing_scaling.png`
 
+The FKR-window command writes:
+
+- `diagnostics.json`
+- `validation.json`
+- `fkr_window.npz`
+- `figures/fkr_constant_psi_window.png`
+
 ## CI artifacts
 
 Every push runs a `benchmark-artifacts` CI job. It executes deterministic FAST
@@ -77,10 +85,14 @@ mhx benchmark run --config examples/linear_tearing.toml --outdir outputs/ci/line
 mhx benchmark validate outputs/ci/linear_tearing_fast
 mhx benchmark decay --outdir outputs/ci/resistive_decay
 mhx benchmark scaling --outdir outputs/ci/reconnection_scaling
+mhx benchmark fkr-window --outdir outputs/ci/fkr_window
 mhx benchmark timing --outdir outputs/ci/timing --repeats 1 --warmups 0
 mhx run examples/linear_tearing_twofluid_toy.toml --outdir outputs/ci/twofluid_toy
 mhx figures outputs/ci/twofluid_toy --gif
 mhx report outputs/ci/twofluid_toy
+mhx run examples/linear_tearing_plugin_demo.toml --outdir outputs/ci/plugin_demo
+mhx figures outputs/ci/plugin_demo --gif
+mhx report outputs/ci/plugin_demo
 mhx artifact-manifest outputs/ci
 ```
 
@@ -144,6 +156,11 @@ For ideal tearing planning, MHX includes the Pucci-Velli aspect-ratio scaling
 $$
 a/L \sim S^{-1/3}.
 $$
+
+The separate FKR-window gate checks the sampled constant-$\psi$ regime by
+plotting $\gamma\tau_a$ and $\Delta'\delta$ versus $ka$ at fixed $S_a$. This
+prevents future numerical tearing comparisons from silently mixing FKR and
+large-$\Delta'$ Coppi regimes.
 
 References used for the benchmark roadmap include
 [Furth, Killeen, and Rosenbluth 1963](https://cir.nii.ac.jp/crid/1363107370207531008),

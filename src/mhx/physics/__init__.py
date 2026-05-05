@@ -11,6 +11,7 @@ from mhx.physics.equilibria import (
 )
 from mhx.physics.terms import (
     PHYSICS_API_VERSION,
+    PHYSICS_ENTRY_POINT_GROUP,
     ElectronPressureTensorTerm,
     HyperResistivityTerm,
     PhysicsRegistry,
@@ -21,6 +22,7 @@ from mhx.physics.terms import (
     apply_physics_terms,
     build_physics_terms,
     default_physics_registry,
+    load_physics_entry_points,
     load_physics_plugin_modules,
 )
 
@@ -31,6 +33,7 @@ __all__ = [
     "EquilibriumRegistry",
     "ElectronPressureTensorTerm",
     "PHYSICS_API_VERSION",
+    "PHYSICS_ENTRY_POINT_GROUP",
     "HyperResistivityTerm",
     "PhysicsRegistry",
     "PhysicsTerm",
@@ -43,5 +46,6 @@ __all__ = [
     "build_physics_terms",
     "default_equilibrium_registry",
     "default_physics_registry",
+    "load_physics_entry_points",
     "load_physics_plugin_modules",
 ]

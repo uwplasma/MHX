@@ -27,11 +27,12 @@ The reduced-MHD v1 trajectory file contains:
 | `diagnostics_json` | JSON-encoded scalar diagnostics. |
 
 Important scalar diagnostics include `equilibrium`, `equilibrium_parameters`,
-`physics_plugin_modules`, `physics_terms`, `diagnostic_plugin_modules`,
+`physics_plugin_modules`, `physics_plugin_entry_point_groups`, `physics_terms`,
+`diagnostic_plugin_modules`, `diagnostic_plugin_entry_point_groups`,
 `diagnostic_quantities`, `diagnostic_mode`, `fit_time_window`,
 `fit_sample_count`, `gamma_fit`, and `final_magnetic_divergence_linf`. These
-fields are saved so model assembly, extension modules, growth-rate plots,
-divergence checks, and comparisons can be audited.
+fields are saved so model assembly, extension modules, entry-point plugin
+discovery, growth-rate plots, divergence checks, and comparisons can be audited.
 
 ## `diagnostics.json` keys
 
@@ -42,7 +43,9 @@ The default reduced-MHD run uses the diagnostic registry entries `energy`,
 | --- | --- |
 | `diagnostic_quantities` | Diagnostic registry names evaluated for this run. |
 | `diagnostic_plugin_modules` | Importable modules used to register custom diagnostics. |
+| `diagnostic_plugin_entry_point_groups` | Installed entry-point groups used to register diagnostics. |
 | `physics_plugin_modules` | Importable modules used to register custom RHS physics terms. |
+| `physics_plugin_entry_point_groups` | Installed entry-point groups used to register RHS physics terms. |
 | `initial_total_energy` | Initial reduced-MHD total energy. |
 | `final_total_energy` | Final reduced-MHD total energy. |
 | `final_magnetic_energy` | Final mean magnetic perturbation energy. |
@@ -83,6 +86,11 @@ Expected files:
 - `outputs/smoke/report.json`
 - `outputs/smoke/report.md`
 
+`report.json` also includes `additional_scalar_diagnostics`, a dictionary of
+plugin-provided scalar metrics not part of the core reduced-MHD diagnostic
+schema. `report.md` renders the same values in an `Additional scalar
+diagnostics` table.
+
 ## Artifact manifests
 
 For reproducible figure/report diffs, write a recursive checksum manifest:
@@ -116,6 +124,18 @@ This writes `outputs/smoke/artifact_manifest.json` with schema
 - `scaling_history.npz`: Lundquist samples and analytic scaling arrays.
 - `figures/fkr_scaling.png`, `figures/plasmoid_scaling.png`, and
   `figures/ideal_tearing_scaling.png`.
+
+## FKR-window validation outputs
+
+`mhx benchmark fkr-window --outdir outputs/benchmarks/fkr_window` writes:
+
+- `diagnostics.json`: fixed-$S_a$ FKR constant-$\psi$ regime-window diagnostics
+  with schema `mhx.validation.fkr_window.v1`.
+- `validation.json`: pass/fail gates for positive $\Delta'a$, thin inner layer,
+  and $\Delta'\delta$.
+- `fkr_window.npz`: sampled `ka`, `gamma_tau_a`, `inner_width_a`,
+  `delta_prime_a`, and `constant_psi_product` arrays.
+- `figures/fkr_constant_psi_window.png`: publication-style regime-window plot.
 
 ## Timing benchmark outputs
 

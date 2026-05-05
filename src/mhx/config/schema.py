@@ -107,6 +107,7 @@ class PhysicsConfig:
     resistivity: float = 1.0e-3
     viscosity: float = 1.0e-3
     plugin_modules: tuple[str, ...] = ()
+    plugin_entry_point_groups: tuple[str, ...] = ()
     rhs_terms: tuple[str, ...] = ()
     term_parameters: dict[str, dict[str, float]] = field(default_factory=dict)
 
@@ -125,6 +126,13 @@ class PhysicsConfig:
             plugin_modules=tuple(
                 str(item) for item in mapping.get("plugin_modules", cls.plugin_modules)
             ),
+            plugin_entry_point_groups=tuple(
+                str(item)
+                for item in mapping.get(
+                    "plugin_entry_point_groups",
+                    cls.plugin_entry_point_groups,
+                )
+            ),
             rhs_terms=tuple(str(item) for item in mapping.get("rhs_terms", cls.rhs_terms)),
             term_parameters={
                 str(name): {str(key): float(value) for key, value in parameters.items()}
@@ -141,6 +149,8 @@ class PhysicsConfig:
             raise ValueError("physics.viscosity must be non-negative")
         if len(set(self.plugin_modules)) != len(self.plugin_modules):
             raise ValueError("physics.plugin_modules entries must be unique")
+        if len(set(self.plugin_entry_point_groups)) != len(self.plugin_entry_point_groups):
+            raise ValueError("physics.plugin_entry_point_groups entries must be unique")
         unknown_parameters = sorted(set(self.term_parameters) - set(self.rhs_terms))
         if unknown_parameters:
             raise ValueError(
@@ -174,6 +184,7 @@ class DiagnosticsConfig:
 
     quantities: tuple[str, ...] = ("energy", "mode_growth", "divergence_error")
     plugin_modules: tuple[str, ...] = ()
+    plugin_entry_point_groups: tuple[str, ...] = ()
     mode: tuple[int, int] = (1, 1)
     fit_time_window: tuple[float, float] | None = None
 
@@ -186,6 +197,13 @@ class DiagnosticsConfig:
             quantities=tuple(str(item) for item in quantities),
             plugin_modules=tuple(
                 str(item) for item in mapping.get("plugin_modules", cls.plugin_modules)
+            ),
+            plugin_entry_point_groups=tuple(
+                str(item)
+                for item in mapping.get(
+                    "plugin_entry_point_groups",
+                    cls.plugin_entry_point_groups,
+                )
             ),
             mode=_tuple_from(
                 mapping.get("mode", cls.mode),
@@ -212,6 +230,8 @@ class DiagnosticsConfig:
             raise ValueError("diagnostics.quantities entries must be unique")
         if len(set(self.plugin_modules)) != len(self.plugin_modules):
             raise ValueError("diagnostics.plugin_modules entries must be unique")
+        if len(set(self.plugin_entry_point_groups)) != len(self.plugin_entry_point_groups):
+            raise ValueError("diagnostics.plugin_entry_point_groups entries must be unique")
         if self.fit_time_window is not None and self.fit_time_window[1] <= self.fit_time_window[0]:
             raise ValueError("diagnostics.fit_time_window upper bound must exceed lower bound")
         return self
@@ -292,6 +312,8 @@ class RunConfig:
             f"resistivity = {data['physics']['resistivity']}\n"
             f"viscosity = {data['physics']['viscosity']}\n"
             f"plugin_modules = {data['physics']['plugin_modules']}\n"
+            "plugin_entry_point_groups = "
+            f"{data['physics']['plugin_entry_point_groups']}\n"
             f"rhs_terms = {data['physics']['rhs_terms']}\n\n"
             f"{equilibrium_parameter_lines}"
             f"{term_parameter_lines}"
@@ -302,6 +324,8 @@ class RunConfig:
             "[diagnostics]\n"
             f"quantities = {data['diagnostics']['quantities']}\n"
             f"plugin_modules = {data['diagnostics']['plugin_modules']}\n"
+            "plugin_entry_point_groups = "
+            f"{data['diagnostics']['plugin_entry_point_groups']}\n"
             f"mode = {data['diagnostics']['mode']}\n"
             f"{fit_time_window_line}"
         )

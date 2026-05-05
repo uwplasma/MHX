@@ -205,6 +205,49 @@ def plot_fkr_scaling(lundquist, gamma, inner_width, *, path: str | Path) -> Path
     return output_path
 
 
+def plot_fkr_validity_window(
+    ka,
+    gamma,
+    constant_psi_product,
+    *,
+    max_constant_psi_product: float,
+    path: str | Path,
+) -> Path:
+    """Plot a constant-psi FKR regime-window diagnostic."""
+    import matplotlib.pyplot as plt
+
+    output_path = Path(path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    ka_values = np.asarray(ka)
+    fig, axes = plt.subplots(1, 2, figsize=(9.0, 3.8), constrained_layout=True)
+    axes[0].plot(ka_values, np.asarray(gamma), "o-", color="#3266a8")
+    axes[0].set_xlabel(r"$ka$")
+    axes[0].set_ylabel(r"$\gamma\tau_a$")
+    axes[0].set_title(r"FKR growth estimate")
+    axes[1].semilogy(
+        ka_values,
+        np.asarray(constant_psi_product),
+        "s-",
+        color="#8c4fb4",
+        label=r"$\Delta'\delta$",
+    )
+    axes[1].axhline(
+        max_constant_psi_product,
+        color="black",
+        linestyle="--",
+        linewidth=1.0,
+        label="gate",
+    )
+    axes[1].set_xlabel(r"$ka$")
+    axes[1].set_ylabel(r"constant-$\psi$ product")
+    axes[1].set_title(r"FKR validity gate")
+    axes[1].legend(frameon=False)
+    fig.suptitle(r"Constant-$\psi$ tearing regime window")
+    fig.savefig(output_path, dpi=220)
+    plt.close(fig)
+    return output_path
+
+
 def plot_plasmoid_scaling(lundquist, gamma, fastest_mode, *, path: str | Path) -> Path:
     """Plot Loureiro Sweet-Parker plasmoid scalings."""
     import matplotlib.pyplot as plt

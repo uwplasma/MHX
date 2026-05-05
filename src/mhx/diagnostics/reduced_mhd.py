@@ -7,6 +7,7 @@ import importlib.util
 import sys
 from collections.abc import Callable
 from dataclasses import dataclass
+from importlib import metadata as importlib_metadata
 from pathlib import Path
 from typing import Any
 
@@ -16,6 +17,8 @@ from jaxtyping import Array
 from mhx.equations.reduced_mhd import stream_function
 from mhx.numerics.spectral import gradient, spectral_wavenumbers
 from mhx.state import ReducedMHDState, ReducedMHDTrajectory
+
+DIAGNOSTICS_ENTRY_POINT_GROUP = "mhx.diagnostics"
 
 
 @dataclass(frozen=True)
@@ -193,9 +196,12 @@ def compute_reduced_mhd_diagnostics(
     fit_time_window: tuple[float, float] | None,
     registry: DiagnosticsRegistry | None = None,
     plugin_modules: tuple[str, ...] = (),
+    plugin_entry_point_groups: tuple[str, ...] = (),
 ) -> dict[str, Any]:
     """Compute selected reduced-MHD diagnostics through the registry API."""
     diagnostic_registry = registry or default_diagnostics_registry()
+    if plugin_entry_point_groups:
+        load_diagnostics_entry_points(diagnostic_registry, plugin_entry_point_groups)
     if plugin_modules:
         load_diagnostics_plugin_modules(diagnostic_registry, plugin_modules)
     context = DiagnosticContext(
@@ -223,6 +229,36 @@ def load_diagnostics_plugin_modules(
             )
         register(registry)
     return registry
+
+
+def load_diagnostics_entry_points(
+    registry: DiagnosticsRegistry,
+    groups: tuple[str, ...] = (DIAGNOSTICS_ENTRY_POINT_GROUP,),
+) -> DiagnosticsRegistry:
+    """Load installed diagnostic plugins from Python package entry-point groups.
+
+    Each entry point must resolve either to a callable ``register(registry)``
+    hook or to an object exposing ``register_diagnostics(registry)``.
+    """
+    for group in groups:
+        for entry_point in _entry_points_for_group(group):
+            plugin = entry_point.load()
+            register = plugin if callable(plugin) else getattr(plugin, "register_diagnostics", None)
+            if register is None:
+                raise AttributeError(
+                    f"diagnostics entry point {entry_point.name!r} in group {group!r} "
+                    "must be a callable register(registry) hook or expose "
+                    "register_diagnostics(registry)"
+                )
+            register(registry)
+    return registry
+
+
+def _entry_points_for_group(group: str):
+    entry_points = importlib_metadata.entry_points()
+    if hasattr(entry_points, "select"):
+        return entry_points.select(group=group)
+    return entry_points.get(group, ())
 
 
 def _import_user_module(module_name: str):

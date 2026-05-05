@@ -47,6 +47,7 @@ def run_linear_tearing_smoke(
         config.physics.rhs_terms,
         config.physics.term_parameters,
         plugin_modules=config.physics.plugin_modules,
+        plugin_entry_point_groups=config.physics.plugin_entry_point_groups,
     )
     steps = max(1, round((config.time.t1 - config.time.t0) / config.time.dt))
 
@@ -65,8 +66,12 @@ def run_linear_tearing_smoke(
         "equilibrium": config.physics.equilibrium,
         "equilibrium_parameters": dict(equilibrium_parameters),
         "physics_plugin_modules": list(config.physics.plugin_modules),
+        "physics_plugin_entry_point_groups": list(config.physics.plugin_entry_point_groups),
         "physics_terms": list(config.physics.rhs_terms),
         "diagnostic_plugin_modules": list(config.diagnostics.plugin_modules),
+        "diagnostic_plugin_entry_point_groups": list(
+            config.diagnostics.plugin_entry_point_groups
+        ),
         "final_time": float(trajectory.times[-1]),
     }
     diagnostics.update(
@@ -78,6 +83,7 @@ def run_linear_tearing_smoke(
             mode=config.diagnostics.mode,
             fit_time_window=config.diagnostics.fit_time_window,
             plugin_modules=config.diagnostics.plugin_modules,
+            plugin_entry_point_groups=config.diagnostics.plugin_entry_point_groups,
         )
     )
     return trajectory, diagnostics

@@ -1,6 +1,7 @@
 """Standardized diagnostics shared by MHX workflows."""
 
 from mhx.diagnostics.reduced_mhd import (
+    DIAGNOSTICS_ENTRY_POINT_GROUP,
     DiagnosticContext,
     DiagnosticSpec,
     DiagnosticsRegistry,
@@ -8,6 +9,7 @@ from mhx.diagnostics.reduced_mhd import (
     default_diagnostics_registry,
     fit_exponential_growth,
     kinetic_energy,
+    load_diagnostics_entry_points,
     load_diagnostics_plugin_modules,
     magnetic_divergence_linf,
     magnetic_energy,
@@ -20,12 +22,14 @@ from mhx.diagnostics.reduced_mhd import (
 
 __all__ = [
     "DiagnosticContext",
+    "DIAGNOSTICS_ENTRY_POINT_GROUP",
     "DiagnosticSpec",
     "DiagnosticsRegistry",
     "compute_reduced_mhd_diagnostics",
     "default_diagnostics_registry",
     "fit_exponential_growth",
     "kinetic_energy",
+    "load_diagnostics_entry_points",
     "load_diagnostics_plugin_modules",
     "magnetic_divergence_linf",
     "magnetic_energy",

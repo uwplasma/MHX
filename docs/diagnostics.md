@@ -16,6 +16,7 @@ Inspect registered diagnostics from the CLI:
 ```bash
 mhx diagnostics list
 mhx diagnostics list-with-plugins --plugin-module examples.local_extension_plugin
+mhx diagnostics list-with-plugins --entry-point-group mhx.diagnostics
 ```
 
 ## Built-in diagnostics
@@ -138,10 +139,23 @@ quantities = ["energy", "mode_growth", "my_metric"]
 plugin_modules = ["my_project.mhx_diagnostics"]
 ```
 
+Installed packages can alternatively expose diagnostics through the
+`mhx.diagnostics` entry-point group:
+
+```toml
+[diagnostics]
+quantities = ["energy", "mode_growth", "my_metric"]
+plugin_entry_point_groups = ["mhx.diagnostics"]
+```
+
 The demo `examples/linear_tearing_plugin_demo.toml` loads
 `examples.local_extension_plugin`, which registers `final_flux_l2`. The output
 schema records `diagnostic_plugin_modules` and `diagnostic_quantities` to keep
 extension-derived figures auditable.
+
+`mhx report <run-dir>` now includes an **Additional scalar diagnostics** section
+for scalar keys that come from plugin diagnostics, for example
+`final_flux_l2` in the local plugin demo.
 
 ## Source links
 

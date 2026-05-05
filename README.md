@@ -79,6 +79,7 @@ mhx benchmark run --config examples/linear_tearing.toml --outdir outputs/benchma
 mhx benchmark validate outputs/benchmarks/linear_tearing_fast
 mhx benchmark decay --outdir outputs/benchmarks/resistive_decay
 mhx benchmark scaling --outdir outputs/benchmarks/reconnection_scaling
+mhx benchmark fkr-window --outdir outputs/benchmarks/fkr_window
 mhx benchmark timing --outdir outputs/benchmarks/timing --repeats 3 --warmups 1
 ```
 
@@ -103,7 +104,17 @@ Try a local plugin module that registers both a physics term and a diagnostic:
 ```bash
 mhx run examples/linear_tearing_plugin_demo.toml --outdir outputs/plugin_demo
 mhx figures outputs/plugin_demo --gif
+mhx report outputs/plugin_demo
 mhx diagnostics list-with-plugins --plugin-module examples.local_extension_plugin
+mhx physics lint example_flux_drive --plugin-module examples.local_extension_plugin
+mhx diagnostics lint final_flux_l2 --plugin-module examples.local_extension_plugin
+```
+
+Installed plugin packages can also use Python entry-point groups:
+
+```bash
+mhx physics list-with-plugins --entry-point-group mhx.physics
+mhx diagnostics list-with-plugins --entry-point-group mhx.diagnostics
 ```
 
 ## Python API

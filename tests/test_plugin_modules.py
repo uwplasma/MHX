@@ -18,9 +18,11 @@ from mhx.config import (
     load_config,
 )
 from mhx.diagnostics import default_diagnostics_registry, load_diagnostics_plugin_modules
+from mhx.diagnostics.reduced_mhd import load_diagnostics_entry_points
 from mhx.physics import (
     build_physics_terms,
     default_physics_registry,
+    load_physics_entry_points,
     load_physics_plugin_modules,
 )
 
@@ -119,6 +121,46 @@ def test_plugin_loaders_register_metadata_and_reject_missing_hooks(tmp_path, mon
         load_diagnostics_plugin_modules(default_diagnostics_registry(), ("bad_plugin",))
 
 
+def test_entry_point_plugin_loaders(monkeypatch) -> None:
+    module = types.ModuleType("entry_plugin")
+    monkeypatch.setitem(sys.modules, "entry_plugin", module)
+    exec(PLUGIN_SOURCE, module.__dict__)
+
+    class FakeEntryPoint:
+        def __init__(self, name, plugin):
+            self.name = name
+            self._plugin = plugin
+
+        def load(self):
+            return self._plugin
+
+    class FakeEntryPoints(tuple):
+        def select(self, *, group):
+            if group == "mhx.physics":
+                return (FakeEntryPoint("physics_hook", module.register_physics),)
+            if group == "mhx.diagnostics":
+                return (FakeEntryPoint("diagnostics_module", module),)
+            return ()
+
+    monkeypatch.setattr(
+        "mhx.physics.terms.importlib_metadata.entry_points",
+        lambda: FakeEntryPoints(),
+    )
+    monkeypatch.setattr(
+        "mhx.diagnostics.reduced_mhd.importlib_metadata.entry_points",
+        lambda: FakeEntryPoints(),
+    )
+
+    physics_registry = load_physics_entry_points(default_physics_registry(), ("mhx.physics",))
+    assert "uniform_flux_drive" in physics_registry.names()
+
+    diagnostics_registry = load_diagnostics_entry_points(
+        default_diagnostics_registry(),
+        ("mhx.diagnostics",),
+    )
+    assert "final_psi_mean" in diagnostics_registry.names()
+
+
 def test_plugin_loaders_fallback_to_cwd_file_for_shadowed_parent(
     tmp_path,
     monkeypatch,
@@ -189,6 +231,38 @@ def test_plugin_demo_example_runs_and_cli_lists_plugins(tmp_path) -> None:
     )
     assert diagnostics_result.exit_code == 0, diagnostics_result.stdout
     assert "final_flux_l2" in diagnostics_result.stdout
+
+    diagnostics_lint_result = runner.invoke(
+        app,
+        [
+            "diagnostics",
+            "lint",
+            "final_flux_l2",
+            "--plugin-module",
+            "examples.local_extension_plugin",
+        ],
+    )
+    assert diagnostics_lint_result.exit_code == 0, diagnostics_lint_result.stdout
+    assert "final_flux_l2: ok" in diagnostics_lint_result.stdout
+
+    report_result = runner.invoke(app, ["report", str(outdir)])
+    assert report_result.exit_code == 0, report_result.stdout
+    report = json.loads((outdir / "report.json").read_text())
+    assert report["additional_scalar_diagnostics"]["final_flux_l2"] > 0.0
+    assert "`final_flux_l2`" in (outdir / "report.md").read_text()
+
+    physics_lint_result = runner.invoke(
+        app,
+        [
+            "physics",
+            "lint",
+            "example_flux_drive",
+            "--plugin-module",
+            "examples.local_extension_plugin",
+        ],
+    )
+    assert physics_lint_result.exit_code == 0, physics_lint_result.stdout
+    assert "example_flux_drive: ok" in physics_lint_result.stdout
 
 
 def test_plugin_module_config_validation_errors() -> None:

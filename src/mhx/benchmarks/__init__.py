@@ -7,6 +7,12 @@ from mhx.benchmarks.decay import (
     run_resistive_decay_validation,
     write_resistive_decay_validation,
 )
+from mhx.benchmarks.fkr import (
+    FKR_WINDOW_SCHEMA,
+    FKRWindowResult,
+    run_fkr_window_validation,
+    write_fkr_window_validation,
+)
 from mhx.benchmarks.report import validate_run, write_run_report
 from mhx.benchmarks.scaling import (
     RECONNECTION_SCALING_SCHEMA,
@@ -34,6 +40,8 @@ from mhx.benchmarks.timing import (
 
 __all__ = [
     "FKRConstantPsiEstimate",
+    "FKRWindowResult",
+    "FKR_WINDOW_SCHEMA",
     "PlasmoidScalingEstimate",
     "RECONNECTION_SCALING_SCHEMA",
     "RESISTIVE_DECAY_SCHEMA",
@@ -49,11 +57,13 @@ __all__ = [
     "linear_tearing_initial_state",
     "loureiro_plasmoid_estimate",
     "resistive_decay_rate",
+    "run_fkr_window_validation",
     "run_reconnection_scaling_validation",
     "run_resistive_decay_validation",
     "run_linear_tearing_smoke",
     "run_timing_benchmark",
     "validate_run",
+    "write_fkr_window_validation",
     "write_reconnection_scaling_validation",
     "write_resistive_decay_validation",
     "write_run_report",

@@ -3881,3 +3881,69 @@ Every agent must append an entry here. Do not delete previous entries.
 - Add entry-point discovery for installed physics/diagnostics plugins.
 - Add a calibrated linear eigenmode or matrix-free growth-rate benchmark against FKR/Coppi regimes.
 - Make report templates dynamically include plugin diagnostic scalars.
+
+### 2026-05-05 — Agent: Codex, entry-point plugins and FKR-window gate
+
+**Summary**
+
+- Added installed-package plugin discovery through `mhx.physics` and
+  `mhx.diagnostics` entry-point groups.
+- Added TOML fields `plugin_entry_point_groups` to both `[physics]` and
+  `[diagnostics]`, with duplicate validation and run provenance in
+  `diagnostics.json`.
+- Added plugin-aware CLI linting for physics terms and diagnostics.
+- Updated reports to render plugin-provided scalar diagnostics in
+  `report.json` and `report.md`.
+- Added an analytic FKR constant-psi regime-window benchmark that writes JSON,
+  NPZ, a publication-style figure, and pass/fail gates for positive
+  $\Delta'a$, thin inner layer, and $\Delta'\delta$.
+
+**Files changed**
+
+- Updated plugin loaders, config schema, CLI, report generation, CI artifacts,
+  README, docs, and plugin tests.
+- Added `src/mhx/benchmarks/fkr.py`,
+  `tests/test_fkr_window_validation.py`, and
+  `docs/_static/validation/fkr_window/fkr_constant_psi_window.png`.
+
+**Tests run**
+
+- `python -m ruff check src tests examples` passed.
+- `python -m pytest tests/test_fkr_window_validation.py tests/test_plugin_modules.py tests/test_config.py tests/test_io_cli_run.py -q` passed: 22 tests.
+- `python examples/make_validation_media.py` passed and regenerated validation
+  figures.
+
+**Decisions made**
+
+- Entry-point loading is explicit via config or CLI flags rather than automatic
+  by default. This keeps run provenance reproducible and avoids accidentally
+  changing physics when unrelated packages are installed.
+- The FKR-window benchmark is intentionally analytic and regime-gating only. It
+  prevents future growth-rate comparisons from silently mixing the FKR
+  constant-$\psi$ window with the Coppi large-$\Delta'$ regime, but it is not an
+  eigenvalue solve.
+- Reports include arbitrary scalar plugin metrics but do not yet auto-plot
+  plugin diagnostics; plotting arbitrary diagnostics needs metadata beyond
+  scalar output keys.
+
+**Problems / blockers**
+
+- A calibrated linear tearing eigenvalue benchmark is still needed before
+  claiming numerical FKR/Coppi growth-rate validation.
+- Entry-point tests currently mock discovery; a packaged third-party example
+  would further harden the plugin ecosystem.
+- Neural-ODE workflows remain deferred behind the reduced-MHD validation and
+  public API stabilization work.
+
+**Progress**
+
+- Estimated plan completion: 52%.
+
+**Next steps**
+
+- Add a package-template example for third-party MHX plugins with term,
+  diagnostic, pyproject entry points, and tests.
+- Add a matrix-free linearized RHS/eigenvalue scaffold as the next step toward
+  calibrated FKR/Coppi growth-rate validation.
+- Expand dynamic reports to include plugin diagnostic metadata and optional
+  plotting hooks.

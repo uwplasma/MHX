@@ -14,6 +14,7 @@ mhx physics equilibria
 mhx physics list
 mhx physics lint hyper_resistivity
 mhx physics list-with-plugins --plugin-module examples.local_extension_plugin
+mhx physics list-with-plugins --entry-point-group mhx.physics
 ```
 
 ## Equilibrium contract
@@ -96,6 +97,47 @@ mhx report outputs/plugin_demo
 
 The saved `diagnostics.json` records `physics_plugin_modules` and
 `physics_terms`, so reviewer artifacts show exactly which extensions were active.
+
+## Installed package entry points
+
+Third-party packages can expose plugins without requiring users to place modules
+on `PYTHONPATH`. MHX recognizes Python package entry-point groups:
+
+- `mhx.physics`: entry points resolving to `register(registry)` hooks or modules
+  exposing `register_physics(registry)`;
+- `mhx.diagnostics`: entry points resolving to `register(registry)` hooks or
+  modules exposing `register_diagnostics(registry)`.
+
+A package can declare entry points in its `pyproject.toml`:
+
+```toml
+[project.entry-points."mhx.physics"]
+my_hall_term = "my_mhx_plugin.physics:register_physics"
+
+[project.entry-points."mhx.diagnostics"]
+my_metric = "my_mhx_plugin.diagnostics:register_diagnostics"
+```
+
+Use them from TOML by opting into the groups:
+
+```toml
+[physics]
+plugin_entry_point_groups = ["mhx.physics"]
+rhs_terms = ["my_hall_term"]
+
+[diagnostics]
+plugin_entry_point_groups = ["mhx.diagnostics"]
+quantities = ["energy", "mode_growth", "my_metric"]
+```
+
+The CLI can inspect and lint installed plugins:
+
+```bash
+mhx physics list-with-plugins --entry-point-group mhx.physics
+mhx physics lint my_hall_term --entry-point-group mhx.physics
+mhx diagnostics list-with-plugins --entry-point-group mhx.diagnostics
+mhx diagnostics lint my_metric --entry-point-group mhx.diagnostics
+```
 
 ## Built-in terms
 
@@ -192,8 +234,9 @@ For in-tree terms:
 5. Run `mhx physics lint <name>`, `pytest`, and `ruff`.
 
 Config-loaded local modules are the current stable third-party extension path.
-Package entry-point discovery is intentionally deferred until the v1 API is
-fully frozen.
+Package entry-point discovery is now available for installed plugins. Local
+`plugin_modules` remain the simplest development path because they work from a
+single source tree without packaging.
 
 ## Adding an equilibrium
 

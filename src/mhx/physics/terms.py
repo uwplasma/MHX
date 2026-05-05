@@ -7,6 +7,7 @@ import importlib.util
 import sys
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
+from importlib import metadata as importlib_metadata
 from pathlib import Path
 from typing import Any, ClassVar, Protocol
 
@@ -16,6 +17,7 @@ from mhx.numerics.spectral import fft_derivative, gradient, laplacian
 from mhx.state import ReducedMHDParams, ReducedMHDState
 
 PHYSICS_API_VERSION = "mhx.physics.v1"
+PHYSICS_ENTRY_POINT_GROUP = "mhx.physics"
 
 
 class PhysicsTerm(Protocol):
@@ -228,6 +230,37 @@ def load_physics_plugin_modules(
     return registry
 
 
+def load_physics_entry_points(
+    registry: PhysicsRegistry,
+    groups: tuple[str, ...] = (PHYSICS_ENTRY_POINT_GROUP,),
+) -> PhysicsRegistry:
+    """Load installed physics plugins from Python package entry-point groups.
+
+    Each entry point must resolve either to a callable ``register(registry)``
+    hook or to an object exposing ``register_physics(registry)``. This keeps the
+    public plugin contract independent of how third-party packages organize
+    their modules.
+    """
+    for group in groups:
+        for entry_point in _entry_points_for_group(group):
+            plugin = entry_point.load()
+            register = plugin if callable(plugin) else getattr(plugin, "register_physics", None)
+            if register is None:
+                raise AttributeError(
+                    f"physics entry point {entry_point.name!r} in group {group!r} must "
+                    "be a callable register(registry) hook or expose register_physics(registry)"
+                )
+            register(registry)
+    return registry
+
+
+def _entry_points_for_group(group: str):
+    entry_points = importlib_metadata.entry_points()
+    if hasattr(entry_points, "select"):
+        return entry_points.select(group=group)
+    return entry_points.get(group, ())
+
+
 def _import_user_module(module_name: str):
     try:
         return importlib.import_module(module_name)
@@ -256,9 +289,12 @@ def build_physics_terms(
     *,
     registry: PhysicsRegistry | None = None,
     plugin_modules: tuple[str, ...] = (),
+    plugin_entry_point_groups: tuple[str, ...] = (),
 ) -> tuple[PhysicsTerm, ...]:
     """Build configured terms from names and per-term parameter mappings."""
     active_registry = registry or default_physics_registry()
+    if plugin_entry_point_groups:
+        load_physics_entry_points(active_registry, plugin_entry_point_groups)
     if plugin_modules:
         load_physics_plugin_modules(active_registry, plugin_modules)
     return tuple(active_registry.create(name, term_parameters.get(name, {})) for name in names)

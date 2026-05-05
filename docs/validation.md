@@ -148,7 +148,37 @@ These gates do not prove the PDE solver has recovered FKR or plasmoid growth.
 They make the expected exponents explicit, tested, plotted, and reviewable so
 that future eigenmode and nonlinear-current-sheet benchmarks have fixed targets.
 
+## FKR constant-psi regime window
+
+The FKR estimate is only appropriate in a restricted asymptotic window. MHX now
+ships a separate analytic gate that samples wavenumbers at fixed local
+Lundquist number and checks:
+
+$$
+\Delta'a > 0,\qquad \delta/a \le \delta_{\max},\qquad
+\Delta'\delta \le \epsilon_{\max}.
+$$
+
+The last condition is the constant-$\psi$ gate; large values move toward the
+Coppi large-$\Delta'$ regime and should not be judged against the FKR
+constant-$\psi$ scaling.
+
+```bash
+mhx benchmark fkr-window --outdir outputs/benchmarks/fkr_window
+```
+
+Expected files:
+
+- `outputs/benchmarks/fkr_window/diagnostics.json`
+- `outputs/benchmarks/fkr_window/validation.json`
+- `outputs/benchmarks/fkr_window/fkr_window.npz`
+- `outputs/benchmarks/fkr_window/figures/fkr_constant_psi_window.png`
+
+![FKR constant-psi regime window](_static/validation/fkr_window/fkr_constant_psi_window.png)
+
 Additional source links:
 
 - [Scaling validation implementation](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/scaling.py)
 - [Scaling validation tests](https://github.com/uwplasma/MHX/blob/main/tests/test_reconnection_scaling_validation.py)
+- [FKR window implementation](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/fkr.py)
+- [FKR window tests](https://github.com/uwplasma/MHX/blob/main/tests/test_fkr_window_validation.py)

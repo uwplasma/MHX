@@ -60,6 +60,7 @@ mhx benchmark run --config examples/linear_tearing.toml --outdir outputs/benchma
 mhx benchmark validate outputs/benchmarks/linear_tearing_fast
 mhx benchmark decay --outdir outputs/benchmarks/resistive_decay
 mhx benchmark scaling --outdir outputs/benchmarks/reconnection_scaling
+mhx benchmark fkr-window --outdir outputs/benchmarks/fkr_window
 mhx benchmark timing --outdir outputs/benchmarks/timing --repeats 3 --warmups 1
 ```
 
@@ -75,9 +76,14 @@ Try a local extension module without editing MHX source:
 ```bash
 mhx run examples/linear_tearing_plugin_demo.toml --outdir outputs/plugin_demo
 mhx figures outputs/plugin_demo --gif
+mhx report outputs/plugin_demo
 mhx physics list-with-plugins --plugin-module examples.local_extension_plugin
 mhx diagnostics list-with-plugins --plugin-module examples.local_extension_plugin
+mhx physics lint example_flux_drive --plugin-module examples.local_extension_plugin
+mhx diagnostics lint final_flux_l2 --plugin-module examples.local_extension_plugin
 ```
 
 This demo registers a toy flux-drive physics term and a `final_flux_l2`
-diagnostic from `examples/local_extension_plugin.py`.
+diagnostic from `examples/local_extension_plugin.py`. Installed plugin packages
+use the same registries through `--entry-point-group mhx.physics` and
+`--entry-point-group mhx.diagnostics`.

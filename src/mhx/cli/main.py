@@ -12,13 +12,19 @@ from mhx._version import __version__
 from mhx.benchmarks import (
     run_linear_tearing_smoke,
     validate_run,
+    write_fkr_window_validation,
     write_reconnection_scaling_validation,
     write_resistive_decay_validation,
     write_run_report,
     write_timing_benchmark,
 )
 from mhx.config import RunConfig, load_config
-from mhx.diagnostics import default_diagnostics_registry, load_diagnostics_plugin_modules
+from mhx.diagnostics import (
+    DIAGNOSTICS_ENTRY_POINT_GROUP,
+    default_diagnostics_registry,
+    load_diagnostics_entry_points,
+    load_diagnostics_plugin_modules,
+)
 from mhx.grids import CartesianGrid
 from mhx.io import (
     read_reduced_mhd_trajectory_npz,
@@ -28,8 +34,10 @@ from mhx.io import (
 )
 from mhx.physics import (
     PHYSICS_API_VERSION,
+    PHYSICS_ENTRY_POINT_GROUP,
     default_equilibrium_registry,
     default_physics_registry,
+    load_physics_entry_points,
     load_physics_plugin_modules,
 )
 from mhx.plotting import (
@@ -272,6 +280,24 @@ def benchmark_scaling(
         raise typer.Exit(code=1)
 
 
+@benchmark_app.command("fkr-window")
+def benchmark_fkr_window(
+    outdir: Annotated[
+        Path,
+        typer.Option("--outdir", help="Output directory for FKR regime-window artifacts."),
+    ] = Path("outputs/benchmarks/fkr_window"),
+    lundquist: Annotated[
+        float,
+        typer.Option("--lundquist", help="Local Lundquist number S_a."),
+    ] = 1.0e6,
+) -> None:
+    """Run the analytic FKR constant-psi regime-window gate."""
+    manifest_path, validation = write_fkr_window_validation(outdir, lundquist=lundquist)
+    typer.echo(f"wrote {manifest_path}")
+    if not validation["passed"]:
+        raise typer.Exit(code=1)
+
+
 @benchmark_app.command("timing")
 def benchmark_timing(
     outdir: Annotated[
@@ -300,9 +326,18 @@ def physics_list_with_plugins(
         list[str] | None,
         typer.Option("--plugin-module", help="Import module exposing register_physics(registry)."),
     ] = None,
+    entry_point_group: Annotated[
+        list[str] | None,
+        typer.Option(
+            "--entry-point-group",
+            help="Load installed plugin entry points from a group; "
+            f"use {PHYSICS_ENTRY_POINT_GROUP!r} for standard physics plugins.",
+        ),
+    ] = None,
 ) -> None:
     """List physics terms after loading optional user plugin modules."""
     registry = default_physics_registry()
+    load_physics_entry_points(registry, tuple(entry_point_group or ()))
     load_physics_plugin_modules(registry, tuple(plugin_module or ()))
     typer.echo(f"Physics API: {PHYSICS_API_VERSION}")
     for item in registry.metadata():
@@ -319,9 +354,19 @@ def physics_equilibria() -> None:
 @physics_app.command("lint")
 def physics_lint(
     name: Annotated[str, typer.Argument(help="Registered physics term name.")],
+    plugin_module: Annotated[
+        list[str] | None,
+        typer.Option("--plugin-module", help="Import module exposing register_physics(registry)."),
+    ] = None,
+    entry_point_group: Annotated[
+        list[str] | None,
+        typer.Option("--entry-point-group", help="Installed plugin entry-point group."),
+    ] = None,
 ) -> None:
     """Validate a registered physics term's API metadata."""
     registry = default_physics_registry()
+    load_physics_entry_points(registry, tuple(entry_point_group or ()))
+    load_physics_plugin_modules(registry, tuple(plugin_module or ()))
     term = registry.create(name)
     if term.api_version != PHYSICS_API_VERSION:
         raise typer.BadParameter(
@@ -347,13 +392,47 @@ def diagnostics_list_with_plugins(
             help="Import module exposing register_diagnostics(registry).",
         ),
     ] = None,
+    entry_point_group: Annotated[
+        list[str] | None,
+        typer.Option(
+            "--entry-point-group",
+            help="Load installed plugin entry points from a group; "
+            f"use {DIAGNOSTICS_ENTRY_POINT_GROUP!r} for standard diagnostic plugins.",
+        ),
+    ] = None,
 ) -> None:
     """List diagnostics after loading optional user plugin modules."""
     registry = default_diagnostics_registry()
+    load_diagnostics_entry_points(registry, tuple(entry_point_group or ()))
     load_diagnostics_plugin_modules(registry, tuple(plugin_module or ()))
     for item in registry.metadata():
         keys = ", ".join(item["output_keys"])
         typer.echo(f"- {item['name']}: {item['description']} [{keys}]")
+
+
+@diagnostics_app.command("lint")
+def diagnostics_lint(
+    name: Annotated[str, typer.Argument(help="Registered diagnostic name.")],
+    plugin_module: Annotated[
+        list[str] | None,
+        typer.Option(
+            "--plugin-module",
+            help="Import module exposing register_diagnostics(registry).",
+        ),
+    ] = None,
+    entry_point_group: Annotated[
+        list[str] | None,
+        typer.Option("--entry-point-group", help="Installed diagnostic entry-point group."),
+    ] = None,
+) -> None:
+    """Validate a registered diagnostic's metadata contract."""
+    registry = default_diagnostics_registry()
+    load_diagnostics_entry_points(registry, tuple(entry_point_group or ()))
+    load_diagnostics_plugin_modules(registry, tuple(plugin_module or ()))
+    spec = registry.get(name)
+    if not spec.output_keys:
+        raise typer.BadParameter(f"{name!r} must declare at least one output key")
+    typer.echo(f"{name}: ok ({len(spec.output_keys)} output keys)")
 
 
 def main() -> None:  # pragma: no cover - exercised by console entry points.
