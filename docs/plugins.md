@@ -139,6 +139,33 @@ mhx diagnostics list-with-plugins --entry-point-group mhx.diagnostics
 mhx diagnostics lint my_metric --entry-point-group mhx.diagnostics
 ```
 
+## Template package layout
+
+`examples/plugin_template/` is a minimal third-party package skeleton:
+
+```text
+examples/plugin_template/
+  pyproject.toml
+  src/mhx_example_plugin/
+    physics.py
+    diagnostics.py
+  tests/test_plugin.py
+```
+
+The template declares both entry-point groups and can be installed in editable
+mode:
+
+```bash
+cd examples/plugin_template
+python -m pip install -e .
+mhx physics lint template_flux_sink --entry-point-group mhx.physics
+mhx diagnostics lint template_final_psi_mean --entry-point-group mhx.diagnostics
+```
+
+Use it as the starting point for an external repository. Keep extension tests
+next to the plugin package; they should validate shapes, finite RHS additions,
+metadata, sign conventions, and at least one FAST MHX run when practical.
+
 ## Built-in terms
 
 `hyper_resistivity` adds

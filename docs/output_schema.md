@@ -89,7 +89,9 @@ Expected files:
 `report.json` also includes `additional_scalar_diagnostics`, a dictionary of
 plugin-provided scalar metrics not part of the core reduced-MHD diagnostic
 schema. `report.md` renders the same values in an `Additional scalar
-diagnostics` table.
+diagnostics` table. Reports also include `diagnostic_metadata` when MHX can
+reconstruct the selected diagnostic registry from `config_effective.json`; any
+import or registry reconstruction failures are recorded in `warnings`.
 
 ## Artifact manifests
 

@@ -1,0 +1,19 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "mhx-example-plugin"
+version = "0.1.0"
+description = "Minimal third-party MHX physics and diagnostics plugin template"
+requires-python = ">=3.10"
+dependencies = ["mhx"]
+
+[project.entry-points."mhx.physics"]
+template_physics = "mhx_example_plugin.physics:register_physics"
+
+[project.entry-points."mhx.diagnostics"]
+template_diagnostics = "mhx_example_plugin.diagnostics:register_diagnostics"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/mhx_example_plugin"]

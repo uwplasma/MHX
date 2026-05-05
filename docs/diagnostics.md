@@ -157,6 +157,12 @@ extension-derived figures auditable.
 for scalar keys that come from plugin diagnostics, for example
 `final_flux_l2` in the local plugin demo.
 
+Reports also reconstruct diagnostic registry metadata from
+`config_effective.json`. When plugin modules or entry points are still importable
+at report time, `report.json` contains `diagnostic_metadata`, and `report.md`
+renders a table of selected diagnostic descriptions and output keys. If a plugin
+cannot be imported, the report still writes but records a warning.
+
 ## Source links
 
 - [Diagnostics implementation](https://github.com/uwplasma/MHX/blob/main/src/mhx/diagnostics/reduced_mhd.py)

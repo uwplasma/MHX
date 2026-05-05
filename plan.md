@@ -3947,3 +3947,61 @@ Every agent must append an entry here. Do not delete previous entries.
   calibrated FKR/Coppi growth-rate validation.
 - Expand dynamic reports to include plugin diagnostic metadata and optional
   plotting hooks.
+
+### 2026-05-05 — Agent: Codex, plugin template and metadata reports
+
+**Summary**
+
+- Added `examples/plugin_template/`, an installable third-party plugin skeleton
+  with `pyproject.toml` entry points, a flux-sink physics term, a scalar
+  diagnostic, and local plugin tests.
+- Extended run reports to reconstruct selected diagnostic registry metadata from
+  `config_effective.json`, including plugin diagnostics when their modules or
+  entry points are importable.
+- Added `warnings` to `report.json` for metadata reconstruction failures while
+  keeping reports writable.
+- Expanded docs and README with the external-plugin repository layout and
+  diagnostic metadata report behavior.
+
+**Files changed**
+
+- Added `examples/plugin_template/**` and `tests/test_plugin_template.py`.
+- Updated `src/mhx/benchmarks/report.py`, plugin docs, diagnostics docs, output
+  schema docs, quickstart, and README.
+
+**Tests run**
+
+- `python -m ruff check src tests examples` passed.
+- `python -m pytest tests/test_plugin_template.py tests/test_plugin_modules.py tests/test_io_cli_run.py -q` passed: 17 tests.
+- `python -m pytest --cov=mhx --cov-report=term-missing --cov-fail-under=95`
+  passed: 77 tests, 96.51% coverage.
+- `sphinx-build -b html docs docs/_build/html` passed.
+
+**Decisions made**
+
+- The external plugin template is kept under `examples/` rather than packaged
+  into MHX. This avoids installing example entry points by default while giving
+  third-party authors a copyable repo layout.
+- Report metadata reconstruction is best-effort. Missing plugin imports are
+  warnings, not hard failures, because old run directories should remain
+  readable even after a user uninstalls an extension package.
+
+**Problems / blockers**
+
+- Reports do not yet expose plugin plotting hooks; they only expose diagnostic
+  metadata and scalar values.
+- The next numerics milestone is still a linearized RHS/eigenvalue scaffold for
+  calibrated tearing-growth validation.
+
+**Progress**
+
+- Estimated plan completion: 54%.
+
+**Next steps**
+
+- Add a matrix-free linearized reduced-MHD RHS operator and a finite-difference
+  consistency validation test.
+- Add an eigenvalue-oriented benchmark scaffold that can later target FKR and
+  Coppi growth rates.
+- Add optional plotting hooks to diagnostic metadata so plugin diagnostics can
+  generate figures without custom report code.

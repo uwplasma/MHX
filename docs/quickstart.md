@@ -86,4 +86,5 @@ mhx diagnostics lint final_flux_l2 --plugin-module examples.local_extension_plug
 This demo registers a toy flux-drive physics term and a `final_flux_l2`
 diagnostic from `examples/local_extension_plugin.py`. Installed plugin packages
 use the same registries through `--entry-point-group mhx.physics` and
-`--entry-point-group mhx.diagnostics`.
+`--entry-point-group mhx.diagnostics`. The installable package skeleton in
+`examples/plugin_template/` shows the recommended external-repository layout.

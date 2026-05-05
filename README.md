@@ -117,6 +117,9 @@ mhx physics list-with-plugins --entry-point-group mhx.physics
 mhx diagnostics list-with-plugins --entry-point-group mhx.diagnostics
 ```
 
+Use `examples/plugin_template/` as the starting layout for an external plugin
+repository with entry points, source modules, and tests.
+
 ## Python API
 
 ```python

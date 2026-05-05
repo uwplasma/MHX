@@ -6,6 +6,13 @@ import json
 from pathlib import Path
 from typing import Any
 
+from mhx.config import DiagnosticsConfig
+from mhx.diagnostics import (
+    default_diagnostics_registry,
+    load_diagnostics_entry_points,
+    load_diagnostics_plugin_modules,
+)
+
 
 def validate_run(
     run_dir: str | Path,
@@ -46,11 +53,14 @@ def write_run_report(run_dir: str | Path) -> tuple[Path, Path]:
     diagnostics = json.loads((directory / "diagnostics.json").read_text(encoding="utf-8"))
     manifest = json.loads((directory / "manifest.json").read_text(encoding="utf-8"))
     additional_scalar_diagnostics = _additional_scalar_diagnostics(diagnostics)
+    diagnostic_metadata, warnings = _diagnostic_metadata(directory, diagnostics)
     report = {
         "schema": "mhx.benchmark_report.v1",
         "run_dir": str(directory),
         "diagnostics": diagnostics,
         "additional_scalar_diagnostics": additional_scalar_diagnostics,
+        "diagnostic_metadata": diagnostic_metadata,
+        "warnings": warnings,
         "manifest_schema": manifest["schema"],
         "manifest_hashes": manifest["hashes"],
     }
@@ -85,6 +95,11 @@ def _report_markdown(report: dict[str, Any]) -> str:
             "| --- | --- |\n"
             f"{additional_rows}\n"
         )
+    metadata_section = _diagnostic_metadata_markdown(report["diagnostic_metadata"])
+    warning_section = ""
+    if report["warnings"]:
+        warning_rows = "\n".join(f"- {warning}" for warning in report["warnings"])
+        warning_section = f"\n## Warnings\n\n{warning_rows}\n"
     return (
         "# MHX benchmark report\n\n"
         f"Run directory: `{report['run_dir']}`\n\n"
@@ -92,6 +107,8 @@ def _report_markdown(report: dict[str, Any]) -> str:
         "| --- | --- |\n"
         f"{table}\n\n"
         f"{additional_section}\n"
+        f"{metadata_section}\n"
+        f"{warning_section}\n"
         "This FAST report verifies plumbing and regression behavior. It is not yet a "
         "validated FKR tearing benchmark.\n"
     )
@@ -128,6 +145,59 @@ def _additional_scalar_diagnostics(
         for key, value in diagnostics.items()
         if key not in core_keys and isinstance(value, int | float | str | bool)
     }
+
+
+def _diagnostic_metadata(
+    directory: Path,
+    diagnostics: dict[str, Any],
+) -> tuple[list[dict[str, Any]], list[str]]:
+    config_path = directory / "config_effective.json"
+    quantities = tuple(str(item) for item in diagnostics.get("diagnostic_quantities", ()))
+    if not quantities:
+        return [], ["diagnostic_quantities missing; cannot reconstruct registry metadata"]
+    if not config_path.exists():
+        return [], ["config_effective.json missing; cannot reconstruct registry metadata"]
+    try:
+        config = json.loads(config_path.read_text(encoding="utf-8"))
+        diagnostic_config = DiagnosticsConfig.from_mapping(config.get("diagnostics", {}))
+        registry = default_diagnostics_registry()
+        load_diagnostics_entry_points(
+            registry,
+            diagnostic_config.plugin_entry_point_groups,
+        )
+        load_diagnostics_plugin_modules(registry, diagnostic_config.plugin_modules)
+        selected = []
+        for name in quantities:
+            spec = registry.get(name)
+            selected.append(
+                {
+                    "name": spec.name,
+                    "description": spec.description,
+                    "output_keys": list(spec.output_keys),
+                }
+            )
+        return selected, []
+    except Exception as exc:
+        return [], [f"could not reconstruct diagnostic registry metadata: {exc}"]
+
+
+def _diagnostic_metadata_markdown(metadata: list[dict[str, Any]]) -> str:
+    if not metadata:
+        return ""
+    rows = "\n".join(
+        "| `{name}` | {description} | `{keys}` |".format(
+            name=item["name"],
+            description=item["description"],
+            keys=", ".join(item["output_keys"]),
+        )
+        for item in metadata
+    )
+    return (
+        "\n## Diagnostic registry metadata\n\n"
+        "| Diagnostic | Description | Output keys |\n"
+        "| --- | --- | --- |\n"
+        f"{rows}\n"
+    )
 
 
 def _is_finite_number(value: Any) -> bool:
