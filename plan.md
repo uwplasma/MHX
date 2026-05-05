@@ -4005,3 +4005,59 @@ Every agent must append an entry here. Do not delete previous entries.
   Coppi growth rates.
 - Add optional plotting hooks to diagnostic metadata so plugin diagnostics can
   generate figures without custom report code.
+
+### 2026-05-05 — Agent: Codex, matrix-free linearized RHS gate
+
+**Summary**
+
+- Added `linearized_reduced_mhd_rhs`, a JAX forward-mode JVP for the reduced-MHD
+  RHS.
+- Added a centered finite-difference linearized-RHS helper for independent
+  consistency checks.
+- Added `mhx benchmark linearized-rhs`, which writes diagnostics, validation
+  gates, saved JVP/finite-difference arrays, a figure, and a manifest.
+- Wired the new benchmark into CI artifacts and documentation figures.
+
+**Files changed**
+
+- Updated `src/mhx/equations/reduced_mhd.py`, benchmark exports, CLI, plotting,
+  CI, docs, README, validation-media generation, and tests.
+- Added `src/mhx/benchmarks/linearized.py`,
+  `tests/test_linearized_rhs_validation.py`, and
+  `docs/_static/validation/linearized_rhs/linearized_rhs_errors.png`.
+
+**Tests run**
+
+- `python -m ruff check src tests examples` passed.
+- `python -m pytest tests/test_linearized_rhs_validation.py -q` passed.
+- `python -m pytest tests/test_linearized_rhs_validation.py tests/test_reduced_mhd.py -q` passed: 13 tests.
+- `sphinx-build -b html docs docs/_build/html` passed.
+- CI-equivalent artifact sequence passed locally and wrote `outputs/ci/artifact_manifest.json` covering 59 files.
+
+**Decisions made**
+
+- The linearized-RHS gate uses a conservative relative-error tolerance of
+  `1e-3` so it passes in default local JAX precision while remaining tight
+  enough to catch broken Jacobian plumbing.
+- This is not yet an FKR/Coppi eigenvalue calculation; it is the operator-level
+  prerequisite for one.
+
+**Problems / blockers**
+
+- A linear operator wrapper and eigensolver workflow are still needed for
+  calibrated tearing growth-rate validation.
+- The current state variables are reduced-MHD only; validated Hall/two-fluid
+  eigenmodes require extending the evolved state.
+
+**Progress**
+
+- Estimated plan completion: 57%.
+
+**Next steps**
+
+- Add a `LinearOperator`/power-iteration or Arnoldi-compatible interface around
+  the JVP for future eigenmode benchmarks.
+- Add a minimal eigenvalue smoke benchmark with a simple diffusion operator
+  before applying the machinery to tearing equilibria.
+- Add plugin plotting hooks so extension diagnostics can produce first-class
+  figures in reports.

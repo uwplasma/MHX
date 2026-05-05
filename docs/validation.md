@@ -176,9 +176,43 @@ Expected files:
 
 ![FKR constant-psi regime window](_static/validation/fkr_window/fkr_constant_psi_window.png)
 
+## Matrix-free linearized RHS
+
+Tearing eigenmode calculations require a linearized operator
+$\mathcal{L}=\partial F/\partial q$ for the reduced-MHD state
+$q=(\psi,\omega)$. MHX exposes this as a matrix-free Jacobian-vector product:
+
+$$
+\mathcal{L}(q)\,\delta q
+=
+\left.\frac{d}{d\epsilon}F(q+\epsilon\delta q)\right|_{\epsilon=0},
+$$
+
+computed by JAX forward-mode automatic differentiation. The validation gate
+compares that JVP against the centered finite-difference approximation
+
+$$
+\frac{F(q+\epsilon\delta q)-F(q-\epsilon\delta q)}{2\epsilon}.
+$$
+
+```bash
+mhx benchmark linearized-rhs --outdir outputs/benchmarks/linearized_rhs
+```
+
+Expected files:
+
+- `outputs/benchmarks/linearized_rhs/diagnostics.json`
+- `outputs/benchmarks/linearized_rhs/validation.json`
+- `outputs/benchmarks/linearized_rhs/linearized_rhs.npz`
+- `outputs/benchmarks/linearized_rhs/figures/linearized_rhs_errors.png`
+
+![Linearized RHS consistency](_static/validation/linearized_rhs/linearized_rhs_errors.png)
+
 Additional source links:
 
 - [Scaling validation implementation](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/scaling.py)
 - [Scaling validation tests](https://github.com/uwplasma/MHX/blob/main/tests/test_reconnection_scaling_validation.py)
 - [FKR window implementation](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/fkr.py)
 - [FKR window tests](https://github.com/uwplasma/MHX/blob/main/tests/test_fkr_window_validation.py)
+- [Linearized RHS implementation](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/linearized.py)
+- [Linearized RHS tests](https://github.com/uwplasma/MHX/blob/main/tests/test_linearized_rhs_validation.py)

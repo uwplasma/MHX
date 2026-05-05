@@ -13,6 +13,7 @@ from mhx.benchmarks import (
     run_linear_tearing_smoke,
     validate_run,
     write_fkr_window_validation,
+    write_linearized_rhs_validation,
     write_reconnection_scaling_validation,
     write_resistive_decay_validation,
     write_run_report,
@@ -293,6 +294,24 @@ def benchmark_fkr_window(
 ) -> None:
     """Run the analytic FKR constant-psi regime-window gate."""
     manifest_path, validation = write_fkr_window_validation(outdir, lundquist=lundquist)
+    typer.echo(f"wrote {manifest_path}")
+    if not validation["passed"]:
+        raise typer.Exit(code=1)
+
+
+@benchmark_app.command("linearized-rhs")
+def benchmark_linearized_rhs(
+    outdir: Annotated[
+        Path,
+        typer.Option("--outdir", help="Output directory for linearized-RHS artifacts."),
+    ] = Path("outputs/benchmarks/linearized_rhs"),
+    epsilon: Annotated[
+        float,
+        typer.Option("--epsilon", help="Centered finite-difference perturbation size."),
+    ] = 1.0e-3,
+) -> None:
+    """Run the matrix-free reduced-MHD linearized-RHS consistency gate."""
+    manifest_path, validation = write_linearized_rhs_validation(outdir, epsilon=epsilon)
     typer.echo(f"wrote {manifest_path}")
     if not validation["passed"]:
         raise typer.Exit(code=1)

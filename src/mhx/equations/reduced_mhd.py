@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import jax
 import jax.numpy as jnp
 from jaxtyping import Array
 
@@ -55,6 +56,57 @@ def reduced_mhd_rhs(
     )
     base_rhs = ReducedMHDState(psi=dpsi, omega=domega)
     return apply_physics_terms(base_rhs, terms, state, params, lengths=lengths)
+
+
+def linearized_reduced_mhd_rhs(
+    state: ReducedMHDState,
+    perturbation: ReducedMHDState,
+    params: ReducedMHDParams,
+    *,
+    lengths: tuple[float, float],
+    terms: tuple[PhysicsTerm, ...] = (),
+) -> ReducedMHDState:
+    """Return the matrix-free Jacobian-vector product of the reduced-MHD RHS.
+
+    This computes ``dF(state)[perturbation]`` with JAX forward-mode automatic
+    differentiation, where ``F`` is :func:`reduced_mhd_rhs`. It is the first
+    building block for eigenvalue and adjoint tearing-mode benchmarks.
+    """
+
+    def rhs_for_jvp(active_state: ReducedMHDState) -> ReducedMHDState:
+        return reduced_mhd_rhs(active_state, params, lengths=lengths, terms=terms)
+
+    _, tangent = jax.jvp(rhs_for_jvp, (state,), (perturbation,))
+    return tangent
+
+
+def finite_difference_linearized_reduced_mhd_rhs(
+    state: ReducedMHDState,
+    perturbation: ReducedMHDState,
+    params: ReducedMHDParams,
+    *,
+    lengths: tuple[float, float],
+    epsilon: float = 1.0e-4,
+    terms: tuple[PhysicsTerm, ...] = (),
+) -> ReducedMHDState:
+    """Return a centered finite-difference approximation to the linearized RHS."""
+    if epsilon <= 0.0:
+        raise ValueError("epsilon must be positive")
+    plus = ReducedMHDState(
+        psi=state.psi + epsilon * perturbation.psi,
+        omega=state.omega + epsilon * perturbation.omega,
+    )
+    minus = ReducedMHDState(
+        psi=state.psi - epsilon * perturbation.psi,
+        omega=state.omega - epsilon * perturbation.omega,
+    )
+    rhs_plus = reduced_mhd_rhs(plus, params, lengths=lengths, terms=terms)
+    rhs_minus = reduced_mhd_rhs(minus, params, lengths=lengths, terms=terms)
+    scale = 0.5 / epsilon
+    return ReducedMHDState(
+        psi=scale * (rhs_plus.psi - rhs_minus.psi),
+        omega=scale * (rhs_plus.omega - rhs_minus.omega),
+    )
 
 
 def reduced_mhd_residual_norm(state: ReducedMHDState) -> Array:

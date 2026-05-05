@@ -139,6 +139,18 @@ This writes `outputs/smoke/artifact_manifest.json` with schema
   `delta_prime_a`, and `constant_psi_product` arrays.
 - `figures/fkr_constant_psi_window.png`: publication-style regime-window plot.
 
+## Linearized-RHS validation outputs
+
+`mhx benchmark linearized-rhs --outdir outputs/benchmarks/linearized_rhs`
+writes:
+
+- `diagnostics.json`: JVP/finite-difference linearized-RHS consistency metrics
+  with schema `mhx.validation.linearized_rhs.v1`.
+- `validation.json`: pass/fail gates for relative JVP consistency errors.
+- `linearized_rhs.npz`: saved JVP and finite-difference `psi`/`omega` arrays.
+- `figures/linearized_rhs_errors.png`: relative-error plot with the configured
+  gate.
+
 ## Timing benchmark outputs
 
 `mhx benchmark timing --outdir outputs/benchmarks/timing` writes:

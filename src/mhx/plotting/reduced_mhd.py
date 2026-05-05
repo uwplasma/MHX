@@ -248,6 +248,37 @@ def plot_fkr_validity_window(
     return output_path
 
 
+def plot_linearized_rhs_errors(
+    component_names,
+    relative_errors,
+    *,
+    max_relative_error: float,
+    path: str | Path,
+) -> Path:
+    """Plot JVP versus finite-difference linearized-RHS relative errors."""
+    import matplotlib.pyplot as plt
+
+    output_path = Path(path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    names = list(component_names)
+    errors = np.asarray(relative_errors)
+    fig, ax = plt.subplots(figsize=(6.2, 4.0), constrained_layout=True)
+    ax.semilogy(names, errors, "o", color="#3266a8")
+    ax.axhline(
+        max_relative_error,
+        color="black",
+        linestyle="--",
+        linewidth=1.0,
+        label="gate",
+    )
+    ax.set_ylabel("relative L2 error")
+    ax.set_title("Linearized RHS JVP consistency")
+    ax.legend(frameon=False)
+    fig.savefig(output_path, dpi=220)
+    plt.close(fig)
+    return output_path
+
+
 def plot_plasmoid_scaling(lundquist, gamma, fastest_mode, *, path: str | Path) -> Path:
     """Plot Loureiro Sweet-Parker plasmoid scalings."""
     import matplotlib.pyplot as plt
