@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import jax.numpy as jnp
-
 from mhx.config import RunConfig
 from mhx.diagnostics import (
     fit_exponential_growth,
@@ -14,7 +12,7 @@ from mhx.diagnostics import (
 )
 from mhx.equations.reduced_mhd import reduced_mhd_rhs
 from mhx.grids import CartesianGrid
-from mhx.physics import build_physics_terms
+from mhx.physics import CosineTearingEquilibrium, build_equilibrium, build_physics_terms
 from mhx.state import ReducedMHDParams, ReducedMHDState, ReducedMHDTrajectory
 from mhx.time_integrators import evolve_rk4
 
@@ -30,14 +28,9 @@ def linear_tearing_initial_state(
     tearing eigenmode. The equilibrium is ``ψ₀ = cos(y)`` with a small
     ``cos(x) cos(y)`` perturbation.
     """
-    x, y = grid.mesh()
-    length_x, length_y = grid.lengths
-    psi_equilibrium = jnp.cos(2.0 * jnp.pi * y / length_y)
-    perturbation = perturbation_amplitude * jnp.cos(2.0 * jnp.pi * x / length_x) * jnp.cos(
-        2.0 * jnp.pi * y / length_y
+    return CosineTearingEquilibrium(perturbation_amplitude=perturbation_amplitude).initial_state(
+        grid
     )
-    omega = jnp.zeros_like(psi_equilibrium)
-    return ReducedMHDState(psi=psi_equilibrium + perturbation, omega=omega)
 
 
 def run_linear_tearing_smoke(
@@ -47,7 +40,11 @@ def run_linear_tearing_smoke(
 ) -> tuple[ReducedMHDTrajectory, dict[str, float]]:
     """Run the deterministic FAST reduced-MHD smoke benchmark."""
     grid = CartesianGrid.from_mesh_config(config.mesh)
-    state0 = linear_tearing_initial_state(grid, perturbation_amplitude=perturbation_amplitude)
+    equilibrium_parameters = dict(config.physics.equilibrium_parameters)
+    if not equilibrium_parameters and config.physics.equilibrium == "cosine_tearing":
+        equilibrium_parameters = {"perturbation_amplitude": perturbation_amplitude}
+    equilibrium = build_equilibrium(config.physics.equilibrium, equilibrium_parameters)
+    state0 = equilibrium.initial_state(grid)
     params = ReducedMHDParams(
         resistivity=config.physics.resistivity,
         viscosity=config.physics.viscosity,
@@ -75,6 +72,8 @@ def run_linear_tearing_smoke(
     )
     diagnostics = {
         "n_steps": float(steps),
+        "equilibrium": config.physics.equilibrium,
+        "equilibrium_parameters": dict(equilibrium_parameters),
         "physics_terms": list(config.physics.rhs_terms),
         "initial_total_energy": float(total_energy(state0, lengths=grid.lengths)),
         "final_total_energy": float(energies["total"][-1]),

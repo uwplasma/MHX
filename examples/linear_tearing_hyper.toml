@@ -15,9 +15,13 @@ save_every = 1
 
 [physics]
 model = "reduced_mhd_linear_tearing"
+equilibrium = "cosine_tearing"
 resistivity = 0.001
 viscosity = 0.001
 rhs_terms = ["hyper_resistivity", "vorticity_drag"]
+
+[physics.equilibrium_parameters]
+perturbation_amplitude = 0.001
 
 [physics.term_parameters.hyper_resistivity]
 eta4 = 1e-5
@@ -35,4 +39,3 @@ enable_jit = true
 quantities = ["energy", "divergence_error"]
 mode = [1, 1]
 fit_time_window = [0.02, 0.1]
-

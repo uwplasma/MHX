@@ -17,7 +17,7 @@ from mhx.io import (
     write_manifest,
     write_reduced_mhd_trajectory_npz,
 )
-from mhx.physics import PHYSICS_API_VERSION, default_physics_registry
+from mhx.physics import PHYSICS_API_VERSION, default_equilibrium_registry, default_physics_registry
 from mhx.plotting import (
     plot_energy_history,
     plot_flux_contours,
@@ -204,6 +204,13 @@ def physics_list() -> None:
     """List registered built-in physics terms."""
     typer.echo(f"Physics API: {PHYSICS_API_VERSION}")
     for item in default_physics_registry().metadata():
+        typer.echo(f"- {item.name}: {item.description}")
+
+
+@physics_app.command("equilibria")
+def physics_equilibria() -> None:
+    """List registered reduced-MHD equilibria."""
+    for item in default_equilibrium_registry().metadata():
         typer.echo(f"- {item.name}: {item.description}")
 
 

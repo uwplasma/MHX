@@ -3455,3 +3455,51 @@ Every agent must append an entry here. Do not delete previous entries.
 - Add external plugin loading and a `ModelConfig`-style registry object for equilibria, terms, and diagnostics.
 - Add the first nontrivial extended-MHD toy term that approximates Hall/two-fluid effects within the current reduced-state API.
 - Add benchmark artifact upload in CI and expand validation beyond smoke energy checks.
+
+### 2026-05-04 — Agent: Codex, config-driven equilibrium assembly
+
+**Summary**
+
+- Added an equilibrium registry with built-in `cosine_tearing` and `zero` initial-condition builders.
+- Added TOML-driven `physics.equilibrium` and `[physics.equilibrium_parameters]`.
+- Wired the FAST reduced-MHD benchmark to assemble the initial state from config instead of hard-coded benchmark logic.
+- Added `mhx physics equilibria` for CLI inspection.
+- Added model assembly documentation explaining equilibrium + RHS term composition and saved audit fields.
+
+**Files changed**
+
+- Added `src/mhx/physics/equilibria.py`, `docs/model_assembly.md`, and `tests/test_equilibria.py`.
+- Updated config schema, benchmark assembly, CLI, examples, README, output schema docs, quickstart docs, plugin docs, API docs, and tests.
+
+**Tests run**
+
+- `python -m ruff check src tests examples` passed.
+- `python -m pytest --cov=mhx --cov-report=term-missing --cov-fail-under=95` passed: 46 tests, 97.98% coverage.
+- `sphinx-build -b html docs docs/_build/html` passed.
+- `mhx run examples/linear_tearing_hyper.toml --outdir outputs/model_smoke` passed.
+- `mhx physics equilibria` passed and listed `cosine_tearing` plus `zero`.
+
+**Benchmarks run**
+
+- FAST reduced-MHD benchmark with configured equilibrium and plugin RHS terms only.
+
+**Decisions made**
+
+- Equilibrium configuration lives in `[physics]` because it is part of model assembly and must be saved with diagnostics.
+- The legacy `linear_tearing_initial_state` helper remains as a compatibility wrapper around `CosineTearingEquilibrium`.
+- `zero` is included as a testing equilibrium, not as a physical benchmark.
+
+**Problems / blockers**
+
+- Equilibrium plugins are in-tree only; external discovery remains future work.
+- The current state API still supports only reduced-MHD fields `psi` and `omega`.
+
+**Progress**
+
+- Estimated plan completion: 33%.
+
+**Next steps**
+
+- Add a first extended-MHD-inspired toy term within the current reduced-state API.
+- Add CI artifact upload for FAST benchmark outputs.
+- Start separating diagnostics into a configurable registry similar to equilibria and RHS terms.

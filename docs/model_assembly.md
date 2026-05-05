@@ -1,0 +1,86 @@
+# Model assembly
+
+MHX run configs assemble a reduced-MHD model from explicit, auditable pieces:
+
+1. mesh and time controls;
+2. an equilibrium builder;
+3. base resistive-viscous reduced-MHD coefficients;
+4. optional RHS physics terms;
+5. diagnostic definitions.
+
+The current active model is `reduced_mhd_linear_tearing`. It evolves
+
+$$
+\partial_t \psi = -[\phi,\psi] + \eta\nabla^2\psi + S_\psi,
+$$
+
+$$
+\partial_t \omega = -[\phi,\omega] + [\psi,\nabla^2\psi]
+                  + \nu\nabla^2\omega + S_\omega,
+$$
+
+with $\nabla^2\phi=\omega$. The optional source terms
+$(S_\psi,S_\omega)$ are the sum of configured physics plugins.
+
+## TOML structure
+
+```toml
+[physics]
+model = "reduced_mhd_linear_tearing"
+equilibrium = "cosine_tearing"
+resistivity = 0.001
+viscosity = 0.001
+rhs_terms = ["hyper_resistivity", "vorticity_drag"]
+
+[physics.equilibrium_parameters]
+perturbation_amplitude = 0.001
+
+[physics.term_parameters.hyper_resistivity]
+eta4 = 1e-5
+nu4 = 1e-5
+
+[physics.term_parameters.vorticity_drag]
+rate = 0.01
+```
+
+This is intentionally explicit. Saved run directories include
+`config_effective.json`, `diagnostics.json`, and `manifest.json`, so a figure or
+benchmark report can be traced back to the exact assembled model.
+
+## Built-in equilibria
+
+Use `mhx physics equilibria` to inspect available equilibria.
+
+`cosine_tearing` initializes a periodic tearing smoke problem:
+
+$$
+\psi(x,y,0)=\cos(y)+\epsilon\cos(x)\cos(y), \qquad \omega(x,y,0)=0.
+$$
+
+`zero` initializes $\psi=\omega=0$ and is primarily for plugin tests and IO
+validation.
+
+## Built-in RHS terms
+
+Use `mhx physics list` to inspect available terms and
+`mhx physics lint <name>` to validate a registered term against the active API.
+
+The current built-ins are:
+
+- `hyper_resistivity`: fourth-order damping of $\psi$ and $\omega$.
+- `vorticity_drag`: linear damping of $\omega$.
+
+These are deliberately simple terms. They test the extension path without
+claiming validated Hall, anisotropic-pressure, or two-fluid reconnection
+physics.
+
+## Reproducible command
+
+```bash
+mhx run examples/linear_tearing_hyper.toml --outdir outputs/linear_tearing_hyper
+mhx figures outputs/linear_tearing_hyper --gif
+mhx report outputs/linear_tearing_hyper
+```
+
+Expected model-audit fields in `outputs/linear_tearing_hyper/diagnostics.json`
+include `equilibrium`, `equilibrium_parameters`, and `physics_terms`.

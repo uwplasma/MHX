@@ -18,6 +18,13 @@ Run the first deterministic smoke workflow:
 mhx run examples/linear_tearing.toml --outdir outputs/smoke
 ```
 
+Inspect the registered model pieces used by TOML configs:
+
+```bash
+mhx physics equilibria
+mhx physics list
+```
+
 The command writes:
 
 - `config_effective.json`

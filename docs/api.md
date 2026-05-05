@@ -25,6 +25,12 @@
 .. automodule:: mhx.physics
    :members:
 
+.. automodule:: mhx.physics.equilibria
+   :members:
+
+.. automodule:: mhx.physics.terms
+   :members:
+
 .. automodule:: mhx.io
    :members:
 ```

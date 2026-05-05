@@ -16,6 +16,8 @@ def test_load_example_config() -> None:
     cfg = load_config("examples/linear_tearing.toml")
     assert cfg.name == "linear_tearing_smoke"
     assert cfg.mesh.shape == (32, 32)
+    assert cfg.physics.equilibrium == "cosine_tearing"
+    assert cfg.physics.equilibrium_parameters["perturbation_amplitude"] == pytest.approx(1.0e-3)
     assert cfg.physics.resistivity == pytest.approx(1.0e-3)
     assert cfg.diagnostics.mode == (1, 1)
     assert cfg.diagnostics.fit_time_window == (0.02, 0.1)
@@ -46,6 +48,8 @@ def test_config_validation_errors() -> None:
         TimeConfig(dt=0.0).validated()
     with pytest.raises(ValueError, match="time.save_every"):
         TimeConfig(save_every=0).validated()
+    with pytest.raises(ValueError, match="equilibrium"):
+        PhysicsConfig(equilibrium="").validated()
     with pytest.raises(ValueError, match="resistivity"):
         PhysicsConfig(resistivity=-1.0).validated()
     with pytest.raises(ValueError, match="viscosity"):

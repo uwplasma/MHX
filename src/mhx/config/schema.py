@@ -102,6 +102,8 @@ class PhysicsConfig:
     """Physics model parameters for early rebuild workflows."""
 
     model: str = "reduced_mhd_linear_tearing"
+    equilibrium: str = "cosine_tearing"
+    equilibrium_parameters: dict[str, float] = field(default_factory=dict)
     resistivity: float = 1.0e-3
     viscosity: float = 1.0e-3
     rhs_terms: tuple[str, ...] = ()
@@ -112,6 +114,11 @@ class PhysicsConfig:
         mapping = mapping or {}
         return cls(
             model=str(mapping.get("model", cls.model)),
+            equilibrium=str(mapping.get("equilibrium", cls.equilibrium)),
+            equilibrium_parameters={
+                str(key): float(value)
+                for key, value in mapping.get("equilibrium_parameters", {}).items()
+            },
             resistivity=float(mapping.get("resistivity", cls.resistivity)),
             viscosity=float(mapping.get("viscosity", cls.viscosity)),
             rhs_terms=tuple(str(item) for item in mapping.get("rhs_terms", cls.rhs_terms)),
@@ -122,6 +129,8 @@ class PhysicsConfig:
         ).validated()
 
     def validated(self) -> PhysicsConfig:
+        if not self.equilibrium:
+            raise ValueError("physics.equilibrium must be non-empty")
         if self.resistivity < 0.0:
             raise ValueError("physics.resistivity must be non-negative")
         if self.viscosity < 0.0:
@@ -238,6 +247,11 @@ class RunConfig:
             if data["diagnostics"]["fit_time_window"] is None
             else f"fit_time_window = {data['diagnostics']['fit_time_window']}\n"
         )
+        equilibrium_parameter_lines = ""
+        if data["physics"]["equilibrium_parameters"]:
+            equilibrium_parameter_lines += "\n[physics.equilibrium_parameters]\n"
+            for key, value in sorted(data["physics"]["equilibrium_parameters"].items()):
+                equilibrium_parameter_lines += f"{key} = {value}\n"
         term_parameter_lines = ""
         for term_name, parameters in sorted(data["physics"]["term_parameters"].items()):
             term_parameter_lines += f"\n[physics.term_parameters.{term_name}]\n"
@@ -258,9 +272,11 @@ class RunConfig:
             f"save_every = {data['time']['save_every']}\n\n"
             "[physics]\n"
             f'model = "{data["physics"]["model"]}"\n'
+            f'equilibrium = "{data["physics"]["equilibrium"]}"\n'
             f"resistivity = {data['physics']['resistivity']}\n"
             f"viscosity = {data['physics']['viscosity']}\n"
             f"rhs_terms = {data['physics']['rhs_terms']}\n\n"
+            f"{equilibrium_parameter_lines}"
             f"{term_parameter_lines}"
             "[numerics]\n"
             f"method = \"{data['numerics']['method']}\"\n"

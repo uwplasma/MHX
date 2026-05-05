@@ -1,16 +1,49 @@
 # Physics plugins
 
-MHX exposes a small versioned physics-term API for additive right-hand-side
-extensions. The active API string is `mhx.physics.v1`.
+MHX exposes two small composability layers:
 
-List built-in terms:
+- named equilibria that build initial reduced-MHD states;
+- versioned physics terms that add right-hand-side extensions.
+
+The active physics-term API string is `mhx.physics.v1`.
+
+List built-in equilibria and terms:
 
 ```bash
+mhx physics equilibria
 mhx physics list
 mhx physics lint hyper_resistivity
 ```
 
-## Contract
+## Equilibrium contract
+
+An equilibrium implements:
+
+```python
+def initial_state(grid: CartesianGrid) -> ReducedMHDState:
+    ...
+```
+
+The built-in `cosine_tearing` equilibrium uses
+
+$$
+\psi(x,y,0)=\cos(y) + \epsilon\cos(x)\cos(y), \qquad \omega(x,y,0)=0,
+$$
+
+on the configured periodic domain. The `zero` equilibrium is useful for plugin
+and IO tests.
+
+Select equilibria from TOML:
+
+```toml
+[physics]
+equilibrium = "cosine_tearing"
+
+[physics.equilibrium_parameters]
+perturbation_amplitude = 1e-3
+```
+
+## Term contract
 
 A reduced-MHD physics term implements:
 
@@ -54,7 +87,11 @@ Users can assemble terms from config:
 
 ```toml
 [physics]
+equilibrium = "cosine_tearing"
 rhs_terms = ["hyper_resistivity", "vorticity_drag"]
+
+[physics.equilibrium_parameters]
+perturbation_amplitude = 1e-3
 
 [physics.term_parameters.hyper_resistivity]
 eta4 = 1e-5
@@ -79,3 +116,12 @@ For in-tree terms:
 Third-party plugin discovery is not enabled yet. The current stable surface is
 the protocol, metadata fields, and config-driven in-tree registry.
 
+## Adding an equilibrium
+
+For in-tree equilibria:
+
+1. Add a dataclass implementing `initial_state(grid)`.
+2. Register it in `default_equilibrium_registry()`.
+3. Add a small TOML example if the parameters are user-facing.
+4. Add tests for shape, finite values, deterministic output, and CLI listing.
+5. Run `mhx physics equilibria`, `pytest`, `ruff`, and a FAST run.

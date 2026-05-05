@@ -15,8 +15,12 @@ save_every = 1
 
 [physics]
 model = "reduced_mhd_linear_tearing"
+equilibrium = "cosine_tearing"
 resistivity = 0.001
 viscosity = 0.001
+
+[physics.equilibrium_parameters]
+perturbation_amplitude = 0.001
 
 [numerics]
 method = "spectral"

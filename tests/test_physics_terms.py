@@ -91,6 +91,7 @@ def test_physics_config_and_example_parse() -> None:
     assert cfg.physics.rhs_terms == ("hyper_resistivity", "vorticity_drag")
     assert cfg.physics.term_parameters["hyper_resistivity"]["eta4"] == pytest.approx(1.0e-5)
     serialized = cfg.to_toml()
+    assert "[physics.equilibrium_parameters]" in serialized
     assert "[physics.term_parameters.hyper_resistivity]" in serialized
     assert "[physics.term_parameters.vorticity_drag]" in serialized
     with pytest.raises(ValueError, match="term_parameters"):
