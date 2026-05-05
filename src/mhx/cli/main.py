@@ -14,6 +14,7 @@ from mhx.config import RunConfig, load_config
 from mhx.grids import CartesianGrid
 from mhx.io import (
     read_reduced_mhd_trajectory_npz,
+    write_artifact_manifest,
     write_manifest,
     write_reduced_mhd_trajectory_npz,
 )
@@ -156,6 +157,20 @@ def report(
     json_path, markdown_path = write_run_report(run_dir)
     typer.echo(f"wrote {json_path}")
     typer.echo(f"wrote {markdown_path}")
+
+
+@app.command()
+def artifact_manifest(
+    root: Annotated[Path, typer.Argument(help="Directory whose files should be hashed.")],
+    output: Annotated[
+        Path | None,
+        typer.Option("--output", help="Manifest path; defaults to <root>/artifact_manifest.json."),
+    ] = None,
+) -> None:
+    """Write a recursive SHA-256 artifact manifest for a directory."""
+    manifest = write_artifact_manifest(root, path=output)
+    output_path = output or (root / "artifact_manifest.json")
+    typer.echo(f"wrote {output_path} ({len(manifest['files'])} files)")
 
 
 @benchmark_app.command("run")

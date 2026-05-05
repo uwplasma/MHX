@@ -3599,3 +3599,49 @@ Every agent must append an entry here. Do not delete previous entries.
 - Add an artifact manifest with figure/report checksums for reproducible diffs.
 - Add a diagnostics registry and config-selected diagnostics.
 - Add a manufactured-solution or exact-decay validation test.
+
+### 2026-05-04 — Agent: Codex, recursive artifact checksums
+
+**Summary**
+
+- Added `write_artifact_manifest()` for recursive artifact checksums.
+- Added `mhx artifact-manifest <root>` to write `artifact_manifest.json` with schema, paths, byte sizes, and SHA-256 hashes.
+- Wired the CI benchmark artifact job to write and validate `outputs/ci/artifact_manifest.json`.
+- Updated README, quickstart, benchmark docs, and output schema docs with the checksum workflow.
+- Added unit tests for recursive hashing, CLI behavior, and missing-root errors.
+
+**Files changed**
+
+- Updated `src/mhx/io/manifest.py`, `src/mhx/io/__init__.py`, `src/mhx/cli/main.py`, `.github/workflows/ci.yml`, README, docs, and plan log.
+- Added `tests/test_artifact_manifest.py`.
+
+**Tests run**
+
+- `python -m ruff check src tests examples` passed.
+- `python -m pytest --cov=mhx --cov-report=term-missing --cov-fail-under=95` passed: 50 tests, 97.92% coverage.
+- `sphinx-build -b html docs docs/_build/html` passed.
+- CI-equivalent artifact sequence passed locally and wrote `outputs/ci/artifact_manifest.json` covering 21 files.
+
+**Benchmarks run**
+
+- FAST reduced-MHD benchmark and FAST two-fluid toy plugin example through the same command sequence used in CI.
+
+**Decisions made**
+
+- Artifact manifests are separate from per-run manifests because they cover postprocessed figures, GIFs, reports, and multi-run CI bundles.
+- Hashing is recursive and deterministic by sorted path order; creation timestamps remain metadata and are not intended for bitwise comparison.
+
+**Problems / blockers**
+
+- CI still validates file existence and checksum generation, not expected checksum values.
+- Figure hashes may vary across matplotlib/imageio versions; pinned rendering environments should come before strict hash assertions.
+
+**Progress**
+
+- Estimated plan completion: 37%.
+
+**Next steps**
+
+- Add configurable diagnostics registry.
+- Add exact-decay/manufactured-solution validation for the solver.
+- Add a lightweight performance/timing report to the artifact bundle.

@@ -69,8 +69,10 @@ jobs:
           mhx run examples/linear_tearing_twofluid_toy.toml --outdir outputs/ci/twofluid_toy
           mhx figures outputs/ci/twofluid_toy --gif
           mhx report outputs/ci/twofluid_toy
+          mhx artifact-manifest outputs/ci
       - name: Validate artifact file set
         run: |
+          test -f outputs/ci/artifact_manifest.json
           test -f outputs/ci/linear_tearing_fast/manifest.json
           test -f outputs/ci/linear_tearing_fast/validation.json
           test -f outputs/ci/linear_tearing_fast/report.md

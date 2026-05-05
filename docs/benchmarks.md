@@ -37,11 +37,13 @@ mhx benchmark validate outputs/ci/linear_tearing_fast
 mhx run examples/linear_tearing_twofluid_toy.toml --outdir outputs/ci/twofluid_toy
 mhx figures outputs/ci/twofluid_toy --gif
 mhx report outputs/ci/twofluid_toy
+mhx artifact-manifest outputs/ci
 ```
 
 The job uploads `outputs/ci` as the `mhx-fast-artifacts` GitHub Actions
 artifact. Reviewers can download it to inspect manifests, reports, PNG figures,
-and GIF movies generated from the exact commit under test.
+GIF movies, and `artifact_manifest.json` checksums generated from the exact
+commit under test.
 
 ## Theory scaffolds
 

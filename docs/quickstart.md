@@ -49,6 +49,7 @@ Create a reviewer-readable summary:
 
 ```bash
 mhx report outputs/smoke
+mhx artifact-manifest outputs/smoke
 ```
 
 Run the same workflow through the benchmark command group:

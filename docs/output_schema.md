@@ -58,3 +58,14 @@ Expected files:
 
 - `outputs/smoke/report.json`
 - `outputs/smoke/report.md`
+
+## Artifact manifests
+
+For reproducible figure/report diffs, write a recursive checksum manifest:
+
+```bash
+mhx artifact-manifest outputs/smoke
+```
+
+This writes `outputs/smoke/artifact_manifest.json` with schema
+`mhx.artifacts.v1`, file paths, byte sizes, and SHA-256 hashes.

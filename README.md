@@ -69,6 +69,7 @@ Create a compact run report:
 
 ```bash
 mhx report outputs/smoke
+mhx artifact-manifest outputs/smoke
 ```
 
 Run the same workflow as a benchmark:
