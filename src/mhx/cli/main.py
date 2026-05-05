@@ -15,6 +15,7 @@ from mhx.benchmarks import (
     write_reconnection_scaling_validation,
     write_resistive_decay_validation,
     write_run_report,
+    write_timing_benchmark,
 )
 from mhx.config import RunConfig, load_config
 from mhx.grids import CartesianGrid
@@ -261,6 +262,20 @@ def benchmark_scaling(
     typer.echo(f"wrote {manifest_path}")
     if not validation["passed"]:
         raise typer.Exit(code=1)
+
+
+@benchmark_app.command("timing")
+def benchmark_timing(
+    outdir: Annotated[
+        Path,
+        typer.Option("--outdir", help="Output directory for FAST timing artifacts."),
+    ] = Path("outputs/benchmarks/timing"),
+    repeats: Annotated[int, typer.Option("--repeats", help="Measured repeats per case.")] = 3,
+    warmups: Annotated[int, typer.Option("--warmups", help="Unmeasured warmup repeats.")] = 1,
+) -> None:
+    """Run FAST benchmark timing and Python-memory measurements."""
+    manifest_path, _ = write_timing_benchmark(outdir, repeats=repeats, warmups=warmups)
+    typer.echo(f"wrote {manifest_path}")
 
 
 @physics_app.command("list")

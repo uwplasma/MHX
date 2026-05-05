@@ -240,3 +240,34 @@ def plot_ideal_tearing_scaling(lundquist, aspect_ratio, *, path: str | Path) -> 
     fig.savefig(output_path, dpi=220)
     plt.close(fig)
     return output_path
+
+
+def plot_timing_summary(
+    case_names,
+    durations_seconds,
+    peak_memory_mib,
+    *,
+    path: str | Path,
+) -> Path:
+    """Plot FAST timing wall-clock and Python memory summaries."""
+    import matplotlib.pyplot as plt
+
+    output_path = Path(path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    names = list(case_names)
+    positions = np.arange(len(names))
+    fig, axes = plt.subplots(1, 2, figsize=(9.0, 3.8), constrained_layout=True)
+    axes[0].barh(positions, np.asarray(durations_seconds), color="#3266a8")
+    axes[0].set_yticks(positions, labels=names)
+    axes[0].invert_yaxis()
+    axes[0].set_xlabel("median wall time [s]")
+    axes[0].set_title("FAST runtime")
+    axes[1].barh(positions, np.asarray(peak_memory_mib), color="#8c4fb4")
+    axes[1].set_yticks(positions, labels=[])
+    axes[1].invert_yaxis()
+    axes[1].set_xlabel("peak tracemalloc [MiB]")
+    axes[1].set_title("Python allocation peak")
+    fig.suptitle("MHX FAST benchmark timing")
+    fig.savefig(output_path, dpi=220)
+    plt.close(fig)
+    return output_path

@@ -79,6 +79,7 @@ mhx benchmark run --config examples/linear_tearing.toml --outdir outputs/benchma
 mhx benchmark validate outputs/benchmarks/linear_tearing_fast
 mhx benchmark decay --outdir outputs/benchmarks/resistive_decay
 mhx benchmark scaling --outdir outputs/benchmarks/reconnection_scaling
+mhx benchmark timing --outdir outputs/benchmarks/timing --repeats 3 --warmups 1
 ```
 
 Inspect configurable physics terms:

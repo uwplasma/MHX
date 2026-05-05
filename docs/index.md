@@ -14,6 +14,7 @@ architecture
 reduced_mhd
 output_schema
 benchmarks
+performance
 validation
 model_assembly
 plugins

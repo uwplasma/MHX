@@ -69,14 +69,15 @@ This writes:
 
 ## CI artifacts
 
-Every push runs a `benchmark-artifacts` CI job. It executes two deterministic
-FAST pipelines:
+Every push runs a `benchmark-artifacts` CI job. It executes deterministic FAST
+pipelines:
 
 ```bash
 mhx benchmark run --config examples/linear_tearing.toml --outdir outputs/ci/linear_tearing_fast --gif
 mhx benchmark validate outputs/ci/linear_tearing_fast
 mhx benchmark decay --outdir outputs/ci/resistive_decay
 mhx benchmark scaling --outdir outputs/ci/reconnection_scaling
+mhx benchmark timing --outdir outputs/ci/timing --repeats 1 --warmups 0
 mhx run examples/linear_tearing_twofluid_toy.toml --outdir outputs/ci/twofluid_toy
 mhx figures outputs/ci/twofluid_toy --gif
 mhx report outputs/ci/twofluid_toy
@@ -87,6 +88,32 @@ The job uploads `outputs/ci` as the `mhx-fast-artifacts` GitHub Actions
 artifact. Reviewers can download it to inspect manifests, reports, PNG figures,
 GIF movies, and `artifact_manifest.json` checksums generated from the exact
 commit under test.
+
+## FAST timing benchmark
+
+MHX records performance as an artifact, not as a brittle absolute CI gate:
+
+```bash
+mhx benchmark timing --outdir outputs/benchmarks/timing --repeats 3 --warmups 1
+```
+
+This measures wall-clock time and Python allocation peaks for:
+
+- `linear_tearing_fast`: the active reduced-MHD smoke run.
+- `resistive_decay_fast`: the exact single-mode resistive validation case.
+- `reconnection_scaling`: analytic FKR/plasmoid/ideal-tearing scaling gates.
+
+The command writes:
+
+- `timing.json`
+- `timing.md`
+- `figures/timing_summary.png`
+- `manifest.json`
+
+The CI job uses `--repeats 1 --warmups 0` to keep runtime low and uploads the
+result in `outputs/ci/timing/`. Timing comparisons should be made between
+artifacts from the same runner class; MHX does not currently fail CI on
+absolute speed.
 
 ## Theory scaffolds
 

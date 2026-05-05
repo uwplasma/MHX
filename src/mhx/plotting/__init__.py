@@ -11,6 +11,7 @@ from mhx.plotting.reduced_mhd import (
     plot_ideal_tearing_scaling,
     plot_mode_amplitude,
     plot_plasmoid_scaling,
+    plot_timing_summary,
 )
 
 __all__ = [
@@ -24,4 +25,5 @@ __all__ = [
     "plot_ideal_tearing_scaling",
     "plot_mode_amplitude",
     "plot_plasmoid_scaling",
+    "plot_timing_summary",
 ]

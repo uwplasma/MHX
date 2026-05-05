@@ -28,6 +28,9 @@
 .. automodule:: mhx.benchmarks.scaling
    :members:
 
+.. automodule:: mhx.benchmarks.timing
+   :members:
+
 .. automodule:: mhx.physics
    :members:
 

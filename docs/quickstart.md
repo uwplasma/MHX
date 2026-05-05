@@ -59,9 +59,12 @@ mhx benchmark run --config examples/linear_tearing.toml --outdir outputs/benchma
 mhx benchmark validate outputs/benchmarks/linear_tearing_fast
 mhx benchmark decay --outdir outputs/benchmarks/resistive_decay
 mhx benchmark scaling --outdir outputs/benchmarks/reconnection_scaling
+mhx benchmark timing --outdir outputs/benchmarks/timing --repeats 3 --warmups 1
 ```
 
 The smoke run validates the JAX spectral derivative path on a periodic
 Cartesian mesh. The exact-decay benchmark adds a physics gate for
 $\psi_k(t)=\psi_k(0)\exp(-\eta |k|^2t)$. These are deliberately small and
-deterministic; they are not yet the full tearing benchmark.
+deterministic; they are not yet the full tearing benchmark. The timing
+benchmark records wall-clock and Python-allocation summaries for comparing
+changes on the same machine or CI runner.

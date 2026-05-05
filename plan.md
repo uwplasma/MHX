@@ -3747,3 +3747,47 @@ Every agent must append an entry here. Do not delete previous entries.
 - Add a calibrated linear eigenmode or matrix-free growth-rate benchmark against FKR/Coppi regimes.
 - Add a diagnostics registry so configs can select diagnostics explicitly.
 - Add timing/performance tables to the CI artifact bundle.
+
+### 2026-05-04 — Agent: Codex, FAST performance artifact reporting
+
+**Summary**
+
+- Added a schema-versioned timing benchmark that measures wall-clock time and Python allocation peaks for the FAST reduced-MHD smoke run, exact resistive-decay validation, and analytic reconnection scaling gates.
+- Added `mhx benchmark timing` with JSON, Markdown, PNG, and manifest outputs.
+- Added a performance guide page with expected files, interpretation rules, tuning knobs, and source links.
+- Updated CI artifact generation to include timing reports and validate their output file set.
+- Added a committed example timing plot under `docs/_static/performance/`.
+
+**Files changed**
+
+- Added `src/mhx/benchmarks/timing.py`, `tests/test_timing_benchmark.py`, and `docs/performance.md`.
+- Updated benchmark exports, CLI, plotting helpers, validation media generation, output-schema docs, benchmark docs, quickstart docs, README, API docs, and CI workflow.
+
+**Tests run**
+
+- `python -m ruff check src tests examples` passed.
+- `python -m pytest --cov=mhx --cov-report=term-missing --cov-fail-under=95` passed: 64 tests, 98.01% coverage.
+- `sphinx-build -b html docs docs/_build/html` passed and copied seven documentation figures.
+- CI-equivalent artifact sequence passed locally and wrote `outputs/ci/artifact_manifest.json` covering 39 files.
+- `python examples/make_validation_media.py` regenerated exact-decay, reconnection-scaling, and timing documentation figures.
+
+**Decisions made**
+
+- Timing artifacts are recorded for reviewer diffs, but CI does not enforce absolute runtime thresholds because GitHub runner performance is noisy.
+- Memory uses `tracemalloc` because it is portable in CI; docs explicitly state that accelerator memory is not yet included.
+- The committed timing figure is labeled as an example FAST timing artifact, while current machine-specific timing belongs in CI artifacts.
+
+**Problems / blockers**
+
+- The timing matrix currently covers FAST cases only; medium/production profiles and backend-specific GPU memory probes are still pending.
+- JIT toggles are exposed in config but not yet benchmarked as a matrix.
+
+**Progress**
+
+- Estimated plan completion: 43%.
+
+**Next steps**
+
+- Add a diagnostics registry so configs can select diagnostic sets explicitly.
+- Add a calibrated linear eigenmode or matrix-free growth-rate benchmark against FKR/Coppi regimes.
+- Expand performance benchmarking into FAST/medium/production × JIT on/off and record tables as CI artifacts.

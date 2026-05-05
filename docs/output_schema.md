@@ -92,3 +92,18 @@ This writes `outputs/smoke/artifact_manifest.json` with schema
 - `scaling_history.npz`: Lundquist samples and analytic scaling arrays.
 - `figures/fkr_scaling.png`, `figures/plasmoid_scaling.png`, and
   `figures/ideal_tearing_scaling.png`.
+
+## Timing benchmark outputs
+
+`mhx benchmark timing --outdir outputs/benchmarks/timing` writes:
+
+- `timing.json`: schema `mhx.benchmark.timing.v1`, raw repeat durations,
+  median/min/max summaries, Python `tracemalloc` peaks, case details, and
+  environment metadata.
+- `timing.md`: reviewer-readable Markdown timing table.
+- `figures/timing_summary.png`: wall-clock and Python-allocation summary plot.
+- `manifest.json`: schema `mhx.manifest.v1`, output paths, and SHA-256 hashes.
+
+Absolute timings are machine-dependent. The schema is meant for artifact
+comparison across commits on the same runner class, not as a universal
+performance guarantee.

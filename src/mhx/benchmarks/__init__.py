@@ -24,14 +24,24 @@ from mhx.benchmarks.theory import (
     ideal_tearing_aspect_ratio,
     loureiro_plasmoid_estimate,
 )
+from mhx.benchmarks.timing import (
+    TIMING_BENCHMARK_SCHEMA,
+    TimingBenchmarkResult,
+    TimingCaseResult,
+    run_timing_benchmark,
+    write_timing_benchmark,
+)
 
 __all__ = [
     "FKRConstantPsiEstimate",
     "PlasmoidScalingEstimate",
     "RECONNECTION_SCALING_SCHEMA",
     "RESISTIVE_DECAY_SCHEMA",
+    "TIMING_BENCHMARK_SCHEMA",
     "ReconnectionScalingResult",
     "ResistiveDecayResult",
+    "TimingBenchmarkResult",
+    "TimingCaseResult",
     "fkr_constant_psi_estimate",
     "harris_sheet_delta_prime",
     "ideal_tearing_aspect_ratio",
@@ -42,8 +52,10 @@ __all__ = [
     "run_reconnection_scaling_validation",
     "run_resistive_decay_validation",
     "run_linear_tearing_smoke",
+    "run_timing_benchmark",
     "validate_run",
     "write_reconnection_scaling_validation",
     "write_resistive_decay_validation",
     "write_run_report",
+    "write_timing_benchmark",
 ]
