@@ -279,6 +279,32 @@ def plot_linearized_rhs_errors(
     return output_path
 
 
+def plot_diffusion_eigenvalue_error(
+    quantities,
+    values,
+    thresholds,
+    *,
+    path: str | Path,
+) -> Path:
+    """Plot diffusion eigenvalue benchmark errors and gates."""
+    import matplotlib.pyplot as plt
+
+    output_path = Path(path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    names = list(quantities)
+    positions = np.arange(len(names))
+    fig, ax = plt.subplots(figsize=(6.2, 4.0), constrained_layout=True)
+    ax.semilogy(positions, np.asarray(values), "o", color="#3266a8", label="measured")
+    ax.semilogy(positions, np.asarray(thresholds), "x", color="#8c4fb4", label="gate")
+    ax.set_xticks(positions, labels=names)
+    ax.set_ylabel("absolute / relative error")
+    ax.set_title("Matrix-free diffusion eigenvalue gate")
+    ax.legend(frameon=False)
+    fig.savefig(output_path, dpi=220)
+    plt.close(fig)
+    return output_path
+
+
 def plot_plasmoid_scaling(lundquist, gamma, fastest_mode, *, path: str | Path) -> Path:
     """Plot Loureiro Sweet-Parker plasmoid scalings."""
     import matplotlib.pyplot as plt

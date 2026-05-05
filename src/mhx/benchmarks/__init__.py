@@ -7,6 +7,12 @@ from mhx.benchmarks.decay import (
     run_resistive_decay_validation,
     write_resistive_decay_validation,
 )
+from mhx.benchmarks.eigenvalue import (
+    DIFFUSION_EIGENVALUE_SCHEMA,
+    DiffusionEigenvalueResult,
+    run_diffusion_eigenvalue_validation,
+    write_diffusion_eigenvalue_validation,
+)
 from mhx.benchmarks.fkr import (
     FKR_WINDOW_SCHEMA,
     FKRWindowResult,
@@ -47,6 +53,8 @@ from mhx.benchmarks.timing import (
 __all__ = [
     "FKRConstantPsiEstimate",
     "FKRWindowResult",
+    "DIFFUSION_EIGENVALUE_SCHEMA",
+    "DiffusionEigenvalueResult",
     "FKR_WINDOW_SCHEMA",
     "LINEARIZED_RHS_SCHEMA",
     "LinearizedRHSResult",
@@ -65,6 +73,7 @@ __all__ = [
     "linear_tearing_initial_state",
     "loureiro_plasmoid_estimate",
     "resistive_decay_rate",
+    "run_diffusion_eigenvalue_validation",
     "run_fkr_window_validation",
     "run_linearized_rhs_validation",
     "run_reconnection_scaling_validation",
@@ -72,6 +81,7 @@ __all__ = [
     "run_linear_tearing_smoke",
     "run_timing_benchmark",
     "validate_run",
+    "write_diffusion_eigenvalue_validation",
     "write_fkr_window_validation",
     "write_linearized_rhs_validation",
     "write_reconnection_scaling_validation",

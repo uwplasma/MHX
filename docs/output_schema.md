@@ -151,6 +151,18 @@ writes:
 - `figures/linearized_rhs_errors.png`: relative-error plot with the configured
   gate.
 
+## Diffusion eigenvalue validation outputs
+
+`mhx benchmark diffusion-eigenvalue --outdir outputs/benchmarks/diffusion_eigenvalue`
+writes:
+
+- `diagnostics.json`: Rayleigh-quotient and eigen-residual diagnostics with
+  schema `mhx.validation.diffusion_eigenvalue.v1`.
+- `validation.json`: pass/fail gates for eigenvalue and residual errors.
+- `diffusion_eigenvalue.npz`: saved eigenfunction, operator action, expected
+  eigenvalue, and measured Rayleigh quotient.
+- `figures/diffusion_eigenvalue_errors.png`: eigenvalue/residual error plot.
+
 ## Timing benchmark outputs
 
 `mhx benchmark timing --outdir outputs/benchmarks/timing` writes:

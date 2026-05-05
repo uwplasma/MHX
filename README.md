@@ -81,6 +81,7 @@ mhx benchmark decay --outdir outputs/benchmarks/resistive_decay
 mhx benchmark scaling --outdir outputs/benchmarks/reconnection_scaling
 mhx benchmark fkr-window --outdir outputs/benchmarks/fkr_window
 mhx benchmark linearized-rhs --outdir outputs/benchmarks/linearized_rhs
+mhx benchmark diffusion-eigenvalue --outdir outputs/benchmarks/diffusion_eigenvalue
 mhx benchmark timing --outdir outputs/benchmarks/timing --repeats 3 --warmups 1
 ```
 

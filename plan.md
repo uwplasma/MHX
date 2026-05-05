@@ -4061,3 +4061,49 @@ Every agent must append an entry here. Do not delete previous entries.
   before applying the machinery to tearing equilibria.
 - Add plugin plotting hooks so extension diagnostics can produce first-class
   figures in reports.
+
+### 2026-05-05 — Agent: Codex, matrix-free eigenvalue scaffold
+
+**Summary**
+
+- Added a small `MatrixFreeOperator` utility with shape checks, Rayleigh
+  quotient evaluation, and relative eigen-residual calculation.
+- Added `mhx benchmark diffusion-eigenvalue`, validating a periodic spectral
+  diffusion eigenpair against the analytic Fourier eigenvalue.
+- Added publication-style error plots, NPZ output, JSON diagnostics,
+  validation gates, and CI artifact checks for the eigenvalue scaffold.
+
+**Files changed**
+
+- Added `src/mhx/numerics/linear_operator.py`,
+  `src/mhx/benchmarks/eigenvalue.py`, and
+  `tests/test_diffusion_eigenvalue_validation.py`.
+- Updated benchmark exports, CLI, plotting, CI, docs, README, validation-media
+  generation, and static validation figures.
+
+**Tests run**
+
+- `python -m ruff check src tests examples` passed.
+- `python -m pytest tests/test_diffusion_eigenvalue_validation.py -q` passed.
+
+**Decisions made**
+
+- The first eigenvalue scaffold uses scalar field diffusion, not tearing, so the
+  Rayleigh quotient and residual machinery are tested against a closed-form
+  eigenpair before being coupled to the full reduced-MHD linearized operator.
+
+**Problems / blockers**
+
+- The next step is an operator wrapper over the full reduced-MHD JVP state,
+  followed by a calibrated tearing eigenmode benchmark.
+
+**Progress**
+
+- Estimated plan completion: 59%.
+
+**Next steps**
+
+- Add PyTree/state flattening utilities for reduced-MHD JVP eigen-operators.
+- Add a small Arnoldi/power-iteration smoke test on a known block-diagonal
+  operator before applying it to reduced-MHD.
+- Add plugin plotting hooks and report integration for custom diagnostics.

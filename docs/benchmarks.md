@@ -58,6 +58,7 @@ FKR, Sweet-Parker plasmoid, and ideal-tearing exponents:
 mhx benchmark scaling --outdir outputs/benchmarks/reconnection_scaling
 mhx benchmark fkr-window --outdir outputs/benchmarks/fkr_window
 mhx benchmark linearized-rhs --outdir outputs/benchmarks/linearized_rhs
+mhx benchmark diffusion-eigenvalue --outdir outputs/benchmarks/diffusion_eigenvalue
 ```
 
 This writes:
@@ -83,6 +84,13 @@ The linearized-RHS command writes:
 - `linearized_rhs.npz`
 - `figures/linearized_rhs_errors.png`
 
+The diffusion-eigenvalue command writes:
+
+- `diagnostics.json`
+- `validation.json`
+- `diffusion_eigenvalue.npz`
+- `figures/diffusion_eigenvalue_errors.png`
+
 ## CI artifacts
 
 Every push runs a `benchmark-artifacts` CI job. It executes deterministic FAST
@@ -95,6 +103,7 @@ mhx benchmark decay --outdir outputs/ci/resistive_decay
 mhx benchmark scaling --outdir outputs/ci/reconnection_scaling
 mhx benchmark fkr-window --outdir outputs/ci/fkr_window
 mhx benchmark linearized-rhs --outdir outputs/ci/linearized_rhs
+mhx benchmark diffusion-eigenvalue --outdir outputs/ci/diffusion_eigenvalue
 mhx benchmark timing --outdir outputs/ci/timing --repeats 1 --warmups 0
 mhx run examples/linear_tearing_twofluid_toy.toml --outdir outputs/ci/twofluid_toy
 mhx figures outputs/ci/twofluid_toy --gif
@@ -174,6 +183,10 @@ large-$\Delta'$ Coppi regimes.
 The linearized-RHS gate compares JAX's matrix-free Jacobian-vector product
 against a centered finite difference of the reduced-MHD RHS. This is the
 operator-level scaffold for later calibrated tearing eigenmode benchmarks.
+
+The diffusion-eigenvalue gate validates the Rayleigh-quotient/residual path on a
+known Fourier eigenpair before using the same matrix-free machinery for tearing
+operators.
 
 References used for the benchmark roadmap include
 [Furth, Killeen, and Rosenbluth 1963](https://cir.nii.ac.jp/crid/1363107370207531008),

@@ -208,6 +208,44 @@ Expected files:
 
 ![Linearized RHS consistency](_static/validation/linearized_rhs/linearized_rhs_errors.png)
 
+## Diffusion eigenvalue scaffold
+
+Before applying eigenvalue machinery to tearing equilibria, MHX validates the
+matrix-free operator path on a single Fourier eigenfunction of the periodic
+diffusion operator:
+
+$$
+\mathcal{D}\psi = \eta\nabla^2\psi,\qquad
+\psi_k=\sin(k_x x+k_y y),\qquad
+\lambda_k = -\eta(k_x^2+k_y^2).
+$$
+
+The benchmark computes the Rayleigh quotient
+
+$$
+\lambda_{\mathrm{RQ}} = \frac{\langle \psi_k,\mathcal{D}\psi_k\rangle}
+{\langle \psi_k,\psi_k\rangle},
+$$
+
+and the relative eigen-residual
+
+$$
+\frac{\|\mathcal{D}\psi_k-\lambda_k\psi_k\|_2}{\|\psi_k\|_2}.
+$$
+
+```bash
+mhx benchmark diffusion-eigenvalue --outdir outputs/benchmarks/diffusion_eigenvalue
+```
+
+Expected files:
+
+- `outputs/benchmarks/diffusion_eigenvalue/diagnostics.json`
+- `outputs/benchmarks/diffusion_eigenvalue/validation.json`
+- `outputs/benchmarks/diffusion_eigenvalue/diffusion_eigenvalue.npz`
+- `outputs/benchmarks/diffusion_eigenvalue/figures/diffusion_eigenvalue_errors.png`
+
+![Diffusion eigenvalue gate](_static/validation/diffusion_eigenvalue/diffusion_eigenvalue_errors.png)
+
 Additional source links:
 
 - [Scaling validation implementation](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/scaling.py)
@@ -216,3 +254,5 @@ Additional source links:
 - [FKR window tests](https://github.com/uwplasma/MHX/blob/main/tests/test_fkr_window_validation.py)
 - [Linearized RHS implementation](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/linearized.py)
 - [Linearized RHS tests](https://github.com/uwplasma/MHX/blob/main/tests/test_linearized_rhs_validation.py)
+- [Diffusion eigenvalue implementation](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/eigenvalue.py)
+- [Diffusion eigenvalue tests](https://github.com/uwplasma/MHX/blob/main/tests/test_diffusion_eigenvalue_validation.py)
