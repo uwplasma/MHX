@@ -21,6 +21,7 @@ from mhx.benchmarks import (
     write_harris_delta_prime_validation,
     write_linear_tearing_dispersion_validation,
     write_linear_tearing_eigenvalue_validation,
+    write_linear_tearing_layer_validation,
     write_linear_tearing_timedomain_validation,
     write_linearized_rhs_validation,
     write_periodic_current_sheet_eigenvalue_validation,
@@ -496,6 +497,36 @@ def benchmark_linear_tearing_dispersion(
         outdir,
         grid_points=grid_points,
         wavenumber=_parse_float_tuple(wavenumber),
+    )
+    typer.echo(f"wrote {manifest_path}")
+    if not validation["passed"]:
+        raise typer.Exit(code=1)
+
+
+@benchmark_app.command("linear-tearing-layer")
+def benchmark_linear_tearing_layer(
+    outdir: Annotated[
+        Path,
+        typer.Option(
+            "--outdir",
+            help="Output directory for Harris-sheet eigenfunction-layer artifacts.",
+        ),
+    ] = Path("outputs/benchmarks/linear_tearing_layer"),
+    grid_points: Annotated[
+        int,
+        typer.Option("--grid-points", help="Interior grid count for each S sample."),
+    ] = 192,
+    lundquist: Annotated[
+        str,
+        typer.Option("--lundquist", help="Comma-separated Lundquist-number samples."),
+    ] = "250,500,1000,2000",
+) -> None:
+    """Run a Harris-sheet tearing eigenfunction localization gate."""
+    _configure_validation_precision()
+    manifest_path, validation = write_linear_tearing_layer_validation(
+        outdir,
+        grid_points=grid_points,
+        lundquist=_parse_float_tuple(lundquist),
     )
     typer.echo(f"wrote {manifest_path}")
     if not validation["passed"]:

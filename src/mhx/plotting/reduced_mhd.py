@@ -501,6 +501,112 @@ def plot_linear_tearing_dispersion_validation(
     return output_path
 
 
+def plot_linear_tearing_layer_validation(
+    lundquist,
+    growth_rate,
+    stream_half_width,
+    current_half_width,
+    flux_half_width,
+    residual_norm,
+    *,
+    selected_coordinate,
+    selected_flux_eigenfunction,
+    selected_streamfunction_imag,
+    selected_current_density,
+    stream_width_slope: float,
+    growth_rate_slope: float,
+    max_residual_norm: float,
+    path: str | Path,
+) -> Path:
+    """Plot the Harris-sheet tearing eigenfunction localization gate."""
+    import matplotlib.pyplot as plt
+
+    output_path = Path(path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    s_values = np.asarray(lundquist)
+    growth_values = np.asarray(growth_rate)
+    stream_width_values = np.asarray(stream_half_width)
+    current_width_values = np.asarray(current_half_width)
+    flux_width_values = np.asarray(flux_half_width)
+    residual_values = np.asarray(residual_norm)
+    coordinate = np.asarray(selected_coordinate)
+
+    fig, axes = plt.subplots(2, 2, figsize=(11.2, 8.0), constrained_layout=True)
+    axes[0, 0].loglog(s_values, growth_values, "o-", color="#3266a8")
+    axes[0, 0].set_xlabel(r"$S$")
+    axes[0, 0].set_ylabel(r"$\operatorname{Re}\lambda$")
+    axes[0, 0].set_title(rf"Growth trend, slope {growth_rate_slope:.2f}")
+
+    axes[0, 1].loglog(
+        s_values,
+        stream_width_values,
+        "o-",
+        color="#8c4fb4",
+        label=r"flow half width",
+    )
+    axes[0, 1].loglog(
+        s_values,
+        current_width_values,
+        "s-",
+        color="#4b8f5a",
+        label=r"current half width",
+    )
+    axes[0, 1].loglog(
+        s_values,
+        flux_width_values,
+        "^-",
+        color="#b58b3b",
+        label=r"flux half width",
+    )
+    axes[0, 1].set_xlabel(r"$S$")
+    axes[0, 1].set_ylabel(r"half-maximum width")
+    axes[0, 1].set_title(rf"Layer narrowing, flow slope {stream_width_slope:.2f}")
+    axes[0, 1].legend(frameon=False, fontsize=8)
+
+    axes[1, 0].plot(
+        coordinate,
+        np.asarray(selected_flux_eigenfunction),
+        color="#3266a8",
+        label=r"$b(x)$",
+    )
+    axes[1, 0].plot(
+        coordinate,
+        np.asarray(selected_streamfunction_imag),
+        color="#8c4fb4",
+        label=r"$\operatorname{Im}u(x)$",
+    )
+    axes[1, 0].plot(
+        coordinate,
+        np.asarray(selected_current_density),
+        color="#4b8f5a",
+        label=r"$-\left(d_x^2-k^2\right)b$",
+    )
+    axes[1, 0].axhline(0.0, color="0.85", linewidth=0.8)
+    axes[1, 0].axvline(0.0, color="0.85", linewidth=0.8)
+    axes[1, 0].set_xlabel(r"$x/a$")
+    axes[1, 0].set_ylabel("normalized profile")
+    axes[1, 0].set_title("Reference eigenfunction localization")
+    axes[1, 0].legend(frameon=False, fontsize=8)
+
+    axes[1, 1].semilogy(s_values, residual_values, "s-", color="#8c4fb4", label="residual")
+    axes[1, 1].axhline(
+        max_residual_norm,
+        color="black",
+        linestyle="--",
+        linewidth=1.0,
+        label="gate",
+    )
+    axes[1, 1].set_xlabel(r"$S$")
+    axes[1, 1].set_ylabel(r"$\|Lv-\lambda v\|_2/\|v\|_2$")
+    axes[1, 1].set_title("Dense eigenpair residual")
+    axes[1, 1].legend(frameon=False, fontsize=8)
+
+    fig.suptitle("Harris-sheet tearing eigenfunction layer gate")
+    fig.savefig(output_path, dpi=220)
+    plt.close(fig)
+    return output_path
+
+
 def plot_linear_tearing_timedomain_validation(
     times,
     amplitude,

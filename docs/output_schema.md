@@ -127,6 +127,7 @@ validation gates and writes:
   `harris_delta_prime/`,
   `linear_tearing_eigenvalue/`,
   `linear_tearing_dispersion/`,
+  `linear_tearing_layer/`,
   `linear_tearing_timedomain/`,
   `cosine_equilibrium_linearization/`,
   `periodic_current_sheet_eigenvalue/`, and `arnoldi/`.
@@ -227,6 +228,23 @@ writes:
   masks for unstable samples and stable controls.
 - `figures/linear_tearing_dispersion.png`: growth branch, oscillatory stable
   controls, and residual gate.
+
+## Harris tearing eigenfunction-layer outputs
+
+`mhx benchmark linear-tearing-layer --outdir outputs/benchmarks/linear_tearing_layer`
+writes:
+
+- `diagnostics.json`: FAST Harris eigenfunction-shape diagnostics with schema
+  `mhx.validation.linear_tearing_layer.v1`.
+- `validation.json`: pass/fail gates for positive growth, monotonic flow-layer
+  narrowing with $S$, outer-flux width stability, broad fitted-slope ranges,
+  and dense eigen-residuals.
+- `linear_tearing_layer.npz`: sampled `lundquist`, `growth_rate`,
+  `stream_half_width`, `current_half_width`, `flux_half_width`,
+  `residual_norm`, fitted slopes, flux-width spread, and normalized reference
+  eigenfunction profiles.
+- `figures/linear_tearing_layer.png`: growth trend, layer-width trend,
+  reference eigenfunction localization, and residual gate.
 
 ## Harris tearing time-domain replay outputs
 

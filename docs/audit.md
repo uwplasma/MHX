@@ -17,6 +17,7 @@ solver.
 | FKR growth-rate assembly | Propagates numerical Harris $\Delta'$ into $\gamma\tau_a\sim S_a^{-3/5}(ka)^{2/5}(\Delta'a)^{4/5}$ and gates both exponents. | Yes as an asymptotic growth-rate target; not a direct eigenvalue solve. |
 | Direct Harris-sheet tearing eigenvalue | Solves the 1D reduced-MHD Harris eigenproblem at $S=1000$, $ka=0.5$, $d/a=10$ and gates against $\gamma\simeq0.0131$. | Yes for this single reference eigenproblem; not yet a full FKR/Coppi scan. |
 | Finite-domain tearing dispersion | Scans the same eigenproblem over sampled $ka$, checks the unstable band below $ka=1$, stable controls above $ka=1$, residuals, and the $ka=0.5$ anchor. | Useful FAST dispersion gate; not yet an asymptotic Lundquist-number scan. |
+| Harris eigenfunction layer shape | Scans the direct eigenproblem over $S$, checks flow-layer narrowing, outer-flux width stability, broad fitted-slope ranges, and residuals. | Useful eigenfunction-localization gate; not an asymptotic exponent validation. |
 | Time-domain Harris eigenmode replay | Integrates the same direct eigenvector under $\dot q=Lq$ and refits $\gamma$ from $\log\|q(t)\|_2$. | Yes for linear growth fitting; not a nonlinear island-growth validation. |
 | Matrix-free JVP and eigen scaffolds | JAX JVP, zero-state eigenmodes, Arnoldi, and power iteration are tested on controlled fixtures. | Good scaffolding for larger matrix-free tearing spectra. |
 | Nonzero current-sheet linearization | Exact bracket couplings around $\psi_0=A\cos y$ are tested. | Good operator gate; still not an FKR benchmark. |
@@ -39,7 +40,10 @@ published $\gamma\simeq0.0131$ reference, the selected dense eigenpair residual
 is near roundoff, and the eigenfunction parity is correct. The finite-domain
 dispersion plot adds a useful branch-level check: sampled $0<ka<1$ points grow,
 sampled $ka>1$ controls are stable/oscillatory, and residuals remain near
-roundoff. The time-domain replay plot is a diagnostic-loop check: the RK4
+roundoff. The eigenfunction-layer plot checks a separate failure mode:
+the selected branch has a localized flow/current response near the resonant
+surface, and the flow layer narrows as $S$ rises while the outer flux width
+stays nearly fixed. The time-domain replay plot is a diagnostic-loop check: the RK4
 amplitude follows $\exp(\gamma t)$ and the fitted growth rate matches the
 eigenvalue, so future nonlinear growth fits have a calibrated linear baseline.
 The broader scaling plots remain analytic reference plots; they
@@ -76,6 +80,7 @@ The repository is currently defensible as a validation-first rebuild with:
 - direct reduced-MHD Harris-sheet tearing eigenvalue gate for one published
   reference case;
 - finite-domain Harris-sheet tearing dispersion sign/residual gate;
+- Harris eigenfunction localization gate over a small $S$ scan;
 - time-domain Harris eigenmode growth-fit replay;
 - matrix-free linearization scaffolds;
 - tiny nonzero-equilibrium dense-spectrum gate;

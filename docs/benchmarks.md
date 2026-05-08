@@ -62,6 +62,7 @@ mhx benchmark fkr-growth --outdir outputs/benchmarks/fkr_growth_rate
 mhx benchmark harris-delta-prime --outdir outputs/benchmarks/harris_delta_prime
 mhx benchmark linear-tearing-eigenvalue --outdir outputs/benchmarks/linear_tearing_eigenvalue
 mhx benchmark linear-tearing-dispersion --outdir outputs/benchmarks/linear_tearing_dispersion
+mhx benchmark linear-tearing-layer --outdir outputs/benchmarks/linear_tearing_layer
 mhx benchmark linear-tearing-timedomain --outdir outputs/benchmarks/linear_tearing_timedomain
 mhx benchmark linearized-rhs --outdir outputs/benchmarks/linearized_rhs
 mhx benchmark reduced-mhd-eigenmode --outdir outputs/benchmarks/reduced_mhd_eigenmode
@@ -116,6 +117,13 @@ The finite-domain tearing dispersion command writes:
 - `validation.json`
 - `linear_tearing_dispersion.npz`
 - `figures/linear_tearing_dispersion.png`
+
+The Harris eigenfunction-layer command writes:
+
+- `diagnostics.json`
+- `validation.json`
+- `linear_tearing_layer.npz`
+- `figures/linear_tearing_layer.png`
 
 The time-domain Harris eigenmode replay command writes:
 
@@ -194,6 +202,7 @@ mhx benchmark fkr-growth --outdir outputs/ci/fkr_growth_rate
 mhx benchmark harris-delta-prime --outdir outputs/ci/harris_delta_prime
 mhx benchmark linear-tearing-eigenvalue --outdir outputs/ci/linear_tearing_eigenvalue
 mhx benchmark linear-tearing-dispersion --outdir outputs/ci/linear_tearing_dispersion
+mhx benchmark linear-tearing-layer --outdir outputs/ci/linear_tearing_layer
 mhx benchmark linear-tearing-timedomain --outdir outputs/ci/linear_tearing_timedomain
 mhx benchmark linearized-rhs --outdir outputs/ci/linearized_rhs
 mhx benchmark reduced-mhd-eigenmode --outdir outputs/ci/reduced_mhd_eigenmode
@@ -316,6 +325,12 @@ controls above $ka=1$, checks dense eigenpair residuals, and retains the
 $ka=0.5$ literature anchor. This is the first dispersion-shaped tearing gate,
 but it is still FAST and finite-domain rather than a production asymptotic
 FKR/Coppi study.
+
+The Harris eigenfunction-layer gate repeats the direct eigenproblem over a
+small $S$ scan and measures half-maximum widths of the flux, flow, and current
+perturbation profiles. It gates monotonic flow-layer narrowing, outer-flux
+width stability, broad fitted-slope ranges, and eigen residuals. This is a
+shape/localization validation, not an asymptotic exponent claim.
 
 The time-domain Harris eigenmode replay gate integrates the same discrete
 operator as $\dot q=Lq$ from the selected tearing eigenvector. It fits

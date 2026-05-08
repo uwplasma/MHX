@@ -371,6 +371,50 @@ $ka=1$ and stable oscillatory controls above $ka=1$. The remaining
 research-grade target is a higher-resolution Lundquist-number sweep that
 separates constant-$\psi$ FKR and large-$\Delta'$ Coppi branches.
 
+## Harris eigenfunction layer gate
+
+The direct eigenvalue and dispersion gates verify growth rates and residuals.
+They do not by themselves verify that the selected eigenfunction has the
+expected resonant-surface localization. MHX therefore adds a conservative FAST
+shape gate over a Lundquist-number scan. For each sampled $S$, it solves the
+same Harris eigenproblem and measures half-maximum widths for:
+
+$$
+b(x),\qquad \operatorname{Im}u(x),\qquad
+j_1(x)=-\left(\frac{d^2}{dx^2}-k^2\right)b(x).
+$$
+
+The validation gates are deliberately qualitative:
+
+$$
+\Delta_u(S_1)>\Delta_u(S_2)>\cdots,\qquad
+\operatorname{spread}(\Delta_b)/\langle\Delta_b\rangle \ll 1,
+$$
+
+where $\Delta_u$ is the flow-layer half-width and $\Delta_b$ is the outer flux
+half-width. The fitted slopes are recorded and checked only against broad FAST
+ranges. They should not be interpreted as production FKR/Coppi exponents.
+
+```bash
+mhx benchmark linear-tearing-layer \
+  --outdir outputs/benchmarks/linear_tearing_layer
+```
+
+Expected files:
+
+- `outputs/benchmarks/linear_tearing_layer/diagnostics.json`
+- `outputs/benchmarks/linear_tearing_layer/validation.json`
+- `outputs/benchmarks/linear_tearing_layer/linear_tearing_layer.npz`
+- `outputs/benchmarks/linear_tearing_layer/figures/linear_tearing_layer.png`
+
+![Harris-sheet tearing eigenfunction layer gate](_static/validation/linear_tearing_layer/linear_tearing_layer.png)
+
+This gate is useful because it catches a different class of failure than a
+growth-rate check: an implementation can select a plausible eigenvalue while
+returning a poorly localized or mis-phased eigenfunction. The current gate
+confirms monotonic narrowing of the flow layer and stability of the outer flux
+envelope in the FAST scan.
+
 ## Time-domain Harris eigenmode replay
 
 A growth-rate diagnostic is only useful if it recovers the known rate from a

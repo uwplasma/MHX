@@ -188,6 +188,28 @@ def validation_catalog_entries() -> tuple[BenchmarkCatalogEntry, ...]:
             ),
         ),
         BenchmarkCatalogEntry(
+            name="linear_tearing_layer",
+            command=(
+                "mhx benchmark linear-tearing-layer "
+                "--outdir outputs/benchmarks/linear_tearing_layer"
+            ),
+            schema="mhx.validation.linear_tearing_layer.v1",
+            purpose=(
+                "FAST Harris-sheet eigenfunction-shape gate checking flow-layer "
+                "narrowing with S, outer-flux width stability, and eigen residuals."
+            ),
+            expected_outputs=(
+                "diagnostics.json",
+                "validation.json",
+                "linear_tearing_layer.npz",
+                "figures/linear_tearing_layer.png",
+            ),
+            literature_anchor=(
+                "Classical tearing localization near the resonant surface; broad "
+                "FAST trend gate, not an asymptotic exponent claim."
+            ),
+        ),
+        BenchmarkCatalogEntry(
             name="linear_tearing_timedomain",
             command=(
                 "mhx benchmark linear-tearing-timedomain "

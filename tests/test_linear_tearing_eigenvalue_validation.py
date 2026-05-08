@@ -9,12 +9,15 @@ from typer.testing import CliRunner
 from mhx.benchmarks import (
     LINEAR_TEARING_DISPERSION_SCHEMA,
     LINEAR_TEARING_EIGENVALUE_SCHEMA,
+    LINEAR_TEARING_LAYER_SCHEMA,
     LINEAR_TEARING_TIMEDOMAIN_SCHEMA,
     run_linear_tearing_dispersion_validation,
     run_linear_tearing_eigenvalue_validation,
+    run_linear_tearing_layer_validation,
     run_linear_tearing_timedomain_validation,
     write_linear_tearing_dispersion_validation,
     write_linear_tearing_eigenvalue_validation,
+    write_linear_tearing_layer_validation,
     write_linear_tearing_timedomain_validation,
 )
 from mhx.cli.main import app
@@ -120,6 +123,42 @@ def test_linear_tearing_timedomain_rejects_invalid_inputs() -> None:
         run_linear_tearing_timedomain_validation(fit_start_fraction=1.0)
 
 
+def test_linear_tearing_layer_gates_eigenfunction_localization() -> None:
+    result = run_linear_tearing_layer_validation(grid_points=128)
+    assert result.diagnostics["schema"] == LINEAR_TEARING_LAYER_SCHEMA
+    assert result.validation["passed"] is True
+    assert all(result.validation["checks"].values())
+    assert result.lundquist.shape == result.growth_rate.shape
+    assert result.stream_half_width.shape == result.lundquist.shape
+    assert np.all(np.diff(result.growth_rate) < 0.0)
+    assert np.all(np.diff(result.stream_half_width) < 0.0)
+    assert result.stream_width_slope < -0.15
+    assert result.growth_rate_slope < -0.2
+    assert result.flux_width_relative_spread < 2.0e-3
+    assert np.max(result.residual_norm) < 1.0e-10
+    assert result.selected_coordinate.shape == result.selected_flux_eigenfunction.shape
+    assert result.selected_coordinate.shape == result.selected_current_density.shape
+
+
+def test_linear_tearing_layer_rejects_invalid_inputs() -> None:
+    with pytest.raises(ValueError, match="grid_points"):
+        run_linear_tearing_layer_validation(grid_points=32)
+    with pytest.raises(ValueError, match="half_width"):
+        run_linear_tearing_layer_validation(half_width=1.0)
+    with pytest.raises(ValueError, match="at least four"):
+        run_linear_tearing_layer_validation(lundquist=(250, 500, 1000))
+    with pytest.raises(ValueError, match="positive"):
+        run_linear_tearing_layer_validation(lundquist=(250, 500, 0, 1000))
+    with pytest.raises(ValueError, match="strictly increasing"):
+        run_linear_tearing_layer_validation(lundquist=(250, 1000, 500, 2000))
+    with pytest.raises(ValueError, match="0 < k < 1"):
+        run_linear_tearing_layer_validation(wavenumber=1.2)
+    with pytest.raises(ValueError, match="stream_width_slope_bounds"):
+        run_linear_tearing_layer_validation(stream_width_slope_bounds=(-0.1, -0.8))
+    with pytest.raises(ValueError, match="growth_rate_slope_bounds"):
+        run_linear_tearing_layer_validation(growth_rate_slope_bounds=(-0.1, -0.8))
+
+
 def test_write_linear_tearing_eigenvalue_artifacts_and_cli(tmp_path) -> None:
     manifest_path, validation = write_linear_tearing_eigenvalue_validation(tmp_path)
     assert manifest_path == tmp_path / "manifest.json"
@@ -143,6 +182,37 @@ def test_write_linear_tearing_eigenvalue_artifacts_and_cli(tmp_path) -> None:
             str(outdir),
             "--grid-points",
             "192,256,320",
+        ],
+    )
+    assert result.exit_code == 0, result.stdout
+    assert (outdir / "validation.json").exists()
+
+
+def test_write_linear_tearing_layer_artifacts_and_cli(tmp_path) -> None:
+    manifest_path, validation = write_linear_tearing_layer_validation(
+        tmp_path,
+        grid_points=128,
+    )
+    assert manifest_path == tmp_path / "manifest.json"
+    assert validation["passed"] is True
+    diagnostics = json.loads((tmp_path / "diagnostics.json").read_text())
+    assert diagnostics["references"]["scope"].startswith("This FAST")
+    history = np.load(tmp_path / "linear_tearing_layer.npz")
+    assert history["schema"] == LINEAR_TEARING_LAYER_SCHEMA
+    assert history["lundquist"].shape == history["stream_half_width"].shape
+    assert history["stream_width_slope"] < -0.15
+    assert (tmp_path / "figures" / "linear_tearing_layer.png").stat().st_size > 0
+
+    outdir = tmp_path / "cli-layer"
+    result = CliRunner().invoke(
+        app,
+        [
+            "benchmark",
+            "linear-tearing-layer",
+            "--outdir",
+            str(outdir),
+            "--grid-points",
+            "128",
         ],
     )
     assert result.exit_code == 0, result.stdout

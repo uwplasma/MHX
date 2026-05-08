@@ -24,7 +24,7 @@ The current FAST reduced-MHD runs are smoke tests, not nonlinear reconnection
 claims. The strongest current results are exact linear validation gates,
 the direct Harris-sheet tearing eigenvalue gate for one published reference
 case, finite-domain dispersion and time-domain eigenmode replay gates,
-matrix-free operator checks, and extension APIs. Full FKR/Coppi
+eigenfunction-localization gates, matrix-free operator checks, and extension APIs. Full FKR/Coppi
 dispersion scans, nonlinear plasmoid dynamics, and neural-ODE inverse-design
 claims remain roadmap items.
 
@@ -99,6 +99,7 @@ mhx benchmark fkr-growth --outdir outputs/benchmarks/fkr_growth_rate
 mhx benchmark harris-delta-prime --outdir outputs/benchmarks/harris_delta_prime
 mhx benchmark linear-tearing-eigenvalue --outdir outputs/benchmarks/linear_tearing_eigenvalue
 mhx benchmark linear-tearing-dispersion --outdir outputs/benchmarks/linear_tearing_dispersion
+mhx benchmark linear-tearing-layer --outdir outputs/benchmarks/linear_tearing_layer
 mhx benchmark linear-tearing-timedomain --outdir outputs/benchmarks/linear_tearing_timedomain
 mhx benchmark linearized-rhs --outdir outputs/benchmarks/linearized_rhs
 mhx benchmark reduced-mhd-eigenmode --outdir outputs/benchmarks/reduced_mhd_eigenmode
@@ -120,6 +121,10 @@ tearing eigenvalue gate:
 and the finite-domain tearing dispersion gate:
 
 ![Finite-domain tearing dispersion gate](docs/_static/validation/linear_tearing_dispersion/linear_tearing_dispersion.png)
+
+and the eigenfunction-layer localization gate:
+
+![Harris tearing eigenfunction layer gate](docs/_static/validation/linear_tearing_layer/linear_tearing_layer.png)
 
 and the time-domain eigenmode replay gate:
 

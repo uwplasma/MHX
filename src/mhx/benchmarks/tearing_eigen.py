@@ -13,11 +13,13 @@ from mhx.io import write_manifest
 from mhx.plotting import (
     plot_linear_tearing_dispersion_validation,
     plot_linear_tearing_eigenvalue_validation,
+    plot_linear_tearing_layer_validation,
     plot_linear_tearing_timedomain_validation,
 )
 
 LINEAR_TEARING_DISPERSION_SCHEMA = "mhx.validation.linear_tearing_dispersion.v1"
 LINEAR_TEARING_EIGENVALUE_SCHEMA = "mhx.validation.linear_tearing_eigenvalue.v1"
+LINEAR_TEARING_LAYER_SCHEMA = "mhx.validation.linear_tearing_layer.v1"
 LINEAR_TEARING_TIMEDOMAIN_SCHEMA = "mhx.validation.linear_tearing_timedomain.v1"
 
 
@@ -87,6 +89,27 @@ class LinearTearingTimeDomainResult:
 
 
 @dataclass(frozen=True)
+class LinearTearingLayerResult:
+    """Harris-sheet tearing eigenfunction localization diagnostics."""
+
+    lundquist: np.ndarray
+    growth_rate: np.ndarray
+    stream_half_width: np.ndarray
+    current_half_width: np.ndarray
+    flux_half_width: np.ndarray
+    residual_norm: np.ndarray
+    stream_width_slope: float
+    growth_rate_slope: float
+    flux_width_relative_spread: float
+    selected_coordinate: np.ndarray
+    selected_flux_eigenfunction: np.ndarray
+    selected_streamfunction_imag: np.ndarray
+    selected_current_density: np.ndarray
+    diagnostics: dict[str, Any]
+    validation: dict[str, Any]
+
+
+@dataclass(frozen=True)
 class _EigenSolve:
     grid_points: int
     dx: float
@@ -102,6 +125,184 @@ class _HarrisOperator:
     matrix: np.ndarray
     coordinate: np.ndarray
     dx: float
+
+
+def run_linear_tearing_layer_validation(
+    *,
+    grid_points: int = 192,
+    half_width: float = 10.0,
+    lundquist: tuple[float, ...] = (250.0, 500.0, 1000.0, 2000.0),
+    wavenumber: float = 0.5,
+    max_residual_norm: float = 1.0e-10,
+    min_stream_width_contraction: float = 1.25,
+    max_flux_width_relative_spread: float = 2.0e-3,
+    stream_width_slope_bounds: tuple[float, float] = (-0.8, -0.15),
+    growth_rate_slope_bounds: tuple[float, float] = (-0.8, -0.2),
+) -> LinearTearingLayerResult:
+    r"""Validate Harris tearing eigenfunction localization over a FAST S scan.
+
+    The direct eigenvalue gate proves one growth-rate reference point. This
+    diagnostic adds a conservative eigenfunction-shape check: as ``S`` rises,
+    the tearing flow layer around the resonant surface should narrow while the
+    outer magnetic-flux envelope remains nearly unchanged. The fitted exponents
+    are intentionally broad FAST gates, not a production asymptotic FKR/Coppi
+    claim.
+    """
+    lundquist_values = np.asarray(lundquist, dtype=float)
+    _validate_layer_inputs(
+        grid_points=grid_points,
+        half_width=half_width,
+        lundquist=lundquist_values,
+        wavenumber=wavenumber,
+        stream_width_slope_bounds=stream_width_slope_bounds,
+        growth_rate_slope_bounds=growth_rate_slope_bounds,
+    )
+    solves = tuple(
+        _solve_harris_tearing_eigenproblem(
+            grid_points,
+            half_width=half_width,
+            lundquist=float(value),
+            wavenumber=wavenumber,
+        )
+        for value in lundquist_values
+    )
+    growth_rate = np.asarray([solve.selected_eigenvalue.real for solve in solves])
+    residual_norm = np.asarray([solve.residual_norm for solve in solves])
+    stream_half_width = np.empty_like(lundquist_values)
+    flux_half_width = np.empty_like(lundquist_values)
+    current_half_width = np.empty_like(lundquist_values)
+    reference_index = int(np.argmin(np.abs(lundquist_values - 1000.0)))
+    selected_flux = np.empty(0)
+    selected_stream = np.empty(0)
+    selected_current = np.empty(0)
+    for index, solve in enumerate(solves):
+        streamfunction, flux = _aligned_tearing_components(
+            solve.selected_eigenvector,
+            solve.grid_points,
+        )
+        derivative = _second_derivative_minus_k_squared(
+            solve.grid_points,
+            solve.dx,
+            wavenumber,
+        )
+        current_density = -(derivative @ flux)
+        stream_profile = np.imag(streamfunction)
+        flux_profile = np.real(flux)
+        current_profile = np.real(current_density)
+        stream_half_width[index] = _half_max_width(solve.coordinate, stream_profile)
+        flux_half_width[index] = _half_max_width(solve.coordinate, flux_profile)
+        current_half_width[index] = _half_max_width(solve.coordinate, current_profile)
+        if index == reference_index:
+            selected_flux = _normalize_for_plotting(flux_profile)
+            selected_stream = _normalize_for_plotting(stream_profile)
+            selected_current = _normalize_for_plotting(current_profile)
+
+    if selected_flux.size == 0:
+        reference_solve = solves[reference_index]
+        streamfunction, flux = _aligned_tearing_components(
+            reference_solve.selected_eigenvector,
+            reference_solve.grid_points,
+        )
+        derivative = _second_derivative_minus_k_squared(
+            reference_solve.grid_points,
+            reference_solve.dx,
+            wavenumber,
+        )
+        selected_flux = _normalize_for_plotting(np.real(flux))
+        selected_stream = _normalize_for_plotting(np.imag(streamfunction))
+        selected_current = _normalize_for_plotting(np.real(-(derivative @ flux)))
+
+    stream_width_slope = _loglog_slope(lundquist_values, stream_half_width)
+    growth_rate_slope = _loglog_slope(lundquist_values, growth_rate)
+    flux_width_relative_spread = float(
+        (np.max(flux_half_width) - np.min(flux_half_width)) / np.mean(flux_half_width)
+    )
+    checks = {
+        "finite_positive_growth_rates": bool(
+            np.all(np.isfinite(growth_rate)) and np.all(growth_rate > 0.0)
+        ),
+        "finite_positive_widths": bool(
+            np.all(np.isfinite(stream_half_width))
+            and np.all(stream_half_width > 0.0)
+            and np.all(np.isfinite(flux_half_width))
+            and np.all(flux_half_width > 0.0)
+            and np.all(np.isfinite(current_half_width))
+            and np.all(current_half_width > 0.0)
+        ),
+        "growth_rate_decreases_with_lundquist": bool(np.all(np.diff(growth_rate) < 0.0)),
+        "stream_layer_narrows_with_lundquist": bool(np.all(np.diff(stream_half_width) < 0.0)),
+        "stream_layer_contracts_enough": bool(
+            stream_half_width[0] / stream_half_width[-1] >= min_stream_width_contraction
+        ),
+        "stream_width_slope_in_expected_fast_range": bool(
+            stream_width_slope_bounds[0] <= stream_width_slope <= stream_width_slope_bounds[1]
+        ),
+        "growth_rate_slope_in_expected_fast_range": bool(
+            growth_rate_slope_bounds[0] <= growth_rate_slope <= growth_rate_slope_bounds[1]
+        ),
+        "outer_flux_width_is_stable": bool(
+            flux_width_relative_spread <= max_flux_width_relative_spread
+        ),
+        "eigen_residuals_small": bool(np.all(residual_norm <= max_residual_norm)),
+    }
+    diagnostics = {
+        "schema": LINEAR_TEARING_LAYER_SCHEMA,
+        "equilibrium": "B_y = tanh(x/a), a = 1",
+        "boundary_conditions": "u=b=0 at x=+-d",
+        "grid_points": grid_points,
+        "half_width": half_width,
+        "lundquist": lundquist_values.tolist(),
+        "wavenumber": wavenumber,
+        "growth_rate": growth_rate.tolist(),
+        "stream_half_width": stream_half_width.tolist(),
+        "current_half_width": current_half_width.tolist(),
+        "flux_half_width": flux_half_width.tolist(),
+        "residual_norm": residual_norm.tolist(),
+        "stream_width_slope": stream_width_slope,
+        "growth_rate_slope": growth_rate_slope,
+        "flux_width_relative_spread": flux_width_relative_spread,
+        "reference_lundquist": float(lundquist_values[reference_index]),
+        "references": {
+            "fkr_inner_layer": (
+                "Classical tearing theory predicts localization of the inner "
+                "resistive layer around the resonant surface as S increases."
+            ),
+            "scope": (
+                "This FAST finite-domain shape gate checks monotonic narrowing "
+                "and residuals; it is not a calibrated asymptotic exponent claim."
+            ),
+        },
+    }
+    validation = {
+        "schema": "mhx.validation.linear_tearing_layer.gates.v1",
+        "passed": all(checks.values()),
+        "checks": checks,
+        "thresholds": {
+            "max_residual_norm": max_residual_norm,
+            "min_stream_width_contraction": min_stream_width_contraction,
+            "max_flux_width_relative_spread": max_flux_width_relative_spread,
+            "stream_width_slope_bounds": list(stream_width_slope_bounds),
+            "growth_rate_slope_bounds": list(growth_rate_slope_bounds),
+        },
+        "diagnostics": diagnostics,
+    }
+    return LinearTearingLayerResult(
+        lundquist=lundquist_values,
+        growth_rate=growth_rate,
+        stream_half_width=stream_half_width,
+        current_half_width=current_half_width,
+        flux_half_width=flux_half_width,
+        residual_norm=residual_norm,
+        stream_width_slope=stream_width_slope,
+        growth_rate_slope=growth_rate_slope,
+        flux_width_relative_spread=flux_width_relative_spread,
+        selected_coordinate=solves[reference_index].coordinate,
+        selected_flux_eigenfunction=selected_flux,
+        selected_streamfunction_imag=selected_stream,
+        selected_current_density=selected_current,
+        diagnostics=diagnostics,
+        validation=validation,
+    )
 
 
 def run_linear_tearing_timedomain_validation(
@@ -689,6 +890,73 @@ def write_linear_tearing_dispersion_validation(
     return manifest_path, result.validation
 
 
+def write_linear_tearing_layer_validation(
+    outdir: str | Path,
+    **kwargs: Any,
+) -> tuple[Path, dict[str, Any]]:
+    """Write Harris-sheet tearing eigenfunction-layer artifacts."""
+    output_dir = Path(outdir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    result = run_linear_tearing_layer_validation(**kwargs)
+
+    diagnostics_path = output_dir / "diagnostics.json"
+    validation_path = output_dir / "validation.json"
+    history_path = output_dir / "linear_tearing_layer.npz"
+    manifest_path = output_dir / "manifest.json"
+    diagnostics_path.write_text(
+        json.dumps(result.diagnostics, indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+    validation_path.write_text(
+        json.dumps(result.validation, indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+    np.savez_compressed(
+        history_path,
+        schema=LINEAR_TEARING_LAYER_SCHEMA,
+        lundquist=result.lundquist,
+        growth_rate=result.growth_rate,
+        stream_half_width=result.stream_half_width,
+        current_half_width=result.current_half_width,
+        flux_half_width=result.flux_half_width,
+        residual_norm=result.residual_norm,
+        stream_width_slope=result.stream_width_slope,
+        growth_rate_slope=result.growth_rate_slope,
+        flux_width_relative_spread=result.flux_width_relative_spread,
+        selected_coordinate=result.selected_coordinate,
+        selected_flux_eigenfunction=result.selected_flux_eigenfunction,
+        selected_streamfunction_imag=result.selected_streamfunction_imag,
+        selected_current_density=result.selected_current_density,
+    )
+    figure_path = plot_linear_tearing_layer_validation(
+        result.lundquist,
+        result.growth_rate,
+        result.stream_half_width,
+        result.current_half_width,
+        result.flux_half_width,
+        result.residual_norm,
+        selected_coordinate=result.selected_coordinate,
+        selected_flux_eigenfunction=result.selected_flux_eigenfunction,
+        selected_streamfunction_imag=result.selected_streamfunction_imag,
+        selected_current_density=result.selected_current_density,
+        stream_width_slope=result.stream_width_slope,
+        growth_rate_slope=result.growth_rate_slope,
+        max_residual_norm=float(result.validation["thresholds"]["max_residual_norm"]),
+        path=output_dir / "figures" / "linear_tearing_layer.png",
+    )
+    write_manifest(
+        manifest_path,
+        config=result.diagnostics,
+        outputs={
+            "diagnostics": diagnostics_path.name,
+            "validation": validation_path.name,
+            "history": history_path.name,
+            "linear_tearing_layer": str(figure_path.relative_to(output_dir)),
+        },
+    )
+    return manifest_path, result.validation
+
+
 def write_linear_tearing_timedomain_validation(
     outdir: str | Path,
     **kwargs: Any,
@@ -835,6 +1103,37 @@ def _validate_timedomain_inputs(
         raise ValueError("fit_start_fraction must satisfy 0 <= value < 1")
 
 
+def _validate_layer_inputs(
+    *,
+    grid_points: int,
+    half_width: float,
+    lundquist: np.ndarray,
+    wavenumber: float,
+    stream_width_slope_bounds: tuple[float, float],
+    growth_rate_slope_bounds: tuple[float, float],
+) -> None:
+    if grid_points < 64:
+        raise ValueError("grid_points must be at least 64")
+    if half_width <= 1.0:
+        raise ValueError("half_width must be greater than 1")
+    if lundquist.ndim != 1 or lundquist.shape[0] < 4:
+        raise ValueError("at least four Lundquist samples are required")
+    if np.any(lundquist <= 0.0):
+        raise ValueError("Lundquist samples must be positive")
+    if np.any(np.diff(lundquist) <= 0.0):
+        raise ValueError("Lundquist samples must be strictly increasing")
+    if wavenumber <= 0.0 or wavenumber >= 1.0:
+        raise ValueError("wavenumber must satisfy 0 < k < 1 for this layer gate")
+    if len(stream_width_slope_bounds) != 2:
+        raise ValueError("stream_width_slope_bounds must contain two values")
+    if len(growth_rate_slope_bounds) != 2:
+        raise ValueError("growth_rate_slope_bounds must contain two values")
+    if stream_width_slope_bounds[0] >= stream_width_slope_bounds[1]:
+        raise ValueError("stream_width_slope_bounds must be ordered")
+    if growth_rate_slope_bounds[0] >= growth_rate_slope_bounds[1]:
+        raise ValueError("growth_rate_slope_bounds must be ordered")
+
+
 def _matching_index(values: np.ndarray, target: float) -> int:
     matches = np.flatnonzero(np.isclose(values, target, rtol=0.0, atol=1.0e-12))
     if matches.size != 1:
@@ -914,6 +1213,11 @@ def _fit_second_order_limit(dx: np.ndarray, growth_rates: np.ndarray) -> tuple[f
     return float(coefficients[1]), np.asarray(fitted)
 
 
+def _loglog_slope(x_values: np.ndarray, y_values: np.ndarray) -> float:
+    coefficients = np.polyfit(np.log(x_values), np.log(y_values), deg=1)
+    return float(coefficients[0])
+
+
 def _relative_error(value: float, reference: float) -> float:
     return float(abs(value - reference) / max(abs(reference), 1.0e-300))
 
@@ -933,13 +1237,67 @@ def _rk4_linear_step(matrix: np.ndarray, state: np.ndarray, dt: float) -> np.nda
     return state + (dt / 6.0) * (k1 + 2.0 * k2 + 2.0 * k3 + k4)
 
 
-def _aligned_tearing_parity(eigenvector: np.ndarray, grid_points: int) -> tuple[np.ndarray, ...]:
+def _half_max_width(coordinate: np.ndarray, values: np.ndarray) -> float:
+    magnitudes = np.abs(values)
+    peak = float(np.max(magnitudes))
+    if peak <= 0.0:
+        return 0.0
+    threshold = 0.5 * peak
+    indices = np.flatnonzero(magnitudes >= threshold)
+    if indices.size == 0:
+        return 0.0
+    left_index = int(indices[0])
+    right_index = int(indices[-1])
+    left = _threshold_crossing(
+        coordinate,
+        magnitudes,
+        left_index - 1,
+        left_index,
+        threshold,
+    )
+    right = _threshold_crossing(
+        coordinate,
+        magnitudes,
+        right_index,
+        right_index + 1,
+        threshold,
+    )
+    return float(max(right - left, 0.0))
+
+
+def _threshold_crossing(
+    coordinate: np.ndarray,
+    values: np.ndarray,
+    left_index: int,
+    right_index: int,
+    threshold: float,
+) -> float:
+    if left_index < 0:
+        return float(coordinate[0])
+    if right_index >= coordinate.size:
+        return float(coordinate[-1])
+    x0 = float(coordinate[left_index])
+    x1 = float(coordinate[right_index])
+    y0 = float(values[left_index])
+    y1 = float(values[right_index])
+    if y1 == y0:
+        return x0
+    return x0 + (threshold - y0) * (x1 - x0) / (y1 - y0)
+
+
+def _aligned_tearing_components(
+    eigenvector: np.ndarray,
+    grid_points: int,
+) -> tuple[np.ndarray, np.ndarray]:
     streamfunction = np.asarray(eigenvector[:grid_points])
     flux = np.asarray(eigenvector[grid_points:])
     alignment_index = int(np.argmax(np.abs(flux)))
     phase = np.exp(-1j * np.angle(flux[alignment_index]))
-    aligned_flux = flux * phase
-    aligned_stream = streamfunction * phase
+    return streamfunction * phase, flux * phase
+
+
+def _aligned_tearing_parity(eigenvector: np.ndarray, grid_points: int) -> tuple[np.ndarray, ...]:
+    aligned_stream, aligned_flux = _aligned_tearing_components(eigenvector, grid_points)
     flux_real = np.real(aligned_flux)
     stream_imag = np.imag(aligned_stream)
     flux_real = _normalize_for_plotting(flux_real)
