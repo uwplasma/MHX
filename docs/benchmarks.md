@@ -70,6 +70,7 @@ mhx benchmark cosine-equilibrium-linearization --outdir outputs/benchmarks/cosin
 mhx benchmark current-sheet-eigenvalue --outdir outputs/benchmarks/periodic_current_sheet_eigenvalue
 mhx benchmark current-sheet-timedomain --outdir outputs/benchmarks/periodic_current_sheet_timedomain
 mhx benchmark current-sheet-nonlinear-bridge --outdir outputs/benchmarks/periodic_current_sheet_nonlinear_bridge
+mhx benchmark nonlinear-energy-budget --outdir outputs/benchmarks/nonlinear_energy_budget
 mhx benchmark diffusion-eigenvalue --outdir outputs/benchmarks/diffusion_eigenvalue
 mhx benchmark power-iteration --outdir outputs/benchmarks/power_iteration
 mhx benchmark arnoldi --outdir outputs/benchmarks/arnoldi
@@ -176,6 +177,13 @@ The nonlinear current-sheet differentiability bridge command writes:
 - `periodic_current_sheet_nonlinear_bridge.npz`
 - `figures/periodic_current_sheet_nonlinear_bridge.png`
 
+The nonlinear energy-budget command writes:
+
+- `diagnostics.json`
+- `validation.json`
+- `nonlinear_energy_budget.npz`
+- `figures/nonlinear_energy_budget.png`
+
 The diffusion-eigenvalue command writes:
 
 - `diagnostics.json`
@@ -226,6 +234,7 @@ mhx benchmark cosine-equilibrium-linearization --outdir outputs/ci/cosine_equili
 mhx benchmark current-sheet-eigenvalue --outdir outputs/ci/periodic_current_sheet_eigenvalue
 mhx benchmark current-sheet-timedomain --outdir outputs/ci/periodic_current_sheet_timedomain
 mhx benchmark current-sheet-nonlinear-bridge --outdir outputs/ci/periodic_current_sheet_nonlinear_bridge
+mhx benchmark nonlinear-energy-budget --outdir outputs/ci/nonlinear_energy_budget
 mhx benchmark diffusion-eigenvalue --outdir outputs/ci/diffusion_eigenvalue
 mhx benchmark power-iteration --outdir outputs/ci/power_iteration
 mhx benchmark arnoldi --outdir outputs/ci/arnoldi
@@ -389,6 +398,13 @@ trajectory map with JAX, then compares it to centered finite differences of
 full nonlinear trajectories. The expected $O(\epsilon^2)$ convergence is a
 reviewer-facing gate for differentiable programming claims; it is the step
 between linear operator replay and future adjoint/inverse-design workflows.
+
+The nonlinear energy-budget gate advances a multi-mode nonlinear reduced-MHD
+state and checks
+$dE/dt=-\eta\langle j^2\rangle-\nu\langle\omega^2\rangle$ by comparing the
+measured total energy to integrated resistive/viscous dissipation. This is now
+the primary FAST nonlinear PDE consistency gate, but it is still not a
+Rutherford, Sweet--Parker, or plasmoid validation.
 
 The diffusion-eigenvalue gate validates the Rayleigh-quotient/residual path on a
 known Fourier eigenpair before using the same matrix-free machinery for tearing

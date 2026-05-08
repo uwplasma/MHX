@@ -17,6 +17,7 @@ from mhx.benchmarks import (
     write_linear_tearing_layer_validation,
     write_linear_tearing_timedomain_validation,
     write_linearized_rhs_validation,
+    write_nonlinear_energy_budget_validation,
     write_periodic_current_sheet_eigenvalue_validation,
     write_periodic_current_sheet_nonlinear_bridge_validation,
     write_periodic_current_sheet_timedomain_validation,
@@ -53,6 +54,7 @@ def main() -> None:
     periodic_current_sheet_nonlinear_bridge_run_dir = Path(
         "outputs/docs_validation/periodic_current_sheet_nonlinear_bridge"
     )
+    nonlinear_energy_budget_run_dir = Path("outputs/docs_validation/nonlinear_energy_budget")
     diffusion_eigen_run_dir = Path("outputs/docs_validation/diffusion_eigenvalue")
     power_iteration_run_dir = Path("outputs/docs_validation/power_iteration")
     arnoldi_run_dir = Path("outputs/docs_validation/arnoldi")
@@ -80,6 +82,7 @@ def main() -> None:
     periodic_current_sheet_nonlinear_bridge_docs_dir = Path(
         "docs/_static/validation/periodic_current_sheet_nonlinear_bridge"
     )
+    nonlinear_energy_budget_docs_dir = Path("docs/_static/validation/nonlinear_energy_budget")
     diffusion_eigen_docs_dir = Path("docs/_static/validation/diffusion_eigenvalue")
     power_iteration_docs_dir = Path("docs/_static/validation/power_iteration")
     arnoldi_docs_dir = Path("docs/_static/validation/arnoldi")
@@ -103,6 +106,7 @@ def main() -> None:
     write_periodic_current_sheet_nonlinear_bridge_validation(
         periodic_current_sheet_nonlinear_bridge_run_dir
     )
+    write_nonlinear_energy_budget_validation(nonlinear_energy_budget_run_dir)
     write_diffusion_eigenvalue_validation(diffusion_eigen_run_dir)
     write_power_iteration_validation(power_iteration_run_dir)
     write_arnoldi_validation(arnoldi_run_dir)
@@ -194,6 +198,11 @@ def main() -> None:
         / "periodic_current_sheet_nonlinear_bridge.png",
         periodic_current_sheet_nonlinear_bridge_docs_dir
         / "periodic_current_sheet_nonlinear_bridge.png",
+    )
+    nonlinear_energy_budget_docs_dir.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(
+        nonlinear_energy_budget_run_dir / "figures" / "nonlinear_energy_budget.png",
+        nonlinear_energy_budget_docs_dir / "nonlinear_energy_budget.png",
     )
     diffusion_eigen_docs_dir.mkdir(parents=True, exist_ok=True)
     shutil.copy2(

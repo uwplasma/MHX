@@ -24,7 +24,8 @@ The current FAST reduced-MHD runs are smoke tests, not nonlinear reconnection
 claims. The strongest current results are exact linear validation gates,
 the direct Harris-sheet tearing eigenvalue gate for one published reference
 case, finite-domain dispersion and time-domain eigenmode replay gates,
-eigenfunction-localization gates, matrix-free operator checks, and extension APIs. Full FKR/Coppi
+eigenfunction-localization gates, matrix-free operator checks, a nonlinear
+energy/dissipation budget gate, and extension APIs. Full FKR/Coppi
 dispersion scans, nonlinear plasmoid dynamics, and neural-ODE inverse-design
 claims remain roadmap items.
 

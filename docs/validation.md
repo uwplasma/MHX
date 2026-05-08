@@ -727,6 +727,56 @@ Expected files:
 
 ![Nonlinear current-sheet differentiability bridge](_static/validation/periodic_current_sheet_nonlinear_bridge/periodic_current_sheet_nonlinear_bridge.png)
 
+## Nonlinear reduced-MHD energy budget
+
+The first full nonlinear PDE gate is deliberately not a plasmoid claim. It
+checks the periodic reduced-MHD energy theorem under the complete nonlinear
+Poisson-bracket RHS. For
+
+$$
+E(t)=\frac{1}{2}\left\langle |\nabla\psi|^2+|\nabla\phi|^2\right\rangle,
+\qquad \nabla^2\phi=\omega,\qquad j=-\nabla^2\psi,
+$$
+
+periodic integration by parts gives
+
+$$
+\frac{dE}{dt}=-\eta\langle j^2\rangle-\nu\langle\omega^2\rangle.
+$$
+
+This identity is a strong nonlinear sign/cancellation check: the advection and
+magnetic-tension brackets must cancel in the energy balance, while the
+resistive and viscous terms must remove energy. MHX starts from a multi-mode
+state with active nonlinear RHS, advances the full nonlinear RK4 solver, and
+gates:
+
+- all saved arrays are finite;
+- the initial nonlinear RHS norm is a nontrivial fraction of the full RHS;
+- total energy is nonincreasing;
+- the integrated residual
+  $|E(t)-E(0)+\int_0^t[\eta\langle j^2\rangle+\nu\langle\omega^2\rangle]dt|/E(0)$
+  stays below tolerance;
+- net dissipative energy loss is observed.
+
+```bash
+mhx benchmark nonlinear-energy-budget \
+  --outdir outputs/benchmarks/nonlinear_energy_budget
+```
+
+Expected files:
+
+- `outputs/benchmarks/nonlinear_energy_budget/diagnostics.json`
+- `outputs/benchmarks/nonlinear_energy_budget/validation.json`
+- `outputs/benchmarks/nonlinear_energy_budget/nonlinear_energy_budget.npz`
+- `outputs/benchmarks/nonlinear_energy_budget/figures/nonlinear_energy_budget.png`
+
+![Nonlinear reduced-MHD energy budget](_static/validation/nonlinear_energy_budget/nonlinear_energy_budget.png)
+
+This is the most important nonlinear solver gate currently in MHX. It supports
+claims about nonlinear reduced-MHD consistency, but it still does not validate
+nonlinear island growth, Rutherford saturation, Sweet--Parker reconnection
+rates, or plasmoid chains.
+
 ## Diffusion eigenvalue scaffold
 
 Before applying eigenvalue machinery to tearing equilibria, MHX validates the
@@ -870,6 +920,8 @@ Additional source links:
 - [Linearized RHS implementation](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/linearized.py)
 - [Linearized RHS tests](https://github.com/uwplasma/MHX/blob/main/tests/test_linearized_rhs_validation.py)
 - [Reduced-MHD linear eigenmode implementation](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/linearized.py)
+- [Nonlinear energy-budget implementation](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/nonlinear.py)
+- [Nonlinear energy-budget tests](https://github.com/uwplasma/MHX/blob/main/tests/test_nonlinear_energy_budget_validation.py)
 - [Diffusion eigenvalue implementation](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/eigenvalue.py)
 - [Diffusion eigenvalue tests](https://github.com/uwplasma/MHX/blob/main/tests/test_diffusion_eigenvalue_validation.py)
 - [Power-iteration utilities](https://github.com/uwplasma/MHX/blob/main/src/mhx/numerics/linear_operator.py)

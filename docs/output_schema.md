@@ -132,7 +132,8 @@ validation gates and writes:
   `cosine_equilibrium_linearization/`,
   `periodic_current_sheet_eigenvalue/`,
   `periodic_current_sheet_timedomain/`,
-  `periodic_current_sheet_nonlinear_bridge/`, and `arnoldi/`.
+  `periodic_current_sheet_nonlinear_bridge/`,
+  `nonlinear_energy_budget/`, and `arnoldi/`.
 
 ## Exact-decay validation outputs
 
@@ -350,6 +351,24 @@ writes:
   fields, and final tangent fields.
 - `figures/periodic_current_sheet_nonlinear_bridge.png`: log-log convergence
   plot against an $O(\epsilon^2)$ guide and the configured slope/error gates.
+
+## Nonlinear energy-budget outputs
+
+`mhx benchmark nonlinear-energy-budget --outdir outputs/benchmarks/nonlinear_energy_budget`
+writes:
+
+- `diagnostics.json`: nonlinear reduced-MHD budget diagnostics with schema
+  `mhx.validation.nonlinear_energy_budget.v1`.
+- `validation.json`: pass/fail gates for finite arrays, nontrivial nonlinear
+  RHS activity, nonincreasing total energy, integrated budget residual, net
+  dissipation, and positive dissipation.
+- `nonlinear_energy_budget.npz`: saved `time`, magnetic/kinetic/total energy,
+  resistive and viscous dissipation channels, cumulative dissipation,
+  `budget_residual`, `relative_budget_residual`, nonlinear-RHS ratio, initial
+  fields, and final fields.
+- `figures/nonlinear_energy_budget.png`: energy-vs-integrated-dissipation,
+  relative budget residual, dissipation channels, and initial/final flux
+  contours.
 
 ## Diffusion eigenvalue validation outputs
 

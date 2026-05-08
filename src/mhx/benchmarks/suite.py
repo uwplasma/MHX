@@ -29,6 +29,7 @@ from mhx.benchmarks.linearized import (
     write_linearized_rhs_validation,
     write_reduced_mhd_linear_eigenmode_validation,
 )
+from mhx.benchmarks.nonlinear import write_nonlinear_energy_budget_validation
 from mhx.benchmarks.report import validate_run
 from mhx.benchmarks.scaling import write_reconnection_scaling_validation
 from mhx.benchmarks.tearing import run_linear_tearing_smoke
@@ -139,6 +140,11 @@ def validation_suite_cases() -> tuple[ValidationSuiteCase, ...]:
             name="periodic_current_sheet_nonlinear_bridge",
             command="mhx benchmark current-sheet-nonlinear-bridge",
             runner=write_periodic_current_sheet_nonlinear_bridge_validation,
+        ),
+        ValidationSuiteCase(
+            name="nonlinear_energy_budget",
+            command="mhx benchmark nonlinear-energy-budget",
+            runner=write_nonlinear_energy_budget_validation,
         ),
         ValidationSuiteCase(
             name="diffusion_eigenvalue",

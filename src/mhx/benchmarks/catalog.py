@@ -347,6 +347,28 @@ def validation_catalog_entries() -> tuple[BenchmarkCatalogEntry, ...]:
             ),
         ),
         BenchmarkCatalogEntry(
+            name="nonlinear_energy_budget",
+            command=(
+                "mhx benchmark nonlinear-energy-budget "
+                "--outdir outputs/benchmarks/nonlinear_energy_budget"
+            ),
+            schema="mhx.validation.nonlinear_energy_budget.v1",
+            purpose=(
+                "Full nonlinear periodic reduced-MHD RK4 run with energy, "
+                "resistive dissipation, viscous dissipation, and budget residual gates."
+            ),
+            expected_outputs=(
+                "diagnostics.json",
+                "validation.json",
+                "nonlinear_energy_budget.npz",
+                "figures/nonlinear_energy_budget.png",
+            ),
+            literature_anchor=(
+                "Periodic reduced-MHD energy theorem dE/dt=-eta<j^2>-nu<omega^2>; "
+                "nonlinear bracket cancellation prerequisite for reconnection runs."
+            ),
+        ),
+        BenchmarkCatalogEntry(
             name="diffusion_eigenvalue",
             command=(
                 "mhx benchmark diffusion-eigenvalue "

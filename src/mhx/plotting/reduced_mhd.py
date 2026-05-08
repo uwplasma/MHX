@@ -1019,6 +1019,108 @@ def plot_nonlinear_current_sheet_bridge(
     return output_path
 
 
+def plot_nonlinear_energy_budget(
+    times,
+    total_energy_values,
+    current_dissipation,
+    viscous_dissipation,
+    relative_budget_residual,
+    *,
+    initial_psi,
+    final_psi,
+    x,
+    y,
+    max_budget_residual: float,
+    path: str | Path,
+) -> Path:
+    """Plot nonlinear reduced-MHD energy-budget validation diagnostics."""
+    import matplotlib.pyplot as plt
+
+    output_path = Path(path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    time_values = np.asarray(times)
+    total = np.asarray(total_energy_values)
+    current = np.asarray(current_dissipation)
+    viscous = np.asarray(viscous_dissipation)
+    residual = np.asarray(relative_budget_residual)
+    x_mesh, y_mesh = np.meshgrid(np.asarray(x), np.asarray(y), indexing="ij")
+    fig, axes = plt.subplots(2, 2, figsize=(10.0, 7.2), constrained_layout=True)
+    axes[0, 0].plot(time_values, total, "o-", color="#3266a8", label=r"$E$")
+    axes[0, 0].plot(
+        time_values,
+        total[0] - _cumulative_trapezoid_for_plot(time_values, current + viscous),
+        "--",
+        color="#b54a4a",
+        label=r"$E(0)-\int D\,dt$",
+    )
+    axes[0, 0].set_xlabel("time")
+    axes[0, 0].set_ylabel("mean energy")
+    axes[0, 0].set_title("Energy and integrated dissipation")
+    axes[0, 0].legend(frameon=False)
+    residual_floor = max(max_budget_residual * 1.0e-7, np.finfo(float).eps)
+    residual_for_plot = np.maximum(residual, residual_floor)
+    axes[0, 1].semilogy(
+        time_values,
+        residual_for_plot,
+        "o-",
+        color="#3266a8",
+        label="relative residual",
+    )
+    axes[0, 1].axhline(
+        max_budget_residual,
+        color="black",
+        linestyle="--",
+        linewidth=1.0,
+        label="gate",
+    )
+    axes[0, 1].set_xlabel("time")
+    axes[0, 1].set_ylabel(r"$|E-E_0+\int Ddt|/E_0$")
+    axes[0, 1].set_title("Budget residual")
+    axes[0, 1].set_ylim(residual_floor * 0.5, max_budget_residual * 5.0)
+    axes[0, 1].legend(frameon=False)
+    axes[1, 0].plot(time_values, current, color="#3266a8", label=r"$\eta\langle j^2\rangle$")
+    axes[1, 0].plot(time_values, viscous, color="#b54a4a", label=r"$\nu\langle\omega^2\rangle$")
+    axes[1, 0].plot(time_values, current + viscous, color="black", label="total")
+    axes[1, 0].set_xlabel("time")
+    axes[1, 0].set_ylabel("dissipation rate")
+    axes[1, 0].set_title("Dissipation channels")
+    axes[1, 0].legend(frameon=False)
+    axes[1, 1].contour(
+        x_mesh,
+        y_mesh,
+        np.asarray(initial_psi),
+        levels=16,
+        colors="#3266a8",
+        linewidths=0.7,
+    )
+    axes[1, 1].contour(
+        x_mesh,
+        y_mesh,
+        np.asarray(final_psi),
+        levels=16,
+        colors="#b54a4a",
+        linewidths=0.7,
+    )
+    axes[1, 1].set_xlabel("x")
+    axes[1, 1].set_ylabel("y")
+    axes[1, 1].set_title("Flux contours: initial blue, final red")
+    fig.suptitle("Nonlinear reduced-MHD energy-budget gate")
+    fig.savefig(output_path, dpi=220)
+    plt.close(fig)
+    return output_path
+
+
+def _cumulative_trapezoid_for_plot(times, values) -> np.ndarray:
+    time_values = np.asarray(times)
+    value_array = np.asarray(values)
+    integral = np.zeros_like(time_values, dtype=float)
+    for index in range(1, time_values.size):
+        integral[index] = integral[index - 1] + 0.5 * (
+            value_array[index - 1] + value_array[index]
+        ) * (time_values[index] - time_values[index - 1])
+    return integral
+
+
 def plot_plasmoid_scaling(lundquist, gamma, fastest_mode, *, path: str | Path) -> Path:
     """Plot Loureiro Sweet-Parker plasmoid scalings."""
     import matplotlib.pyplot as plt
