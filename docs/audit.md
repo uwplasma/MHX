@@ -16,6 +16,7 @@ solver.
 | Harris-sheet $\Delta'$ outer solve | Numerically integrates the ideal outer tearing ODE and recovers $\Delta'a=2[(ka)^{-1}-ka]$. | Yes for outer-region matching; not a growth-rate eigenvalue. |
 | FKR growth-rate assembly | Propagates numerical Harris $\Delta'$ into $\gamma\tau_a\sim S_a^{-3/5}(ka)^{2/5}(\Delta'a)^{4/5}$ and gates both exponents. | Yes as an asymptotic growth-rate target; not a direct eigenvalue solve. |
 | Direct Harris-sheet tearing eigenvalue | Solves the 1D reduced-MHD Harris eigenproblem at $S=1000$, $ka=0.5$, $d/a=10$ and gates against $\gamma\simeq0.0131$. | Yes for this single reference eigenproblem; not yet a full FKR/Coppi scan. |
+| Finite-domain tearing dispersion | Scans the same eigenproblem over sampled $ka$, checks the unstable band below $ka=1$, stable controls above $ka=1$, residuals, and the $ka=0.5$ anchor. | Useful FAST dispersion gate; not yet an asymptotic Lundquist-number scan. |
 | Matrix-free JVP and eigen scaffolds | JAX JVP, zero-state eigenmodes, Arnoldi, and power iteration are tested on controlled fixtures. | Good scaffolding for larger matrix-free tearing spectra. |
 | Nonzero current-sheet linearization | Exact bracket couplings around $\psi_0=A\cos y$ are tested. | Good operator gate; still not an FKR benchmark. |
 | Periodic current-sheet dense spectrum | Tiny dense spectrum around $\psi_0=A\cos y$ checks gauge modes, eigenpair residuals, and absence of spurious positive growth. | Useful stability/operator gate; not an FKR/Coppi tearing-growth validation. |
@@ -31,12 +32,15 @@ the cleanest linear PDE result: numerical and analytic amplitude/energy curves
 overlap, and relative errors remain near roundoff in x64. The Harris $\Delta'$
 and FKR growth-rate plots are useful tearing-theory gates: they validate
 outer-region matching and asymptotic exponent assembly. The direct
-Harris-sheet eigenvalue plot is the strongest tearing-specific result so far:
-the finite-grid growth rates converge linearly in $\Delta x^2$ toward the
+Harris-sheet eigenvalue plot is the strongest tearing-specific point result so
+far: the finite-grid growth rates converge linearly in $\Delta x^2$ toward the
 published $\gamma\simeq0.0131$ reference, the selected dense eigenpair residual
-is near roundoff, and the eigenfunction parity is correct. The broader scaling
-plots remain analytic reference plots; they should not be cited as solver
-recovery of FKR, plasmoid, or ideal-tearing regimes.
+is near roundoff, and the eigenfunction parity is correct. The finite-domain
+dispersion plot adds a useful branch-level check: sampled $0<ka<1$ points grow,
+sampled $ka>1$ controls are stable/oscillatory, and residuals remain near
+roundoff. The broader scaling plots remain analytic reference plots; they
+should not be cited as solver recovery of FKR, plasmoid, or ideal-tearing
+regimes.
 
 The reduced-MHD FAST simulation plots are intentionally unimpressive: energy is
 nearly flat, kinetic energy is near zero, and the mode amplitude changes only at
@@ -67,6 +71,7 @@ The repository is currently defensible as a validation-first rebuild with:
 - FKR asymptotic growth-rate target assembled from numerical $\Delta'$;
 - direct reduced-MHD Harris-sheet tearing eigenvalue gate for one published
   reference case;
+- finite-domain Harris-sheet tearing dispersion sign/residual gate;
 - matrix-free linearization scaffolds;
 - tiny nonzero-equilibrium dense-spectrum gate;
 - plugin and diagnostics extension examples;

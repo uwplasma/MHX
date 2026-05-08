@@ -19,6 +19,7 @@ from mhx.benchmarks import (
     write_fkr_growth_rate_validation,
     write_fkr_window_validation,
     write_harris_delta_prime_validation,
+    write_linear_tearing_dispersion_validation,
     write_linear_tearing_eigenvalue_validation,
     write_linearized_rhs_validation,
     write_periodic_current_sheet_eigenvalue_validation,
@@ -467,6 +468,39 @@ def benchmark_linear_tearing_eigenvalue(
         raise typer.Exit(code=1)
 
 
+@benchmark_app.command("linear-tearing-dispersion")
+def benchmark_linear_tearing_dispersion(
+    outdir: Annotated[
+        Path,
+        typer.Option(
+            "--outdir",
+            help="Output directory for Harris-sheet tearing dispersion artifacts.",
+        ),
+    ] = Path("outputs/benchmarks/linear_tearing_dispersion"),
+    grid_points: Annotated[
+        int,
+        typer.Option("--grid-points", help="Interior grid count for each wavenumber sample."),
+    ] = 192,
+    wavenumber: Annotated[
+        str,
+        typer.Option(
+            "--wavenumber",
+            help="Comma-separated ka samples including values below and above ka=1.",
+        ),
+    ] = "0.3,0.5,0.7,0.9,1.1,1.2",
+) -> None:
+    """Run a finite-domain Harris-sheet tearing dispersion gate."""
+    _configure_validation_precision()
+    manifest_path, validation = write_linear_tearing_dispersion_validation(
+        outdir,
+        grid_points=grid_points,
+        wavenumber=_parse_float_tuple(wavenumber),
+    )
+    typer.echo(f"wrote {manifest_path}")
+    if not validation["passed"]:
+        raise typer.Exit(code=1)
+
+
 @benchmark_app.command("linearized-rhs")
 def benchmark_linearized_rhs(
     outdir: Annotated[
@@ -635,6 +669,13 @@ def _parse_int_tuple(value: str) -> tuple[int, ...]:
         return tuple(int(part.strip()) for part in value.split(",") if part.strip())
     except ValueError as exc:
         raise typer.BadParameter("expected comma-separated integers") from exc
+
+
+def _parse_float_tuple(value: str) -> tuple[float, ...]:
+    try:
+        return tuple(float(part.strip()) for part in value.split(",") if part.strip())
+    except ValueError as exc:
+        raise typer.BadParameter("expected comma-separated floats") from exc
 
 
 @physics_app.command("list")

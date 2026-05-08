@@ -166,6 +166,28 @@ def validation_catalog_entries() -> tuple[BenchmarkCatalogEntry, ...]:
             ),
         ),
         BenchmarkCatalogEntry(
+            name="linear_tearing_dispersion",
+            command=(
+                "mhx benchmark linear-tearing-dispersion "
+                "--outdir outputs/benchmarks/linear_tearing_dispersion"
+            ),
+            schema="mhx.validation.linear_tearing_dispersion.v1",
+            purpose=(
+                "Small Harris-sheet finite-domain tearing dispersion gate with "
+                "unstable-band, stable-control, residual, and reference-point checks."
+            ),
+            expected_outputs=(
+                "diagnostics.json",
+                "validation.json",
+                "linear_tearing_dispersion.npz",
+                "figures/linear_tearing_dispersion.png",
+            ),
+            literature_anchor=(
+                "FKR unstable interval and MacTaggart reduced-MHD Harris-sheet "
+                "reference point at S=1000, k=0.5."
+            ),
+        ),
+        BenchmarkCatalogEntry(
             name="linearized_rhs",
             command="mhx benchmark linearized-rhs --outdir outputs/benchmarks/linearized_rhs",
             schema="mhx.validation.linearized_rhs.v1",

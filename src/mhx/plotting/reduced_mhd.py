@@ -444,6 +444,63 @@ def plot_linear_tearing_eigenvalue_validation(
     return output_path
 
 
+def plot_linear_tearing_dispersion_validation(
+    wavenumber,
+    growth_rate,
+    eigenvalue_imag,
+    residual_norm,
+    *,
+    reference_wavenumber: float,
+    reference_growth_rate: float,
+    max_residual_norm: float,
+    path: str | Path,
+) -> Path:
+    """Plot the finite-domain Harris-sheet tearing dispersion validation."""
+    import matplotlib.pyplot as plt
+
+    output_path = Path(path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    k_values = np.asarray(wavenumber)
+    growth_values = np.asarray(growth_rate)
+    imag_values = np.asarray(eigenvalue_imag)
+    residual_values = np.asarray(residual_norm)
+    fig, axes = plt.subplots(1, 3, figsize=(13.8, 3.9), constrained_layout=True)
+
+    axes[0].plot(k_values, growth_values, "o-", color="#3266a8", label="selected branch")
+    axes[0].scatter(
+        [reference_wavenumber],
+        [reference_growth_rate],
+        marker="x",
+        s=64,
+        color="#b54a4a",
+        label="literature anchor",
+    )
+    axes[0].axhline(0.0, color="0.7", linewidth=0.8)
+    axes[0].axvline(1.0, color="black", linestyle="--", linewidth=1.0, label=r"$ka=1$")
+    axes[0].set_xlabel(r"$ka$")
+    axes[0].set_ylabel(r"$\operatorname{Re}\lambda$")
+    axes[0].set_title("Growth branch")
+    axes[0].legend(frameon=False, fontsize=8)
+
+    axes[1].plot(k_values, np.abs(imag_values), "o-", color="#4b8f5a")
+    axes[1].axvline(1.0, color="black", linestyle="--", linewidth=1.0)
+    axes[1].set_xlabel(r"$ka$")
+    axes[1].set_ylabel(r"$|\operatorname{Im}\lambda|$")
+    axes[1].set_title("Oscillatory stable controls")
+
+    axes[2].semilogy(k_values, residual_values, "s-", color="#8c4fb4", label="residual")
+    axes[2].axhline(max_residual_norm, color="black", linestyle="--", linewidth=1.0, label="gate")
+    axes[2].set_xlabel(r"$ka$")
+    axes[2].set_ylabel(r"$\|Lv-\lambda v\|_2/\|v\|_2$")
+    axes[2].set_title("Dense eigenpair residual")
+    axes[2].legend(frameon=False, fontsize=8)
+
+    fig.suptitle("Finite-domain Harris-sheet tearing dispersion gate")
+    fig.savefig(output_path, dpi=220)
+    plt.close(fig)
+    return output_path
+
+
 def plot_linearized_rhs_errors(
     component_names,
     relative_errors,

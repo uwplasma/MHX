@@ -19,6 +19,7 @@ def test_validation_suite_cases_are_unique() -> None:
     assert "harris_delta_prime" in names
     assert "fkr_growth_rate" in names
     assert "linear_tearing_eigenvalue" in names
+    assert "linear_tearing_dispersion" in names
     assert "cosine_equilibrium_linearization" in names
     assert "periodic_current_sheet_eigenvalue" in names
 
@@ -49,6 +50,13 @@ def test_write_validation_suite_artifacts_and_cli(tmp_path) -> None:
         / "linear_tearing_eigenvalue"
         / "figures"
         / "linear_tearing_eigenvalue.png"
+    ).stat().st_size > 0
+    assert (
+        tmp_path
+        / "suite"
+        / "linear_tearing_dispersion"
+        / "figures"
+        / "linear_tearing_dispersion.png"
     ).stat().st_size > 0
     assert (
         tmp_path

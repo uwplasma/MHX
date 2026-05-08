@@ -97,6 +97,7 @@ mhx benchmark fkr-window --outdir outputs/benchmarks/fkr_window
 mhx benchmark fkr-growth --outdir outputs/benchmarks/fkr_growth_rate
 mhx benchmark harris-delta-prime --outdir outputs/benchmarks/harris_delta_prime
 mhx benchmark linear-tearing-eigenvalue --outdir outputs/benchmarks/linear_tearing_eigenvalue
+mhx benchmark linear-tearing-dispersion --outdir outputs/benchmarks/linear_tearing_dispersion
 mhx benchmark linearized-rhs --outdir outputs/benchmarks/linearized_rhs
 mhx benchmark reduced-mhd-eigenmode --outdir outputs/benchmarks/reduced_mhd_eigenmode
 mhx benchmark cosine-equilibrium-linearization --outdir outputs/benchmarks/cosine_equilibrium_linearization
@@ -113,6 +114,10 @@ Current reviewer-facing validation figures include the direct Harris-sheet
 tearing eigenvalue gate:
 
 ![Direct Harris-sheet tearing eigenvalue gate](docs/_static/validation/linear_tearing_eigenvalue/linear_tearing_eigenvalue.png)
+
+and the finite-domain tearing dispersion gate:
+
+![Finite-domain tearing dispersion gate](docs/_static/validation/linear_tearing_dispersion/linear_tearing_dispersion.png)
 
 and the exact resistive-decay gate:
 

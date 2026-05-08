@@ -126,6 +126,7 @@ validation gates and writes:
 - one subdirectory per case, for example `resistive_decay/`,
   `harris_delta_prime/`,
   `linear_tearing_eigenvalue/`,
+  `linear_tearing_dispersion/`,
   `cosine_equilibrium_linearization/`,
   `periodic_current_sheet_eigenvalue/`, and `arnoldi/`.
 
@@ -209,6 +210,22 @@ writes:
   stream-function eigenfunction.
 - `figures/linear_tearing_eigenvalue.png`: grid extrapolation, selected
   spectrum, and tearing-parity plot.
+
+## Finite-domain tearing dispersion outputs
+
+`mhx benchmark linear-tearing-dispersion --outdir outputs/benchmarks/linear_tearing_dispersion`
+writes:
+
+- `diagnostics.json`: finite-domain Harris-sheet tearing dispersion diagnostics
+  with schema `mhx.validation.linear_tearing_dispersion.v1`.
+- `validation.json`: pass/fail gates for finite eigenvalues, positive growth in
+  the sampled unstable band, no positive growth in stable controls, residuals,
+  and the $ka=0.5$ reference point.
+- `linear_tearing_dispersion.npz`: `wavenumber`, `growth_rate`,
+  `eigenvalue_imag`, `residual_norm`, reference-point metadata, and boolean
+  masks for unstable samples and stable controls.
+- `figures/linear_tearing_dispersion.png`: growth branch, oscillatory stable
+  controls, and residual gate.
 
 ## Linearized-RHS validation outputs
 

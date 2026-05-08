@@ -10,8 +10,12 @@ from typing import Any
 import numpy as np
 
 from mhx.io import write_manifest
-from mhx.plotting import plot_linear_tearing_eigenvalue_validation
+from mhx.plotting import (
+    plot_linear_tearing_dispersion_validation,
+    plot_linear_tearing_eigenvalue_validation,
+)
 
+LINEAR_TEARING_DISPERSION_SCHEMA = "mhx.validation.linear_tearing_dispersion.v1"
 LINEAR_TEARING_EIGENVALUE_SCHEMA = "mhx.validation.linear_tearing_eigenvalue.v1"
 
 
@@ -44,6 +48,24 @@ class LinearTearingEigenvalueResult:
 
 
 @dataclass(frozen=True)
+class LinearTearingDispersionResult:
+    """Small Harris-sheet tearing dispersion validation artifacts."""
+
+    wavenumber: np.ndarray
+    growth_rate: np.ndarray
+    eigenvalue_imag: np.ndarray
+    residual_norm: np.ndarray
+    reference_wavenumber: float
+    reference_growth_rate: float
+    measured_reference_growth_rate: float
+    reference_relative_error: float
+    unstable_band_mask: np.ndarray
+    stable_control_mask: np.ndarray
+    diagnostics: dict[str, Any]
+    validation: dict[str, Any]
+
+
+@dataclass(frozen=True)
 class _EigenSolve:
     grid_points: int
     dx: float
@@ -52,6 +74,131 @@ class _EigenSolve:
     selected_eigenvalue: complex
     selected_eigenvector: np.ndarray
     residual_norm: float
+
+
+def run_linear_tearing_dispersion_validation(
+    *,
+    grid_points: int = 192,
+    half_width: float = 10.0,
+    lundquist: float = 1000.0,
+    wavenumber: tuple[float, ...] = (0.3, 0.5, 0.7, 0.9, 1.1, 1.2),
+    reference_wavenumber: float = 0.5,
+    reference_growth_rate: float = 0.0131,
+    max_reference_relative_error: float = 6.0e-2,
+    max_residual_norm: float = 1.0e-10,
+    max_stable_control_real_part: float = 0.0,
+) -> LinearTearingDispersionResult:
+    r"""Validate a small Harris-sheet tearing dispersion scan.
+
+    This gate applies the same 1D finite-difference reduced-MHD eigenproblem as
+    :func:`run_linear_tearing_eigenvalue_validation` to a wavenumber scan. It is
+    intentionally conservative: it checks the unstable interval ``0 < ka < 1``,
+    stable controls above ``ka=1``, residuals, and the published ``ka=0.5``
+    reference point. It is not yet a full asymptotic FKR/Coppi dispersion study.
+    """
+    wavenumber_values = np.asarray(wavenumber, dtype=float)
+    _validate_dispersion_inputs(
+        grid_points=grid_points,
+        half_width=half_width,
+        lundquist=lundquist,
+        wavenumber=wavenumber_values,
+        reference_wavenumber=reference_wavenumber,
+        reference_growth_rate=reference_growth_rate,
+    )
+    solves = tuple(
+        _solve_harris_tearing_eigenproblem(
+            grid_points,
+            half_width=half_width,
+            lundquist=lundquist,
+            wavenumber=float(value),
+        )
+        for value in wavenumber_values
+    )
+    selected = np.asarray([solve.selected_eigenvalue for solve in solves])
+    growth_rate = selected.real
+    eigenvalue_imag = selected.imag
+    residual_norm = np.asarray([solve.residual_norm for solve in solves])
+    reference_index = _matching_index(wavenumber_values, reference_wavenumber)
+    measured_reference_growth_rate = float(growth_rate[reference_index])
+    reference_relative_error = _relative_error(
+        measured_reference_growth_rate,
+        reference_growth_rate,
+    )
+    unstable_band_mask = wavenumber_values < 1.0
+    stable_control_mask = wavenumber_values > 1.0
+    unstable_growth = growth_rate[unstable_band_mask]
+    stable_growth = growth_rate[stable_control_mask]
+
+    checks = {
+        "finite_eigenvalues_and_residuals": bool(
+            np.all(np.isfinite(growth_rate))
+            and np.all(np.isfinite(eigenvalue_imag))
+            and np.all(np.isfinite(residual_norm))
+        ),
+        "unstable_band_has_positive_growth": bool(np.all(unstable_growth > 0.0)),
+        "unstable_branch_decreases_with_wavenumber": bool(np.all(np.diff(unstable_growth) < 0.0)),
+        "stable_controls_have_no_positive_growth": bool(
+            np.all(stable_growth <= max_stable_control_real_part)
+        ),
+        "reference_growth_matches_literature": bool(
+            reference_relative_error <= max_reference_relative_error
+        ),
+        "eigen_residuals_small": bool(np.all(residual_norm <= max_residual_norm)),
+    }
+    diagnostics = {
+        "schema": LINEAR_TEARING_DISPERSION_SCHEMA,
+        "equilibrium": "B_y = tanh(x/a), a = 1",
+        "boundary_conditions": "u=b=0 at x=+-d",
+        "grid_points": grid_points,
+        "half_width": half_width,
+        "lundquist": lundquist,
+        "wavenumber": wavenumber_values.tolist(),
+        "growth_rate": growth_rate.tolist(),
+        "eigenvalue_imag": eigenvalue_imag.tolist(),
+        "residual_norm": residual_norm.tolist(),
+        "reference_wavenumber": reference_wavenumber,
+        "reference_growth_rate": reference_growth_rate,
+        "measured_reference_growth_rate": measured_reference_growth_rate,
+        "reference_relative_error": reference_relative_error,
+        "unstable_band_wavenumber": wavenumber_values[unstable_band_mask].tolist(),
+        "stable_control_wavenumber": wavenumber_values[stable_control_mask].tolist(),
+        "references": {
+            "mactaggart_2019": (
+                "The ka=0.5 point is anchored to the reduced-MHD Harris-sheet "
+                "growth-rate reference gamma approximately 0.0131."
+            ),
+            "fkr_coppi_scope": (
+                "The scan checks the finite-domain unstable band and stable "
+                "controls; full FKR/Coppi asymptotic scans require higher "
+                "resolution and additional Lundquist-number sweeps."
+            ),
+        },
+    }
+    validation = {
+        "schema": "mhx.validation.linear_tearing_dispersion.gates.v1",
+        "passed": all(checks.values()),
+        "checks": checks,
+        "thresholds": {
+            "max_reference_relative_error": max_reference_relative_error,
+            "max_residual_norm": max_residual_norm,
+            "max_stable_control_real_part": max_stable_control_real_part,
+        },
+        "diagnostics": diagnostics,
+    }
+    return LinearTearingDispersionResult(
+        wavenumber=wavenumber_values,
+        growth_rate=growth_rate,
+        eigenvalue_imag=eigenvalue_imag,
+        residual_norm=residual_norm,
+        reference_wavenumber=reference_wavenumber,
+        reference_growth_rate=reference_growth_rate,
+        measured_reference_growth_rate=measured_reference_growth_rate,
+        reference_relative_error=reference_relative_error,
+        unstable_band_mask=unstable_band_mask,
+        stable_control_mask=stable_control_mask,
+        diagnostics=diagnostics,
+        validation=validation,
+    )
 
 
 def run_linear_tearing_eigenvalue_validation(
@@ -312,6 +459,64 @@ def write_linear_tearing_eigenvalue_validation(
     return manifest_path, result.validation
 
 
+def write_linear_tearing_dispersion_validation(
+    outdir: str | Path,
+    **kwargs: Any,
+) -> tuple[Path, dict[str, Any]]:
+    """Write small Harris-sheet tearing dispersion artifacts."""
+    output_dir = Path(outdir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    result = run_linear_tearing_dispersion_validation(**kwargs)
+
+    diagnostics_path = output_dir / "diagnostics.json"
+    validation_path = output_dir / "validation.json"
+    history_path = output_dir / "linear_tearing_dispersion.npz"
+    manifest_path = output_dir / "manifest.json"
+    diagnostics_path.write_text(
+        json.dumps(result.diagnostics, indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+    validation_path.write_text(
+        json.dumps(result.validation, indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+    np.savez_compressed(
+        history_path,
+        schema=LINEAR_TEARING_DISPERSION_SCHEMA,
+        wavenumber=result.wavenumber,
+        growth_rate=result.growth_rate,
+        eigenvalue_imag=result.eigenvalue_imag,
+        residual_norm=result.residual_norm,
+        reference_wavenumber=result.reference_wavenumber,
+        reference_growth_rate=result.reference_growth_rate,
+        measured_reference_growth_rate=result.measured_reference_growth_rate,
+        reference_relative_error=result.reference_relative_error,
+        unstable_band_mask=result.unstable_band_mask,
+        stable_control_mask=result.stable_control_mask,
+    )
+    figure_path = plot_linear_tearing_dispersion_validation(
+        result.wavenumber,
+        result.growth_rate,
+        result.eigenvalue_imag,
+        result.residual_norm,
+        reference_wavenumber=result.reference_wavenumber,
+        reference_growth_rate=result.reference_growth_rate,
+        max_residual_norm=float(result.validation["thresholds"]["max_residual_norm"]),
+        path=output_dir / "figures" / "linear_tearing_dispersion.png",
+    )
+    write_manifest(
+        manifest_path,
+        config=result.diagnostics,
+        outputs={
+            "diagnostics": diagnostics_path.name,
+            "validation": validation_path.name,
+            "history": history_path.name,
+            "linear_tearing_dispersion": str(figure_path.relative_to(output_dir)),
+        },
+    )
+    return manifest_path, result.validation
+
+
 def _validate_inputs(
     grid_points: np.ndarray,
     *,
@@ -340,6 +545,41 @@ def _validate_inputs(
         raise ValueError("stable_control_wavenumber must be greater than 1")
     if stable_control_grid_points < 64:
         raise ValueError("stable_control_grid_points must be at least 64")
+
+
+def _validate_dispersion_inputs(
+    *,
+    grid_points: int,
+    half_width: float,
+    lundquist: float,
+    wavenumber: np.ndarray,
+    reference_wavenumber: float,
+    reference_growth_rate: float,
+) -> None:
+    if grid_points < 64:
+        raise ValueError("grid_points must be at least 64")
+    if half_width <= 1.0:
+        raise ValueError("half_width must be greater than 1")
+    if lundquist <= 0.0:
+        raise ValueError("lundquist must be positive")
+    if wavenumber.ndim != 1 or wavenumber.shape[0] < 4:
+        raise ValueError("at least four wavenumber samples are required")
+    if np.any(wavenumber <= 0.0):
+        raise ValueError("wavenumber samples must be positive")
+    if np.any(np.diff(wavenumber) <= 0.0):
+        raise ValueError("wavenumber samples must be strictly increasing")
+    if not np.any(wavenumber < 1.0) or not np.any(wavenumber > 1.0):
+        raise ValueError("wavenumber samples must include values below and above ka=1")
+    if reference_growth_rate <= 0.0:
+        raise ValueError("reference_growth_rate must be positive")
+    _matching_index(wavenumber, reference_wavenumber)
+
+
+def _matching_index(values: np.ndarray, target: float) -> int:
+    matches = np.flatnonzero(np.isclose(values, target, rtol=0.0, atol=1.0e-12))
+    if matches.size != 1:
+        raise ValueError("reference_wavenumber must appear exactly once in wavenumber samples")
+    return int(matches[0])
 
 
 def _solve_harris_tearing_eigenproblem(

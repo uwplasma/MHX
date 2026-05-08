@@ -19,6 +19,7 @@ def test_validation_catalog_entries_cover_expected_gates() -> None:
     assert "harris_delta_prime" in names
     assert "fkr_growth_rate" in names
     assert "linear_tearing_eigenvalue" in names
+    assert "linear_tearing_dispersion" in names
     assert "reduced_mhd_eigenmode" in names
     assert "periodic_current_sheet_eigenvalue" in names
     assert "arnoldi" in names

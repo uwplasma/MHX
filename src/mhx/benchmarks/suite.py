@@ -30,7 +30,10 @@ from mhx.benchmarks.linearized import (
 from mhx.benchmarks.report import validate_run
 from mhx.benchmarks.scaling import write_reconnection_scaling_validation
 from mhx.benchmarks.tearing import run_linear_tearing_smoke
-from mhx.benchmarks.tearing_eigen import write_linear_tearing_eigenvalue_validation
+from mhx.benchmarks.tearing_eigen import (
+    write_linear_tearing_dispersion_validation,
+    write_linear_tearing_eigenvalue_validation,
+)
 from mhx.config import load_config
 from mhx.io import (
     write_artifact_manifest,
@@ -87,6 +90,11 @@ def validation_suite_cases() -> tuple[ValidationSuiteCase, ...]:
             name="linear_tearing_eigenvalue",
             command="mhx benchmark linear-tearing-eigenvalue",
             runner=write_linear_tearing_eigenvalue_validation,
+        ),
+        ValidationSuiteCase(
+            name="linear_tearing_dispersion",
+            command="mhx benchmark linear-tearing-dispersion",
+            runner=write_linear_tearing_dispersion_validation,
         ),
         ValidationSuiteCase(
             name="linearized_rhs",

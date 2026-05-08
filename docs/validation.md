@@ -331,6 +331,46 @@ outer-region gates, but it is still a single reference eigenproblem. It does not
 yet establish production nonlinear reconnection fidelity, Coppi-regime
 dispersion curves, or plasmoid dynamics.
 
+## Finite-domain tearing dispersion gate
+
+The next validation layer repeats the same finite-difference eigenproblem over
+a small $ka$ scan. This is deliberately a FAST finite-domain gate, not a
+production asymptotic scan. It checks:
+
+$$
+\operatorname{Re}\lambda(ka)>0 \quad\text{for sampled}\quad 0<ka<1,
+$$
+
+$$
+\operatorname{Re}\lambda(ka)\le 0 \quad\text{for sampled}\quad ka>1,
+$$
+
+plus dense eigenpair residuals and the same $ka=0.5$ literature anchor used by
+the direct eigenvalue gate. The default samples are
+$ka=(0.3,0.5,0.7,0.9,1.1,1.2)$ at $S=1000$ and $d/a=10$.
+
+Run the scan:
+
+```bash
+mhx benchmark linear-tearing-dispersion \
+  --outdir outputs/benchmarks/linear_tearing_dispersion
+```
+
+Expected files:
+
+- `outputs/benchmarks/linear_tearing_dispersion/diagnostics.json`
+- `outputs/benchmarks/linear_tearing_dispersion/validation.json`
+- `outputs/benchmarks/linear_tearing_dispersion/linear_tearing_dispersion.npz`
+- `outputs/benchmarks/linear_tearing_dispersion/figures/linear_tearing_dispersion.png`
+
+![Finite-domain Harris-sheet tearing dispersion gate](_static/validation/linear_tearing_dispersion/linear_tearing_dispersion.png)
+
+The scan is useful because it catches sign mistakes that a single unstable
+eigenvalue cannot: the code must recover an unstable tearing band below
+$ka=1$ and stable oscillatory controls above $ka=1$. The remaining
+research-grade target is a higher-resolution Lundquist-number sweep that
+separates constant-$\psi$ FKR and large-$\Delta'$ Coppi branches.
+
 ## Matrix-free linearized RHS
 
 Tearing eigenmode calculations require a linearized operator
