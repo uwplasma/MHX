@@ -35,6 +35,13 @@ For the active tearing validation gates:
 - [McClements et al. (2022), triggering tearing in a forming current sheet](https://www.cambridge.org/core/journals/journal-of-plasma-physics/article/triggering-tearing-in-a-forming-current-sheet-with-the-mirror-instability/38550B29006F97E9EF9E3AA460083BF8)
   gives a modern discussion of FKR versus Coppi regime separation and
   hyper-resistive tearing scalings.
+- [Loureiro, Schekochihin & Cowley (2007), instability of current sheets and
+  formation of plasmoid chains](https://arxiv.org/abs/astro-ph/0703631)
+  is the Sweet-Parker plasmoid-scaling target used in the README schematic:
+  $\gamma_{\max}\tau_A\sim S^{1/4}$ and $k_{\max}L\sim S^{3/8}$.
+- [Pucci & Velli (2014), reconnection of quasi-singular current sheets](https://doi.org/10.1088/2041-8205/780/2/L19)
+  motivates the ideal-tearing aspect-ratio scaling used in the analytic
+  validation roadmap.
 
 For generalized Ohm's law and collisionless/two-fluid reconnection context:
 

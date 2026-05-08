@@ -25,6 +25,7 @@ from mhx.benchmarks import (
     write_linear_tearing_timedomain_validation,
     write_linearized_rhs_validation,
     write_periodic_current_sheet_eigenvalue_validation,
+    write_periodic_current_sheet_nonlinear_bridge_validation,
     write_periodic_current_sheet_timedomain_validation,
     write_power_iteration_validation,
     write_reconnection_scaling_validation,
@@ -676,6 +677,37 @@ def benchmark_current_sheet_timedomain(
         viscosity=nu,
         dt=dt,
         t_end=t_end,
+    )
+    typer.echo(f"wrote {manifest_path}")
+    if not validation["passed"]:
+        raise typer.Exit(code=1)
+
+
+@benchmark_app.command("current-sheet-nonlinear-bridge")
+def benchmark_current_sheet_nonlinear_bridge(
+    outdir: Annotated[
+        Path,
+        typer.Option(
+            "--outdir",
+            help="Output directory for nonlinear current-sheet bridge artifacts.",
+        ),
+    ] = Path("outputs/benchmarks/periodic_current_sheet_nonlinear_bridge"),
+    nx: Annotated[int, typer.Option("--nx", help="Grid points in x.")] = 8,
+    ny: Annotated[int, typer.Option("--ny", help="Grid points in y.")] = 8,
+    eta: Annotated[float, typer.Option("--eta", help="Resistivity.")] = 2.0e-2,
+    nu: Annotated[float, typer.Option("--nu", help="Viscosity.")] = 2.0e-2,
+    dt: Annotated[float, typer.Option("--dt", help="RK4 time step.")] = 2.0e-2,
+    steps: Annotated[int, typer.Option("--steps", help="RK4 steps.")] = 8,
+) -> None:
+    """Validate nonlinear RK4 trajectory-map JVP convergence."""
+    _configure_validation_precision()
+    manifest_path, validation = write_periodic_current_sheet_nonlinear_bridge_validation(
+        outdir,
+        shape=(nx, ny),
+        resistivity=eta,
+        viscosity=nu,
+        dt=dt,
+        steps=steps,
     )
     typer.echo(f"wrote {manifest_path}")
     if not validation["passed"]:

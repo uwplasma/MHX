@@ -23,6 +23,7 @@ solver.
 | Nonzero current-sheet linearization | Exact bracket couplings around $\psi_0=A\cos y$ are tested. | Good operator gate; still not an FKR benchmark. |
 | Periodic current-sheet dense spectrum | Tiny dense spectrum around $\psi_0=A\cos y$ checks gauge modes, eigenpair residuals, and absence of spurious positive growth. | Useful stability/operator gate; not an FKR/Coppi tearing-growth validation. |
 | Periodic current-sheet time-domain replay | A real decaying eigenmode of the same JVP is advanced with RK4 and compared to $q(t)=e^{\lambda t}q(0)$. | Good operator/time-step bridge; not a nonlinear reconnection validation. |
+| Nonlinear current-sheet differentiability bridge | JAX JVP of the nonlinear RK4 trajectory map is compared with centered finite differences and gates $O(\epsilon^2)$ convergence. | Good differentiability gate for inverse design and neural ODE data; not a nonlinear reconnection result. |
 | FAST reduced-MHD run | Produces stable outputs, diagnostics, figures, and GIFs. Kinetic energy remains tiny and mode amplitudes change weakly. | Smoke test only. |
 | Two-fluid and plugin examples | Exercise extension paths and output schemas. | API examples only; not validated extended-MHD physics. |
 | Nonlinear tearing/plasmoid dynamics | Not demonstrated by the current FAST runs. | No. |
@@ -50,6 +51,10 @@ eigenvalue, so future nonlinear growth fits have a calibrated linear baseline.
 The periodic current-sheet time-domain plot is a separate solver-operator
 bridge: it verifies that the periodic JVP spectrum, RK4 replay, and exponential
 decay diagnostics agree on the same selected eigenmode.
+The nonlinear bridge plot is a differentiability audit: centered finite
+differences of complete nonlinear trajectories converge to the JAX trajectory
+JVP at second order, so the code has a defensible local tangent before adjoint
+or neural-ODE claims are made.
 The broader scaling plots remain analytic reference plots; they
 should not be cited as solver recovery of FKR, plasmoid, or ideal-tearing
 regimes.
@@ -89,6 +94,7 @@ The repository is currently defensible as a validation-first rebuild with:
 - matrix-free linearization scaffolds;
 - tiny nonzero-equilibrium dense-spectrum gate;
 - periodic current-sheet linear time-domain replay;
+- nonlinear current-sheet trajectory-map differentiability bridge;
 - plugin and diagnostics extension examples;
 - CI-checked docs, tests, figures, GIFs, reports, and artifact manifests.
 

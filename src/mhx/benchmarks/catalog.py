@@ -325,6 +325,28 @@ def validation_catalog_entries() -> tuple[BenchmarkCatalogEntry, ...]:
             ),
         ),
         BenchmarkCatalogEntry(
+            name="periodic_current_sheet_nonlinear_bridge",
+            command=(
+                "mhx benchmark current-sheet-nonlinear-bridge "
+                "--outdir outputs/benchmarks/periodic_current_sheet_nonlinear_bridge"
+            ),
+            schema="mhx.validation.periodic_current_sheet_nonlinear_bridge.v1",
+            purpose=(
+                "Nonlinear RK4 trajectory-map differentiability check: centered "
+                "finite differences converge to the JAX JVP tangent."
+            ),
+            expected_outputs=(
+                "diagnostics.json",
+                "validation.json",
+                "periodic_current_sheet_nonlinear_bridge.npz",
+                "figures/periodic_current_sheet_nonlinear_bridge.png",
+            ),
+            literature_anchor=(
+                "Differentiable reduced-MHD solver validation needed before "
+                "adjoints, inverse design, and neural-ODE surrogate datasets."
+            ),
+        ),
+        BenchmarkCatalogEntry(
             name="diffusion_eigenvalue",
             command=(
                 "mhx benchmark diffusion-eigenvalue "

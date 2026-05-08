@@ -8,12 +8,16 @@ from mhx.benchmarks.catalog import (
 )
 from mhx.benchmarks.current_sheet import (
     PERIODIC_CURRENT_SHEET_EIGENVALUE_SCHEMA,
+    PERIODIC_CURRENT_SHEET_NONLINEAR_BRIDGE_SCHEMA,
     PERIODIC_CURRENT_SHEET_TIMEDOMAIN_SCHEMA,
     PeriodicCurrentSheetEigenvalueResult,
+    PeriodicCurrentSheetNonlinearBridgeResult,
     PeriodicCurrentSheetTimeDomainResult,
     run_periodic_current_sheet_eigenvalue_validation,
+    run_periodic_current_sheet_nonlinear_bridge_validation,
     run_periodic_current_sheet_timedomain_validation,
     write_periodic_current_sheet_eigenvalue_validation,
+    write_periodic_current_sheet_nonlinear_bridge_validation,
     write_periodic_current_sheet_timedomain_validation,
 )
 from mhx.benchmarks.decay import (
@@ -137,6 +141,7 @@ __all__ = [
     "LINEAR_TEARING_TIMEDOMAIN_SCHEMA",
     "POWER_ITERATION_SCHEMA",
     "PERIODIC_CURRENT_SHEET_EIGENVALUE_SCHEMA",
+    "PERIODIC_CURRENT_SHEET_NONLINEAR_BRIDGE_SCHEMA",
     "PERIODIC_CURRENT_SHEET_TIMEDOMAIN_SCHEMA",
     "REDUCED_MHD_LINEAR_EIGENMODE_SCHEMA",
     "LinearizedRHSResult",
@@ -146,6 +151,7 @@ __all__ = [
     "LinearTearingTimeDomainResult",
     "PlasmoidScalingEstimate",
     "PeriodicCurrentSheetEigenvalueResult",
+    "PeriodicCurrentSheetNonlinearBridgeResult",
     "PeriodicCurrentSheetTimeDomainResult",
     "PowerIterationValidationResult",
     "RECONNECTION_SCALING_SCHEMA",
@@ -177,6 +183,7 @@ __all__ = [
     "run_linear_tearing_layer_validation",
     "run_linear_tearing_timedomain_validation",
     "run_periodic_current_sheet_eigenvalue_validation",
+    "run_periodic_current_sheet_nonlinear_bridge_validation",
     "run_periodic_current_sheet_timedomain_validation",
     "run_power_iteration_validation",
     "run_reduced_mhd_linear_eigenmode_validation",
@@ -200,6 +207,7 @@ __all__ = [
     "write_linear_tearing_layer_validation",
     "write_linear_tearing_timedomain_validation",
     "write_periodic_current_sheet_eigenvalue_validation",
+    "write_periodic_current_sheet_nonlinear_bridge_validation",
     "write_periodic_current_sheet_timedomain_validation",
     "write_power_iteration_validation",
     "write_reduced_mhd_linear_eigenmode_validation",

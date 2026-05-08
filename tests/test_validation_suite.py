@@ -25,6 +25,7 @@ def test_validation_suite_cases_are_unique() -> None:
     assert "cosine_equilibrium_linearization" in names
     assert "periodic_current_sheet_eigenvalue" in names
     assert "periodic_current_sheet_timedomain" in names
+    assert "periodic_current_sheet_nonlinear_bridge" in names
 
 
 def test_write_validation_suite_artifacts_and_cli(tmp_path) -> None:
@@ -95,6 +96,13 @@ def test_write_validation_suite_artifacts_and_cli(tmp_path) -> None:
         / "periodic_current_sheet_timedomain"
         / "figures"
         / "periodic_current_sheet_timedomain.png"
+    ).stat().st_size > 0
+    assert (
+        tmp_path
+        / "suite"
+        / "periodic_current_sheet_nonlinear_bridge"
+        / "figures"
+        / "periodic_current_sheet_nonlinear_bridge.png"
     ).stat().st_size > 0
     persisted = json.loads((tmp_path / "suite" / "validation_suite.json").read_text())
     assert persisted["cases"][0]["passed"] is True

@@ -69,6 +69,7 @@ mhx benchmark reduced-mhd-eigenmode --outdir outputs/benchmarks/reduced_mhd_eige
 mhx benchmark cosine-equilibrium-linearization --outdir outputs/benchmarks/cosine_equilibrium_linearization
 mhx benchmark current-sheet-eigenvalue --outdir outputs/benchmarks/periodic_current_sheet_eigenvalue
 mhx benchmark current-sheet-timedomain --outdir outputs/benchmarks/periodic_current_sheet_timedomain
+mhx benchmark current-sheet-nonlinear-bridge --outdir outputs/benchmarks/periodic_current_sheet_nonlinear_bridge
 mhx benchmark diffusion-eigenvalue --outdir outputs/benchmarks/diffusion_eigenvalue
 mhx benchmark power-iteration --outdir outputs/benchmarks/power_iteration
 mhx benchmark arnoldi --outdir outputs/benchmarks/arnoldi
@@ -168,6 +169,13 @@ The periodic current-sheet time-domain replay command writes:
 - `periodic_current_sheet_timedomain.npz`
 - `figures/periodic_current_sheet_timedomain.png`
 
+The nonlinear current-sheet differentiability bridge command writes:
+
+- `diagnostics.json`
+- `validation.json`
+- `periodic_current_sheet_nonlinear_bridge.npz`
+- `figures/periodic_current_sheet_nonlinear_bridge.png`
+
 The diffusion-eigenvalue command writes:
 
 - `diagnostics.json`
@@ -217,6 +225,7 @@ mhx benchmark reduced-mhd-eigenmode --outdir outputs/ci/reduced_mhd_eigenmode
 mhx benchmark cosine-equilibrium-linearization --outdir outputs/ci/cosine_equilibrium_linearization
 mhx benchmark current-sheet-eigenvalue --outdir outputs/ci/periodic_current_sheet_eigenvalue
 mhx benchmark current-sheet-timedomain --outdir outputs/ci/periodic_current_sheet_timedomain
+mhx benchmark current-sheet-nonlinear-bridge --outdir outputs/ci/periodic_current_sheet_nonlinear_bridge
 mhx benchmark diffusion-eigenvalue --outdir outputs/ci/diffusion_eigenvalue
 mhx benchmark power-iteration --outdir outputs/ci/power_iteration
 mhx benchmark arnoldi --outdir outputs/ci/arnoldi
@@ -374,6 +383,12 @@ eigenmode of the same dense JVP, advances $dq/dt=Lq$ with RK4, and compares
 the whole state vector to $q(t)=\exp(\lambda t)q(0)$. This catches errors
 between operator assembly, time stepping, and decay/growth fitting before
 moving the workflow to nonlinear perturbation studies.
+
+The nonlinear current-sheet bridge differentiates the complete RK4 saved
+trajectory map with JAX, then compares it to centered finite differences of
+full nonlinear trajectories. The expected $O(\epsilon^2)$ convergence is a
+reviewer-facing gate for differentiable programming claims; it is the step
+between linear operator replay and future adjoint/inverse-design workflows.
 
 The diffusion-eigenvalue gate validates the Rayleigh-quotient/residual path on a
 known Fourier eigenpair before using the same matrix-free machinery for tearing

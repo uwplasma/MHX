@@ -18,6 +18,7 @@ from mhx.benchmarks import (
     write_linear_tearing_timedomain_validation,
     write_linearized_rhs_validation,
     write_periodic_current_sheet_eigenvalue_validation,
+    write_periodic_current_sheet_nonlinear_bridge_validation,
     write_periodic_current_sheet_timedomain_validation,
     write_power_iteration_validation,
     write_reconnection_scaling_validation,
@@ -49,6 +50,9 @@ def main() -> None:
     periodic_current_sheet_timedomain_run_dir = Path(
         "outputs/docs_validation/periodic_current_sheet_timedomain"
     )
+    periodic_current_sheet_nonlinear_bridge_run_dir = Path(
+        "outputs/docs_validation/periodic_current_sheet_nonlinear_bridge"
+    )
     diffusion_eigen_run_dir = Path("outputs/docs_validation/diffusion_eigenvalue")
     power_iteration_run_dir = Path("outputs/docs_validation/power_iteration")
     arnoldi_run_dir = Path("outputs/docs_validation/arnoldi")
@@ -73,6 +77,9 @@ def main() -> None:
     periodic_current_sheet_timedomain_docs_dir = Path(
         "docs/_static/validation/periodic_current_sheet_timedomain"
     )
+    periodic_current_sheet_nonlinear_bridge_docs_dir = Path(
+        "docs/_static/validation/periodic_current_sheet_nonlinear_bridge"
+    )
     diffusion_eigen_docs_dir = Path("docs/_static/validation/diffusion_eigenvalue")
     power_iteration_docs_dir = Path("docs/_static/validation/power_iteration")
     arnoldi_docs_dir = Path("docs/_static/validation/arnoldi")
@@ -92,6 +99,9 @@ def main() -> None:
     write_periodic_current_sheet_eigenvalue_validation(periodic_current_sheet_run_dir)
     write_periodic_current_sheet_timedomain_validation(
         periodic_current_sheet_timedomain_run_dir
+    )
+    write_periodic_current_sheet_nonlinear_bridge_validation(
+        periodic_current_sheet_nonlinear_bridge_run_dir
     )
     write_diffusion_eigenvalue_validation(diffusion_eigen_run_dir)
     write_power_iteration_validation(power_iteration_run_dir)
@@ -176,6 +186,14 @@ def main() -> None:
         / "figures"
         / "periodic_current_sheet_timedomain.png",
         periodic_current_sheet_timedomain_docs_dir / "periodic_current_sheet_timedomain.png",
+    )
+    periodic_current_sheet_nonlinear_bridge_docs_dir.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(
+        periodic_current_sheet_nonlinear_bridge_run_dir
+        / "figures"
+        / "periodic_current_sheet_nonlinear_bridge.png",
+        periodic_current_sheet_nonlinear_bridge_docs_dir
+        / "periodic_current_sheet_nonlinear_bridge.png",
     )
     diffusion_eigen_docs_dir.mkdir(parents=True, exist_ok=True)
     shutil.copy2(

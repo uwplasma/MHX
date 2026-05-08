@@ -682,6 +682,51 @@ Expected files:
 
 ![Periodic current-sheet time-domain replay](_static/validation/periodic_current_sheet_timedomain/periodic_current_sheet_timedomain.png)
 
+## Nonlinear current-sheet differentiability bridge
+
+The linear replay gate validates a frozen operator. The next differentiable
+solver gate validates the nonlinear RK4 time map used by actual MHX runs. Let
+$\Phi(q_0)$ be the map from an initial reduced-MHD state to the saved trajectory
+vector after several RK4 steps. Around the periodic current sheet
+$q_0=(\psi_0,\omega_0)$, JAX gives a tangent
+
+$$
+\delta \Phi = D\Phi(q_0)[p].
+$$
+
+MHX compares that tangent to centered finite differences of full nonlinear
+trajectories:
+
+$$
+\delta \Phi_\epsilon =
+\frac{\Phi(q_0+\epsilon p)-\Phi(q_0-\epsilon p)}{2\epsilon}.
+$$
+
+For a smooth RHS and x64 arithmetic, the error should converge as
+
+$$
+\frac{\|\delta \Phi_\epsilon-\delta\Phi\|_2}{\|\delta\Phi\|_2}
+= O(\epsilon^2)
+$$
+
+until roundoff. This gate is specifically aimed at differentiable programming
+claims: before MHX trains neural ODEs, adjoints, or inverse-design loops on
+solver trajectories, the trajectory map itself must have a verified tangent.
+
+```bash
+mhx benchmark current-sheet-nonlinear-bridge \
+  --outdir outputs/benchmarks/periodic_current_sheet_nonlinear_bridge
+```
+
+Expected files:
+
+- `outputs/benchmarks/periodic_current_sheet_nonlinear_bridge/diagnostics.json`
+- `outputs/benchmarks/periodic_current_sheet_nonlinear_bridge/validation.json`
+- `outputs/benchmarks/periodic_current_sheet_nonlinear_bridge/periodic_current_sheet_nonlinear_bridge.npz`
+- `outputs/benchmarks/periodic_current_sheet_nonlinear_bridge/figures/periodic_current_sheet_nonlinear_bridge.png`
+
+![Nonlinear current-sheet differentiability bridge](_static/validation/periodic_current_sheet_nonlinear_bridge/periodic_current_sheet_nonlinear_bridge.png)
+
 ## Diffusion eigenvalue scaffold
 
 Before applying eigenvalue machinery to tearing equilibria, MHX validates the

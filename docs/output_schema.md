@@ -131,7 +131,8 @@ validation gates and writes:
   `linear_tearing_timedomain/`,
   `cosine_equilibrium_linearization/`,
   `periodic_current_sheet_eigenvalue/`,
-  `periodic_current_sheet_timedomain/`, and `arnoldi/`.
+  `periodic_current_sheet_timedomain/`,
+  `periodic_current_sheet_nonlinear_bridge/`, and `arnoldi/`.
 
 ## Exact-decay validation outputs
 
@@ -333,6 +334,22 @@ writes:
   and initial/final `psi` and `omega` fields.
 - `figures/periodic_current_sheet_timedomain.png`: semilog amplitude replay and
   relative full-state error against the configured gate.
+
+## Nonlinear current-sheet bridge outputs
+
+`mhx benchmark current-sheet-nonlinear-bridge --outdir outputs/benchmarks/periodic_current_sheet_nonlinear_bridge`
+writes:
+
+- `diagnostics.json`: nonlinear trajectory-map differentiability diagnostics
+  with schema `mhx.validation.periodic_current_sheet_nonlinear_bridge.v1`.
+- `validation.json`: pass/fail gates for finite positive errors, monotonic
+  centered-difference convergence, second-order slope, finest-error tolerance,
+  and nonzero tangent norm.
+- `periodic_current_sheet_nonlinear_bridge.npz`: saved `epsilon`,
+  `relative_error`, fitted `convergence_order`, tangent norm, perturbation
+  fields, and final tangent fields.
+- `figures/periodic_current_sheet_nonlinear_bridge.png`: log-log convergence
+  plot against an $O(\epsilon^2)$ guide and the configured slope/error gates.
 
 ## Diffusion eigenvalue validation outputs
 

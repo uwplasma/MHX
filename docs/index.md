@@ -17,6 +17,7 @@ output_schema
 benchmarks
 performance
 validation
+media
 audit
 api_policy
 model_assembly

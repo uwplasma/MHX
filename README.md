@@ -31,6 +31,17 @@ claims remain roadmap items.
 See `docs/audit.md` for the current skeptical validation audit and maturity
 table.
 
+## Literature-anchored movies
+
+These small GIFs are intended to make the validation story visible at a glance.
+They are either generated from MHX validation gates or from explicitly labeled
+theory schematics, not from unvalidated nonlinear production simulations.
+
+| Movie | What it shows | Literature anchor |
+| --- | --- | --- |
+| ![Harris tearing layer sweep](docs/_static/readme/harris_layer_sweep.gif) | Direct Harris-sheet eigenproblem: growth decreases with S while the resonant flow/current layer narrows. | Classical tearing localization from [FKR 1963](https://doi.org/10.1063/1.1706761) and the reduced-MHD Harris eigenproblem used by [MacTaggart 2019](https://eprints.gla.ac.uk/191898/1/191898.pdf). |
+| ![Plasmoid scaling schematic](docs/_static/readme/plasmoid_scaling_schematic.gif) | Schematic Sweet-Parker sheet fragmentation with $\gamma_{\max}\tau_A\propto S^{1/4}$ and $k_{\max}L\propto S^{3/8}$. | [Loureiro, Schekochihin & Cowley 2007](https://arxiv.org/abs/astro-ph/0703631); schematic only, not yet a nonlinear MHX plasmoid claim. |
+
 The active public API is `v1`. Check it with:
 
 ```bash
@@ -106,6 +117,7 @@ mhx benchmark reduced-mhd-eigenmode --outdir outputs/benchmarks/reduced_mhd_eige
 mhx benchmark cosine-equilibrium-linearization --outdir outputs/benchmarks/cosine_equilibrium_linearization
 mhx benchmark current-sheet-eigenvalue --outdir outputs/benchmarks/periodic_current_sheet_eigenvalue
 mhx benchmark current-sheet-timedomain --outdir outputs/benchmarks/periodic_current_sheet_timedomain
+mhx benchmark current-sheet-nonlinear-bridge --outdir outputs/benchmarks/periodic_current_sheet_nonlinear_bridge
 mhx benchmark diffusion-eigenvalue --outdir outputs/benchmarks/diffusion_eigenvalue
 mhx benchmark power-iteration --outdir outputs/benchmarks/power_iteration
 mhx benchmark arnoldi --outdir outputs/benchmarks/arnoldi
@@ -134,6 +146,10 @@ and the time-domain eigenmode replay gate:
 and the periodic current-sheet time-domain operator replay:
 
 ![Periodic current-sheet time-domain replay](docs/_static/validation/periodic_current_sheet_timedomain/periodic_current_sheet_timedomain.png)
+
+and the nonlinear current-sheet differentiability bridge:
+
+![Nonlinear current-sheet differentiability bridge](docs/_static/validation/periodic_current_sheet_nonlinear_bridge/periodic_current_sheet_nonlinear_bridge.png)
 
 and the exact resistive-decay gate:
 

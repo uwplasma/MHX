@@ -83,12 +83,14 @@ jobs:
           mhx benchmark cosine-equilibrium-linearization --outdir outputs/ci/cosine_equilibrium_linearization
           mhx benchmark current-sheet-eigenvalue --outdir outputs/ci/periodic_current_sheet_eigenvalue
           mhx benchmark current-sheet-timedomain --outdir outputs/ci/periodic_current_sheet_timedomain
+          mhx benchmark current-sheet-nonlinear-bridge --outdir outputs/ci/periodic_current_sheet_nonlinear_bridge
           mhx benchmark diffusion-eigenvalue --outdir outputs/ci/diffusion_eigenvalue
           mhx benchmark power-iteration --outdir outputs/ci/power_iteration
           mhx benchmark arnoldi --outdir outputs/ci/arnoldi
           mhx benchmark timing --outdir outputs/ci/timing --repeats 1 --warmups 0
           mhx benchmark catalog --outdir outputs/ci/catalog
           mhx validate all --outdir outputs/ci/validation_suite
+          python examples/make_readme_media.py
           mhx run examples/linear_tearing_twofluid_toy.toml --outdir outputs/ci/twofluid_toy
           mhx figures outputs/ci/twofluid_toy --gif
           mhx report outputs/ci/twofluid_toy
@@ -137,6 +139,8 @@ jobs:
           test -f outputs/ci/periodic_current_sheet_eigenvalue/figures/periodic_current_sheet_spectrum.png
           test -f outputs/ci/periodic_current_sheet_timedomain/validation.json
           test -f outputs/ci/periodic_current_sheet_timedomain/figures/periodic_current_sheet_timedomain.png
+          test -f outputs/ci/periodic_current_sheet_nonlinear_bridge/validation.json
+          test -f outputs/ci/periodic_current_sheet_nonlinear_bridge/figures/periodic_current_sheet_nonlinear_bridge.png
           test -f outputs/ci/diffusion_eigenvalue/validation.json
           test -f outputs/ci/diffusion_eigenvalue/figures/diffusion_eigenvalue_errors.png
           test -f outputs/ci/power_iteration/validation.json
@@ -159,6 +163,11 @@ jobs:
           test -f outputs/ci/validation_suite/cosine_equilibrium_linearization/figures/cosine_equilibrium_linearization_errors.png
           test -f outputs/ci/validation_suite/periodic_current_sheet_eigenvalue/figures/periodic_current_sheet_spectrum.png
           test -f outputs/ci/validation_suite/periodic_current_sheet_timedomain/figures/periodic_current_sheet_timedomain.png
+          test -f outputs/ci/validation_suite/periodic_current_sheet_nonlinear_bridge/figures/periodic_current_sheet_nonlinear_bridge.png
+          test -f docs/_static/readme/harris_layer_sweep.gif
+          test -f docs/_static/readme/plasmoid_scaling_schematic.gif
+          test "$(stat -c%s docs/_static/readme/harris_layer_sweep.gif)" -lt 200000
+          test "$(stat -c%s docs/_static/readme/plasmoid_scaling_schematic.gif)" -lt 300000
           test -f outputs/ci/twofluid_toy/manifest.json
           test -f outputs/ci/twofluid_toy/report.md
           test -f outputs/ci/twofluid_toy/figures/flux_final.png

@@ -10,6 +10,7 @@ from typing import Any
 
 from mhx.benchmarks.current_sheet import (
     write_periodic_current_sheet_eigenvalue_validation,
+    write_periodic_current_sheet_nonlinear_bridge_validation,
     write_periodic_current_sheet_timedomain_validation,
 )
 from mhx.benchmarks.decay import write_resistive_decay_validation
@@ -133,6 +134,11 @@ def validation_suite_cases() -> tuple[ValidationSuiteCase, ...]:
             name="periodic_current_sheet_timedomain",
             command="mhx benchmark current-sheet-timedomain",
             runner=write_periodic_current_sheet_timedomain_validation,
+        ),
+        ValidationSuiteCase(
+            name="periodic_current_sheet_nonlinear_bridge",
+            command="mhx benchmark current-sheet-nonlinear-bridge",
+            runner=write_periodic_current_sheet_nonlinear_bridge_validation,
         ),
         ValidationSuiteCase(
             name="diffusion_eigenvalue",

@@ -965,6 +965,60 @@ def plot_periodic_current_sheet_timedomain(
     return output_path
 
 
+def plot_nonlinear_current_sheet_bridge(
+    epsilons,
+    relative_errors,
+    *,
+    convergence_order: float,
+    min_convergence_order: float,
+    max_finest_relative_error: float,
+    path: str | Path,
+) -> Path:
+    """Plot nonlinear current-sheet trajectory-map JVP convergence."""
+    import matplotlib.pyplot as plt
+
+    output_path = Path(path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    epsilon_values = np.asarray(epsilons)
+    error_values = np.asarray(relative_errors)
+    reference = error_values[-1] * (epsilon_values / epsilon_values[-1]) ** 2
+    fig, axes = plt.subplots(1, 2, figsize=(9.5, 3.9), constrained_layout=True)
+    axes[0].loglog(
+        epsilon_values,
+        error_values,
+        "o-",
+        color="#3266a8",
+        label="centered FD vs JVP",
+    )
+    axes[0].loglog(
+        epsilon_values,
+        reference,
+        "--",
+        color="#b54a4a",
+        label=r"$O(\epsilon^2)$",
+    )
+    axes[0].invert_xaxis()
+    axes[0].set_xlabel(r"finite-difference amplitude $\epsilon$")
+    axes[0].set_ylabel("relative tangent error")
+    axes[0].set_title("Nonlinear RK4 map derivative")
+    axes[0].legend(frameon=False)
+    axes[1].bar(
+        ["measured order", "gate"],
+        [convergence_order, min_convergence_order],
+        color=["#3266a8", "#8c4fb4"],
+    )
+    axes[1].axhline(2.0, color="0.4", linestyle=":", linewidth=1.0)
+    axes[1].set_ylim(0.0, max(2.3, 1.15 * convergence_order))
+    axes[1].set_ylabel("log-log slope")
+    axes[1].set_title(
+        f"finest error={error_values[-1]:.2e}, gate={max_finest_relative_error:.1e}"
+    )
+    fig.suptitle("Nonlinear current-sheet differentiability bridge")
+    fig.savefig(output_path, dpi=220)
+    plt.close(fig)
+    return output_path
+
+
 def plot_plasmoid_scaling(lundquist, gamma, fastest_mode, *, path: str | Path) -> Path:
     """Plot Loureiro Sweet-Parker plasmoid scalings."""
     import matplotlib.pyplot as plt
