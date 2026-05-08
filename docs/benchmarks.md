@@ -68,6 +68,7 @@ mhx benchmark linearized-rhs --outdir outputs/benchmarks/linearized_rhs
 mhx benchmark reduced-mhd-eigenmode --outdir outputs/benchmarks/reduced_mhd_eigenmode
 mhx benchmark cosine-equilibrium-linearization --outdir outputs/benchmarks/cosine_equilibrium_linearization
 mhx benchmark current-sheet-eigenvalue --outdir outputs/benchmarks/periodic_current_sheet_eigenvalue
+mhx benchmark current-sheet-timedomain --outdir outputs/benchmarks/periodic_current_sheet_timedomain
 mhx benchmark diffusion-eigenvalue --outdir outputs/benchmarks/diffusion_eigenvalue
 mhx benchmark power-iteration --outdir outputs/benchmarks/power_iteration
 mhx benchmark arnoldi --outdir outputs/benchmarks/arnoldi
@@ -160,6 +161,13 @@ The periodic current-sheet eigenvalue command writes:
 - `periodic_current_sheet_eigenvalue.npz`
 - `figures/periodic_current_sheet_spectrum.png`
 
+The periodic current-sheet time-domain replay command writes:
+
+- `diagnostics.json`
+- `validation.json`
+- `periodic_current_sheet_timedomain.npz`
+- `figures/periodic_current_sheet_timedomain.png`
+
 The diffusion-eigenvalue command writes:
 
 - `diagnostics.json`
@@ -208,6 +216,7 @@ mhx benchmark linearized-rhs --outdir outputs/ci/linearized_rhs
 mhx benchmark reduced-mhd-eigenmode --outdir outputs/ci/reduced_mhd_eigenmode
 mhx benchmark cosine-equilibrium-linearization --outdir outputs/ci/cosine_equilibrium_linearization
 mhx benchmark current-sheet-eigenvalue --outdir outputs/ci/periodic_current_sheet_eigenvalue
+mhx benchmark current-sheet-timedomain --outdir outputs/ci/periodic_current_sheet_timedomain
 mhx benchmark diffusion-eigenvalue --outdir outputs/ci/diffusion_eigenvalue
 mhx benchmark power-iteration --outdir outputs/ci/power_iteration
 mhx benchmark arnoldi --outdir outputs/ci/arnoldi
@@ -359,6 +368,12 @@ spectrum of that same nonzero-equilibrium operator. It verifies mean/gauge
 modes, checks the selected dense eigenpair residual, and fails if the
 non-gauge spectrum has spurious positive growth. This remains a periodic
 operator-stability gate, not a calibrated FKR/Coppi growth-rate benchmark.
+
+The periodic current-sheet time-domain replay gate selects a real decaying
+eigenmode of the same dense JVP, advances $dq/dt=Lq$ with RK4, and compares
+the whole state vector to $q(t)=\exp(\lambda t)q(0)$. This catches errors
+between operator assembly, time stepping, and decay/growth fitting before
+moving the workflow to nonlinear perturbation studies.
 
 The diffusion-eigenvalue gate validates the Rayleigh-quotient/residual path on a
 known Fourier eigenpair before using the same matrix-free machinery for tearing

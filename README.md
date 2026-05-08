@@ -105,6 +105,7 @@ mhx benchmark linearized-rhs --outdir outputs/benchmarks/linearized_rhs
 mhx benchmark reduced-mhd-eigenmode --outdir outputs/benchmarks/reduced_mhd_eigenmode
 mhx benchmark cosine-equilibrium-linearization --outdir outputs/benchmarks/cosine_equilibrium_linearization
 mhx benchmark current-sheet-eigenvalue --outdir outputs/benchmarks/periodic_current_sheet_eigenvalue
+mhx benchmark current-sheet-timedomain --outdir outputs/benchmarks/periodic_current_sheet_timedomain
 mhx benchmark diffusion-eigenvalue --outdir outputs/benchmarks/diffusion_eigenvalue
 mhx benchmark power-iteration --outdir outputs/benchmarks/power_iteration
 mhx benchmark arnoldi --outdir outputs/benchmarks/arnoldi
@@ -129,6 +130,10 @@ and the eigenfunction-layer localization gate:
 and the time-domain eigenmode replay gate:
 
 ![Time-domain Harris tearing eigenmode replay](docs/_static/validation/linear_tearing_timedomain/linear_tearing_timedomain.png)
+
+and the periodic current-sheet time-domain operator replay:
+
+![Periodic current-sheet time-domain replay](docs/_static/validation/periodic_current_sheet_timedomain/periodic_current_sheet_timedomain.png)
 
 and the exact resistive-decay gate:
 

@@ -303,6 +303,28 @@ def validation_catalog_entries() -> tuple[BenchmarkCatalogEntry, ...]:
             ),
         ),
         BenchmarkCatalogEntry(
+            name="periodic_current_sheet_timedomain",
+            command=(
+                "mhx benchmark current-sheet-timedomain "
+                "--outdir outputs/benchmarks/periodic_current_sheet_timedomain"
+            ),
+            schema="mhx.validation.periodic_current_sheet_timedomain.v1",
+            purpose=(
+                "RK4 time-domain replay of a real decaying eigenmode of the "
+                "periodic current-sheet JVP operator."
+            ),
+            expected_outputs=(
+                "diagnostics.json",
+                "validation.json",
+                "periodic_current_sheet_timedomain.npz",
+                "figures/periodic_current_sheet_timedomain.png",
+            ),
+            literature_anchor=(
+                "Reduced-MHD linear operator consistency: dq/dt=Lq must replay "
+                "q(t)=exp(lambda t)q(0) for a dense JVP eigenmode."
+            ),
+        ),
+        BenchmarkCatalogEntry(
             name="diffusion_eigenvalue",
             command=(
                 "mhx benchmark diffusion-eigenvalue "

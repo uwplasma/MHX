@@ -24,6 +24,7 @@ def test_validation_catalog_entries_cover_expected_gates() -> None:
     assert "linear_tearing_timedomain" in names
     assert "reduced_mhd_eigenmode" in names
     assert "periodic_current_sheet_eigenvalue" in names
+    assert "periodic_current_sheet_timedomain" in names
     assert "arnoldi" in names
     assert all(entry.command.startswith("mhx benchmark") for entry in entries)
     assert all(entry.expected_outputs for entry in entries)

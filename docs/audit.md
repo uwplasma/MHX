@@ -22,6 +22,7 @@ solver.
 | Matrix-free JVP and eigen scaffolds | JAX JVP, zero-state eigenmodes, Arnoldi, and power iteration are tested on controlled fixtures. | Good scaffolding for larger matrix-free tearing spectra. |
 | Nonzero current-sheet linearization | Exact bracket couplings around $\psi_0=A\cos y$ are tested. | Good operator gate; still not an FKR benchmark. |
 | Periodic current-sheet dense spectrum | Tiny dense spectrum around $\psi_0=A\cos y$ checks gauge modes, eigenpair residuals, and absence of spurious positive growth. | Useful stability/operator gate; not an FKR/Coppi tearing-growth validation. |
+| Periodic current-sheet time-domain replay | A real decaying eigenmode of the same JVP is advanced with RK4 and compared to $q(t)=e^{\lambda t}q(0)$. | Good operator/time-step bridge; not a nonlinear reconnection validation. |
 | FAST reduced-MHD run | Produces stable outputs, diagnostics, figures, and GIFs. Kinetic energy remains tiny and mode amplitudes change weakly. | Smoke test only. |
 | Two-fluid and plugin examples | Exercise extension paths and output schemas. | API examples only; not validated extended-MHD physics. |
 | Nonlinear tearing/plasmoid dynamics | Not demonstrated by the current FAST runs. | No. |
@@ -46,6 +47,9 @@ surface, and the flow layer narrows as $S$ rises while the outer flux width
 stays nearly fixed. The time-domain replay plot is a diagnostic-loop check: the RK4
 amplitude follows $\exp(\gamma t)$ and the fitted growth rate matches the
 eigenvalue, so future nonlinear growth fits have a calibrated linear baseline.
+The periodic current-sheet time-domain plot is a separate solver-operator
+bridge: it verifies that the periodic JVP spectrum, RK4 replay, and exponential
+decay diagnostics agree on the same selected eigenmode.
 The broader scaling plots remain analytic reference plots; they
 should not be cited as solver recovery of FKR, plasmoid, or ideal-tearing
 regimes.
@@ -84,6 +88,7 @@ The repository is currently defensible as a validation-first rebuild with:
 - time-domain Harris eigenmode growth-fit replay;
 - matrix-free linearization scaffolds;
 - tiny nonzero-equilibrium dense-spectrum gate;
+- periodic current-sheet linear time-domain replay;
 - plugin and diagnostics extension examples;
 - CI-checked docs, tests, figures, GIFs, reports, and artifact manifests.
 

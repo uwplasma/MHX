@@ -25,6 +25,7 @@ from mhx.benchmarks import (
     write_linear_tearing_timedomain_validation,
     write_linearized_rhs_validation,
     write_periodic_current_sheet_eigenvalue_validation,
+    write_periodic_current_sheet_timedomain_validation,
     write_power_iteration_validation,
     write_reconnection_scaling_validation,
     write_reduced_mhd_linear_eigenmode_validation,
@@ -644,6 +645,37 @@ def benchmark_current_sheet_eigenvalue(
         shape=(nx, ny),
         resistivity=eta,
         viscosity=nu,
+    )
+    typer.echo(f"wrote {manifest_path}")
+    if not validation["passed"]:
+        raise typer.Exit(code=1)
+
+
+@benchmark_app.command("current-sheet-timedomain")
+def benchmark_current_sheet_timedomain(
+    outdir: Annotated[
+        Path,
+        typer.Option(
+            "--outdir",
+            help="Output directory for periodic current-sheet time-domain artifacts.",
+        ),
+    ] = Path("outputs/benchmarks/periodic_current_sheet_timedomain"),
+    nx: Annotated[int, typer.Option("--nx", help="Grid points in x.")] = 8,
+    ny: Annotated[int, typer.Option("--ny", help="Grid points in y.")] = 8,
+    eta: Annotated[float, typer.Option("--eta", help="Resistivity.")] = 2.0e-2,
+    nu: Annotated[float, typer.Option("--nu", help="Viscosity.")] = 2.0e-2,
+    dt: Annotated[float, typer.Option("--dt", help="RK4 time step.")] = 5.0e-2,
+    t_end: Annotated[float, typer.Option("--t-end", help="Final replay time.")] = 5.0,
+) -> None:
+    """Replay a decaying periodic current-sheet JVP eigenmode in time."""
+    _configure_validation_precision()
+    manifest_path, validation = write_periodic_current_sheet_timedomain_validation(
+        outdir,
+        shape=(nx, ny),
+        resistivity=eta,
+        viscosity=nu,
+        dt=dt,
+        t_end=t_end,
     )
     typer.echo(f"wrote {manifest_path}")
     if not validation["passed"]:

@@ -638,6 +638,50 @@ Expected files:
 
 ![Periodic current-sheet eigenvalue gate](_static/validation/periodic_current_sheet_eigenvalue/periodic_current_sheet_spectrum.png)
 
+## Periodic current-sheet time-domain replay
+
+The dense spectrum gate proves that the assembled periodic current-sheet JVP has
+the expected gauge modes and a damped non-gauge spectrum on the FAST grid. The
+time-domain replay adds the next solver-level check: select a real decaying
+eigenmode of the same operator and integrate
+
+$$
+\frac{d q}{dt}=Lq,\qquad q(0)=v,\qquad Lv=\lambda v.
+$$
+
+For this linear initial value problem the exact solution is
+
+$$
+q(t)=e^{\lambda t}v .
+$$
+
+The benchmark advances $q$ with the RK4 path used by MHX validation workflows,
+then gates both the full state-vector error and the decay-rate fit from
+$\log\|q(t)\|_2$:
+
+$$
+\epsilon_q(t)=\frac{\|q_{\mathrm{RK4}}(t)-e^{\lambda t}v\|_2}
+{\|e^{\lambda t}v\|_2},\qquad
+\gamma_{\mathrm{fit}}\approx \lambda .
+$$
+
+This is deliberately a linear operator/time-step bridge, not a nonlinear
+magnetic-island or FKR/Coppi tearing-growth claim.
+
+```bash
+mhx benchmark current-sheet-timedomain \
+  --outdir outputs/benchmarks/periodic_current_sheet_timedomain
+```
+
+Expected files:
+
+- `outputs/benchmarks/periodic_current_sheet_timedomain/diagnostics.json`
+- `outputs/benchmarks/periodic_current_sheet_timedomain/validation.json`
+- `outputs/benchmarks/periodic_current_sheet_timedomain/periodic_current_sheet_timedomain.npz`
+- `outputs/benchmarks/periodic_current_sheet_timedomain/figures/periodic_current_sheet_timedomain.png`
+
+![Periodic current-sheet time-domain replay](_static/validation/periodic_current_sheet_timedomain/periodic_current_sheet_timedomain.png)
+
 ## Diffusion eigenvalue scaffold
 
 Before applying eigenvalue machinery to tearing equilibria, MHX validates the

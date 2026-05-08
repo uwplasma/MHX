@@ -902,6 +902,69 @@ def plot_periodic_current_sheet_spectrum(
     return output_path
 
 
+def plot_periodic_current_sheet_timedomain(
+    times,
+    amplitudes,
+    exact_amplitudes,
+    relative_state_error,
+    *,
+    selected_eigenvalue: float,
+    fitted_decay_rate: float,
+    max_relative_state_error: float,
+    path: str | Path,
+) -> Path:
+    """Plot periodic-current-sheet linear eigenmode time-domain replay diagnostics."""
+    import matplotlib.pyplot as plt
+
+    output_path = Path(path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    time_values = np.asarray(times)
+    fig, axes = plt.subplots(1, 2, figsize=(9.4, 3.9), constrained_layout=True)
+    axes[0].semilogy(
+        time_values,
+        np.asarray(amplitudes),
+        "o",
+        color="#3266a8",
+        label="RK4 replay",
+    )
+    axes[0].semilogy(
+        time_values,
+        np.asarray(exact_amplitudes),
+        "-",
+        color="#b54a4a",
+        label=r"$\exp(\lambda t)$",
+    )
+    axes[0].set_xlabel("time")
+    axes[0].set_ylabel(r"$\|q(t)\|_2$")
+    axes[0].set_title(
+        rf"Decaying mode: $\lambda={selected_eigenvalue:.4g}$, "
+        rf"fit={fitted_decay_rate:.4g}"
+    )
+    axes[0].legend(frameon=False)
+    axes[1].semilogy(
+        time_values,
+        np.asarray(relative_state_error),
+        "o-",
+        color="#3266a8",
+        label="state error",
+    )
+    axes[1].axhline(
+        max_relative_state_error,
+        color="black",
+        linestyle="--",
+        linewidth=1.0,
+        label="gate",
+    )
+    axes[1].set_xlabel("time")
+    axes[1].set_ylabel(r"$\|q_{\rm RK4}-q_{\rm exact}\|_2/\|q_{\rm exact}\|_2$")
+    axes[1].set_title("Replay error")
+    axes[1].legend(frameon=False)
+    fig.suptitle("Periodic current-sheet time-domain eigenmode replay")
+    fig.savefig(output_path, dpi=220)
+    plt.close(fig)
+    return output_path
+
+
 def plot_plasmoid_scaling(lundquist, gamma, fastest_mode, *, path: str | Path) -> Path:
     """Plot Loureiro Sweet-Parker plasmoid scalings."""
     import matplotlib.pyplot as plt

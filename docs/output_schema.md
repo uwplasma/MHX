@@ -130,7 +130,8 @@ validation gates and writes:
   `linear_tearing_layer/`,
   `linear_tearing_timedomain/`,
   `cosine_equilibrium_linearization/`,
-  `periodic_current_sheet_eigenvalue/`, and `arnoldi/`.
+  `periodic_current_sheet_eigenvalue/`,
+  `periodic_current_sheet_timedomain/`, and `arnoldi/`.
 
 ## Exact-decay validation outputs
 
@@ -316,6 +317,22 @@ writes:
   and leading-real-part diagnostics.
 - `figures/periodic_current_sheet_spectrum.png`: complex spectrum and
   selected-eigenpair residual plot.
+
+## Periodic current-sheet time-domain outputs
+
+`mhx benchmark current-sheet-timedomain --outdir outputs/benchmarks/periodic_current_sheet_timedomain`
+writes:
+
+- `diagnostics.json`: RK4 eigenmode replay diagnostics with schema
+  `mhx.validation.periodic_current_sheet_timedomain.v1`.
+- `validation.json`: pass/fail gates for spectrum consistency, real decaying
+  mode selection, dense-eigenpair residual, full-state replay error, and fitted
+  decay-rate error.
+- `periodic_current_sheet_timedomain.npz`: saved `time`, numerical and exact
+  amplitudes, relative state errors, selected/fitted decay rates, residuals,
+  and initial/final `psi` and `omega` fields.
+- `figures/periodic_current_sheet_timedomain.png`: semilog amplitude replay and
+  relative full-state error against the configured gate.
 
 ## Diffusion eigenvalue validation outputs
 
