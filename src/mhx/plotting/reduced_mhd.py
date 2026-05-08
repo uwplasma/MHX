@@ -366,6 +366,84 @@ def plot_harris_delta_prime(
     return output_path
 
 
+def plot_linear_tearing_eigenvalue_validation(
+    dx,
+    growth_rates,
+    fitted_growth_rates,
+    *,
+    reference_growth_rate: float,
+    extrapolated_growth_rate: float,
+    spectrum,
+    selected_eigenvalue: complex,
+    coordinate,
+    flux_eigenfunction,
+    streamfunction_imag,
+    path: str | Path,
+) -> Path:
+    """Plot the direct Harris-sheet tearing eigenvalue validation."""
+    import matplotlib.pyplot as plt
+
+    output_path = Path(path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    dx_values = np.asarray(dx)
+    growth = np.asarray(growth_rates)
+    fitted = np.asarray(fitted_growth_rates)
+    spectrum_values = np.asarray(spectrum)
+    fig, axes = plt.subplots(1, 3, figsize=(13.8, 3.9), constrained_layout=True)
+
+    axes[0].plot(dx_values**2, growth, "o", color="#3266a8", label="dense FD eigenvalue")
+    order = np.argsort(dx_values**2)
+    axes[0].plot(dx_values[order] ** 2, fitted[order], "-", color="#4b8f5a", label="linear in Δx²")
+    axes[0].axhline(
+        reference_growth_rate,
+        color="black",
+        linestyle="--",
+        linewidth=1.0,
+        label="literature",
+    )
+    axes[0].axhline(
+        extrapolated_growth_rate,
+        color="#8c4fb4",
+        linestyle=":",
+        linewidth=1.4,
+        label="Δx→0",
+    )
+    axes[0].set_xlabel(r"$\Delta x^2$")
+    axes[0].set_ylabel(r"growth rate $\gamma$")
+    axes[0].set_title("Grid extrapolation")
+    axes[0].legend(frameon=False, fontsize=8)
+
+    axes[1].scatter(spectrum_values.real, spectrum_values.imag, s=8, alpha=0.55, color="#3266a8")
+    axes[1].scatter(
+        [selected_eigenvalue.real],
+        [selected_eigenvalue.imag],
+        marker="x",
+        s=58,
+        color="#b54a4a",
+        label="tearing mode",
+    )
+    axes[1].axhline(0.0, color="0.85", linewidth=0.8)
+    axes[1].axvline(0.0, color="0.85", linewidth=0.8)
+    axes[1].set_xlabel(r"$\operatorname{Re}\lambda$")
+    axes[1].set_ylabel(r"$\operatorname{Im}\lambda$")
+    axes[1].set_title("Selected spectrum")
+    axes[1].legend(frameon=False, fontsize=8)
+
+    axes[2].plot(coordinate, flux_eigenfunction, color="#3266a8", label=r"$b(x)$")
+    axes[2].plot(coordinate, streamfunction_imag, color="#8c4fb4", label=r"$\operatorname{Im}u(x)$")
+    axes[2].axhline(0.0, color="0.85", linewidth=0.8)
+    axes[2].axvline(0.0, color="0.85", linewidth=0.8)
+    axes[2].set_xlabel(r"$x/a$")
+    axes[2].set_ylabel("normalized eigenfunction")
+    axes[2].set_title("Tearing parity")
+    axes[2].legend(frameon=False, fontsize=8)
+
+    fig.suptitle("Direct Harris-sheet tearing eigenvalue gate")
+    fig.savefig(output_path, dpi=220)
+    plt.close(fig)
+    return output_path
+
+
 def plot_linearized_rhs_errors(
     component_names,
     relative_errors,

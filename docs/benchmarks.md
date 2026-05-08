@@ -49,16 +49,18 @@ $E_B(t)=E_B(0)\exp(-2\eta |k|^2t)$. It writes:
 The same benchmark is documented with figures on the
 [validation page](validation.md).
 
-## Analytic reconnection scaling gates
+## Reconnection and linear-operator gates
 
-The benchmark roadmap also includes analytic power-law gates for the expected
-FKR, Sweet-Parker plasmoid, and ideal-tearing exponents:
+The benchmark roadmap includes analytic power-law gates for expected FKR,
+Sweet-Parker plasmoid, and ideal-tearing exponents plus linear operator and
+direct eigenvalue gates:
 
 ```bash
 mhx benchmark scaling --outdir outputs/benchmarks/reconnection_scaling
 mhx benchmark fkr-window --outdir outputs/benchmarks/fkr_window
 mhx benchmark fkr-growth --outdir outputs/benchmarks/fkr_growth_rate
 mhx benchmark harris-delta-prime --outdir outputs/benchmarks/harris_delta_prime
+mhx benchmark linear-tearing-eigenvalue --outdir outputs/benchmarks/linear_tearing_eigenvalue
 mhx benchmark linearized-rhs --outdir outputs/benchmarks/linearized_rhs
 mhx benchmark reduced-mhd-eigenmode --outdir outputs/benchmarks/reduced_mhd_eigenmode
 mhx benchmark cosine-equilibrium-linearization --outdir outputs/benchmarks/cosine_equilibrium_linearization
@@ -85,12 +87,26 @@ The FKR-window command writes:
 - `fkr_window.npz`
 - `figures/fkr_constant_psi_window.png`
 
+The FKR growth-rate command writes:
+
+- `diagnostics.json`
+- `validation.json`
+- `fkr_growth_rate.npz`
+- `figures/fkr_growth_rate.png`
+
 The Harris Delta-prime command writes:
 
 - `diagnostics.json`
 - `validation.json`
 - `harris_delta_prime.npz`
 - `figures/harris_delta_prime.png`
+
+The direct Harris-sheet tearing eigenvalue command writes:
+
+- `diagnostics.json`
+- `validation.json`
+- `linear_tearing_eigenvalue.npz`
+- `figures/linear_tearing_eigenvalue.png`
 
 The linearized-RHS command writes:
 
@@ -158,7 +174,9 @@ mhx benchmark validate outputs/ci/linear_tearing_fast
 mhx benchmark decay --outdir outputs/ci/resistive_decay
 mhx benchmark scaling --outdir outputs/ci/reconnection_scaling
 mhx benchmark fkr-window --outdir outputs/ci/fkr_window
+mhx benchmark fkr-growth --outdir outputs/ci/fkr_growth_rate
 mhx benchmark harris-delta-prime --outdir outputs/ci/harris_delta_prime
+mhx benchmark linear-tearing-eigenvalue --outdir outputs/ci/linear_tearing_eigenvalue
 mhx benchmark linearized-rhs --outdir outputs/ci/linearized_rhs
 mhx benchmark reduced-mhd-eigenmode --outdir outputs/ci/reduced_mhd_eigenmode
 mhx benchmark cosine-equilibrium-linearization --outdir outputs/ci/cosine_equilibrium_linearization
@@ -263,9 +281,16 @@ large-$\Delta'$ Coppi regimes.
 
 The Harris Delta-prime gate numerically integrates the ideal outer tearing
 equation for a Harris sheet and recovers
-$\Delta'a=2[(ka)^{-1}-ka]$. This is the first numerical tearing-specific
-matching benchmark; it validates the outer-region target but still does not
-solve the resistive FKR inner-layer eigenvalue problem.
+$\Delta'a=2[(ka)^{-1}-ka]$. It validates the outer-region target but still does
+not solve the resistive FKR inner-layer eigenvalue problem.
+
+The direct Harris-sheet tearing eigenvalue gate solves a finite-difference
+linear reduced-MHD eigenproblem for $S=1000$, $ka=0.5$, and $d/a=10$. It checks
+the unstable tearing eigenvalue against a published growth rate
+$\gamma\simeq0.0131$, verifies grid extrapolation in $\Delta x^2$, checks the
+dense eigenpair residual, confirms tearing parity, and verifies a stable
+$ka=1.2$ control has no positive-growth eigenvalue. This is a single reference
+eigenproblem, not yet a full FKR/Coppi dispersion scan.
 
 The linearized-RHS gate compares JAX's matrix-free Jacobian-vector product
 against a centered finite difference of the reduced-MHD RHS. This is the
@@ -302,5 +327,7 @@ is too large to assemble explicitly.
 
 References used for the benchmark roadmap include
 [Furth, Killeen, and Rosenbluth 1963](https://cir.nii.ac.jp/crid/1363107370207531008),
+[MacTaggart 2019](https://eprints.gla.ac.uk/191898/),
+[MacTaggart and Stewart 2017](https://www.maths.gla.ac.uk/~dmactaggart/papers/dmac17c.pdf),
 [Loureiro, Schekochihin, and Cowley 2007](https://arxiv.org/abs/astro-ph/0703631),
 and [Pucci and Velli ideal tearing context](https://arxiv.org/abs/1704.08793).

@@ -19,6 +19,7 @@ from mhx.benchmarks import (
     write_fkr_growth_rate_validation,
     write_fkr_window_validation,
     write_harris_delta_prime_validation,
+    write_linear_tearing_eigenvalue_validation,
     write_linearized_rhs_validation,
     write_periodic_current_sheet_eigenvalue_validation,
     write_power_iteration_validation,
@@ -423,6 +424,49 @@ def benchmark_harris_delta_prime(
         raise typer.Exit(code=1)
 
 
+@benchmark_app.command("linear-tearing-eigenvalue")
+def benchmark_linear_tearing_eigenvalue(
+    outdir: Annotated[
+        Path,
+        typer.Option(
+            "--outdir",
+            help="Output directory for direct Harris-sheet tearing eigenvalue artifacts.",
+        ),
+    ] = Path("outputs/benchmarks/linear_tearing_eigenvalue"),
+    grid_points: Annotated[
+        str,
+        typer.Option(
+            "--grid-points",
+            help="Comma-separated interior grid counts for the second-order convergence scan.",
+        ),
+    ] = "192,256,320",
+    half_width: Annotated[
+        float,
+        typer.Option("--half-width", help="Half-domain width d/a for x in [-d,d]."),
+    ] = 10.0,
+    lundquist: Annotated[
+        float,
+        typer.Option("--lundquist", help="Magnetic Lundquist number S."),
+    ] = 1000.0,
+    wavenumber: Annotated[
+        float,
+        typer.Option("--wavenumber", help="Tearing perturbation wavenumber k a."),
+    ] = 0.5,
+) -> None:
+    """Run the direct reduced-MHD Harris-sheet tearing eigenvalue gate."""
+    _configure_validation_precision()
+    manifest_path, validation = write_linear_tearing_eigenvalue_validation(
+        outdir,
+        grid_points=_parse_int_tuple(grid_points),
+        half_width=half_width,
+        lundquist=lundquist,
+        wavenumber=wavenumber,
+    )
+    typer.echo(f"wrote {manifest_path}")
+    if not validation["passed"]:
+        raise typer.Exit(code=1)
+
+
 @benchmark_app.command("linearized-rhs")
 def benchmark_linearized_rhs(
     outdir: Annotated[
@@ -584,6 +628,13 @@ def validate_all(
 
 def _configure_validation_precision() -> None:
     configure_jax(enable_x64=True)
+
+
+def _parse_int_tuple(value: str) -> tuple[int, ...]:
+    try:
+        return tuple(int(part.strip()) for part in value.split(",") if part.strip())
+    except ValueError as exc:
+        raise typer.BadParameter("expected comma-separated integers") from exc
 
 
 @physics_app.command("list")

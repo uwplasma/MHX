@@ -74,6 +74,7 @@ jobs:
           mhx benchmark fkr-window --outdir outputs/ci/fkr_window
           mhx benchmark fkr-growth --outdir outputs/ci/fkr_growth_rate
           mhx benchmark harris-delta-prime --outdir outputs/ci/harris_delta_prime
+          mhx benchmark linear-tearing-eigenvalue --outdir outputs/ci/linear_tearing_eigenvalue
           mhx benchmark linearized-rhs --outdir outputs/ci/linearized_rhs
           mhx benchmark reduced-mhd-eigenmode --outdir outputs/ci/reduced_mhd_eigenmode
           mhx benchmark cosine-equilibrium-linearization --outdir outputs/ci/cosine_equilibrium_linearization
@@ -114,6 +115,8 @@ jobs:
           test -f outputs/ci/fkr_growth_rate/figures/fkr_growth_rate.png
           test -f outputs/ci/harris_delta_prime/validation.json
           test -f outputs/ci/harris_delta_prime/figures/harris_delta_prime.png
+          test -f outputs/ci/linear_tearing_eigenvalue/validation.json
+          test -f outputs/ci/linear_tearing_eigenvalue/figures/linear_tearing_eigenvalue.png
           test -f outputs/ci/linearized_rhs/validation.json
           test -f outputs/ci/linearized_rhs/figures/linearized_rhs_errors.png
           test -f outputs/ci/reduced_mhd_eigenmode/validation.json
@@ -137,6 +140,7 @@ jobs:
           test -f outputs/ci/validation_suite/validation_suite.md
           test -f outputs/ci/validation_suite/fkr_growth_rate/figures/fkr_growth_rate.png
           test -f outputs/ci/validation_suite/harris_delta_prime/figures/harris_delta_prime.png
+          test -f outputs/ci/validation_suite/linear_tearing_eigenvalue/figures/linear_tearing_eigenvalue.png
           test -f outputs/ci/validation_suite/cosine_equilibrium_linearization/figures/cosine_equilibrium_linearization_errors.png
           test -f outputs/ci/validation_suite/periodic_current_sheet_eigenvalue/figures/periodic_current_sheet_spectrum.png
           test -f outputs/ci/twofluid_toy/manifest.json

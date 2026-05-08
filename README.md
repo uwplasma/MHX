@@ -22,9 +22,10 @@ This rebuild is intentionally starting from a small, tested core:
 
 The current FAST reduced-MHD runs are smoke tests, not nonlinear reconnection
 claims. The strongest current results are exact linear validation gates,
-matrix-free operator checks, and extension APIs. Calibrated FKR/Coppi tearing
-eigenvalues, nonlinear plasmoid dynamics, and neural-ODE inverse-design claims
-remain roadmap items.
+the direct Harris-sheet tearing eigenvalue gate for one published reference
+case, matrix-free operator checks, and extension APIs. Full FKR/Coppi
+dispersion scans, nonlinear plasmoid dynamics, and neural-ODE inverse-design
+claims remain roadmap items.
 
 See `docs/audit.md` for the current skeptical validation audit and maturity
 table.
@@ -95,6 +96,7 @@ mhx benchmark scaling --outdir outputs/benchmarks/reconnection_scaling
 mhx benchmark fkr-window --outdir outputs/benchmarks/fkr_window
 mhx benchmark fkr-growth --outdir outputs/benchmarks/fkr_growth_rate
 mhx benchmark harris-delta-prime --outdir outputs/benchmarks/harris_delta_prime
+mhx benchmark linear-tearing-eigenvalue --outdir outputs/benchmarks/linear_tearing_eigenvalue
 mhx benchmark linearized-rhs --outdir outputs/benchmarks/linearized_rhs
 mhx benchmark reduced-mhd-eigenmode --outdir outputs/benchmarks/reduced_mhd_eigenmode
 mhx benchmark cosine-equilibrium-linearization --outdir outputs/benchmarks/cosine_equilibrium_linearization
@@ -106,6 +108,15 @@ mhx benchmark timing --outdir outputs/benchmarks/timing --repeats 3 --warmups 1
 mhx benchmark catalog --outdir outputs/benchmarks/catalog
 mhx validate all --outdir outputs/validation_suite
 ```
+
+Current reviewer-facing validation figures include the direct Harris-sheet
+tearing eigenvalue gate:
+
+![Direct Harris-sheet tearing eigenvalue gate](docs/_static/validation/linear_tearing_eigenvalue/linear_tearing_eigenvalue.png)
+
+and the exact resistive-decay gate:
+
+![Exact resistive-decay relative error](docs/_static/validation/exact_decay/decay_relative_error.png)
 
 Inspect configurable physics terms:
 

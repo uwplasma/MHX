@@ -12,6 +12,7 @@ from mhx.benchmarks import (
     write_fkr_growth_rate_validation,
     write_fkr_window_validation,
     write_harris_delta_prime_validation,
+    write_linear_tearing_eigenvalue_validation,
     write_linearized_rhs_validation,
     write_periodic_current_sheet_eigenvalue_validation,
     write_power_iteration_validation,
@@ -29,6 +30,7 @@ def main() -> None:
     fkr_window_run_dir = Path("outputs/docs_validation/fkr_window")
     fkr_growth_run_dir = Path("outputs/docs_validation/fkr_growth_rate")
     harris_delta_prime_run_dir = Path("outputs/docs_validation/harris_delta_prime")
+    linear_tearing_eigenvalue_run_dir = Path("outputs/docs_validation/linear_tearing_eigenvalue")
     linearized_run_dir = Path("outputs/docs_validation/linearized_rhs")
     reduced_mhd_eigenmode_run_dir = Path("outputs/docs_validation/reduced_mhd_eigenmode")
     cosine_linearization_run_dir = Path(
@@ -46,6 +48,7 @@ def main() -> None:
     fkr_window_docs_dir = Path("docs/_static/validation/fkr_window")
     fkr_growth_docs_dir = Path("docs/_static/validation/fkr_growth_rate")
     harris_delta_prime_docs_dir = Path("docs/_static/validation/harris_delta_prime")
+    linear_tearing_eigenvalue_docs_dir = Path("docs/_static/validation/linear_tearing_eigenvalue")
     linearized_docs_dir = Path("docs/_static/validation/linearized_rhs")
     reduced_mhd_eigenmode_docs_dir = Path("docs/_static/validation/reduced_mhd_eigenmode")
     cosine_linearization_docs_dir = Path(
@@ -63,6 +66,7 @@ def main() -> None:
     write_fkr_window_validation(fkr_window_run_dir)
     write_fkr_growth_rate_validation(fkr_growth_run_dir)
     write_harris_delta_prime_validation(harris_delta_prime_run_dir)
+    write_linear_tearing_eigenvalue_validation(linear_tearing_eigenvalue_run_dir)
     write_linearized_rhs_validation(linearized_run_dir)
     write_reduced_mhd_linear_eigenmode_validation(reduced_mhd_eigenmode_run_dir)
     write_cosine_equilibrium_linearization_validation(cosine_linearization_run_dir)
@@ -91,6 +95,13 @@ def main() -> None:
     shutil.copy2(
         harris_delta_prime_run_dir / "figures" / "harris_delta_prime.png",
         harris_delta_prime_docs_dir / "harris_delta_prime.png",
+    )
+    linear_tearing_eigenvalue_docs_dir.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(
+        linear_tearing_eigenvalue_run_dir
+        / "figures"
+        / "linear_tearing_eigenvalue.png",
+        linear_tearing_eigenvalue_docs_dir / "linear_tearing_eigenvalue.png",
     )
     linearized_docs_dir.mkdir(parents=True, exist_ok=True)
     shutil.copy2(

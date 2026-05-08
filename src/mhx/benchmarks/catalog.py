@@ -144,6 +144,28 @@ def validation_catalog_entries() -> tuple[BenchmarkCatalogEntry, ...]:
             ),
         ),
         BenchmarkCatalogEntry(
+            name="linear_tearing_eigenvalue",
+            command=(
+                "mhx benchmark linear-tearing-eigenvalue "
+                "--outdir outputs/benchmarks/linear_tearing_eigenvalue"
+            ),
+            schema="mhx.validation.linear_tearing_eigenvalue.v1",
+            purpose=(
+                "Direct finite-difference Harris-sheet reduced-MHD tearing "
+                "eigenvalue gate against the published k=0.5, S=1000 growth rate."
+            ),
+            expected_outputs=(
+                "diagnostics.json",
+                "validation.json",
+                "linear_tearing_eigenvalue.npz",
+                "figures/linear_tearing_eigenvalue.png",
+            ),
+            literature_anchor=(
+                "MacTaggart 2019 and MacTaggart-Stewart 2017 reduced-MHD "
+                "Harris-sheet eigenproblem, gamma approximately 0.0131."
+            ),
+        ),
+        BenchmarkCatalogEntry(
             name="linearized_rhs",
             command="mhx benchmark linearized-rhs --outdir outputs/benchmarks/linearized_rhs",
             schema="mhx.validation.linearized_rhs.v1",

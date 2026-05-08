@@ -125,6 +125,7 @@ validation gates and writes:
 - `manifest.json`: top-level manifest for the suite summary files.
 - one subdirectory per case, for example `resistive_decay/`,
   `harris_delta_prime/`,
+  `linear_tearing_eigenvalue/`,
   `cosine_equilibrium_linearization/`,
   `periodic_current_sheet_eigenvalue/`, and `arnoldi/`.
 
@@ -190,6 +191,24 @@ writes:
   `delta_prime_a`, and relative-error arrays.
 - `figures/harris_delta_prime.png`: numerical-vs-analytic matching plot and
   relative-error gate.
+
+## Direct Harris-sheet tearing eigenvalue outputs
+
+`mhx benchmark linear-tearing-eigenvalue --outdir outputs/benchmarks/linear_tearing_eigenvalue`
+writes:
+
+- `diagnostics.json`: direct 1D Harris-sheet finite-difference tearing
+  eigenvalue diagnostics with schema `mhx.validation.linear_tearing_eigenvalue.v1`.
+- `validation.json`: pass/fail gates for selected growth-rate error,
+  extrapolated growth-rate error, real eigenvalue, eigen-residual, grid
+  convergence, and tearing parity.
+- `linear_tearing_eigenvalue.npz`: grid counts, `dx`, finite-grid growth rates,
+  fitted second-order growth rates, extrapolated/reference growth rates,
+  stable-control wavenumber/max-real-part/residual, selected spectrum
+  real/imaginary parts, normalized flux eigenfunction, and normalized imaginary
+  stream-function eigenfunction.
+- `figures/linear_tearing_eigenvalue.png`: grid extrapolation, selected
+  spectrum, and tearing-parity plot.
 
 ## Linearized-RHS validation outputs
 

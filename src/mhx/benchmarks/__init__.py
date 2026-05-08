@@ -76,6 +76,12 @@ from mhx.benchmarks.suite import (
     write_validation_suite,
 )
 from mhx.benchmarks.tearing import linear_tearing_initial_state, run_linear_tearing_smoke
+from mhx.benchmarks.tearing_eigen import (
+    LINEAR_TEARING_EIGENVALUE_SCHEMA,
+    LinearTearingEigenvalueResult,
+    run_linear_tearing_eigenvalue_validation,
+    write_linear_tearing_eigenvalue_validation,
+)
 from mhx.benchmarks.theory import (
     FKRConstantPsiEstimate,
     PlasmoidScalingEstimate,
@@ -109,10 +115,12 @@ __all__ = [
     "HARRIS_DELTA_PRIME_SCHEMA",
     "HarrisDeltaPrimeResult",
     "LINEARIZED_RHS_SCHEMA",
+    "LINEAR_TEARING_EIGENVALUE_SCHEMA",
     "POWER_ITERATION_SCHEMA",
     "PERIODIC_CURRENT_SHEET_EIGENVALUE_SCHEMA",
     "REDUCED_MHD_LINEAR_EIGENMODE_SCHEMA",
     "LinearizedRHSResult",
+    "LinearTearingEigenvalueResult",
     "PlasmoidScalingEstimate",
     "PeriodicCurrentSheetEigenvalueResult",
     "PowerIterationValidationResult",
@@ -140,6 +148,7 @@ __all__ = [
     "run_fkr_window_validation",
     "run_harris_delta_prime_validation",
     "run_linearized_rhs_validation",
+    "run_linear_tearing_eigenvalue_validation",
     "run_periodic_current_sheet_eigenvalue_validation",
     "run_power_iteration_validation",
     "run_reduced_mhd_linear_eigenmode_validation",
@@ -158,6 +167,7 @@ __all__ = [
     "write_fkr_window_validation",
     "write_harris_delta_prime_validation",
     "write_linearized_rhs_validation",
+    "write_linear_tearing_eigenvalue_validation",
     "write_periodic_current_sheet_eigenvalue_validation",
     "write_power_iteration_validation",
     "write_reduced_mhd_linear_eigenmode_validation",

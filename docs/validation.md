@@ -219,10 +219,10 @@ Expected files:
 
 ![FKR growth-rate gate](_static/validation/fkr_growth_rate/fkr_growth_rate.png)
 
-This is still an asymptotic growth-rate gate, not a full resistive inner-layer
-or global eigenvalue solve. It narrows the remaining gap: the next research
-benchmark should solve the eigenproblem and verify that measured growth rates
-approach this target under a documented resolution/asymptotic study.
+This is still an asymptotic growth-rate assembly gate, not a full resistive
+inner-layer or global eigenvalue solve. The direct eigenvalue gate below closes
+one targeted part of that gap for a published Harris-sheet test case; broader
+FKR/Coppi scans still require a documented asymptotic-resolution study.
 
 ## Harris-sheet Delta-prime gate
 
@@ -267,6 +267,69 @@ Expected files:
 - `outputs/benchmarks/harris_delta_prime/figures/harris_delta_prime.png`
 
 ![Harris-sheet Delta-prime gate](_static/validation/harris_delta_prime/harris_delta_prime.png)
+
+## Direct Harris-sheet tearing eigenvalue gate
+
+MHX now includes a direct 1D linear tearing eigenproblem benchmark anchored to
+published reduced-MHD calculations. For a Harris sheet,
+
+$$
+B_y/B_0=\tanh(x/a),
+$$
+
+normal-mode perturbations proportional to $\exp(iky+\sigma t)$ satisfy the
+inviscid linear reduced-MHD system
+
+$$
+\sigma\left(\frac{d^2}{dx^2}-k^2\right)u
+=
+ikB\left(\frac{d^2}{dx^2}-k^2\right)b
+-ikB''b,
+$$
+
+$$
+\sigma b
+=
+ikBu
++S^{-1}\left(\frac{d^2}{dx^2}-k^2\right)b.
+$$
+
+The benchmark uses conducting/no-slip perturbation boundaries,
+
+$$
+u=b=0\qquad \text{at}\qquad x=\pm d,
+$$
+
+with $S=1000$, $ka=0.5$, and $d/a=10$. It solves the dense finite-difference
+operator on three grids, extrapolates the growth rate linearly in $\Delta x^2$,
+and gates against the published tearing eigenvalue $\gamma\simeq0.0131$.
+Additional gates check that the selected eigenvalue is real and positive, the
+dense eigenpair residual is small, grid refinement decreases the finite-grid
+growth rate, and the selected mode has tearing parity: $b(x)=b(-x)$ with odd
+stream-function perturbation. A stable-control solve at $ka=1.2$ checks the
+same operator has no positive-growth eigenvalue outside the tearing-unstable
+$0<ka<1$ interval.
+
+Run the gate:
+
+```bash
+mhx benchmark linear-tearing-eigenvalue \
+  --outdir outputs/benchmarks/linear_tearing_eigenvalue
+```
+
+Expected files:
+
+- `outputs/benchmarks/linear_tearing_eigenvalue/diagnostics.json`
+- `outputs/benchmarks/linear_tearing_eigenvalue/validation.json`
+- `outputs/benchmarks/linear_tearing_eigenvalue/linear_tearing_eigenvalue.npz`
+- `outputs/benchmarks/linear_tearing_eigenvalue/figures/linear_tearing_eigenvalue.png`
+
+![Direct Harris-sheet tearing eigenvalue gate](_static/validation/linear_tearing_eigenvalue/linear_tearing_eigenvalue.png)
+
+This is a materially stronger tearing validation than the analytic scaling and
+outer-region gates, but it is still a single reference eigenproblem. It does not
+yet establish production nonlinear reconnection fidelity, Coppi-regime
+dispersion curves, or plasmoid dynamics.
 
 ## Matrix-free linearized RHS
 
@@ -582,6 +645,8 @@ Additional source links:
 - [Scaling validation tests](https://github.com/uwplasma/MHX/blob/main/tests/test_reconnection_scaling_validation.py)
 - [FKR window implementation](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/fkr.py)
 - [FKR window tests](https://github.com/uwplasma/MHX/blob/main/tests/test_fkr_window_validation.py)
+- [Direct tearing eigenvalue implementation](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/tearing_eigen.py)
+- [Direct tearing eigenvalue tests](https://github.com/uwplasma/MHX/blob/main/tests/test_linear_tearing_eigenvalue_validation.py)
 - [Linearized RHS implementation](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/linearized.py)
 - [Linearized RHS tests](https://github.com/uwplasma/MHX/blob/main/tests/test_linearized_rhs_validation.py)
 - [Reduced-MHD linear eigenmode implementation](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/linearized.py)

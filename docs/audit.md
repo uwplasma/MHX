@@ -15,7 +15,8 @@ solver.
 | Analytic FKR/plasmoid/ideal-tearing scaling plots | Reproduce expected literature exponents from formulas. | Yes as analytic scaffolds; no PDE-solver claim. |
 | Harris-sheet $\Delta'$ outer solve | Numerically integrates the ideal outer tearing ODE and recovers $\Delta'a=2[(ka)^{-1}-ka]$. | Yes for outer-region matching; not a growth-rate eigenvalue. |
 | FKR growth-rate assembly | Propagates numerical Harris $\Delta'$ into $\gamma\tau_a\sim S_a^{-3/5}(ka)^{2/5}(\Delta'a)^{4/5}$ and gates both exponents. | Yes as an asymptotic growth-rate target; not a direct eigenvalue solve. |
-| Matrix-free JVP and eigen scaffolds | JAX JVP, zero-state eigenmodes, Arnoldi, and power iteration are tested on controlled fixtures. | Good scaffolding; not yet a tearing spectrum. |
+| Direct Harris-sheet tearing eigenvalue | Solves the 1D reduced-MHD Harris eigenproblem at $S=1000$, $ka=0.5$, $d/a=10$ and gates against $\gamma\simeq0.0131$. | Yes for this single reference eigenproblem; not yet a full FKR/Coppi scan. |
+| Matrix-free JVP and eigen scaffolds | JAX JVP, zero-state eigenmodes, Arnoldi, and power iteration are tested on controlled fixtures. | Good scaffolding for larger matrix-free tearing spectra. |
 | Nonzero current-sheet linearization | Exact bracket couplings around $\psi_0=A\cos y$ are tested. | Good operator gate; still not an FKR benchmark. |
 | Periodic current-sheet dense spectrum | Tiny dense spectrum around $\psi_0=A\cos y$ checks gauge modes, eigenpair residuals, and absence of spurious positive growth. | Useful stability/operator gate; not an FKR/Coppi tearing-growth validation. |
 | FAST reduced-MHD run | Produces stable outputs, diagnostics, figures, and GIFs. Kinetic energy remains tiny and mode amplitudes change weakly. | Smoke test only. |
@@ -26,13 +27,16 @@ solver.
 ## Plot audit notes
 
 The current validation plots are internally consistent. The exact-decay plot is
-the strongest numerical result: numerical and analytic amplitude/energy curves
+the cleanest linear PDE result: numerical and analytic amplitude/energy curves
 overlap, and relative errors remain near roundoff in x64. The Harris $\Delta'$
 and FKR growth-rate plots are useful tearing-theory gates: they validate
-outer-region matching and asymptotic exponent assembly, but they should not be
-cited as solver recovery of a resistive tearing eigenvalue. The broader scaling
-plots are analytic reference plots; they should not be cited as solver recovery
-of FKR, plasmoid, or ideal-tearing regimes.
+outer-region matching and asymptotic exponent assembly. The direct
+Harris-sheet eigenvalue plot is the strongest tearing-specific result so far:
+the finite-grid growth rates converge linearly in $\Delta x^2$ toward the
+published $\gamma\simeq0.0131$ reference, the selected dense eigenpair residual
+is near roundoff, and the eigenfunction parity is correct. The broader scaling
+plots remain analytic reference plots; they should not be cited as solver
+recovery of FKR, plasmoid, or ideal-tearing regimes.
 
 The reduced-MHD FAST simulation plots are intentionally unimpressive: energy is
 nearly flat, kinetic energy is near zero, and the mode amplitude changes only at
@@ -61,6 +65,8 @@ The repository is currently defensible as a validation-first rebuild with:
 - exact linear physics gates;
 - numerical Harris-sheet outer matching gate;
 - FKR asymptotic growth-rate target assembled from numerical $\Delta'$;
+- direct reduced-MHD Harris-sheet tearing eigenvalue gate for one published
+  reference case;
 - matrix-free linearization scaffolds;
 - tiny nonzero-equilibrium dense-spectrum gate;
 - plugin and diagnostics extension examples;
@@ -70,13 +76,14 @@ The repository is currently defensible as a validation-first rebuild with:
 
 The following items should not be overclaimed:
 
-- calibrated FKR/Coppi tearing eigenvalues;
+- full calibrated FKR/Coppi tearing dispersion scans;
 - nonlinear magnetic-island growth;
 - Sweet-Parker plasmoid instability from the PDE solver;
 - production performance on large grids;
 - neural-ODE surrogate accuracy;
 - inverse-design superiority or Pareto-front claims.
 
-The next scientific milestone should be a calibrated tearing eigenvalue
-benchmark with a documented equilibrium, resolution study, fit window, and
-tolerance against an accepted asymptotic or reference-code result.
+The next scientific milestone should extend the single direct tearing
+eigenvalue gate into a parameter scan with documented asymptotic windows,
+resolution studies, and tolerances against accepted FKR/Coppi theory or a
+reference code.
