@@ -33,6 +33,7 @@ from mhx.benchmarks.tearing import run_linear_tearing_smoke
 from mhx.benchmarks.tearing_eigen import (
     write_linear_tearing_dispersion_validation,
     write_linear_tearing_eigenvalue_validation,
+    write_linear_tearing_timedomain_validation,
 )
 from mhx.config import load_config
 from mhx.io import (
@@ -95,6 +96,11 @@ def validation_suite_cases() -> tuple[ValidationSuiteCase, ...]:
             name="linear_tearing_dispersion",
             command="mhx benchmark linear-tearing-dispersion",
             runner=write_linear_tearing_dispersion_validation,
+        ),
+        ValidationSuiteCase(
+            name="linear_tearing_timedomain",
+            command="mhx benchmark linear-tearing-timedomain",
+            runner=write_linear_tearing_timedomain_validation,
         ),
         ValidationSuiteCase(
             name="linearized_rhs",

@@ -62,6 +62,7 @@ mhx benchmark fkr-growth --outdir outputs/benchmarks/fkr_growth_rate
 mhx benchmark harris-delta-prime --outdir outputs/benchmarks/harris_delta_prime
 mhx benchmark linear-tearing-eigenvalue --outdir outputs/benchmarks/linear_tearing_eigenvalue
 mhx benchmark linear-tearing-dispersion --outdir outputs/benchmarks/linear_tearing_dispersion
+mhx benchmark linear-tearing-timedomain --outdir outputs/benchmarks/linear_tearing_timedomain
 mhx benchmark linearized-rhs --outdir outputs/benchmarks/linearized_rhs
 mhx benchmark reduced-mhd-eigenmode --outdir outputs/benchmarks/reduced_mhd_eigenmode
 mhx benchmark cosine-equilibrium-linearization --outdir outputs/benchmarks/cosine_equilibrium_linearization
@@ -115,6 +116,13 @@ The finite-domain tearing dispersion command writes:
 - `validation.json`
 - `linear_tearing_dispersion.npz`
 - `figures/linear_tearing_dispersion.png`
+
+The time-domain Harris eigenmode replay command writes:
+
+- `diagnostics.json`
+- `validation.json`
+- `linear_tearing_timedomain.npz`
+- `figures/linear_tearing_timedomain.png`
 
 The linearized-RHS command writes:
 
@@ -186,6 +194,7 @@ mhx benchmark fkr-growth --outdir outputs/ci/fkr_growth_rate
 mhx benchmark harris-delta-prime --outdir outputs/ci/harris_delta_prime
 mhx benchmark linear-tearing-eigenvalue --outdir outputs/ci/linear_tearing_eigenvalue
 mhx benchmark linear-tearing-dispersion --outdir outputs/ci/linear_tearing_dispersion
+mhx benchmark linear-tearing-timedomain --outdir outputs/ci/linear_tearing_timedomain
 mhx benchmark linearized-rhs --outdir outputs/ci/linearized_rhs
 mhx benchmark reduced-mhd-eigenmode --outdir outputs/ci/reduced_mhd_eigenmode
 mhx benchmark cosine-equilibrium-linearization --outdir outputs/ci/cosine_equilibrium_linearization
@@ -307,6 +316,14 @@ controls above $ka=1$, checks dense eigenpair residuals, and retains the
 $ka=0.5$ literature anchor. This is the first dispersion-shaped tearing gate,
 but it is still FAST and finite-domain rather than a production asymptotic
 FKR/Coppi study.
+
+The time-domain Harris eigenmode replay gate integrates the same discrete
+operator as $\dot q=Lq$ from the selected tearing eigenvector. It fits
+$\log\|q(t)\|_2$ and gates the recovered growth rate against the dense
+eigenvalue, while also checking RK4 amplitude error and final mode-shape
+alignment. This closes the diagnostic loop between eigenvalue selection and
+growth fitting, but remains a linear finite-domain validation rather than a
+nonlinear island-growth claim.
 
 The linearized-RHS gate compares JAX's matrix-free Jacobian-vector product
 against a centered finite difference of the reduced-MHD RHS. This is the

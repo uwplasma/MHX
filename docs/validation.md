@@ -371,6 +371,53 @@ $ka=1$ and stable oscillatory controls above $ka=1$. The remaining
 research-grade target is a higher-resolution Lundquist-number sweep that
 separates constant-$\psi$ FKR and large-$\Delta'$ Coppi branches.
 
+## Time-domain Harris eigenmode replay
+
+A growth-rate diagnostic is only useful if it recovers the known rate from a
+time signal. MHX therefore reuses the same direct Harris-sheet operator
+$L$ and selected eigenvector $q_0$ from the eigenvalue gate, then integrates
+
+$$
+\frac{dq}{dt}=Lq,\qquad q(0)=q_0,\qquad Lq_0=\lambda q_0 .
+$$
+
+For a pure eigenmode,
+
+$$
+\|q(t)\|_2 = \|q_0\|_2\exp(\operatorname{Re}\lambda\,t).
+$$
+
+The benchmark advances the finite-dimensional system with RK4, fits
+$\log\|q(t)\|_2$ over the configured window, and gates:
+
+$$
+\frac{|\gamma_\mathrm{fit}-\operatorname{Re}\lambda|}
+     {|\operatorname{Re}\lambda|}\le \epsilon_\gamma,
+\qquad
+\max_t\frac{|\|q(t)\|_2-\exp(\operatorname{Re}\lambda t)|}
+          {\exp(\operatorname{Re}\lambda t)}
+\le \epsilon_A .
+$$
+
+It also verifies that the final state remains aligned with the initial
+eigenvector. This closes the loop between eigenvalue calculation, time
+integration, and growth fitting. It is still a linear finite-domain replay; it
+does not claim nonlinear island growth or saturation.
+
+```bash
+mhx benchmark linear-tearing-timedomain \
+  --outdir outputs/benchmarks/linear_tearing_timedomain
+```
+
+Expected files:
+
+- `outputs/benchmarks/linear_tearing_timedomain/diagnostics.json`
+- `outputs/benchmarks/linear_tearing_timedomain/validation.json`
+- `outputs/benchmarks/linear_tearing_timedomain/linear_tearing_timedomain.npz`
+- `outputs/benchmarks/linear_tearing_timedomain/figures/linear_tearing_timedomain.png`
+
+![Time-domain Harris-sheet tearing eigenmode replay](_static/validation/linear_tearing_timedomain/linear_tearing_timedomain.png)
+
 ## Matrix-free linearized RHS
 
 Tearing eigenmode calculations require a linearized operator

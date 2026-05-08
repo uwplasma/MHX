@@ -17,6 +17,7 @@ solver.
 | FKR growth-rate assembly | Propagates numerical Harris $\Delta'$ into $\gamma\tau_a\sim S_a^{-3/5}(ka)^{2/5}(\Delta'a)^{4/5}$ and gates both exponents. | Yes as an asymptotic growth-rate target; not a direct eigenvalue solve. |
 | Direct Harris-sheet tearing eigenvalue | Solves the 1D reduced-MHD Harris eigenproblem at $S=1000$, $ka=0.5$, $d/a=10$ and gates against $\gamma\simeq0.0131$. | Yes for this single reference eigenproblem; not yet a full FKR/Coppi scan. |
 | Finite-domain tearing dispersion | Scans the same eigenproblem over sampled $ka$, checks the unstable band below $ka=1$, stable controls above $ka=1$, residuals, and the $ka=0.5$ anchor. | Useful FAST dispersion gate; not yet an asymptotic Lundquist-number scan. |
+| Time-domain Harris eigenmode replay | Integrates the same direct eigenvector under $\dot q=Lq$ and refits $\gamma$ from $\log\|q(t)\|_2$. | Yes for linear growth fitting; not a nonlinear island-growth validation. |
 | Matrix-free JVP and eigen scaffolds | JAX JVP, zero-state eigenmodes, Arnoldi, and power iteration are tested on controlled fixtures. | Good scaffolding for larger matrix-free tearing spectra. |
 | Nonzero current-sheet linearization | Exact bracket couplings around $\psi_0=A\cos y$ are tested. | Good operator gate; still not an FKR benchmark. |
 | Periodic current-sheet dense spectrum | Tiny dense spectrum around $\psi_0=A\cos y$ checks gauge modes, eigenpair residuals, and absence of spurious positive growth. | Useful stability/operator gate; not an FKR/Coppi tearing-growth validation. |
@@ -38,7 +39,10 @@ published $\gamma\simeq0.0131$ reference, the selected dense eigenpair residual
 is near roundoff, and the eigenfunction parity is correct. The finite-domain
 dispersion plot adds a useful branch-level check: sampled $0<ka<1$ points grow,
 sampled $ka>1$ controls are stable/oscillatory, and residuals remain near
-roundoff. The broader scaling plots remain analytic reference plots; they
+roundoff. The time-domain replay plot is a diagnostic-loop check: the RK4
+amplitude follows $\exp(\gamma t)$ and the fitted growth rate matches the
+eigenvalue, so future nonlinear growth fits have a calibrated linear baseline.
+The broader scaling plots remain analytic reference plots; they
 should not be cited as solver recovery of FKR, plasmoid, or ideal-tearing
 regimes.
 
@@ -72,6 +76,7 @@ The repository is currently defensible as a validation-first rebuild with:
 - direct reduced-MHD Harris-sheet tearing eigenvalue gate for one published
   reference case;
 - finite-domain Harris-sheet tearing dispersion sign/residual gate;
+- time-domain Harris eigenmode growth-fit replay;
 - matrix-free linearization scaffolds;
 - tiny nonzero-equilibrium dense-spectrum gate;
 - plugin and diagnostics extension examples;

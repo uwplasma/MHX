@@ -501,6 +501,65 @@ def plot_linear_tearing_dispersion_validation(
     return output_path
 
 
+def plot_linear_tearing_timedomain_validation(
+    times,
+    amplitude,
+    exact_amplitude,
+    relative_amplitude_error,
+    *,
+    expected_growth_rate: float,
+    fitted_growth_rate: float,
+    max_relative_amplitude_error: float,
+    path: str | Path,
+) -> Path:
+    """Plot the Harris-sheet tearing time-domain eigenmode replay gate."""
+    import matplotlib.pyplot as plt
+
+    output_path = Path(path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    time_values = np.asarray(times)
+    amplitude_values = np.asarray(amplitude)
+    exact_values = np.asarray(exact_amplitude)
+    error_values = np.asarray(relative_amplitude_error)
+    fitted_values = amplitude_values[0] * np.exp(fitted_growth_rate * time_values)
+
+    fig, axes = plt.subplots(1, 3, figsize=(13.8, 3.9), constrained_layout=True)
+    axes[0].semilogy(time_values, amplitude_values, "o", markersize=3.0, label="RK4 replay")
+    axes[0].semilogy(time_values, exact_values, "-", label=r"$\exp(\gamma t)$")
+    axes[0].set_xlabel("time")
+    axes[0].set_ylabel(r"$\|q(t)\|_2/\|q(0)\|_2$")
+    axes[0].set_title("Eigenmode amplitude")
+    axes[0].legend(frameon=False, fontsize=8)
+
+    axes[1].plot(time_values, np.log(amplitude_values), "o", markersize=3.0, label="measured")
+    axes[1].plot(time_values, np.log(fitted_values), "-", label="fit")
+    axes[1].set_xlabel("time")
+    axes[1].set_ylabel(r"$\log \|q(t)\|_2$")
+    axes[1].set_title(
+        rf"$\gamma_\mathrm{{eig}}={expected_growth_rate:.5f}$, "
+        rf"$\gamma_\mathrm{{fit}}={fitted_growth_rate:.5f}$"
+    )
+    axes[1].legend(frameon=False, fontsize=8)
+
+    axes[2].semilogy(time_values, error_values, "s-", markersize=3.0, color="#8c4fb4")
+    axes[2].axhline(
+        max_relative_amplitude_error,
+        color="black",
+        linestyle="--",
+        linewidth=1.0,
+        label="gate",
+    )
+    axes[2].set_xlabel("time")
+    axes[2].set_ylabel("relative amplitude error")
+    axes[2].set_title("RK4 versus exact eigen-growth")
+    axes[2].legend(frameon=False, fontsize=8)
+
+    fig.suptitle("Time-domain Harris-sheet tearing eigenmode replay")
+    fig.savefig(output_path, dpi=220)
+    plt.close(fig)
+    return output_path
+
+
 def plot_linearized_rhs_errors(
     component_names,
     relative_errors,

@@ -21,6 +21,7 @@ from mhx.benchmarks import (
     write_harris_delta_prime_validation,
     write_linear_tearing_dispersion_validation,
     write_linear_tearing_eigenvalue_validation,
+    write_linear_tearing_timedomain_validation,
     write_linearized_rhs_validation,
     write_periodic_current_sheet_eigenvalue_validation,
     write_power_iteration_validation,
@@ -495,6 +496,41 @@ def benchmark_linear_tearing_dispersion(
         outdir,
         grid_points=grid_points,
         wavenumber=_parse_float_tuple(wavenumber),
+    )
+    typer.echo(f"wrote {manifest_path}")
+    if not validation["passed"]:
+        raise typer.Exit(code=1)
+
+
+@benchmark_app.command("linear-tearing-timedomain")
+def benchmark_linear_tearing_timedomain(
+    outdir: Annotated[
+        Path,
+        typer.Option(
+            "--outdir",
+            help="Output directory for Harris-sheet time-domain replay artifacts.",
+        ),
+    ] = Path("outputs/benchmarks/linear_tearing_timedomain"),
+    grid_points: Annotated[
+        int,
+        typer.Option("--grid-points", help="Interior grid count for the eigenmode replay."),
+    ] = 192,
+    dt: Annotated[
+        float,
+        typer.Option("--dt", help="RK4 time step for the linear replay."),
+    ] = 0.25,
+    t_end: Annotated[
+        float,
+        typer.Option("--t-end", help="Final replay time."),
+    ] = 80.0,
+) -> None:
+    """Replay a direct Harris-sheet eigenmode in time and refit its growth rate."""
+    _configure_validation_precision()
+    manifest_path, validation = write_linear_tearing_timedomain_validation(
+        outdir,
+        grid_points=grid_points,
+        dt=dt,
+        t_end=t_end,
     )
     typer.echo(f"wrote {manifest_path}")
     if not validation["passed"]:

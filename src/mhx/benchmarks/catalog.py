@@ -188,6 +188,28 @@ def validation_catalog_entries() -> tuple[BenchmarkCatalogEntry, ...]:
             ),
         ),
         BenchmarkCatalogEntry(
+            name="linear_tearing_timedomain",
+            command=(
+                "mhx benchmark linear-tearing-timedomain "
+                "--outdir outputs/benchmarks/linear_tearing_timedomain"
+            ),
+            schema="mhx.validation.linear_tearing_timedomain.v1",
+            purpose=(
+                "Time-domain RK4 replay of the direct Harris-sheet tearing "
+                "eigenmode with growth-rate fit and mode-alignment checks."
+            ),
+            expected_outputs=(
+                "diagnostics.json",
+                "validation.json",
+                "linear_tearing_timedomain.npz",
+                "figures/linear_tearing_timedomain.png",
+            ),
+            literature_anchor=(
+                "Same MacTaggart reduced-MHD Harris eigenproblem as the direct "
+                "eigenvalue gate, validating time-domain growth recovery."
+            ),
+        ),
+        BenchmarkCatalogEntry(
             name="linearized_rhs",
             command="mhx benchmark linearized-rhs --outdir outputs/benchmarks/linearized_rhs",
             schema="mhx.validation.linearized_rhs.v1",

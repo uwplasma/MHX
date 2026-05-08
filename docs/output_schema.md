@@ -127,6 +127,7 @@ validation gates and writes:
   `harris_delta_prime/`,
   `linear_tearing_eigenvalue/`,
   `linear_tearing_dispersion/`,
+  `linear_tearing_timedomain/`,
   `cosine_equilibrium_linearization/`,
   `periodic_current_sheet_eigenvalue/`, and `arnoldi/`.
 
@@ -226,6 +227,23 @@ writes:
   masks for unstable samples and stable controls.
 - `figures/linear_tearing_dispersion.png`: growth branch, oscillatory stable
   controls, and residual gate.
+
+## Harris tearing time-domain replay outputs
+
+`mhx benchmark linear-tearing-timedomain --outdir outputs/benchmarks/linear_tearing_timedomain`
+writes:
+
+- `diagnostics.json`: linear time-domain replay diagnostics with schema
+  `mhx.validation.linear_tearing_timedomain.v1`.
+- `validation.json`: pass/fail gates for fitted growth-rate error, RK4
+  amplitude error against $\exp(\gamma t)$, final eigenmode alignment, and the
+  selected dense-eigenpair residual.
+- `linear_tearing_timedomain.npz`: `time`, `amplitude`, `exact_amplitude`,
+  `relative_amplitude_error`, `fitted_growth_rate`, `expected_growth_rate`,
+  `relative_growth_error`, `final_mode_alignment`, selected eigenvalue parts,
+  and selected residual.
+- `figures/linear_tearing_timedomain.png`: semilog amplitude replay,
+  fitted-growth plot, and relative-amplitude-error gate.
 
 ## Linearized-RHS validation outputs
 

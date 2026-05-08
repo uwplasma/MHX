@@ -13,10 +13,12 @@ from mhx.io import write_manifest
 from mhx.plotting import (
     plot_linear_tearing_dispersion_validation,
     plot_linear_tearing_eigenvalue_validation,
+    plot_linear_tearing_timedomain_validation,
 )
 
 LINEAR_TEARING_DISPERSION_SCHEMA = "mhx.validation.linear_tearing_dispersion.v1"
 LINEAR_TEARING_EIGENVALUE_SCHEMA = "mhx.validation.linear_tearing_eigenvalue.v1"
+LINEAR_TEARING_TIMEDOMAIN_SCHEMA = "mhx.validation.linear_tearing_timedomain.v1"
 
 
 @dataclass(frozen=True)
@@ -66,6 +68,25 @@ class LinearTearingDispersionResult:
 
 
 @dataclass(frozen=True)
+class LinearTearingTimeDomainResult:
+    """Time-domain replay of the direct Harris-sheet tearing eigenmode."""
+
+    times: np.ndarray
+    amplitude: np.ndarray
+    exact_amplitude: np.ndarray
+    relative_amplitude_error: np.ndarray
+    fitted_growth_rate: float
+    expected_growth_rate: float
+    relative_growth_error: float
+    max_relative_amplitude_error: float
+    final_mode_alignment: float
+    selected_eigenvalue: complex
+    selected_residual_norm: float
+    diagnostics: dict[str, Any]
+    validation: dict[str, Any]
+
+
+@dataclass(frozen=True)
 class _EigenSolve:
     grid_points: int
     dx: float
@@ -74,6 +95,157 @@ class _EigenSolve:
     selected_eigenvalue: complex
     selected_eigenvector: np.ndarray
     residual_norm: float
+
+
+@dataclass(frozen=True)
+class _HarrisOperator:
+    matrix: np.ndarray
+    coordinate: np.ndarray
+    dx: float
+
+
+def run_linear_tearing_timedomain_validation(
+    *,
+    grid_points: int = 192,
+    half_width: float = 10.0,
+    lundquist: float = 1000.0,
+    wavenumber: float = 0.5,
+    dt: float = 0.25,
+    t_end: float = 80.0,
+    fit_start_fraction: float = 0.25,
+    max_relative_growth_error: float = 1.0e-5,
+    max_relative_amplitude_error: float = 1.0e-4,
+    min_final_mode_alignment: float = 0.999999,
+    max_residual_norm: float = 1.0e-10,
+) -> LinearTearingTimeDomainResult:
+    r"""Replay the Harris tearing eigenmode in time and recover ``γ``.
+
+    The gate integrates the finite-dimensional linear system ``dq/dt=Lq`` from
+    the direct Harris-sheet eigenvector. The measured norm growth is fitted over
+    the configured time window and compared against the real part of the dense
+    eigenvalue. This validates the growth-rate fitting path independently of any
+    nonlinear or periodic-domain assumptions.
+    """
+    _validate_timedomain_inputs(
+        grid_points=grid_points,
+        half_width=half_width,
+        lundquist=lundquist,
+        wavenumber=wavenumber,
+        dt=dt,
+        t_end=t_end,
+        fit_start_fraction=fit_start_fraction,
+    )
+    solve = _solve_harris_tearing_eigenproblem(
+        grid_points,
+        half_width=half_width,
+        lundquist=lundquist,
+        wavenumber=wavenumber,
+    )
+    operator = _harris_tearing_operator(
+        grid_points,
+        half_width=half_width,
+        lundquist=lundquist,
+        wavenumber=wavenumber,
+    )
+    initial_state = solve.selected_eigenvector.astype(np.complex128)
+    initial_state = initial_state / np.linalg.norm(initial_state)
+    steps = int(round(t_end / dt))
+    times = dt * np.arange(steps + 1, dtype=float)
+    amplitudes = np.empty(steps + 1, dtype=float)
+    state = initial_state.copy()
+    amplitudes[0] = float(np.linalg.norm(state))
+    for index in range(1, steps + 1):
+        state = _rk4_linear_step(operator.matrix, state, dt)
+        amplitudes[index] = float(np.linalg.norm(state))
+
+    expected_growth_rate = float(solve.selected_eigenvalue.real)
+    exact_amplitude = np.exp(expected_growth_rate * times)
+    relative_amplitude_error = np.abs(amplitudes - exact_amplitude) / np.maximum(
+        np.abs(exact_amplitude),
+        1.0e-300,
+    )
+    fit_mask = times >= fit_start_fraction * t_end
+    fitted_growth_rate = _fit_exponential_growth_rate(times[fit_mask], amplitudes[fit_mask])
+    relative_growth_error = _relative_error(fitted_growth_rate, expected_growth_rate)
+    max_measured_relative_amplitude_error = float(np.max(relative_amplitude_error))
+    final_mode_alignment = float(
+        abs(np.vdot(initial_state, state))
+        / max(np.linalg.norm(initial_state) * np.linalg.norm(state), 1.0e-300)
+    )
+    checks = {
+        "finite_time_history": bool(
+            np.all(np.isfinite(times))
+            and np.all(np.isfinite(amplitudes))
+            and np.all(amplitudes > 0.0)
+        ),
+        "fitted_growth_matches_eigenvalue": bool(
+            relative_growth_error <= max_relative_growth_error
+        ),
+        "rk4_amplitude_matches_exponential_solution": bool(
+            max_measured_relative_amplitude_error <= max_relative_amplitude_error
+        ),
+        "mode_shape_remains_aligned": bool(final_mode_alignment >= min_final_mode_alignment),
+        "selected_eigen_residual_small": bool(solve.residual_norm <= max_residual_norm),
+    }
+    diagnostics = {
+        "schema": LINEAR_TEARING_TIMEDOMAIN_SCHEMA,
+        "equilibrium": "B_y = tanh(x/a), a = 1",
+        "equations": "dq/dt = L q for the finite-difference Harris tearing operator",
+        "grid_points": grid_points,
+        "half_width": half_width,
+        "lundquist": lundquist,
+        "wavenumber": wavenumber,
+        "dt": dt,
+        "t_end": t_end,
+        "fit_start_fraction": fit_start_fraction,
+        "fit_time_window": [float(times[fit_mask][0]), float(times[fit_mask][-1])],
+        "selected_eigenvalue": {
+            "real": expected_growth_rate,
+            "imag": float(solve.selected_eigenvalue.imag),
+        },
+        "selected_residual_norm": solve.residual_norm,
+        "fitted_growth_rate": fitted_growth_rate,
+        "relative_growth_error": relative_growth_error,
+        "max_relative_amplitude_error": max_measured_relative_amplitude_error,
+        "final_mode_alignment": final_mode_alignment,
+        "references": {
+            "growth_fit_validation": (
+                "Time-domain replay of the same Harris-sheet reduced-MHD "
+                "eigenmode used by the direct eigenvalue gate."
+            ),
+            "scope": (
+                "This is a linear finite-domain time-integration validation; "
+                "it does not replace nonlinear 2D saturation benchmarks."
+            ),
+        },
+    }
+    validation = {
+        "schema": "mhx.validation.linear_tearing_timedomain.gates.v1",
+        "passed": all(checks.values()),
+        "checks": checks,
+        "thresholds": {
+            "max_relative_growth_error": max_relative_growth_error,
+            "max_relative_amplitude_error": max_relative_amplitude_error,
+            "min_final_mode_alignment": min_final_mode_alignment,
+            "max_residual_norm": max_residual_norm,
+        },
+        "diagnostics": diagnostics,
+    }
+    return LinearTearingTimeDomainResult(
+        times=times,
+        amplitude=amplitudes,
+        exact_amplitude=exact_amplitude,
+        relative_amplitude_error=relative_amplitude_error,
+        fitted_growth_rate=fitted_growth_rate,
+        expected_growth_rate=expected_growth_rate,
+        relative_growth_error=relative_growth_error,
+        max_relative_amplitude_error=max_measured_relative_amplitude_error,
+        final_mode_alignment=final_mode_alignment,
+        selected_eigenvalue=solve.selected_eigenvalue,
+        selected_residual_norm=solve.residual_norm,
+        diagnostics=diagnostics,
+        validation=validation,
+    )
 
 
 def run_linear_tearing_dispersion_validation(
@@ -517,6 +689,68 @@ def write_linear_tearing_dispersion_validation(
     return manifest_path, result.validation
 
 
+def write_linear_tearing_timedomain_validation(
+    outdir: str | Path,
+    **kwargs: Any,
+) -> tuple[Path, dict[str, Any]]:
+    """Write Harris-sheet tearing time-domain replay artifacts."""
+    output_dir = Path(outdir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    result = run_linear_tearing_timedomain_validation(**kwargs)
+
+    diagnostics_path = output_dir / "diagnostics.json"
+    validation_path = output_dir / "validation.json"
+    history_path = output_dir / "linear_tearing_timedomain.npz"
+    manifest_path = output_dir / "manifest.json"
+    diagnostics_path.write_text(
+        json.dumps(result.diagnostics, indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+    validation_path.write_text(
+        json.dumps(result.validation, indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+    np.savez_compressed(
+        history_path,
+        schema=LINEAR_TEARING_TIMEDOMAIN_SCHEMA,
+        time=result.times,
+        amplitude=result.amplitude,
+        exact_amplitude=result.exact_amplitude,
+        relative_amplitude_error=result.relative_amplitude_error,
+        fitted_growth_rate=result.fitted_growth_rate,
+        expected_growth_rate=result.expected_growth_rate,
+        relative_growth_error=result.relative_growth_error,
+        max_relative_amplitude_error=result.max_relative_amplitude_error,
+        final_mode_alignment=result.final_mode_alignment,
+        selected_eigenvalue_real=result.selected_eigenvalue.real,
+        selected_eigenvalue_imag=result.selected_eigenvalue.imag,
+        selected_residual_norm=result.selected_residual_norm,
+    )
+    figure_path = plot_linear_tearing_timedomain_validation(
+        result.times,
+        result.amplitude,
+        result.exact_amplitude,
+        result.relative_amplitude_error,
+        expected_growth_rate=result.expected_growth_rate,
+        fitted_growth_rate=result.fitted_growth_rate,
+        max_relative_amplitude_error=float(
+            result.validation["thresholds"]["max_relative_amplitude_error"]
+        ),
+        path=output_dir / "figures" / "linear_tearing_timedomain.png",
+    )
+    write_manifest(
+        manifest_path,
+        config=result.diagnostics,
+        outputs={
+            "diagnostics": diagnostics_path.name,
+            "validation": validation_path.name,
+            "history": history_path.name,
+            "linear_tearing_timedomain": str(figure_path.relative_to(output_dir)),
+        },
+    )
+    return manifest_path, result.validation
+
+
 def _validate_inputs(
     grid_points: np.ndarray,
     *,
@@ -575,6 +809,32 @@ def _validate_dispersion_inputs(
     _matching_index(wavenumber, reference_wavenumber)
 
 
+def _validate_timedomain_inputs(
+    *,
+    grid_points: int,
+    half_width: float,
+    lundquist: float,
+    wavenumber: float,
+    dt: float,
+    t_end: float,
+    fit_start_fraction: float,
+) -> None:
+    if grid_points < 64:
+        raise ValueError("grid_points must be at least 64")
+    if half_width <= 1.0:
+        raise ValueError("half_width must be greater than 1")
+    if lundquist <= 0.0:
+        raise ValueError("lundquist must be positive")
+    if wavenumber <= 0.0 or wavenumber >= 1.0:
+        raise ValueError("wavenumber must satisfy 0 < k < 1 for this timedomain gate")
+    if dt <= 0.0:
+        raise ValueError("dt must be positive")
+    if t_end <= 4.0 * dt:
+        raise ValueError("t_end must include at least five RK4 samples")
+    if fit_start_fraction < 0.0 or fit_start_fraction >= 1.0:
+        raise ValueError("fit_start_fraction must satisfy 0 <= value < 1")
+
+
 def _matching_index(values: np.ndarray, target: float) -> int:
     matches = np.flatnonzero(np.isclose(values, target, rtol=0.0, atol=1.0e-12))
     if matches.size != 1:
@@ -589,6 +849,40 @@ def _solve_harris_tearing_eigenproblem(
     lundquist: float,
     wavenumber: float,
 ) -> _EigenSolve:
+    operator = _harris_tearing_operator(
+        grid_points,
+        half_width=half_width,
+        lundquist=lundquist,
+        wavenumber=wavenumber,
+    )
+    eigenvalues, eigenvectors = np.linalg.eig(operator.matrix)
+    selected_index = int(np.argmax(eigenvalues.real))
+    selected_eigenvalue = complex(eigenvalues[selected_index])
+    selected_eigenvector = np.asarray(eigenvectors[:, selected_index])
+    residual_norm = float(
+        np.linalg.norm(
+            operator.matrix @ selected_eigenvector - selected_eigenvalue * selected_eigenvector
+        )
+        / np.linalg.norm(selected_eigenvector)
+    )
+    return _EigenSolve(
+        grid_points=grid_points,
+        dx=operator.dx,
+        coordinate=operator.coordinate,
+        eigenvalues=eigenvalues,
+        selected_eigenvalue=selected_eigenvalue,
+        selected_eigenvector=selected_eigenvector,
+        residual_norm=residual_norm,
+    )
+
+
+def _harris_tearing_operator(
+    grid_points: int,
+    *,
+    half_width: float,
+    lundquist: float,
+    wavenumber: float,
+) -> _HarrisOperator:
     coordinate = np.linspace(-half_width, half_width, grid_points + 2, dtype=float)[1:-1]
     dx = float(coordinate[1] - coordinate[0])
     derivative = _second_derivative_minus_k_squared(grid_points, dx, wavenumber)
@@ -597,27 +891,11 @@ def _solve_harris_tearing_eigenproblem(
     coupling = 1j * wavenumber * (
         np.diag(magnetic_field) @ derivative - np.diag(magnetic_field_second_derivative)
     )
-    operator = np.zeros((2 * grid_points, 2 * grid_points), dtype=np.complex128)
-    operator[:grid_points, grid_points:] = np.linalg.solve(derivative, coupling)
-    operator[grid_points:, :grid_points] = 1j * wavenumber * np.diag(magnetic_field)
-    operator[grid_points:, grid_points:] = (1.0 / lundquist) * derivative
-    eigenvalues, eigenvectors = np.linalg.eig(operator)
-    selected_index = int(np.argmax(eigenvalues.real))
-    selected_eigenvalue = complex(eigenvalues[selected_index])
-    selected_eigenvector = np.asarray(eigenvectors[:, selected_index])
-    residual_norm = float(
-        np.linalg.norm(operator @ selected_eigenvector - selected_eigenvalue * selected_eigenvector)
-        / np.linalg.norm(selected_eigenvector)
-    )
-    return _EigenSolve(
-        grid_points=grid_points,
-        dx=dx,
-        coordinate=coordinate,
-        eigenvalues=eigenvalues,
-        selected_eigenvalue=selected_eigenvalue,
-        selected_eigenvector=selected_eigenvector,
-        residual_norm=residual_norm,
-    )
+    matrix = np.zeros((2 * grid_points, 2 * grid_points), dtype=np.complex128)
+    matrix[:grid_points, grid_points:] = np.linalg.solve(derivative, coupling)
+    matrix[grid_points:, :grid_points] = 1j * wavenumber * np.diag(magnetic_field)
+    matrix[grid_points:, grid_points:] = (1.0 / lundquist) * derivative
+    return _HarrisOperator(matrix=matrix, coordinate=coordinate, dx=dx)
 
 
 def _second_derivative_minus_k_squared(
@@ -638,6 +916,21 @@ def _fit_second_order_limit(dx: np.ndarray, growth_rates: np.ndarray) -> tuple[f
 
 def _relative_error(value: float, reference: float) -> float:
     return float(abs(value - reference) / max(abs(reference), 1.0e-300))
+
+
+def _fit_exponential_growth_rate(times: np.ndarray, amplitudes: np.ndarray) -> float:
+    if times.size < 2:
+        raise ValueError("at least two time samples are required for growth fitting")
+    coefficients = np.polyfit(times, np.log(np.maximum(amplitudes, 1.0e-300)), deg=1)
+    return float(coefficients[0])
+
+
+def _rk4_linear_step(matrix: np.ndarray, state: np.ndarray, dt: float) -> np.ndarray:
+    k1 = matrix @ state
+    k2 = matrix @ (state + 0.5 * dt * k1)
+    k3 = matrix @ (state + 0.5 * dt * k2)
+    k4 = matrix @ (state + dt * k3)
+    return state + (dt / 6.0) * (k1 + 2.0 * k2 + 2.0 * k3 + k4)
 
 
 def _aligned_tearing_parity(eigenvector: np.ndarray, grid_points: int) -> tuple[np.ndarray, ...]:

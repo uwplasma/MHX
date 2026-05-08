@@ -9,10 +9,13 @@ from typer.testing import CliRunner
 from mhx.benchmarks import (
     LINEAR_TEARING_DISPERSION_SCHEMA,
     LINEAR_TEARING_EIGENVALUE_SCHEMA,
+    LINEAR_TEARING_TIMEDOMAIN_SCHEMA,
     run_linear_tearing_dispersion_validation,
     run_linear_tearing_eigenvalue_validation,
+    run_linear_tearing_timedomain_validation,
     write_linear_tearing_dispersion_validation,
     write_linear_tearing_eigenvalue_validation,
+    write_linear_tearing_timedomain_validation,
 )
 from mhx.cli.main import app
 
@@ -87,6 +90,36 @@ def test_linear_tearing_dispersion_rejects_invalid_inputs() -> None:
         run_linear_tearing_dispersion_validation(reference_wavenumber=0.4)
 
 
+def test_linear_tearing_timedomain_recovers_eigenmode_growth() -> None:
+    result = run_linear_tearing_timedomain_validation(grid_points=96, t_end=40.0)
+    assert result.diagnostics["schema"] == LINEAR_TEARING_TIMEDOMAIN_SCHEMA
+    assert result.validation["passed"] is True
+    assert all(result.validation["checks"].values())
+    assert result.times.shape == result.amplitude.shape
+    assert result.exact_amplitude.shape == result.amplitude.shape
+    assert result.fitted_growth_rate == pytest.approx(result.expected_growth_rate, rel=1.0e-5)
+    assert result.max_relative_amplitude_error < 1.0e-4
+    assert result.final_mode_alignment > 0.999999
+    assert result.selected_residual_norm < 1.0e-10
+
+
+def test_linear_tearing_timedomain_rejects_invalid_inputs() -> None:
+    with pytest.raises(ValueError, match="grid_points"):
+        run_linear_tearing_timedomain_validation(grid_points=32)
+    with pytest.raises(ValueError, match="half_width"):
+        run_linear_tearing_timedomain_validation(half_width=1.0)
+    with pytest.raises(ValueError, match="lundquist"):
+        run_linear_tearing_timedomain_validation(lundquist=0.0)
+    with pytest.raises(ValueError, match="0 < k < 1"):
+        run_linear_tearing_timedomain_validation(wavenumber=1.2)
+    with pytest.raises(ValueError, match="dt"):
+        run_linear_tearing_timedomain_validation(dt=0.0)
+    with pytest.raises(ValueError, match="t_end"):
+        run_linear_tearing_timedomain_validation(t_end=0.5, dt=0.25)
+    with pytest.raises(ValueError, match="fit_start_fraction"):
+        run_linear_tearing_timedomain_validation(fit_start_fraction=1.0)
+
+
 def test_write_linear_tearing_eigenvalue_artifacts_and_cli(tmp_path) -> None:
     manifest_path, validation = write_linear_tearing_eigenvalue_validation(tmp_path)
     assert manifest_path == tmp_path / "manifest.json"
@@ -110,6 +143,40 @@ def test_write_linear_tearing_eigenvalue_artifacts_and_cli(tmp_path) -> None:
             str(outdir),
             "--grid-points",
             "192,256,320",
+        ],
+    )
+    assert result.exit_code == 0, result.stdout
+    assert (outdir / "validation.json").exists()
+
+
+def test_write_linear_tearing_timedomain_artifacts_and_cli(tmp_path) -> None:
+    manifest_path, validation = write_linear_tearing_timedomain_validation(
+        tmp_path,
+        grid_points=96,
+        t_end=40.0,
+    )
+    assert manifest_path == tmp_path / "manifest.json"
+    assert validation["passed"] is True
+    diagnostics = json.loads((tmp_path / "diagnostics.json").read_text())
+    assert diagnostics["references"]["scope"].startswith("This is a linear")
+    history = np.load(tmp_path / "linear_tearing_timedomain.npz")
+    assert history["schema"] == LINEAR_TEARING_TIMEDOMAIN_SCHEMA
+    assert history["time"].shape == history["amplitude"].shape
+    assert history["relative_growth_error"] < 1.0e-5
+    assert (tmp_path / "figures" / "linear_tearing_timedomain.png").stat().st_size > 0
+
+    outdir = tmp_path / "cli-timedomain"
+    result = CliRunner().invoke(
+        app,
+        [
+            "benchmark",
+            "linear-tearing-timedomain",
+            "--outdir",
+            str(outdir),
+            "--grid-points",
+            "96",
+            "--t-end",
+            "40.0",
         ],
     )
     assert result.exit_code == 0, result.stdout
