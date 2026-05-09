@@ -12,9 +12,12 @@ from mhx.diagnostics import (
     compute_reduced_mhd_diagnostics,
     default_diagnostics_registry,
     fit_exponential_growth,
+    island_width_from_mode,
     magnetic_divergence_linf,
     magnetic_energy,
     mode_amplitude,
+    reconnected_flux_amplitude,
+    rutherford_island_full_width,
     select_fit_window,
     total_energy,
     trajectory_energies,
@@ -123,6 +126,27 @@ def test_mode_amplitude_and_growth_fit() -> None:
     )
     assert selected_times.shape[0] == 4
     assert selected_amplitudes.shape == selected_times.shape
+
+
+def test_rutherford_island_width_proxy_recovers_cosine_amplitude() -> None:
+    grid = CartesianGrid.from_mesh_config(MeshConfig(shape=(32, 32)))
+    flux_amplitude = 3.0e-4
+    state = ReducedMHDState(
+        psi=flux_amplitude * grid.cosinusoid(mode=(1, 0)),
+        omega=jnp.zeros(grid.shape),
+    )
+    reconnected_flux = reconnected_flux_amplitude(state, mode=(1, 0))
+    expected_width = 4.0 * jnp.sqrt(flux_amplitude / 2.0)
+
+    assert float(reconnected_flux) == pytest.approx(flux_amplitude)
+    assert float(rutherford_island_full_width(reconnected_flux, magnetic_shear=2.0)) == (
+        pytest.approx(float(expected_width))
+    )
+    assert float(island_width_from_mode(state, mode=(1, 0), magnetic_shear=2.0)) == (
+        pytest.approx(float(expected_width))
+    )
+    with pytest.raises(ValueError, match="magnetic_shear"):
+        rutherford_island_full_width(reconnected_flux, magnetic_shear=0.0)
 
 
 def test_growth_fit_requires_two_samples() -> None:

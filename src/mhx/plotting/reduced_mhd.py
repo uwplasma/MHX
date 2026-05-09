@@ -1110,6 +1110,64 @@ def plot_nonlinear_energy_budget(
     return output_path
 
 
+def plot_nonlinear_duration_audit(
+    current_case_names,
+    current_end_times,
+    target_names,
+    target_end_times,
+    plasmoid_lundquist,
+    plasmoid_efold_times,
+    *,
+    path: str | Path,
+) -> Path:
+    """Plot current nonlinear FAST durations against literature-scale targets."""
+    import matplotlib.pyplot as plt
+
+    output_path = Path(path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    current_times = np.asarray(current_end_times, dtype=float)
+    target_times = np.asarray(target_end_times, dtype=float)
+    plasmoid_s = np.asarray(plasmoid_lundquist, dtype=float)
+    plasmoid_times = np.asarray(plasmoid_efold_times, dtype=float)
+    fig, axes = plt.subplots(1, 2, figsize=(11.0, 4.4), constrained_layout=True)
+    labels = [*current_case_names, *target_names]
+    times = np.concatenate([current_times, target_times])
+    colors = ["#3266a8"] * current_times.size + ["#b54a4a"] * target_times.size
+    positions = np.arange(times.size)
+    axes[0].barh(positions, times, color=colors)
+    axes[0].set_xscale("log")
+    axes[0].set_yticks(positions, labels)
+    axes[0].invert_yaxis()
+    axes[0].set_xlabel(r"simulation time $t/\tau_A$")
+    axes[0].set_title("Current FAST runs vs nonlinear-target windows")
+    axes[0].grid(True, axis="x", which="both", alpha=0.25)
+    required_linear_window = float(target_times[0])
+    axes[0].axvline(
+        required_linear_window,
+        color="black",
+        linestyle="--",
+        linewidth=1.0,
+        label="10 e-fold target",
+    )
+    axes[0].legend(frameon=False, loc="upper right")
+    axes[1].loglog(
+        plasmoid_s,
+        plasmoid_times,
+        "o-",
+        color="#8c4fb4",
+        label=r"$1/\gamma_{\max}\sim S^{-1/4}$",
+    )
+    axes[1].set_xlabel("global Lundquist number S")
+    axes[1].set_ylabel(r"one e-fold time $1/\gamma_{\max}$")
+    axes[1].set_title("Sweet-Parker plasmoid linear timescale")
+    axes[1].grid(True, which="both", alpha=0.25)
+    axes[1].legend(frameon=False)
+    fig.suptitle("Nonlinear duration audit: short CI gates are not plasmoid claims")
+    fig.savefig(output_path, dpi=220)
+    plt.close(fig)
+    return output_path
+
+
 def _cumulative_trapezoid_for_plot(times, values) -> np.ndarray:
     time_values = np.asarray(times)
     value_array = np.asarray(values)

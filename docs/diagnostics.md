@@ -66,6 +66,31 @@ This scalar is a reproducibility diagnostic for the FAST smoke run. It is not
 yet a calibrated FKR eigenmode growth-rate claim; that validation layer remains
 on the roadmap.
 
+## Reconnected flux and island-width proxies
+
+MHX exposes low-level island diagnostics as pure functions rather than default
+run-summary fields, because a credible nonlinear island claim also needs a
+resolved separatrix, a calibrated equilibrium shear, and a long enough time
+window. For a real single-harmonic perturbation
+
+$$
+\psi_1(x,y,t)=\tilde\psi_1(t)\cos(k\cdot x),
+$$
+
+`mode_amplitude` returns $|\hat\psi_k|=|\tilde\psi_1|/2$. The helper
+`reconnected_flux_amplitude(state, mode=...)` returns $2|\hat\psi_k|$, so the
+cosine amplitude is recovered exactly for single-mode tests. Given local
+magnetic shear $B_y'(0)$, the Rutherford full-width proxy is
+
+$$
+W = 4\sqrt{\frac{|\tilde\psi_1|}{|B_y'(0)|}}.
+$$
+
+Use `island_width_from_mode(state, mode=..., magnetic_shear=...)` for quick
+post-processing, then gate any publication claim with the nonlinear duration
+audit and a resolution/time-step convergence study. The unit tests verify that
+the proxy recovers a known cosine amplitude and rejects nonpositive shear.
+
 ## Divergence error
 
 The reduced-MHD perpendicular magnetic field is represented as

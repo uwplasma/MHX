@@ -24,6 +24,7 @@ from mhx.benchmarks import (
     write_linear_tearing_layer_validation,
     write_linear_tearing_timedomain_validation,
     write_linearized_rhs_validation,
+    write_nonlinear_duration_audit,
     write_nonlinear_energy_budget_validation,
     write_periodic_current_sheet_eigenvalue_validation,
     write_periodic_current_sheet_nonlinear_bridge_validation,
@@ -740,6 +741,38 @@ def benchmark_nonlinear_energy_budget(
         viscosity=nu,
         dt=dt,
         steps=steps,
+    )
+    typer.echo(f"wrote {manifest_path}")
+    if not validation["passed"]:
+        raise typer.Exit(code=1)
+
+
+@benchmark_app.command("nonlinear-duration-audit")
+def benchmark_nonlinear_duration_audit(
+    outdir: Annotated[
+        Path,
+        typer.Option(
+            "--outdir",
+            help="Output directory for nonlinear duration-audit artifacts.",
+        ),
+    ] = Path("outputs/benchmarks/nonlinear_duration_audit"),
+    harris_growth_rate: Annotated[
+        float,
+        typer.Option(
+            "--harris-growth-rate",
+            help="Reference Harris-sheet growth rate gamma for the duration audit.",
+        ),
+    ] = 1.31e-2,
+    linear_efolds: Annotated[
+        float,
+        typer.Option("--linear-efolds", help="Target number of linear e-folds."),
+    ] = 10.0,
+) -> None:
+    """Audit nonlinear FAST run durations against literature-scale targets."""
+    manifest_path, validation = write_nonlinear_duration_audit(
+        outdir,
+        harris_growth_rate=harris_growth_rate,
+        requested_linear_efolds=linear_efolds,
     )
     typer.echo(f"wrote {manifest_path}")
     if not validation["passed"]:

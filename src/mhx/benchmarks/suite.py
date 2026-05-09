@@ -30,6 +30,7 @@ from mhx.benchmarks.linearized import (
     write_reduced_mhd_linear_eigenmode_validation,
 )
 from mhx.benchmarks.nonlinear import write_nonlinear_energy_budget_validation
+from mhx.benchmarks.nonlinear_duration import write_nonlinear_duration_audit
 from mhx.benchmarks.report import validate_run
 from mhx.benchmarks.scaling import write_reconnection_scaling_validation
 from mhx.benchmarks.tearing import run_linear_tearing_smoke
@@ -145,6 +146,11 @@ def validation_suite_cases() -> tuple[ValidationSuiteCase, ...]:
             name="nonlinear_energy_budget",
             command="mhx benchmark nonlinear-energy-budget",
             runner=write_nonlinear_energy_budget_validation,
+        ),
+        ValidationSuiteCase(
+            name="nonlinear_duration_audit",
+            command="mhx benchmark nonlinear-duration-audit",
+            runner=write_nonlinear_duration_audit,
         ),
         ValidationSuiteCase(
             name="diffusion_eigenvalue",

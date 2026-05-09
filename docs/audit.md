@@ -25,6 +25,7 @@ solver.
 | Periodic current-sheet time-domain replay | A real decaying eigenmode of the same JVP is advanced with RK4 and compared to $q(t)=e^{\lambda t}q(0)$. | Good operator/time-step bridge; not a nonlinear reconnection validation. |
 | Nonlinear current-sheet differentiability bridge | JAX JVP of the nonlinear RK4 trajectory map is compared with centered finite differences and gates $O(\epsilon^2)$ convergence. | Good differentiability gate for inverse design and neural ODE data; not a nonlinear reconnection result. |
 | Nonlinear reduced-MHD energy budget | A multi-mode nonlinear periodic state is advanced and checked against $dE/dt=-\eta\langle j^2\rangle-\nu\langle\omega^2\rangle$. | Yes for this nonlinear conservation/dissipation identity; not an island-growth or plasmoid result. |
+| Nonlinear duration audit | Current nonlinear FAST durations are compared with Harris linear e-fold and Rutherford/plasmoid target windows. | Yes as a claim-boundary gate; it proves the current nonlinear runs are too short for nonlinear-island/plasmoid claims. |
 | FAST reduced-MHD run | Produces stable outputs, diagnostics, figures, and GIFs. Kinetic energy remains tiny and mode amplitudes change weakly. | Smoke test only. |
 | Two-fluid and plugin examples | Exercise extension paths and output schemas. | API examples only; not validated extended-MHD physics. |
 | Nonlinear tearing/plasmoid dynamics | Not demonstrated by the current FAST runs. | No. |
@@ -61,6 +62,11 @@ the full nonlinear trajectory dissipates total energy at the rate predicted by
 the reduced-MHD theorem, with the integrated residual below the documented gate.
 It tests bracket cancellation and dissipative signs, but it does not prove
 tearing-island growth, Rutherford saturation, or plasmoid onset.
+The nonlinear duration-audit plot is deliberately skeptical. It shows that the
+current nonlinear budget run reaches only $t=0.8$, whereas ten e-folds of the
+direct Harris-sheet benchmark with $\gamma\simeq0.0131$ require
+$t\simeq763.4$. This prevents using the short CI gates as evidence for
+nonlinear island growth or plasmoid chains.
 The broader scaling plots remain analytic reference plots; they
 should not be cited as solver recovery of FKR, plasmoid, or ideal-tearing
 regimes.
@@ -101,6 +107,8 @@ The repository is currently defensible as a validation-first rebuild with:
 - tiny nonzero-equilibrium dense-spectrum gate;
 - periodic current-sheet linear time-domain replay;
 - nonlinear current-sheet trajectory-map differentiability bridge;
+- nonlinear duration audit that flags short CI nonlinear runs against
+  literature-scale target windows;
 - plugin and diagnostics extension examples;
 - CI-checked docs, tests, figures, GIFs, reports, and artifact manifests.
 

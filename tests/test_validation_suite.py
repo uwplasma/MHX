@@ -27,6 +27,7 @@ def test_validation_suite_cases_are_unique() -> None:
     assert "periodic_current_sheet_timedomain" in names
     assert "periodic_current_sheet_nonlinear_bridge" in names
     assert "nonlinear_energy_budget" in names
+    assert "nonlinear_duration_audit" in names
 
 
 def test_write_validation_suite_artifacts_and_cli(tmp_path) -> None:
@@ -111,6 +112,13 @@ def test_write_validation_suite_artifacts_and_cli(tmp_path) -> None:
         / "nonlinear_energy_budget"
         / "figures"
         / "nonlinear_energy_budget.png"
+    ).stat().st_size > 0
+    assert (
+        tmp_path
+        / "suite"
+        / "nonlinear_duration_audit"
+        / "figures"
+        / "nonlinear_duration_audit.png"
     ).stat().st_size > 0
     persisted = json.loads((tmp_path / "suite" / "validation_suite.json").read_text())
     assert persisted["cases"][0]["passed"] is True

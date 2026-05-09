@@ -32,6 +32,10 @@ For the active tearing validation gates:
 - [MacTaggart & Stewart (2017), Optimal energy growth in current sheets](https://www.maths.gla.ac.uk/~dmactaggart/papers/dmac17c.pdf)
   discusses the discrete generalized eigenproblem, the unique unstable tearing
   eigenvalue near $0.0131$ for $S=1000$, $k=0.5$, and the non-normal spectrum.
+- [Rutherford (1973), nonlinear growth of the tearing mode](https://doi.org/10.1063/1.1694232)
+  is the nonlinear island-growth reference behind the MHX island-width proxy and
+  duration audit; MHX does not yet claim to reproduce this regime with the PDE
+  solver.
 - [McClements et al. (2022), triggering tearing in a forming current sheet](https://www.cambridge.org/core/journals/journal-of-plasma-physics/article/triggering-tearing-in-a-forming-current-sheet-with-the-mirror-instability/38550B29006F97E9EF9E3AA460083BF8)
   gives a modern discussion of FKR versus Coppi regime separation and
   hyper-resistive tearing scalings.

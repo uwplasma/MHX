@@ -17,6 +17,7 @@ output_schema
 benchmarks
 performance
 validation
+paper_plan
 media
 audit
 api_policy

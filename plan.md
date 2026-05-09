@@ -4910,3 +4910,62 @@ Every agent must append an entry here. Do not delete previous entries.
   is numerically credible.
 - Keep scan/inverse-design/neural-ODE work deferred until the growth benchmark
   and nonlinear validation are strong enough to support optimization claims.
+
+### 2026-05-09 — Agent: Codex, nonlinear duration audit and island diagnostics
+
+**Summary**
+
+- Audited the existing nonlinear run lengths against literature time scales.
+- Added reconnected-flux and Rutherford-style island-width diagnostic helpers.
+- Added `mhx benchmark nonlinear-duration-audit`, a reviewer-facing artifact
+  gate that records why current FAST nonlinear runs are too short for nonlinear
+  island-growth or plasmoid-chain claims.
+- Added a static documentation figure and paper-plan page that distinguish
+  current validated claims from required production nonlinear campaigns.
+
+**Files changed**
+
+- Added `src/mhx/benchmarks/nonlinear_duration.py` and
+  `tests/test_nonlinear_duration_audit.py`.
+- Updated diagnostics exports/tests, plotting exports, benchmark suite/catalog,
+  CLI, CI artifact checks, docs media generation, README, validation docs,
+  output-schema docs, benchmark docs, literature docs, audit docs, and
+  `docs/paper_plan.md`.
+
+**Tests run**
+
+- `python -m pytest tests/test_reduced_mhd.py::test_rutherford_island_width_proxy_recovers_cosine_amplitude tests/test_nonlinear_duration_audit.py -q`
+  passed: 4 tests.
+- `mhx benchmark nonlinear-duration-audit --outdir outputs/dev/nonlinear_duration_audit`
+  passed and generated `figures/nonlinear_duration_audit.png`.
+- The duration plot was visually inspected. It correctly shows current
+  nonlinear FAST windows at `t=0.1` and `t=0.8`, the linear replay at `t=80`,
+  and the ten-e-fold Harris target near `t=763`.
+
+**Decisions made**
+
+- The audit passes only when short nonlinear CI runs are explicitly flagged as
+  short. This makes the benchmark a scientific-claim boundary instead of a
+  physics result.
+- The island-width helper stays as a low-level diagnostic API rather than a
+  default run metric, because credible island-width claims need calibrated
+  shear, resolved separatrices, longer runs, and convergence studies.
+
+**Problems / blockers**
+
+- Existing nonlinear simulations remain short validation gates. They do not yet
+  reproduce Rutherford island growth, Sweet-Parker reconnection rates, or
+  plasmoid-chain dynamics.
+
+**Progress**
+
+- Estimated plan completion: 85%.
+
+**Next steps**
+
+- Run a long, calibrated nonlinear island campaign with adaptive stopping based
+  on reconnected flux/island width and at least 8-10 linear e-folds.
+- Add resolution/time-step convergence for the nonlinear campaign and archive
+  flux/current movies with fixed color scales.
+- Start the neural-ODE dataset only after the nonlinear solver outputs are
+  physically meaningful enough to serve as supervised data.

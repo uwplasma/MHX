@@ -133,7 +133,8 @@ validation gates and writes:
   `periodic_current_sheet_eigenvalue/`,
   `periodic_current_sheet_timedomain/`,
   `periodic_current_sheet_nonlinear_bridge/`,
-  `nonlinear_energy_budget/`, and `arnoldi/`.
+  `nonlinear_energy_budget/`,
+  `nonlinear_duration_audit/`, and `arnoldi/`.
 
 ## Exact-decay validation outputs
 
@@ -369,6 +370,23 @@ writes:
 - `figures/nonlinear_energy_budget.png`: energy-vs-integrated-dissipation,
   relative budget residual, dissipation channels, and initial/final flux
   contours.
+
+## Nonlinear duration-audit outputs
+
+`mhx benchmark nonlinear-duration-audit --outdir outputs/benchmarks/nonlinear_duration_audit`
+writes:
+
+- `diagnostics.json`: runtime-window audit diagnostics with schema
+  `mhx.validation.nonlinear_duration_audit.v1`.
+- `validation.json`: pass/fail gates confirming that current FAST nonlinear
+  runs are explicitly flagged as too short for nonlinear island/plasmoid
+  claims and that production target windows are recorded.
+- `nonlinear_duration_audit.npz`: saved `current_case_names`,
+  `current_end_times`, `target_names`, `target_end_times`,
+  `plasmoid_lundquist`, `plasmoid_efold_times`, `harris_growth_rate`, and
+  `requested_linear_efolds`.
+- `figures/nonlinear_duration_audit.png`: log-time comparison of current FAST
+  run durations, target nonlinear windows, and plasmoid linear e-fold estimates.
 
 ## Diffusion eigenvalue validation outputs
 

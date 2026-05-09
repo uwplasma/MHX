@@ -147,6 +147,52 @@ def mode_amplitude(state: ReducedMHDState, *, mode: tuple[int, int]) -> Array:
     return jnp.abs(psi_hat[mode[0] % state.psi.shape[0], mode[1] % state.psi.shape[1]])
 
 
+def reconnected_flux_amplitude(state: ReducedMHDState, *, mode: tuple[int, int]) -> Array:
+    r"""Return a real-harmonic reconnected-flux proxy for a Fourier mode.
+
+    ``mode_amplitude`` returns the normalized complex FFT coefficient
+    ``|\hat\psi_k|``.  For a real field containing a single perturbation
+    ``\psi_1 \cos(k\cdot x)``, the coefficient at ``+k`` is ``\psi_1/2``.
+    This helper therefore returns ``2|\hat\psi_k|`` so that it recovers the
+    physical cosine amplitude used in Rutherford island-width estimates.
+    """
+    return 2.0 * mode_amplitude(state, mode=mode)
+
+
+def rutherford_island_full_width(
+    reconnected_flux: float | Array,
+    *,
+    magnetic_shear: float,
+) -> Array:
+    r"""Return the local Rutherford magnetic-island full width.
+
+    The local constant-shear estimate is
+
+    ``W = 4 sqrt(|\psi_1| / |B_y'(0)|)``,
+
+    where ``\psi_1`` is the reconnecting flux perturbation at the resonant
+    surface and ``B_y'(0)`` is the equilibrium reconnecting-field shear.  The
+    function is a diagnostic convention, not a substitute for resolving an
+    island separatrix in a production nonlinear run.
+    """
+    if magnetic_shear <= 0.0:
+        raise ValueError("magnetic_shear must be positive")
+    return 4.0 * jnp.sqrt(jnp.abs(reconnected_flux) / magnetic_shear)
+
+
+def island_width_from_mode(
+    state: ReducedMHDState,
+    *,
+    mode: tuple[int, int],
+    magnetic_shear: float,
+) -> Array:
+    """Return the Rutherford full-width proxy from a saved Fourier mode."""
+    return rutherford_island_full_width(
+        reconnected_flux_amplitude(state, mode=mode),
+        magnetic_shear=magnetic_shear,
+    )
+
+
 def trajectory_mode_amplitude(
     trajectory: ReducedMHDTrajectory,
     *,

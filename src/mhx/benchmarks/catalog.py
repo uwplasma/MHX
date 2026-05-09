@@ -369,6 +369,29 @@ def validation_catalog_entries() -> tuple[BenchmarkCatalogEntry, ...]:
             ),
         ),
         BenchmarkCatalogEntry(
+            name="nonlinear_duration_audit",
+            command=(
+                "mhx benchmark nonlinear-duration-audit "
+                "--outdir outputs/benchmarks/nonlinear_duration_audit"
+            ),
+            schema="mhx.validation.nonlinear_duration_audit.v1",
+            purpose=(
+                "Reviewer-facing audit of current nonlinear run durations versus "
+                "linear e-fold, Rutherford-island, and plasmoid-chain time windows."
+            ),
+            expected_outputs=(
+                "diagnostics.json",
+                "validation.json",
+                "nonlinear_duration_audit.npz",
+                "figures/nonlinear_duration_audit.png",
+            ),
+            literature_anchor=(
+                "FKR/Rutherford tearing stages and Loureiro-Schekochihin-Cowley "
+                "Sweet-Parker plasmoid scalings; records that FAST nonlinear CI "
+                "runs are not nonlinear-island/plasmoid production claims."
+            ),
+        ),
+        BenchmarkCatalogEntry(
             name="diffusion_eigenvalue",
             command=(
                 "mhx benchmark diffusion-eigenvalue "

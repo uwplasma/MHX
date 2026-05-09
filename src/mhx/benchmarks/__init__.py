@@ -75,6 +75,12 @@ from mhx.benchmarks.nonlinear import (
     run_nonlinear_energy_budget_validation,
     write_nonlinear_energy_budget_validation,
 )
+from mhx.benchmarks.nonlinear_duration import (
+    NONLINEAR_DURATION_AUDIT_SCHEMA,
+    NonlinearDurationAuditResult,
+    run_nonlinear_duration_audit,
+    write_nonlinear_duration_audit,
+)
 from mhx.benchmarks.report import validate_run, write_run_report
 from mhx.benchmarks.scaling import (
     RECONNECTION_SCALING_SCHEMA,
@@ -146,6 +152,7 @@ __all__ = [
     "LINEAR_TEARING_LAYER_SCHEMA",
     "LINEAR_TEARING_TIMEDOMAIN_SCHEMA",
     "NONLINEAR_ENERGY_BUDGET_SCHEMA",
+    "NONLINEAR_DURATION_AUDIT_SCHEMA",
     "POWER_ITERATION_SCHEMA",
     "PERIODIC_CURRENT_SHEET_EIGENVALUE_SCHEMA",
     "PERIODIC_CURRENT_SHEET_NONLINEAR_BRIDGE_SCHEMA",
@@ -157,6 +164,7 @@ __all__ = [
     "LinearTearingLayerResult",
     "LinearTearingTimeDomainResult",
     "NonlinearEnergyBudgetResult",
+    "NonlinearDurationAuditResult",
     "PlasmoidScalingEstimate",
     "PeriodicCurrentSheetEigenvalueResult",
     "PeriodicCurrentSheetNonlinearBridgeResult",
@@ -191,6 +199,7 @@ __all__ = [
     "run_linear_tearing_layer_validation",
     "run_linear_tearing_timedomain_validation",
     "run_nonlinear_energy_budget_validation",
+    "run_nonlinear_duration_audit",
     "run_periodic_current_sheet_eigenvalue_validation",
     "run_periodic_current_sheet_nonlinear_bridge_validation",
     "run_periodic_current_sheet_timedomain_validation",
@@ -216,6 +225,7 @@ __all__ = [
     "write_linear_tearing_layer_validation",
     "write_linear_tearing_timedomain_validation",
     "write_nonlinear_energy_budget_validation",
+    "write_nonlinear_duration_audit",
     "write_periodic_current_sheet_eigenvalue_validation",
     "write_periodic_current_sheet_nonlinear_bridge_validation",
     "write_periodic_current_sheet_timedomain_validation",

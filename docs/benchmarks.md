@@ -71,6 +71,7 @@ mhx benchmark current-sheet-eigenvalue --outdir outputs/benchmarks/periodic_curr
 mhx benchmark current-sheet-timedomain --outdir outputs/benchmarks/periodic_current_sheet_timedomain
 mhx benchmark current-sheet-nonlinear-bridge --outdir outputs/benchmarks/periodic_current_sheet_nonlinear_bridge
 mhx benchmark nonlinear-energy-budget --outdir outputs/benchmarks/nonlinear_energy_budget
+mhx benchmark nonlinear-duration-audit --outdir outputs/benchmarks/nonlinear_duration_audit
 mhx benchmark diffusion-eigenvalue --outdir outputs/benchmarks/diffusion_eigenvalue
 mhx benchmark power-iteration --outdir outputs/benchmarks/power_iteration
 mhx benchmark arnoldi --outdir outputs/benchmarks/arnoldi
@@ -184,6 +185,13 @@ The nonlinear energy-budget command writes:
 - `nonlinear_energy_budget.npz`
 - `figures/nonlinear_energy_budget.png`
 
+The nonlinear duration-audit command writes:
+
+- `diagnostics.json`
+- `validation.json`
+- `nonlinear_duration_audit.npz`
+- `figures/nonlinear_duration_audit.png`
+
 The diffusion-eigenvalue command writes:
 
 - `diagnostics.json`
@@ -235,6 +243,7 @@ mhx benchmark current-sheet-eigenvalue --outdir outputs/ci/periodic_current_shee
 mhx benchmark current-sheet-timedomain --outdir outputs/ci/periodic_current_sheet_timedomain
 mhx benchmark current-sheet-nonlinear-bridge --outdir outputs/ci/periodic_current_sheet_nonlinear_bridge
 mhx benchmark nonlinear-energy-budget --outdir outputs/ci/nonlinear_energy_budget
+mhx benchmark nonlinear-duration-audit --outdir outputs/ci/nonlinear_duration_audit
 mhx benchmark diffusion-eigenvalue --outdir outputs/ci/diffusion_eigenvalue
 mhx benchmark power-iteration --outdir outputs/ci/power_iteration
 mhx benchmark arnoldi --outdir outputs/ci/arnoldi

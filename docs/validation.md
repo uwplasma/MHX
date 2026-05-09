@@ -777,6 +777,42 @@ claims about nonlinear reduced-MHD consistency, but it still does not validate
 nonlinear island growth, Rutherford saturation, Sweet--Parker reconnection
 rates, or plasmoid chains.
 
+## Nonlinear duration audit
+
+The nonlinear energy-budget gate is intentionally short. To prevent accidental
+overclaiming, MHX includes a reviewer-facing duration audit. For a linear
+tearing eigenmode with growth rate $\gamma$, observing $N_e$ e-folds requires
+
+$$
+t_\mathrm{end}\ge \frac{N_e}{\gamma}.
+$$
+
+Using the direct Harris benchmark anchor $\gamma\simeq0.0131$ for
+$S=1000$, $ka=0.5$, ten e-folds require $t_\mathrm{end}\approx763.4$.
+The current nonlinear budget run reaches $t=0.8$, so it is a code-validity
+gate, not a nonlinear island or plasmoid physics result. The audit also records
+Loureiro-type Sweet--Parker plasmoid one-e-fold estimates
+$1/\gamma_{\max}\sim S^{-1/4}$ as a separate linear-timescale reference.
+
+```bash
+mhx benchmark nonlinear-duration-audit \
+  --outdir outputs/benchmarks/nonlinear_duration_audit
+```
+
+Expected files:
+
+- `outputs/benchmarks/nonlinear_duration_audit/diagnostics.json`
+- `outputs/benchmarks/nonlinear_duration_audit/validation.json`
+- `outputs/benchmarks/nonlinear_duration_audit/nonlinear_duration_audit.npz`
+- `outputs/benchmarks/nonlinear_duration_audit/figures/nonlinear_duration_audit.png`
+
+![Nonlinear duration audit](_static/validation/nonlinear_duration_audit/nonlinear_duration_audit.png)
+
+This audit is a pass/fail gate on scientific honesty: it passes only when the
+current FAST nonlinear runs are explicitly flagged as too short for
+Rutherford-island or plasmoid-chain claims and when the production time windows
+are recorded in machine-readable artifacts.
+
 ## Diffusion eigenvalue scaffold
 
 Before applying eigenvalue machinery to tearing equilibria, MHX validates the
