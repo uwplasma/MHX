@@ -14,6 +14,7 @@ from mhx.benchmarks.current_sheet import (
     write_periodic_current_sheet_timedomain_validation,
 )
 from mhx.benchmarks.decay import write_resistive_decay_validation
+from mhx.benchmarks.duration_policy import write_duration_policy
 from mhx.benchmarks.eigenvalue import (
     write_arnoldi_validation,
     write_diffusion_eigenvalue_validation,
@@ -151,6 +152,11 @@ def validation_suite_cases() -> tuple[ValidationSuiteCase, ...]:
             name="nonlinear_duration_audit",
             command="mhx benchmark nonlinear-duration-audit",
             runner=write_nonlinear_duration_audit,
+        ),
+        ValidationSuiteCase(
+            name="duration_policy",
+            command="mhx benchmark duration-policy",
+            runner=write_duration_policy,
         ),
         ValidationSuiteCase(
             name="diffusion_eigenvalue",

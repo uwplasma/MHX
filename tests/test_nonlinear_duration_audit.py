@@ -26,6 +26,7 @@ def test_nonlinear_duration_audit_flags_short_ci_runs() -> None:
     assert diagnostics["required_linear_window"] == pytest.approx(10.0 / 1.31e-2)
     assert diagnostics["fractions"]["current_nonlinear_fraction_of_required_linear_window"] < 0.01
     assert "too short" in diagnostics["interpretation"]
+    assert "duration_policy_assessments" in diagnostics
     assert np.all(np.diff(result.plasmoid_efold_times) < 0.0)
 
 

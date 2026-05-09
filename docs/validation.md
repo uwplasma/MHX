@@ -813,6 +813,28 @@ current FAST nonlinear runs are explicitly flagged as too short for
 Rutherford-island or plasmoid-chain claims and when the production time windows
 are recorded in machine-readable artifacts.
 
+## Duration-policy gate
+
+The duration audit is the figure-facing view. The duration-policy gate is the
+machine-readable rule that future production workflows should call before
+launching long nonlinear runs:
+
+```bash
+mhx benchmark duration-policy --outdir outputs/benchmarks/duration_policy
+```
+
+Expected files:
+
+- `outputs/benchmarks/duration_policy/duration_policy.json`
+- `outputs/benchmarks/duration_policy/duration_policy.md`
+- `outputs/benchmarks/duration_policy/validation.json`
+- `outputs/benchmarks/duration_policy/manifest.json`
+
+The policy gate passes when short historical/CI runs are scoped as
+validation-only and when future production templates satisfy
+$t_\mathrm{end}\ge s_f N_e/\gamma$. This prevents a future script from silently
+using a smoke-test time window for a nonlinear reconnection claim.
+
 ## Diffusion eigenvalue scaffold
 
 Before applying eigenvalue machinery to tearing equilibria, MHX validates the

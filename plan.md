@@ -4969,3 +4969,70 @@ Every agent must append an entry here. Do not delete previous entries.
   flux/current movies with fixed color scales.
 - Start the neural-ODE dataset only after the nonlinear solver outputs are
   physically meaningful enough to serve as supervised data.
+
+### 2026-05-09 — Agent: Codex, duration policy gate for all current/future runs
+
+**Summary**
+
+- Added a versioned duration-policy API that converts a reference growth rate
+  and required e-fold count into a minimum acceptable `t_end`.
+- Added `mhx benchmark duration-policy`, JSON/Markdown/validation artifacts,
+  benchmark-catalog integration, validation-suite integration, and CI artifact
+  checks.
+- Updated the nonlinear-duration audit so every short historical/FAST run is
+  explicitly classified as validation-only, while future production templates
+  must pass a ten-e-fold time-window gate.
+- Added `docs/time_windows.md` and cross-links from README, validation,
+  benchmark, output-schema, audit, and paper-plan documentation.
+
+**Files changed**
+
+- Added `src/mhx/benchmarks/duration_policy.py`,
+  `tests/test_duration_policy.py`, and `docs/time_windows.md`.
+- Updated benchmark exports, CLI, benchmark suite/catalog, nonlinear-duration
+  diagnostics, CI, README, and documentation pages.
+
+**Tests run**
+
+- `python -m ruff check src tests examples tools` passed.
+- `python tools/check_legacy_imports.py && python -m pytest tests/test_duration_policy.py tests/test_nonlinear_duration_audit.py tests/test_validation_suite.py tests/test_benchmark_catalog.py -q`
+  passed: 10 tests.
+- `mhx benchmark duration-policy --outdir outputs/dev/duration_policy` passed
+  and generated `duration_policy.json`, `duration_policy.md`,
+  `validation.json`, and `manifest.json`.
+- `sphinx-build -b html docs docs/_build/html` passed.
+- `mhx validate all --outdir outputs/dev/validation_suite_duration_policy`
+  passed and generated a validation-suite duration-policy artifact.
+- `python -m pytest --cov=mhx --cov-report=term-missing --cov-fail-under=95`
+  passed: 136 tests, 95.58% coverage.
+
+**Decisions made**
+
+- Current short runs are not lengthened inside CI, because their purpose is
+  smoke/identity/operator validation; instead, they are blocked from being used
+  as nonlinear reconnection evidence.
+- Future production nonlinear campaigns are now required to call
+  `require_duration_for_claim` or match the generated policy table before their
+  plots can be treated as research-grade.
+- The default Harris reference uses the existing validated linear-growth value
+  `gamma = 1.31e-2`; the value is configurable from the CLI for calibrated
+  production campaigns.
+
+**Problems / blockers**
+
+- The duration gate proves that a run is long enough in time, but it does not
+  prove spatial resolution, Lundquist-number regime, island-width convergence,
+  or plasmoid-chain onset. Those remain separate validation gates.
+
+**Progress**
+
+- Estimated plan completion: 87%.
+
+**Next steps**
+
+- Add an actual long nonlinear Harris/Rutherford campaign preset using the
+  duration policy, adaptive output cadence, and fixed-scale movies.
+- Add resolution/time-step convergence for that campaign and require it before
+  nonlinear island/plasmoid claims are shown in README-level media.
+- Extend the paper pipeline manifest with a `claim_level` field so each figure
+  is mechanically labeled as smoke, validation, or production.

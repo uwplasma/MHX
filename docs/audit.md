@@ -26,6 +26,7 @@ solver.
 | Nonlinear current-sheet differentiability bridge | JAX JVP of the nonlinear RK4 trajectory map is compared with centered finite differences and gates $O(\epsilon^2)$ convergence. | Good differentiability gate for inverse design and neural ODE data; not a nonlinear reconnection result. |
 | Nonlinear reduced-MHD energy budget | A multi-mode nonlinear periodic state is advanced and checked against $dE/dt=-\eta\langle j^2\rangle-\nu\langle\omega^2\rangle$. | Yes for this nonlinear conservation/dissipation identity; not an island-growth or plasmoid result. |
 | Nonlinear duration audit | Current nonlinear FAST durations are compared with Harris linear e-fold and Rutherford/plasmoid target windows. | Yes as a claim-boundary gate; it proves the current nonlinear runs are too short for nonlinear-island/plasmoid claims. |
+| Duration policy | Current short runs and future production templates are checked against explicit e-fold requirements. | Yes as an enforceable guard; production physics still needs long actual runs and convergence. |
 | FAST reduced-MHD run | Produces stable outputs, diagnostics, figures, and GIFs. Kinetic energy remains tiny and mode amplitudes change weakly. | Smoke test only. |
 | Two-fluid and plugin examples | Exercise extension paths and output schemas. | API examples only; not validated extended-MHD physics. |
 | Nonlinear tearing/plasmoid dynamics | Not demonstrated by the current FAST runs. | No. |

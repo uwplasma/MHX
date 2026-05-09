@@ -9,6 +9,11 @@ from typing import Any
 
 import numpy as np
 
+from mhx.benchmarks.duration_policy import (
+    HARRIS_REFERENCE_GROWTH_RATE,
+    duration_policy_assessments,
+    required_time_for_efolds,
+)
 from mhx.benchmarks.theory import loureiro_plasmoid_estimate
 from mhx.io import write_manifest
 from mhx.plotting import plot_nonlinear_duration_audit
@@ -34,7 +39,7 @@ class NonlinearDurationAuditResult:
 
 def run_nonlinear_duration_audit(
     *,
-    harris_growth_rate: float = 1.31e-2,
+    harris_growth_rate: float = HARRIS_REFERENCE_GROWTH_RATE,
     requested_linear_efolds: float = 10.0,
     fast_smoke_t_end: float = 0.10,
     nonlinear_budget_t_end: float = 0.80,
@@ -56,7 +61,10 @@ def run_nonlinear_duration_audit(
         linear_timedomain_t_end=linear_timedomain_t_end,
         plasmoid_lundquist=plasmoid_lundquist,
     )
-    required_linear_window = requested_linear_efolds / harris_growth_rate
+    required_linear_window = required_time_for_efolds(
+        harris_growth_rate,
+        required_efolds=requested_linear_efolds,
+    )
     target_names = (
         f"Harris k=0.5, S=1000: {requested_linear_efolds:g} e-folds",
         "Rutherford/island tracking campaign",
@@ -129,6 +137,13 @@ def run_nonlinear_duration_audit(
                 "one_efold_time_tau_a": float(time),
             }
             for value, time in zip(plasmoid_s, plasmoid_efold_times, strict=True)
+        ],
+        "duration_policy_assessments": [
+            assessment.to_dict()
+            for assessment in duration_policy_assessments(
+                harris_growth_rate=harris_growth_rate,
+                production_efolds=requested_linear_efolds,
+            )
         ],
         "interpretation": (
             "Current nonlinear FAST runs validate code paths and nonlinear energy "

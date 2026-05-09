@@ -64,6 +64,8 @@ gate, not an island-growth or plasmoid result.
 ```bash
 mhx benchmark nonlinear-duration-audit \
   --outdir outputs/benchmarks/nonlinear_duration_audit
+mhx benchmark duration-policy \
+  --outdir outputs/benchmarks/duration_policy
 ```
 
 ![Nonlinear duration audit](_static/validation/nonlinear_duration_audit/nonlinear_duration_audit.png)
@@ -89,6 +91,7 @@ mhx benchmark nonlinear-duration-audit \
 Every nonlinear island/plasmoid result should archive:
 
 - full config, code commit, API version, dependency lock file, and manifest;
+- a passing duration-policy check for the declared growth rate and e-fold count;
 - x64 setting and JIT setting;
 - grid, timestep, CFL or fixed-step stability rationale, and tolerances;
 - reconnected flux $\psi_1(t)$ and island width

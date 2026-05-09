@@ -392,6 +392,26 @@ def validation_catalog_entries() -> tuple[BenchmarkCatalogEntry, ...]:
             ),
         ),
         BenchmarkCatalogEntry(
+            name="duration_policy",
+            command="mhx benchmark duration-policy --outdir outputs/benchmarks/duration_policy",
+            schema="mhx.duration_policy.v1",
+            purpose=(
+                "Machine-readable duration policy that marks short FAST runs as "
+                "validation-only and future production templates as long enough "
+                "for their declared e-fold targets."
+            ),
+            expected_outputs=(
+                "duration_policy.json",
+                "duration_policy.md",
+                "validation.json",
+                "manifest.json",
+            ),
+            literature_anchor=(
+                "Uses t_end >= N_e/gamma for tearing growth and Loureiro "
+                "Sweet-Parker plasmoid linear-onset estimates."
+            ),
+        ),
+        BenchmarkCatalogEntry(
             name="diffusion_eigenvalue",
             command=(
                 "mhx benchmark diffusion-eigenvalue "

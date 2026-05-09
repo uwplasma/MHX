@@ -134,7 +134,8 @@ validation gates and writes:
   `periodic_current_sheet_timedomain/`,
   `periodic_current_sheet_nonlinear_bridge/`,
   `nonlinear_energy_budget/`,
-  `nonlinear_duration_audit/`, and `arnoldi/`.
+  `nonlinear_duration_audit/`,
+  `duration_policy/`, and `arnoldi/`.
 
 ## Exact-decay validation outputs
 
@@ -387,6 +388,22 @@ writes:
   `requested_linear_efolds`.
 - `figures/nonlinear_duration_audit.png`: log-time comparison of current FAST
   run durations, target nonlinear windows, and plasmoid linear e-fold estimates.
+
+## Duration-policy outputs
+
+`mhx benchmark duration-policy --outdir outputs/benchmarks/duration_policy`
+writes:
+
+- `duration_policy.json`: schema `mhx.duration_policy.v1`, current and future
+  duration assessments, growth rates, required e-folds, required final times,
+  observed e-folds, `sufficient_for_intended_scope`,
+  `sufficient_for_production_claim`, `sufficient_for_nonlinear_claim`, and
+  claim-boundary actions.
+- `duration_policy.md`: reviewer-readable table generated from the same JSON.
+- `validation.json`: pass/fail gates confirming that current short runs are
+  validation-only and future production templates are long enough for their
+  declared e-fold targets.
+- `manifest.json`: hashes for all duration-policy artifacts.
 
 ## Diffusion eigenvalue validation outputs
 

@@ -16,6 +16,7 @@ from mhx.benchmarks import (
     write_benchmark_catalog,
     write_cosine_equilibrium_linearization_validation,
     write_diffusion_eigenvalue_validation,
+    write_duration_policy,
     write_fkr_growth_rate_validation,
     write_fkr_window_validation,
     write_harris_delta_prime_validation,
@@ -773,6 +774,32 @@ def benchmark_nonlinear_duration_audit(
         outdir,
         harris_growth_rate=harris_growth_rate,
         requested_linear_efolds=linear_efolds,
+    )
+    typer.echo(f"wrote {manifest_path}")
+    if not validation["passed"]:
+        raise typer.Exit(code=1)
+
+
+@benchmark_app.command("duration-policy")
+def benchmark_duration_policy(
+    outdir: Annotated[
+        Path,
+        typer.Option("--outdir", help="Output directory for duration-policy artifacts."),
+    ] = Path("outputs/benchmarks/duration_policy"),
+    harris_growth_rate: Annotated[
+        float,
+        typer.Option("--harris-growth-rate", help="Reference Harris growth rate gamma."),
+    ] = 1.31e-2,
+    production_efolds: Annotated[
+        float,
+        typer.Option("--production-efolds", help="Required e-folds for production claims."),
+    ] = 10.0,
+) -> None:
+    """Write simulation-duration policy for validation and production runs."""
+    manifest_path, validation = write_duration_policy(
+        outdir,
+        harris_growth_rate=harris_growth_rate,
+        production_efolds=production_efolds,
     )
     typer.echo(f"wrote {manifest_path}")
     if not validation["passed"]:

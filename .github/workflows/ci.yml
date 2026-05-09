@@ -86,6 +86,7 @@ jobs:
           mhx benchmark current-sheet-nonlinear-bridge --outdir outputs/ci/periodic_current_sheet_nonlinear_bridge
           mhx benchmark nonlinear-energy-budget --outdir outputs/ci/nonlinear_energy_budget
           mhx benchmark nonlinear-duration-audit --outdir outputs/ci/nonlinear_duration_audit
+          mhx benchmark duration-policy --outdir outputs/ci/duration_policy
           mhx benchmark diffusion-eigenvalue --outdir outputs/ci/diffusion_eigenvalue
           mhx benchmark power-iteration --outdir outputs/ci/power_iteration
           mhx benchmark arnoldi --outdir outputs/ci/arnoldi
@@ -147,6 +148,9 @@ jobs:
           test -f outputs/ci/nonlinear_energy_budget/figures/nonlinear_energy_budget.png
           test -f outputs/ci/nonlinear_duration_audit/validation.json
           test -f outputs/ci/nonlinear_duration_audit/figures/nonlinear_duration_audit.png
+          test -f outputs/ci/duration_policy/duration_policy.json
+          test -f outputs/ci/duration_policy/duration_policy.md
+          test -f outputs/ci/duration_policy/validation.json
           test -f outputs/ci/diffusion_eigenvalue/validation.json
           test -f outputs/ci/diffusion_eigenvalue/figures/diffusion_eigenvalue_errors.png
           test -f outputs/ci/power_iteration/validation.json
@@ -172,6 +176,7 @@ jobs:
           test -f outputs/ci/validation_suite/periodic_current_sheet_nonlinear_bridge/figures/periodic_current_sheet_nonlinear_bridge.png
           test -f outputs/ci/validation_suite/nonlinear_energy_budget/figures/nonlinear_energy_budget.png
           test -f outputs/ci/validation_suite/nonlinear_duration_audit/figures/nonlinear_duration_audit.png
+          test -f outputs/ci/validation_suite/duration_policy/duration_policy.json
           test -f docs/_static/readme/harris_layer_sweep.gif
           test -f docs/_static/readme/plasmoid_scaling_schematic.gif
           test "$(stat -c%s docs/_static/readme/harris_layer_sweep.gif)" -lt 200000

@@ -31,7 +31,7 @@ scans, Rutherford island growth, nonlinear plasmoid dynamics, and neural-ODE
 inverse-design claims remain roadmap items.
 
 See `docs/audit.md` for the current skeptical validation audit and maturity
-table.
+table, and `docs/time_windows.md` for the enforced duration policy.
 
 ## Literature-anchored movies
 
@@ -122,6 +122,7 @@ mhx benchmark current-sheet-timedomain --outdir outputs/benchmarks/periodic_curr
 mhx benchmark current-sheet-nonlinear-bridge --outdir outputs/benchmarks/periodic_current_sheet_nonlinear_bridge
 mhx benchmark nonlinear-energy-budget --outdir outputs/benchmarks/nonlinear_energy_budget
 mhx benchmark nonlinear-duration-audit --outdir outputs/benchmarks/nonlinear_duration_audit
+mhx benchmark duration-policy --outdir outputs/benchmarks/duration_policy
 mhx benchmark diffusion-eigenvalue --outdir outputs/benchmarks/diffusion_eigenvalue
 mhx benchmark power-iteration --outdir outputs/benchmarks/power_iteration
 mhx benchmark arnoldi --outdir outputs/benchmarks/arnoldi
@@ -154,7 +155,9 @@ and the periodic current-sheet time-domain operator replay:
 The nonlinear code-validity gates now include a full reduced-MHD
 energy/dissipation budget and a duration audit that explicitly shows why the
 current CI nonlinear runs are not long enough for Rutherford-island or
-plasmoid-chain claims:
+plasmoid-chain claims. The companion `duration-policy` artifact marks short
+historical runs as validation-only and requires future production templates to
+satisfy `t_end >= safety_factor * e_folds / gamma`:
 
 ![Nonlinear duration audit](docs/_static/validation/nonlinear_duration_audit/nonlinear_duration_audit.png)
 
