@@ -18,6 +18,7 @@ REDUCED_MHD_TRAJECTORY_SCHEMA = "mhx.reduced_mhd.trajectory.v1"
 MANIFEST_SCHEMA = "mhx.manifest.v1"
 ARTIFACT_MANIFEST_SCHEMA = "mhx.artifacts.v1"
 VALIDATION_SUITE_SCHEMA = "mhx.validation.suite.v1"
+CLAIM_LEVELS = ("unspecified", "smoke", "validation", "production_template", "production")
 
 
 @dataclass(frozen=True)
@@ -33,6 +34,7 @@ class APIVersionInfo:
     manifest_schema: str
     artifact_manifest_schema: str
     validation_suite_schema: str
+    claim_levels: tuple[str, ...]
 
     def to_dict(self) -> dict[str, object]:
         """Return JSON-compatible API metadata."""
@@ -46,6 +48,7 @@ class APIVersionInfo:
             "manifest_schema": self.manifest_schema,
             "artifact_manifest_schema": self.artifact_manifest_schema,
             "validation_suite_schema": self.validation_suite_schema,
+            "claim_levels": list(self.claim_levels),
         }
 
 
@@ -71,6 +74,17 @@ def require_supported_api_version(version: str | None = None, *, context: str = 
     return requested
 
 
+def require_supported_claim_level(claim_level: str, *, context: str = "MHX") -> str:
+    """Validate and return a supported artifact claim level."""
+    if claim_level not in CLAIM_LEVELS:
+        supported = ", ".join(CLAIM_LEVELS)
+        raise ValueError(
+            f"{context} received unsupported claim level {claim_level!r}; "
+            f"supported levels: {supported}"
+        )
+    return claim_level
+
+
 def api_version_info() -> APIVersionInfo:
     """Return the active package/API/schema compatibility summary."""
     return APIVersionInfo(
@@ -83,4 +97,5 @@ def api_version_info() -> APIVersionInfo:
         manifest_schema=MANIFEST_SCHEMA,
         artifact_manifest_schema=ARTIFACT_MANIFEST_SCHEMA,
         validation_suite_schema=VALIDATION_SUITE_SCHEMA,
+        claim_levels=CLAIM_LEVELS,
     )

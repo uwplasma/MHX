@@ -324,6 +324,8 @@ def write_diffusion_eigenvalue_validation(
             "history": history_path.name,
             "diffusion_eigenvalue_errors": str(figure_path.relative_to(output_dir)),
         },
+        claim_level="validation",
+        claim_scope="Diffusion eigenvalue solver validation.",
     )
     return manifest_path, result.validation
 
@@ -373,6 +375,8 @@ def write_arnoldi_validation(
             "history": history_path.name,
             "arnoldi_ritz_values": str(figure_path.relative_to(output_dir)),
         },
+        claim_level="validation",
+        claim_scope="Arnoldi Ritz-spectrum numerical scaffold validation.",
     )
     return manifest_path, result.validation
 
@@ -424,5 +428,7 @@ def write_power_iteration_validation(
             "history": history_path.name,
             "power_iteration_history": str(figure_path.relative_to(output_dir)),
         },
+        claim_level="validation",
+        claim_scope="Power-iteration numerical scaffold validation.",
     )
     return manifest_path, result.validation

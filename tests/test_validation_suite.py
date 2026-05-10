@@ -124,6 +124,12 @@ def test_write_validation_suite_artifacts_and_cli(tmp_path) -> None:
     assert (tmp_path / "suite" / "duration_policy" / "duration_policy.json").exists()
     persisted = json.loads((tmp_path / "suite" / "validation_suite.json").read_text())
     assert persisted["cases"][0]["passed"] is True
+    assert persisted["cases"][0]["claim_level"] == "smoke"
+    assert {
+        item["claim_level"] for item in persisted["cases"]
+    } <= {"smoke", "validation"}
+    artifact_manifest = json.loads((tmp_path / "suite" / "artifact_manifest.json").read_text())
+    assert artifact_manifest["claim_levels"]["linear_tearing_fast/manifest.json"] == "smoke"
 
     outdir = tmp_path / "cli-suite"
     cli_result = CliRunner().invoke(app, ["validate", "all", "--outdir", str(outdir)])

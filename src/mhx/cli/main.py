@@ -35,6 +35,7 @@ from mhx.benchmarks import (
     write_reduced_mhd_linear_eigenmode_validation,
     write_resistive_decay_validation,
     write_run_report,
+    write_rutherford_campaign_template,
     write_timing_benchmark,
     write_validation_suite,
 )
@@ -74,11 +75,13 @@ from mhx.versioning import api_version_info
 app = typer.Typer(no_args_is_help=True, help="MHX differentiable MHD workflows.")
 benchmark_app = typer.Typer(no_args_is_help=True, help="Benchmark workflows.")
 api_app = typer.Typer(no_args_is_help=True, help="Public API and schema metadata.")
+campaign_app = typer.Typer(no_args_is_help=True, help="Production campaign templates.")
 physics_app = typer.Typer(no_args_is_help=True, help="Physics plugin inspection.")
 diagnostics_app = typer.Typer(no_args_is_help=True, help="Diagnostic registry inspection.")
 validate_app = typer.Typer(no_args_is_help=True, help="Validation-suite workflows.")
 app.add_typer(benchmark_app, name="benchmark")
 app.add_typer(api_app, name="api")
+app.add_typer(campaign_app, name="campaign")
 app.add_typer(physics_app, name="physics")
 app.add_typer(diagnostics_app, name="diagnostics")
 app.add_typer(validate_app, name="validate")
@@ -111,6 +114,7 @@ def api_status(
     typer.echo(f"Manifest schema: {info['manifest_schema']}")
     typer.echo(f"Artifact manifest schema: {info['artifact_manifest_schema']}")
     typer.echo(f"Validation-suite schema: {info['validation_suite_schema']}")
+    typer.echo(f"Claim levels: {', '.join(info['claim_levels'])}")
 
 
 @api_app.command("deprecations")
@@ -155,6 +159,12 @@ def _run_config(config: Path, *, outdir: Path | None = None) -> Path:
     configure_jax(enable_x64=cfg.numerics.enable_x64)
     if outdir is not None:
         cfg = cfg.with_output_dir(outdir)
+    if cfg.physics.model != "reduced_mhd_linear_tearing":
+        raise typer.BadParameter(
+            "mhx run currently supports physics.model='reduced_mhd_linear_tearing'. "
+            "Production campaign templates are planning artifacts, not runnable "
+            "through the FAST smoke runner."
+        )
 
     run_dir = cfg.output_dir
     run_dir.mkdir(parents=True, exist_ok=True)
@@ -185,8 +195,56 @@ def _run_config(config: Path, *, outdir: Path | None = None) -> Path:
             "diagnostics": str(diagnostics_path.name),
             "trajectory": str(trajectory_path.name),
         },
+        claim_level="smoke",
+        claim_scope="Lightweight reduced-MHD run; not a production reconnection claim.",
     )
     return manifest_path
+
+
+@campaign_app.command("rutherford-template")
+def campaign_rutherford_template(
+    outdir: Annotated[
+        Path,
+        typer.Option("--outdir", help="Output directory for campaign-template artifacts."),
+    ] = Path("outputs/campaigns/rutherford_template"),
+    harris_growth_rate: Annotated[
+        float,
+        typer.Option("--harris-growth-rate", help="Reference Harris growth rate gamma."),
+    ] = 1.31e-2,
+    production_efolds: Annotated[
+        float,
+        typer.Option("--production-efolds", help="Required e-folds before nonlinear claims."),
+    ] = 10.0,
+    safety_factor: Annotated[
+        float,
+        typer.Option("--safety-factor", help="Extra multiplier for nonlinear tracking."),
+    ] = 3.0,
+    nx: Annotated[int, typer.Option("--nx", help="Template x resolution.")] = 128,
+    ny: Annotated[int, typer.Option("--ny", help="Template y resolution.")] = 128,
+    dt: Annotated[float, typer.Option("--dt", help="Template fixed time step.")] = 0.1,
+    target_saved_frames: Annotated[
+        int,
+        typer.Option("--target-saved-frames", help="Target saved frames for figures/movies."),
+    ] = 400,
+    run_output_dir: Annotated[
+        Path,
+        typer.Option("--run-output-dir", help="Output directory embedded in campaign_config.toml."),
+    ] = Path("outputs/production/rutherford_island"),
+) -> None:
+    """Write a duration-guarded nonlinear Rutherford campaign template."""
+    manifest_path, validation = write_rutherford_campaign_template(
+        outdir,
+        harris_growth_rate=harris_growth_rate,
+        production_efolds=production_efolds,
+        safety_factor=safety_factor,
+        shape=(nx, ny),
+        dt=dt,
+        target_saved_frames=target_saved_frames,
+        run_output_dir=run_output_dir,
+    )
+    typer.echo(f"wrote {manifest_path}")
+    if not validation["passed"]:
+        raise typer.Exit(code=1)
 
 
 @app.command()

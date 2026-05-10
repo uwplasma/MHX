@@ -1,5 +1,11 @@
 """Benchmark problem builders."""
 
+from mhx.benchmarks.campaigns import (
+    RUTHERFORD_CAMPAIGN_TEMPLATE_SCHEMA,
+    RutherfordCampaignTemplate,
+    build_rutherford_campaign_template,
+    write_rutherford_campaign_template,
+)
 from mhx.benchmarks.catalog import (
     BENCHMARK_CATALOG_SCHEMA,
     BenchmarkCatalogEntry,
@@ -187,6 +193,8 @@ __all__ = [
     "PowerIterationValidationResult",
     "RECONNECTION_SCALING_SCHEMA",
     "RESISTIVE_DECAY_SCHEMA",
+    "RUTHERFORD_CAMPAIGN_TEMPLATE_SCHEMA",
+    "RutherfordCampaignTemplate",
     "TIMING_BENCHMARK_SCHEMA",
     "VALIDATION_SUITE_SCHEMA",
     "ReconnectionScalingResult",
@@ -196,6 +204,7 @@ __all__ = [
     "TimingCaseResult",
     "ValidationSuiteCase",
     "assess_duration",
+    "build_rutherford_campaign_template",
     "duration_policy_assessments",
     "fkr_constant_psi_estimate",
     "harris_sheet_delta_prime",
@@ -253,6 +262,7 @@ __all__ = [
     "write_reduced_mhd_linear_eigenmode_validation",
     "write_reconnection_scaling_validation",
     "write_resistive_decay_validation",
+    "write_rutherford_campaign_template",
     "write_run_report",
     "write_timing_benchmark",
     "write_validation_suite",

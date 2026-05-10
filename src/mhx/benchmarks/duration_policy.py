@@ -302,6 +302,8 @@ def write_duration_policy(
             "duration_policy_markdown": markdown_path.name,
             "validation": validation_path.name,
         },
+        claim_level="validation",
+        claim_scope="Machine-readable simulation-duration policy and claim-boundary gate.",
     )
     return manifest_path, validation
 

@@ -183,5 +183,7 @@ def write_reconnection_scaling_validation(
             "plasmoid_scaling": str(plasmoid_path.relative_to(output_dir)),
             "ideal_tearing_scaling": str(ideal_path.relative_to(output_dir)),
         },
+        claim_level="validation",
+        claim_scope="Analytic reconnection-scaling validation scaffold.",
     )
     return manifest_path, result.validation

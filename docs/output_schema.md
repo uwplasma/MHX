@@ -12,7 +12,21 @@ contract selected by `MHX_API_VERSION`.
 - `diagnostics.json`: scalar JSON diagnostics.
 - `trajectory.npz`: compressed trajectory arrays using schema
   `mhx.reduced_mhd.trajectory.v1`.
-- `manifest.json`: file list and SHA-256 hashes.
+- `manifest.json`: file list, SHA-256 hashes, and claim metadata.
+
+## Manifest claim levels
+
+Every v1 manifest contains:
+
+| Key | Meaning |
+| --- | --- |
+| `claim_level` | One of `unspecified`, `smoke`, `validation`, `production_template`, or `production`. |
+| `claim_scope` | Human-readable boundary explaining what the artifact can and cannot support. |
+
+`mhx artifact-manifest` also collects nested `manifest.json` claim levels in a
+top-level `claim_levels` mapping. This lets CI and reviewers check whether a
+figure directory mixes smoke, validation, production-template, or production
+artifacts.
 
 ## `trajectory.npz` keys
 
@@ -136,6 +150,26 @@ validation gates and writes:
   `nonlinear_energy_budget/`,
   `nonlinear_duration_audit/`,
   `duration_policy/`, and `arnoldi/`.
+
+Each validation-suite case includes a `claim_level` copied from its nested
+manifest. Most cases are `validation`; the short linear-tearing smoke run is
+explicitly `smoke`.
+
+## Campaign-template outputs
+
+`mhx campaign rutherford-template --outdir outputs/campaigns/rutherford_template`
+writes:
+
+- `campaign.json`: schema `mhx.campaign.rutherford_template.v1`, generated
+  config, duration assessment, required production outputs, and claim boundary.
+- `campaign_config.toml`: long-run TOML template with
+  `physics.model = "reduced_mhd_nonlinear_tearing_campaign"`.
+- `duration_assessment.json`: serialized duration guard for the chosen
+  $\gamma$, e-fold count, and safety factor.
+- `validation.json`: pass/fail checks for duration, non-FAST resolution,
+  saved-frame count, and required runtime diagnostics.
+- `manifest.json`: top-level claim metadata with
+  `claim_level = "production_template"`.
 
 ## Exact-decay validation outputs
 

@@ -8,9 +8,11 @@ from typer.testing import CliRunner
 from mhx import MHX_PUBLIC_API_VERSION, api_version_info
 from mhx.cli.main import app
 from mhx.versioning import (
+    CLAIM_LEVELS,
     REDUCED_MHD_TRAJECTORY_SCHEMA,
     active_api_version,
     require_supported_api_version,
+    require_supported_claim_level,
 )
 
 
@@ -21,6 +23,10 @@ def test_api_version_info_and_env_override(monkeypatch) -> None:
     info = api_version_info()
     assert info.public_api_version == "v1"
     assert info.trajectory_schema == REDUCED_MHD_TRAJECTORY_SCHEMA
+    assert info.claim_levels == CLAIM_LEVELS
+    assert require_supported_claim_level("validation") == "validation"
+    with pytest.raises(ValueError, match="unsupported claim level"):
+        require_supported_claim_level("marketing")
 
     monkeypatch.setenv("MHX_API_VERSION", "v2")
     assert active_api_version() == "v2"
@@ -35,6 +41,7 @@ def test_cli_api_status_and_deprecations() -> None:
     payload = json.loads(status.stdout)
     assert payload["public_api_version"] == "v1"
     assert payload["physics_api_version"] == "mhx.physics.v1"
+    assert "production_template" in payload["claim_levels"]
 
     deprecations = runner.invoke(app, ["api", "deprecations"])
     assert deprecations.exit_code == 0, deprecations.stdout

@@ -490,6 +490,8 @@ def write_benchmark_catalog(outdir: str | Path) -> tuple[Path, Path]:
             "catalog_json": json_path.name,
             "catalog_markdown": markdown_path.name,
         },
+        claim_level="validation",
+        claim_scope="Benchmark catalog metadata.",
     )
     return json_path, markdown_path
 

@@ -445,6 +445,8 @@ def write_fkr_window_validation(
             "history": history_path.name,
             "fkr_window": str(figure_path.relative_to(output_dir)),
         },
+        claim_level="validation",
+        claim_scope="Analytic FKR constant-psi regime-window validation.",
     )
     return manifest_path, result.validation
 
@@ -505,6 +507,8 @@ def write_fkr_growth_rate_validation(
             "history": history_path.name,
             "fkr_growth_rate": str(figure_path.relative_to(output_dir)),
         },
+        claim_level="validation",
+        claim_scope="Analytic FKR growth-rate scaling validation.",
     )
     return manifest_path, result.validation
 
@@ -556,6 +560,8 @@ def write_harris_delta_prime_validation(
             "history": history_path.name,
             "harris_delta_prime": str(figure_path.relative_to(output_dir)),
         },
+        claim_level="validation",
+        claim_scope="Harris-sheet outer Delta-prime validation.",
     )
     return manifest_path, result.validation
 

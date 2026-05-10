@@ -287,5 +287,7 @@ def write_timing_benchmark(
             "timing_markdown": markdown_path.name,
             "timing_summary": str(figure_path.relative_to(output_dir)),
         },
+        claim_level="validation",
+        claim_scope="FAST timing and performance-regression artifact; not a physics claim.",
     )
     return manifest_path, result.diagnostics

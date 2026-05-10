@@ -278,6 +278,8 @@ def write_nonlinear_energy_budget_validation(
             "history": history_path.name,
             "nonlinear_energy_budget": str(figure_path.relative_to(output_dir)),
         },
+        claim_level="validation",
+        claim_scope="Nonlinear reduced-MHD energy/dissipation budget validation.",
     )
     return manifest_path, result.validation
 

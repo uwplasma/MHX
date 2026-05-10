@@ -128,6 +128,7 @@ mhx benchmark power-iteration --outdir outputs/benchmarks/power_iteration
 mhx benchmark arnoldi --outdir outputs/benchmarks/arnoldi
 mhx benchmark timing --outdir outputs/benchmarks/timing --repeats 3 --warmups 1
 mhx benchmark catalog --outdir outputs/benchmarks/catalog
+mhx campaign rutherford-template --outdir outputs/campaigns/rutherford_template
 mhx validate all --outdir outputs/validation_suite
 ```
 
@@ -160,6 +161,18 @@ historical runs as validation-only and requires future production templates to
 satisfy `t_end >= safety_factor * e_folds / gamma`:
 
 ![Nonlinear duration audit](docs/_static/validation/nonlinear_duration_audit/nonlinear_duration_audit.png)
+
+For the next long nonlinear step, generate a duration-guarded Rutherford
+campaign template before launching any expensive run:
+
+```bash
+mhx campaign rutherford-template \
+  --outdir outputs/campaigns/rutherford_template \
+  --nx 128 --ny 128 --dt 0.1 --target-saved-frames 400
+```
+
+The resulting manifest is labeled `claim_level = "production_template"`; it is
+a reproducible plan, not a completed nonlinear reconnection result.
 
 and the nonlinear current-sheet differentiability bridge:
 

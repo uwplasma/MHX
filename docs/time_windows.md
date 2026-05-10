@@ -35,6 +35,25 @@ The policy intentionally separates **intended-scope sufficiency** from
 - Future production templates must satisfy the e-fold rule, otherwise the
   policy validation fails.
 
+## Long campaign template
+
+The next nonlinear result should start from a generated campaign template rather
+than a smoke-test config:
+
+```bash
+mhx campaign rutherford-template \
+  --outdir outputs/campaigns/rutherford_template \
+  --nx 128 --ny 128 \
+  --dt 0.1 \
+  --target-saved-frames 400
+```
+
+This command does not run the expensive simulation. It writes a
+`campaign_config.toml`, a `duration_assessment.json`, and a manifest with
+`claim_level = "production_template"`. The generated config uses
+$t_\mathrm{end}\approx2290.1$ for the default Harris growth-rate anchor, so it
+is long enough for a ten-e-fold linear phase plus nonlinear island tracking.
+
 ## Current duration classification
 
 | Workflow | Current/default time | Intended scope | Nonlinear claim status |

@@ -232,5 +232,7 @@ def write_resistive_decay_validation(
             "decay_relative_error": str(error_path.relative_to(output_dir)),
             "decay_energy": str(energy_path.relative_to(output_dir)),
         },
+        claim_level="validation",
+        claim_scope="Exact resistive-decay manufactured-solution validation.",
     )
     return manifest_path, result.validation

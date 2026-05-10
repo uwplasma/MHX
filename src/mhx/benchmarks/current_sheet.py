@@ -566,6 +566,8 @@ def write_periodic_current_sheet_eigenvalue_validation(
             "history": history_path.name,
             "periodic_current_sheet_spectrum": str(figure_path.relative_to(output_dir)),
         },
+        claim_level="validation",
+        claim_scope="Periodic current-sheet spectrum validation.",
     )
     return manifest_path, result.validation
 
@@ -626,6 +628,8 @@ def write_periodic_current_sheet_nonlinear_bridge_validation(
                 figure_path.relative_to(output_dir)
             ),
         },
+        claim_level="validation",
+        claim_scope="Nonlinear current-sheet differentiability bridge validation.",
     )
     return manifest_path, result.validation
 
@@ -689,6 +693,8 @@ def write_periodic_current_sheet_timedomain_validation(
             "history": history_path.name,
             "periodic_current_sheet_timedomain": str(figure_path.relative_to(output_dir)),
         },
+        claim_level="validation",
+        claim_scope="Periodic current-sheet time-domain operator replay validation.",
     )
     return manifest_path, result.validation
 

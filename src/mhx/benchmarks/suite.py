@@ -197,6 +197,7 @@ def write_validation_suite(
                 "command": f"{case.command} --outdir {case_dir.as_posix()}",
                 "output_dir": case_dir.relative_to(output_dir).as_posix(),
                 "manifest": manifest_path.relative_to(output_dir).as_posix(),
+                "claim_level": _manifest_claim_level(manifest_path),
                 "validation": (case_dir / "validation.json").relative_to(output_dir).as_posix(),
                 "schema": validation["schema"],
                 "passed": bool(validation["passed"]),
@@ -226,6 +227,8 @@ def write_validation_suite(
             "summary_markdown": markdown_path.name,
             "artifact_manifest": artifact_manifest_path.name,
         },
+        claim_level="validation",
+        claim_scope="Aggregate reviewer-facing FAST validation-suite artifact.",
     )
     return summary_path, summary
 
@@ -264,6 +267,8 @@ def _write_linear_tearing_fast_validation(outdir: Path) -> tuple[Path, dict[str,
             "diagnostics": diagnostics_path.name,
             "trajectory": trajectory_path.name,
         },
+        claim_level="smoke",
+        claim_scope="Linear-tearing FAST smoke run inside the validation suite.",
     )
     _, validation = validate_run(outdir)
     return manifest_path, validation
@@ -271,14 +276,21 @@ def _write_linear_tearing_fast_validation(outdir: Path) -> tuple[Path, dict[str,
 
 def _suite_markdown(summary: dict[str, Any]) -> str:
     rows = "\n".join(
-        "| `{name}` | `{schema}` | `{passed}` | `{manifest}` |".format(**case)
+        "| `{name}` | `{schema}` | `{claim_level}` | `{passed}` | `{manifest}` |".format(
+            **case
+        )
         for case in summary["cases"]
     )
     status = "passed" if summary["passed"] else "failed"
     return (
         "# MHX validation suite\n\n"
         f"Suite status: **{status}**\n\n"
-        "| Case | Validation schema | Passed | Manifest |\n"
-        "| --- | --- | --- | --- |\n"
+        "| Case | Validation schema | Claim level | Passed | Manifest |\n"
+        "| --- | --- | --- | --- | --- |\n"
         f"{rows}\n"
     )
+
+
+def _manifest_claim_level(path: Path) -> str:
+    manifest = json.loads(path.read_text(encoding="utf-8"))
+    return str(manifest.get("claim_level", "unspecified"))

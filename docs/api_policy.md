@@ -7,6 +7,7 @@ The rebuilt MHX package separates three versioned surfaces:
 | Package version | `0.1.0a0` | Changes with every release. |
 | Public API version | `v1` | Compatibility contract for config loaders, plugin interfaces, and artifact readers. |
 | Artifact schemas | `mhx.*.v1` | File-format contracts for generated outputs. |
+| Claim levels | `smoke`, `validation`, `production_template`, `production` | Reviewer-facing boundary for what an artifact can support. |
 
 Inspect the active values:
 
@@ -42,6 +43,8 @@ The following names are part of the rebuilt v1 public surface:
 - `mhx.io.read_reduced_mhd_trajectory_npz` and
   `mhx.io.write_reduced_mhd_trajectory_npz` for
   `mhx.reduced_mhd.trajectory.v1`.
+- Manifest `claim_level` values: `unspecified`, `smoke`, `validation`,
+  `production_template`, and `production`.
 - `mhx validate all`, `mhx benchmark ...`, `mhx figures`, `mhx report`, and
   `mhx artifact-manifest` command families.
 

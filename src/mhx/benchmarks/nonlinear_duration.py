@@ -241,6 +241,8 @@ def write_nonlinear_duration_audit(
             "history": history_path.name,
             "nonlinear_duration_audit": str(figure_path.relative_to(output_dir)),
         },
+        claim_level="validation",
+        claim_scope="Duration audit marking short nonlinear CI runs as validation-only.",
     )
     return manifest_path, result.validation
 

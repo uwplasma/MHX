@@ -66,6 +66,8 @@ mhx benchmark nonlinear-duration-audit \
   --outdir outputs/benchmarks/nonlinear_duration_audit
 mhx benchmark duration-policy \
   --outdir outputs/benchmarks/duration_policy
+mhx campaign rutherford-template \
+  --outdir outputs/campaigns/rutherford_template
 ```
 
 ![Nonlinear duration audit](_static/validation/nonlinear_duration_audit/nonlinear_duration_audit.png)
@@ -82,7 +84,7 @@ mhx benchmark duration-policy \
 | 6 | Time-domain eigenmode replay and growth-fit recovery. | CI artifact exists. |
 | 7 | Nonlinear differentiability and energy-budget gates. | CI artifact exists. |
 | 8 | Nonlinear duration audit and production-run requirements. | CI artifact exists. |
-| 9 | Rutherford island growth campaign. | Planned. |
+| 9 | Rutherford island growth campaign. | Duration-guarded template exists; production run still planned. |
 | 10 | Sweet-Parker/plasmoid nonlinear campaign. | Planned. |
 | 11 | Neural-ODE dataset/baselines/calibration/failure cases. | Planned. |
 
@@ -101,6 +103,7 @@ Every nonlinear island/plasmoid result should archive:
 - at least one resolution/time-step comparison;
 - visual flux/current movies with fixed color ranges;
 - explicit claim boundary: smoke, validation, or production physics result.
+- generated `claim_level` metadata in every manifest and artifact manifest.
 
 ## Literature anchors
 

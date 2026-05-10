@@ -828,6 +828,8 @@ def write_linear_tearing_eigenvalue_validation(
             "history": history_path.name,
             "linear_tearing_eigenvalue": str(figure_path.relative_to(output_dir)),
         },
+        claim_level="validation",
+        claim_scope="Direct Harris-sheet tearing eigenvalue validation.",
     )
     return manifest_path, result.validation
 
@@ -886,6 +888,8 @@ def write_linear_tearing_dispersion_validation(
             "history": history_path.name,
             "linear_tearing_dispersion": str(figure_path.relative_to(output_dir)),
         },
+        claim_level="validation",
+        claim_scope="Finite-domain Harris tearing dispersion validation.",
     )
     return manifest_path, result.validation
 
@@ -953,6 +957,8 @@ def write_linear_tearing_layer_validation(
             "history": history_path.name,
             "linear_tearing_layer": str(figure_path.relative_to(output_dir)),
         },
+        claim_level="validation",
+        claim_scope="Harris tearing eigenfunction-layer localization validation.",
     )
     return manifest_path, result.validation
 
@@ -1015,6 +1021,8 @@ def write_linear_tearing_timedomain_validation(
             "history": history_path.name,
             "linear_tearing_timedomain": str(figure_path.relative_to(output_dir)),
         },
+        claim_level="validation",
+        claim_scope="Time-domain Harris tearing eigenmode replay validation.",
     )
     return manifest_path, result.validation
 

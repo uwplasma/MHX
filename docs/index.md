@@ -18,6 +18,7 @@ benchmarks
 performance
 validation
 time_windows
+campaigns
 paper_plan
 media
 audit

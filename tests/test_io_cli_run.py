@@ -18,6 +18,7 @@ def test_cli_run_writes_schema_files(tmp_path) -> None:
     manifest = json.loads((outdir / "manifest.json").read_text())
     diagnostics = json.loads((outdir / "diagnostics.json").read_text())
     assert manifest["schema"] == "mhx.manifest.v1"
+    assert manifest["claim_level"] == "smoke"
     assert manifest["hashes"]["diagnostics"]
     assert manifest["hashes"]["trajectory"]
     assert diagnostics["grid_shape"] == [32, 32]

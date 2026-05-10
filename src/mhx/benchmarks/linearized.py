@@ -420,6 +420,8 @@ def write_linearized_rhs_validation(
             "history": history_path.name,
             "linearized_rhs_errors": str(figure_path.relative_to(output_dir)),
         },
+        claim_level="validation",
+        claim_scope="Matrix-free reduced-MHD linearized-RHS tangent validation.",
     )
     return manifest_path, result.validation
 
@@ -485,6 +487,8 @@ def write_reduced_mhd_linear_eigenmode_validation(
                 figure_path.relative_to(output_dir)
             ),
         },
+        claim_level="validation",
+        claim_scope="Reduced-MHD linear eigenmode residual validation.",
     )
     return manifest_path, result.validation
 
@@ -543,6 +547,8 @@ def write_cosine_equilibrium_linearization_validation(
                 figure_path.relative_to(output_dir)
             ),
         },
+        claim_level="validation",
+        claim_scope="Cosine-equilibrium nonzero linearization validation.",
     )
     return manifest_path, result.validation
 

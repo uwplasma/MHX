@@ -5036,3 +5036,72 @@ Every agent must append an entry here. Do not delete previous entries.
   nonlinear island/plasmoid claims are shown in README-level media.
 - Extend the paper pipeline manifest with a `claim_level` field so each figure
   is mechanically labeled as smoke, validation, or production.
+
+### 2026-05-10 — Agent: Codex, claim metadata and Rutherford campaign template
+
+**Summary**
+
+- Added manifest-level `claim_level` and `claim_scope` metadata, with supported
+  levels `unspecified`, `smoke`, `validation`, `production_template`, and
+  `production`.
+- Added recursive artifact-manifest claim-level collection so generated figure
+  bundles can be audited for smoke/validation/production-template boundaries.
+- Added `mhx campaign rutherford-template`, which writes a duration-guarded
+  long nonlinear Rutherford-island campaign bundle without launching the
+  expensive production run.
+- Added explicit protection against accidentally running a production campaign
+  template through the current FAST smoke runner.
+- Added docs for campaign templates, manifest claim levels, CI artifact checks,
+  and the next nonlinear production workflow.
+
+**Files changed**
+
+- Added `src/mhx/benchmarks/campaigns.py`, `tests/test_campaign_templates.py`,
+  and `docs/campaigns.md`.
+- Updated manifest/versioning utilities, benchmark writers, validation-suite
+  summaries, CLI, CI, README, and output/time-window/API/paper-plan docs.
+
+**Tests run**
+
+- `python -m ruff check src tests examples tools` passed.
+- `python -m pytest tests/test_campaign_templates.py tests/test_artifact_manifest.py tests/test_io_cli_run.py tests/test_validation_suite.py tests/test_versioning.py -q`
+  passed: 19 tests.
+- `mhx campaign rutherford-template --outdir outputs/dev/rutherford_template --nx 96 --ny 96 --dt 0.2 --target-saved-frames 200`
+  passed and generated `campaign.json`, `campaign_config.toml`,
+  `duration_assessment.json`, `validation.json`, and `manifest.json`.
+- `sphinx-build -b html docs docs/_build/html` passed.
+- `python tools/check_legacy_imports.py && mhx validate all --outdir outputs/dev/validation_suite_claims`
+  passed; the suite contains only `smoke` and `validation` claim levels.
+- `python -m pytest --cov=mhx --cov-report=term-missing --cov-fail-under=95`
+  passed: 139 tests, 95.43% coverage.
+
+**Decisions made**
+
+- A generated Rutherford campaign is labeled `production_template`, not
+  `production`, because it proves duration sufficiency and required output
+  intent but does not prove nonlinear island growth.
+- The current `mhx run` command now rejects unsupported production-template
+  `physics.model` values instead of silently routing them through the linear
+  FAST smoke runner.
+- Validation artifacts are labeled `validation`; the short default run is
+  labeled `smoke`.
+
+**Problems / blockers**
+
+- The repository now has a rigorous long-run template, but still lacks the
+  actual nonlinear production solver path and convergence artifacts needed to
+  claim Rutherford island growth.
+
+**Progress**
+
+- Estimated plan completion: 89%.
+
+**Next steps**
+
+- Implement the nonlinear campaign runner that consumes the template and writes
+  fixed-scale flux/current movies plus island-width and reconnected-flux
+  histories.
+- Add resolution/time-step convergence gates that upgrade a completed campaign
+  from `production_template` to `production`.
+- Add paper-pipeline checks that fail if README/docs try to display production
+  media without a matching `claim_level = "production"` manifest.
