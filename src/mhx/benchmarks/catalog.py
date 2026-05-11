@@ -392,6 +392,26 @@ def validation_catalog_entries() -> tuple[BenchmarkCatalogEntry, ...]:
             ),
         ),
         BenchmarkCatalogEntry(
+            name="seed_robust_qi",
+            command="mhx benchmark seed-robust-qi --outdir outputs/benchmarks/seed_robust_qi",
+            schema="mhx.validation.seed_robust_qi.v1",
+            purpose=(
+                "Seed-robust quality indicator for FAST reduced-MHD trajectory "
+                "metrics under tiny smooth seeded perturbations."
+            ),
+            expected_outputs=(
+                "diagnostics.json",
+                "validation.json",
+                "ensemble.npz",
+                "figures/qi_summary.png",
+                "manifest.json",
+            ),
+            literature_anchor=(
+                "Reproducibility gate for stochastic initial perturbations before "
+                "inverse-design or neural-ODE training uses generated trajectories."
+            ),
+        ),
+        BenchmarkCatalogEntry(
             name="duration_policy",
             command="mhx benchmark duration-policy --outdir outputs/benchmarks/duration_policy",
             schema="mhx.duration_policy.v1",

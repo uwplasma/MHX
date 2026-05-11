@@ -101,6 +101,29 @@ and the MHX [literature page](literature.md).
 - [Validation tests](https://github.com/uwplasma/MHX/blob/main/tests/test_resistive_decay_validation.py)
 - [Plotting helpers](https://github.com/uwplasma/MHX/blob/main/src/mhx/plotting/reduced_mhd.py)
 
+## Seed-robust QI validation
+
+MHX now includes a FAST seed-robust quality-indicator lane. It adds tiny
+smooth, zero-mean perturbations to the reduced-MHD tearing initial condition and
+gates whether `gamma_fit`, final energies, and spectral magnetic-divergence
+diagnostics are stable across the seed ensemble.
+
+The CLI command is:
+
+```bash
+mhx benchmark seed-robust-qi --outdir outputs/benchmarks/seed_robust_qi
+```
+
+The manifest is `claim_level = "validation"`. This supports only local FAST
+metric-sensitivity claims, not turbulent ensemble uncertainty quantification or
+production plasmoid statistics.
+
+Source anchors:
+
+- [QI implementation](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/seed_robust_qi.py)
+- [Validation-suite registry](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/suite.py)
+- [QI documentation](seed_robust_qi.md)
+
 ## Reconnection scaling gates
 
 The next validation layer checks that MHX's analytic benchmark scaffolds encode

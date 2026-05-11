@@ -41,6 +41,23 @@ reconnection, physics plugins, and neural surrogate experiments**
 | Sweet-Parker/plasmoid chains | Not yet supported. | Resolve long thin sheets and secondary islands at adequate Lundquist number. |
 | Neural ODE surrogate for reconnection metrics | Framework item, not yet a paper result. | Freeze dataset generation, train/val/test splits, baselines, calibration, and failure cases. |
 
+## New large-push lanes
+
+Two validation lanes have been added with explicit claim boundaries:
+
+| Lane | Current status | Source-code boundary |
+| --- | --- | --- |
+| `seed_robust_qi.md` | Implemented as FAST seed-ensemble validation for smooth perturbation sensitivity. It is not production UQ. | QI implementation lives in [seed_robust_qi.py](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/seed_robust_qi.py); deterministic initial conditions remain in [equilibria.py](https://github.com/uwplasma/MHX/blob/main/src/mhx/physics/equilibria.py#L35). |
+| FAST Rutherford campaign runner | Implemented for validation-grade histories and schema checks. It is not a long production campaign. | Template writing lives in [campaigns.py](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/campaigns.py#L42); FAST runner lives in [campaign_runner.py](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/campaign_runner.py). |
+
+Both lanes are exposed through the CLI in
+[main.py](https://github.com/uwplasma/MHX/blob/main/src/mhx/cli/main.py).
+
+The remaining missing page is `campaign_runner.md`: the production operations
+guide for launching, resuming, checkpointing, and monitoring long campaigns.
+That page should be written after the long runner exists. Until then, paper text
+should say "FAST campaign validation" rather than "production campaign result".
+
 ## Nonlinear duration requirement
 
 For a linear eigenmode with growth rate $\gamma$, observing $N_e$ e-folds

@@ -28,6 +28,7 @@ def test_validation_suite_cases_are_unique() -> None:
     assert "periodic_current_sheet_nonlinear_bridge" in names
     assert "nonlinear_energy_budget" in names
     assert "nonlinear_duration_audit" in names
+    assert "seed_robust_qi" in names
     assert "duration_policy" in names
 
 
@@ -120,6 +121,9 @@ def test_write_validation_suite_artifacts_and_cli(tmp_path) -> None:
         / "nonlinear_duration_audit"
         / "figures"
         / "nonlinear_duration_audit.png"
+    ).stat().st_size > 0
+    assert (
+        tmp_path / "suite" / "seed_robust_qi" / "figures" / "qi_summary.png"
     ).stat().st_size > 0
     assert (tmp_path / "suite" / "duration_policy" / "duration_policy.json").exists()
     persisted = json.loads((tmp_path / "suite" / "validation_suite.json").read_text())

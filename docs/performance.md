@@ -47,6 +47,25 @@ selected JAX backend.
 - JAX compilation and caching can dominate small cases. Use `--warmups` to
   remove first-call overhead when comparing local changes.
 
+## Cheap CI coverage
+
+The documentation/CI checks are intentionally cheap enough to run on every push:
+
+- `python -m ruff check src tests examples tools` catches import/style drift
+  before tests start.
+- `python tools/check_legacy_imports.py` prevents new imports from the archived
+  implementation.
+- `python -m pytest tests/test_docs_links.py` checks that required docs pages are
+  in the Sphinx toctree and that reviewer-facing source links still point at
+  repository paths.
+- `sphinx-build -W -b html docs docs/_build/html` builds docs with warnings as
+  failures.
+
+The expensive physics artifact matrix remains in `benchmark-artifacts`. That
+job records timing artifacts, but still avoids absolute runtime thresholds
+because GitHub-hosted runner performance is not stable enough for hardware-free
+claims.
+
 ## Performance knobs
 
 The active TOML config exposes the first controls users should tune:

@@ -35,7 +35,9 @@ from mhx.benchmarks import (
     write_reduced_mhd_linear_eigenmode_validation,
     write_resistive_decay_validation,
     write_run_report,
+    write_rutherford_campaign_fast,
     write_rutherford_campaign_template,
+    write_seed_robust_qi_validation,
     write_timing_benchmark,
     write_validation_suite,
 )
@@ -241,6 +243,46 @@ def campaign_rutherford_template(
         dt=dt,
         target_saved_frames=target_saved_frames,
         run_output_dir=run_output_dir,
+    )
+    typer.echo(f"wrote {manifest_path}")
+    if not validation["passed"]:
+        raise typer.Exit(code=1)
+
+
+@campaign_app.command("rutherford-run-fast")
+def campaign_rutherford_run_fast(
+    outdir: Annotated[
+        Path,
+        typer.Option("--outdir", help="Output directory for validation campaign artifacts."),
+    ] = Path("outputs/campaigns/rutherford_fast"),
+    nx: Annotated[int, typer.Option("--nx", help="Grid points in x.")] = 24,
+    ny: Annotated[int, typer.Option("--ny", help="Grid points in y.")] = 24,
+    t_end: Annotated[float, typer.Option("--t-end", help="Short validation final time.")] = 0.24,
+    dt: Annotated[float, typer.Option("--dt", help="RK4 time step.")] = 1.0e-2,
+    save_every: Annotated[int, typer.Option("--save-every", help="Saved-step stride.")] = 1,
+    seed: Annotated[int, typer.Option("--seed", help="Deterministic perturbation seed.")] = 0,
+    eta: Annotated[float, typer.Option("--eta", help="Resistivity.")] = 1.0e-3,
+    nu: Annotated[float, typer.Option("--nu", help="Viscosity.")] = 1.0e-3,
+    noise_amplitude: Annotated[
+        float,
+        typer.Option("--noise-amplitude", help="Smooth seeded noise amplitude."),
+    ] = 1.0e-6,
+    gif: Annotated[bool, typer.Option("--gif", help="Write a fixed-scale flux GIF.")] = False,
+) -> None:
+    """Run a short validation-grade Rutherford-style campaign."""
+    _configure_validation_precision()
+    manifest_path, validation = write_rutherford_campaign_fast(
+        outdir,
+        seeds=(seed,),
+        shape=(nx, ny),
+        t_end=t_end,
+        dt=dt,
+        save_every=save_every,
+        seed=seed,
+        resistivity=eta,
+        viscosity=nu,
+        noise_amplitude=noise_amplitude,
+        write_gif=gif,
     )
     typer.echo(f"wrote {manifest_path}")
     if not validation["passed"]:
@@ -832,6 +874,47 @@ def benchmark_nonlinear_duration_audit(
         outdir,
         harris_growth_rate=harris_growth_rate,
         requested_linear_efolds=linear_efolds,
+    )
+    typer.echo(f"wrote {manifest_path}")
+    if not validation["passed"]:
+        raise typer.Exit(code=1)
+
+
+@benchmark_app.command("seed-robust-qi")
+def benchmark_seed_robust_qi(
+    outdir: Annotated[
+        Path,
+        typer.Option(
+            "--outdir",
+            help="Output directory for seed-robust quality-indicator artifacts.",
+        ),
+    ] = Path("outputs/benchmarks/seed_robust_qi"),
+    seeds: Annotated[
+        str,
+        typer.Option("--seeds", help="Comma-separated deterministic seed list."),
+    ] = "0,1,2,3",
+    nx: Annotated[int, typer.Option("--nx", help="Grid points in x.")] = 16,
+    ny: Annotated[int, typer.Option("--ny", help="Grid points in y.")] = 16,
+    t_end: Annotated[float, typer.Option("--t-end", help="Final ensemble time.")] = 0.12,
+    dt: Annotated[float, typer.Option("--dt", help="RK4 time step.")] = 1.0e-2,
+    eta: Annotated[float, typer.Option("--eta", help="Resistivity.")] = 1.0e-3,
+    nu: Annotated[float, typer.Option("--nu", help="Viscosity.")] = 1.0e-3,
+    noise_amplitude: Annotated[
+        float,
+        typer.Option("--noise-amplitude", help="Smooth seeded noise amplitude."),
+    ] = 1.0e-6,
+) -> None:
+    """Run a seed-robust quality-indicator ensemble for FAST metrics."""
+    _configure_validation_precision()
+    manifest_path, validation = write_seed_robust_qi_validation(
+        outdir,
+        seeds=_parse_int_tuple(seeds),
+        shape=(nx, ny),
+        steps=max(1, round(t_end / dt)),
+        dt=dt,
+        resistivity=eta,
+        viscosity=nu,
+        psi_noise_amplitude=noise_amplitude,
     )
     typer.echo(f"wrote {manifest_path}")
     if not validation["passed"]:

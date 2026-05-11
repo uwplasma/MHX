@@ -56,9 +56,46 @@ A completed Rutherford campaign should add, at minimum:
 The template records these requirements in `campaign.json` so the paper
 pipeline can fail closed if a later production run omits them.
 
+## FAST validation runner
+
+The FAST runner exercises the same Rutherford-campaign diagnostic vocabulary on
+a tiny nonlinear reduced-MHD trajectory. It is deterministic for the requested
+seed list and writes validation artifacts only:
+
+```python
+from mhx.benchmarks import run_rutherford_campaign_fast
+
+run_rutherford_campaign_fast(
+    "outputs/campaigns/rutherford_fast",
+    seeds=[0, 1, 2],
+    shape=(16, 16),
+    dt=1.0e-2,
+    steps=20,
+)
+```
+
+Expected files:
+
+- `outputs/campaigns/rutherford_fast/rutherford_fast_histories.npz`
+- `outputs/campaigns/rutherford_fast/diagnostics.json`
+- `outputs/campaigns/rutherford_fast/validation.json`
+- `outputs/campaigns/rutherford_fast/campaign_template.json`
+- `outputs/campaigns/rutherford_fast/manifest.json`
+- `outputs/campaigns/rutherford_fast/figures/rutherford_fast_histories.png`
+
+The history schema stores `time`, `seed`, `reconnected_flux`,
+`rutherford_island_width`, `reconnection_rate_proxy`, magnetic/kinetic/total
+energy, magnetic-divergence error, and a current-density proxy. Gates check that
+the run is finite, short relative to the production template, energy growth is
+within tolerance, magnetic divergence is bounded, and the manifest uses
+`claim_level = "validation"` or `claim_level = "smoke"`. It must not be used as
+evidence of production Rutherford island growth.
+
 ## Source links
 
 - Campaign template implementation: `src/mhx/benchmarks/campaigns.py`
+- FAST campaign runner: `src/mhx/benchmarks/campaign_runner.py`
 - Duration guard: `src/mhx/benchmarks/duration_policy.py`
 - CLI entrypoint: `src/mhx/cli/main.py`
 - Tests: `tests/test_campaign_templates.py`
+- FAST runner tests: `tests/test_campaign_runner.py`

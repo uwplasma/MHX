@@ -34,6 +34,7 @@ from mhx.benchmarks.nonlinear import write_nonlinear_energy_budget_validation
 from mhx.benchmarks.nonlinear_duration import write_nonlinear_duration_audit
 from mhx.benchmarks.report import validate_run
 from mhx.benchmarks.scaling import write_reconnection_scaling_validation
+from mhx.benchmarks.seed_robust_qi import write_seed_robust_qi_validation
 from mhx.benchmarks.tearing import run_linear_tearing_smoke
 from mhx.benchmarks.tearing_eigen import (
     write_linear_tearing_dispersion_validation,
@@ -152,6 +153,11 @@ def validation_suite_cases() -> tuple[ValidationSuiteCase, ...]:
             name="nonlinear_duration_audit",
             command="mhx benchmark nonlinear-duration-audit",
             runner=write_nonlinear_duration_audit,
+        ),
+        ValidationSuiteCase(
+            name="seed_robust_qi",
+            command="mhx benchmark seed-robust-qi",
+            runner=write_seed_robust_qi_validation,
         ),
         ValidationSuiteCase(
             name="duration_policy",

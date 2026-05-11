@@ -28,6 +28,7 @@ def test_validation_catalog_entries_cover_expected_gates() -> None:
     assert "periodic_current_sheet_nonlinear_bridge" in names
     assert "nonlinear_energy_budget" in names
     assert "nonlinear_duration_audit" in names
+    assert "seed_robust_qi" in names
     assert "duration_policy" in names
     assert "arnoldi" in names
     assert all(entry.command.startswith("mhx benchmark") for entry in entries)
