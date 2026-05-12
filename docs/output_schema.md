@@ -450,6 +450,24 @@ writes:
 - `figures/periodic_current_sheet_nonlinear_bridge.png`: log-log convergence
   plot against an $O(\epsilon^2)$ guide and the configured slope/error gates.
 
+## Periodic double-Harris nonlinear-growth outputs
+
+`mhx benchmark double-harris-growth --outdir outputs/benchmarks/periodic_double_harris_nonlinear_growth`
+writes:
+
+- `diagnostics.json`: nonlinear growth diagnostics with schema
+  `mhx.validation.periodic_double_harris_nonlinear_growth.v1`.
+- `validation.json`: pass/fail gates for a finite dense spectrum/history,
+  positive unstable eigenvalue, small eigen-residual, nonlinear perturbation
+  growth factor, positive fitted growth, and fitted-vs-eigenvalue error.
+- `periodic_double_harris_nonlinear_growth.npz`: saved dense eigenvalue
+  spectrum, selected eigenvector/eigenvalue, time, perturbation norm, expected
+  frozen-linear norm, fitted growth rate, growth factor, and base/perturbed
+  final fields.
+- `figures/periodic_double_harris_nonlinear_growth.png`: semilog nonlinear
+  growth history with fitted and frozen-linear references plus initial/final
+  flux panels.
+
 ## Nonlinear energy-budget outputs
 
 `mhx benchmark nonlinear-energy-budget --outdir outputs/benchmarks/nonlinear_energy_budget`

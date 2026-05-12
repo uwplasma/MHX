@@ -15,8 +15,9 @@ from mhx.config import MeshConfig
 from mhx.equations.reduced_mhd import linearized_reduced_mhd_operator, reduced_mhd_rhs
 from mhx.grids import CartesianGrid
 from mhx.io import write_manifest
-from mhx.physics import CosineTearingEquilibrium
+from mhx.physics import CosineTearingEquilibrium, PeriodicDoubleHarrisEquilibrium
 from mhx.plotting import (
+    plot_double_harris_nonlinear_growth,
     plot_nonlinear_current_sheet_bridge,
     plot_periodic_current_sheet_spectrum,
     plot_periodic_current_sheet_timedomain,
@@ -37,6 +38,9 @@ PERIODIC_CURRENT_SHEET_TIMEDOMAIN_SCHEMA = (
 )
 PERIODIC_CURRENT_SHEET_NONLINEAR_BRIDGE_SCHEMA = (
     "mhx.validation.periodic_current_sheet_nonlinear_bridge.v1"
+)
+PERIODIC_DOUBLE_HARRIS_NONLINEAR_GROWTH_SCHEMA = (
+    "mhx.validation.periodic_double_harris_nonlinear_growth.v1"
 )
 
 
@@ -86,6 +90,28 @@ class PeriodicCurrentSheetNonlinearBridgeResult:
     finest_relative_error: float
     perturbation: ReducedMHDState
     tangent_final: ReducedMHDState
+    diagnostics: dict[str, Any]
+    validation: dict[str, Any]
+
+
+@dataclass(frozen=True)
+class PeriodicDoubleHarrisNonlinearGrowthResult:
+    """Nonlinear replay of an unstable periodic double-Harris eigenmode."""
+
+    matrix: np.ndarray
+    eigenvalues: np.ndarray
+    selected_eigenvalue: complex
+    selected_eigenvector: np.ndarray
+    selected_residual_norm: float
+    time: np.ndarray
+    perturbation_norm: np.ndarray
+    expected_perturbation_norm: np.ndarray
+    fitted_growth_rate: float
+    relative_growth_error: float
+    growth_factor: float
+    base_initial_state: ReducedMHDState
+    base_final_state: ReducedMHDState
+    perturbed_final_state: ReducedMHDState
     diagnostics: dict[str, Any]
     validation: dict[str, Any]
 
@@ -511,6 +537,216 @@ def run_periodic_current_sheet_nonlinear_bridge_validation(
     )
 
 
+def run_periodic_double_harris_nonlinear_growth_validation(
+    *,
+    shape: tuple[int, int] = (8, 8),
+    width: float = 0.4,
+    amplitude: float = 1.0,
+    resistivity: float = 5.0e-3,
+    viscosity: float = 5.0e-3,
+    perturbation_amplitude: float = 1.0e-6,
+    dt: float = 1.0e-2,
+    t_end: float = 4.0,
+    save_every: int = 20,
+    gauge_eigenvalue_radius: float = 1.0e-9,
+    min_linear_growth_rate: float = 5.0e-2,
+    min_nonlinear_growth_factor: float = 2.0,
+    max_relative_growth_error: float = 1.5e-1,
+    max_selected_residual_norm: float = 1.0e-9,
+    max_selected_eigenvalue_imag: float = 1.0e-8,
+) -> PeriodicDoubleHarrisNonlinearGrowthResult:
+    r"""Validate nonlinear growth from an unstable double-Harris eigenmode.
+
+    The gate closes the gap left by the stable cosine-current-sheet checks. It
+    builds a periodic double-Harris current sheet, assembles the dense
+    matrix-free reduced-MHD Jacobian on a tiny grid, selects the most unstable
+    real eigenmode, then advances two full nonlinear trajectories: the base
+    sheet and the base sheet plus a small eigenmode perturbation.  The measured
+    difference norm must grow exponentially at a rate close to the frozen-base
+    eigenvalue.
+    """
+    _validate_double_harris_growth_inputs(
+        shape=shape,
+        width=width,
+        amplitude=amplitude,
+        resistivity=resistivity,
+        viscosity=viscosity,
+        perturbation_amplitude=perturbation_amplitude,
+        dt=dt,
+        t_end=t_end,
+        save_every=save_every,
+        min_linear_growth_rate=min_linear_growth_rate,
+        min_nonlinear_growth_factor=min_nonlinear_growth_factor,
+        max_relative_growth_error=max_relative_growth_error,
+        max_selected_residual_norm=max_selected_residual_norm,
+        max_selected_eigenvalue_imag=max_selected_eigenvalue_imag,
+    )
+    grid = CartesianGrid.from_mesh_config(MeshConfig(shape=shape))
+    base = PeriodicDoubleHarrisEquilibrium(
+        width=width,
+        amplitude=amplitude,
+    ).initial_state(grid)
+    params = ReducedMHDParams(resistivity=resistivity, viscosity=viscosity)
+    operator = linearized_reduced_mhd_operator(base, params, lengths=grid.lengths)
+    matrix = _dense_matrix(operator)
+    eigenvalues, eigenvectors = np.linalg.eig(matrix)
+    selected_index = _select_unstable_eigenpair(
+        eigenvalues,
+        gauge_eigenvalue_radius=gauge_eigenvalue_radius,
+        min_growth_rate=min_linear_growth_rate,
+    )
+    selected_eigenvalue = complex(eigenvalues[selected_index])
+    selected_eigenvector = np.asarray(eigenvectors[:, selected_index].real, dtype=np.float64)
+    selected_eigenvector /= np.linalg.norm(selected_eigenvector.ravel())
+    selected_residual_norm = _dense_eigen_residual(
+        matrix,
+        selected_eigenvector,
+        selected_eigenvalue,
+    )
+    perturbation = unflatten_reduced_mhd_state(jnp.asarray(selected_eigenvector), shape)
+    perturbed_initial = ReducedMHDState(
+        psi=base.psi + perturbation_amplitude * perturbation.psi,
+        omega=base.omega + perturbation_amplitude * perturbation.omega,
+    )
+
+    def rhs(state: ReducedMHDState) -> ReducedMHDState:
+        return reduced_mhd_rhs(state, params, lengths=grid.lengths)
+
+    steps = round(t_end / dt)
+    base_trajectory = evolve_rk4(
+        base,
+        rhs,
+        dt=dt,
+        steps=steps,
+        save_every=save_every,
+    )
+    perturbed_trajectory = evolve_rk4(
+        perturbed_initial,
+        rhs,
+        dt=dt,
+        steps=steps,
+        save_every=save_every,
+    )
+    time, perturbation_norm = _trajectory_difference_norms(
+        base,
+        base_trajectory.times,
+        base_trajectory.states,
+        perturbed_initial,
+        perturbed_trajectory.states,
+        perturbation_amplitude=perturbation_amplitude,
+    )
+    fitted_growth_rate = float(np.polyfit(time, np.log(perturbation_norm), 1)[0])
+    expected_growth = perturbation_norm[0] * np.exp(selected_eigenvalue.real * time)
+    relative_growth_error = abs(
+        (fitted_growth_rate - selected_eigenvalue.real) / selected_eigenvalue.real
+    )
+    growth_factor = float(perturbation_norm[-1] / perturbation_norm[0])
+    base_final = ReducedMHDState(
+        psi=base_trajectory.states.psi[-1],
+        omega=base_trajectory.states.omega[-1],
+    )
+    perturbed_final = ReducedMHDState(
+        psi=perturbed_trajectory.states.psi[-1],
+        omega=perturbed_trajectory.states.omega[-1],
+    )
+    checks = {
+        "finite_spectrum_and_history": bool(
+            np.isfinite(eigenvalues.real).all()
+            and np.isfinite(eigenvalues.imag).all()
+            and np.isfinite(perturbation_norm).all()
+        ),
+        "unstable_linear_mode_found": selected_eigenvalue.real >= min_linear_growth_rate,
+        "selected_eigenvalue_is_real": abs(selected_eigenvalue.imag)
+        <= max_selected_eigenvalue_imag,
+        "selected_dense_eigenpair_residual_small": (
+            selected_residual_norm <= max_selected_residual_norm
+        ),
+        "nonlinear_difference_grows": growth_factor >= min_nonlinear_growth_factor,
+        "fitted_growth_rate_positive": fitted_growth_rate > 0.0,
+        "fitted_growth_matches_frozen_linear_mode": (
+            relative_growth_error <= max_relative_growth_error
+        ),
+    }
+    diagnostics = {
+        "schema": PERIODIC_DOUBLE_HARRIS_NONLINEAR_GROWTH_SCHEMA,
+        "shape": list(shape),
+        "equilibrium": (
+            "periodic double Harris: By=A[tanh((x-Lx/4)/a)-"
+            "tanh((x-3Lx/4)/a)-1]"
+        ),
+        "width": width,
+        "amplitude": amplitude,
+        "resistivity": resistivity,
+        "viscosity": viscosity,
+        "perturbation_amplitude": perturbation_amplitude,
+        "dt": dt,
+        "t_end": t_end,
+        "save_every": save_every,
+        "steps": steps,
+        "samples": int(time.size),
+        "selected_eigenvalue": {
+            "real": float(selected_eigenvalue.real),
+            "imag": float(selected_eigenvalue.imag),
+        },
+        "selected_residual_norm": selected_residual_norm,
+        "fitted_growth_rate": fitted_growth_rate,
+        "relative_growth_error": float(relative_growth_error),
+        "growth_factor": growth_factor,
+        "initial_perturbation_norm": float(perturbation_norm[0]),
+        "final_perturbation_norm": float(perturbation_norm[-1]),
+        "references": {
+            "scope": (
+                "Nonlinear periodic reduced-MHD growth gate for an unstable "
+                "double-Harris current sheet. This is a small-grid validation "
+                "of the instability path, not a converged plasmoid/Rutherford "
+                "production result."
+            ),
+            "literature": (
+                "Harris-sheet tearing follows the FKR/Coppi current-sheet "
+                "instability picture; long thin Sweet-Parker sheets transition "
+                "to the Loureiro-Schekochihin-Cowley plasmoid regime."
+            ),
+            "claim_boundary": (
+                "The gate demonstrates positive nonlinear growth from a dense "
+                "unstable eigenmode. Publication claims still require resolution, "
+                "duration, seed, and aspect-ratio sweeps."
+            ),
+        },
+    }
+    validation = {
+        "schema": "mhx.validation.periodic_double_harris_nonlinear_growth.gates.v1",
+        "passed": all(checks.values()),
+        "checks": checks,
+        "thresholds": {
+            "gauge_eigenvalue_radius": gauge_eigenvalue_radius,
+            "min_linear_growth_rate": min_linear_growth_rate,
+            "min_nonlinear_growth_factor": min_nonlinear_growth_factor,
+            "max_relative_growth_error": max_relative_growth_error,
+            "max_selected_residual_norm": max_selected_residual_norm,
+            "max_selected_eigenvalue_imag": max_selected_eigenvalue_imag,
+        },
+        "diagnostics": diagnostics,
+    }
+    return PeriodicDoubleHarrisNonlinearGrowthResult(
+        matrix=matrix,
+        eigenvalues=eigenvalues,
+        selected_eigenvalue=selected_eigenvalue,
+        selected_eigenvector=selected_eigenvector,
+        selected_residual_norm=selected_residual_norm,
+        time=time,
+        perturbation_norm=perturbation_norm,
+        expected_perturbation_norm=expected_growth,
+        fitted_growth_rate=fitted_growth_rate,
+        relative_growth_error=float(relative_growth_error),
+        growth_factor=growth_factor,
+        base_initial_state=base,
+        base_final_state=base_final,
+        perturbed_final_state=perturbed_final,
+        diagnostics=diagnostics,
+        validation=validation,
+    )
+
+
 def write_periodic_current_sheet_eigenvalue_validation(
     outdir: str | Path,
     **kwargs: Any,
@@ -699,6 +935,84 @@ def write_periodic_current_sheet_timedomain_validation(
     return manifest_path, result.validation
 
 
+def write_periodic_double_harris_nonlinear_growth_validation(
+    outdir: str | Path,
+    **kwargs: Any,
+) -> tuple[Path, dict[str, Any]]:
+    """Write double-Harris nonlinear-growth JSON, NPZ, figure, and manifest."""
+    output_dir = Path(outdir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    result = run_periodic_double_harris_nonlinear_growth_validation(**kwargs)
+
+    diagnostics_path = output_dir / "diagnostics.json"
+    validation_path = output_dir / "validation.json"
+    history_path = output_dir / "periodic_double_harris_nonlinear_growth.npz"
+    manifest_path = output_dir / "manifest.json"
+    diagnostics_path.write_text(
+        json.dumps(result.diagnostics, indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+    validation_path.write_text(
+        json.dumps(result.validation, indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+    np.savez_compressed(
+        history_path,
+        schema=PERIODIC_DOUBLE_HARRIS_NONLINEAR_GROWTH_SCHEMA,
+        eigenvalues_real=result.eigenvalues.real,
+        eigenvalues_imag=result.eigenvalues.imag,
+        selected_eigenvalue_real=result.selected_eigenvalue.real,
+        selected_eigenvalue_imag=result.selected_eigenvalue.imag,
+        selected_eigenvector=result.selected_eigenvector,
+        selected_residual_norm=result.selected_residual_norm,
+        time=result.time,
+        perturbation_norm=result.perturbation_norm,
+        expected_perturbation_norm=result.expected_perturbation_norm,
+        fitted_growth_rate=result.fitted_growth_rate,
+        relative_growth_error=result.relative_growth_error,
+        growth_factor=result.growth_factor,
+        base_initial_psi=np.asarray(result.base_initial_state.psi),
+        base_final_psi=np.asarray(result.base_final_state.psi),
+        perturbed_final_psi=np.asarray(result.perturbed_final_state.psi),
+        base_final_omega=np.asarray(result.base_final_state.omega),
+        perturbed_final_omega=np.asarray(result.perturbed_final_state.omega),
+    )
+    grid = CartesianGrid.from_mesh_config(MeshConfig(shape=tuple(result.diagnostics["shape"])))
+    x, y = grid.axes()
+    figure_path = plot_double_harris_nonlinear_growth(
+        result.time,
+        result.perturbation_norm,
+        result.expected_perturbation_norm,
+        selected_eigenvalue=result.selected_eigenvalue.real,
+        fitted_growth_rate=result.fitted_growth_rate,
+        relative_growth_error=result.relative_growth_error,
+        base_initial_psi=result.base_initial_state.psi,
+        base_final_psi=result.base_final_state.psi,
+        perturbed_final_psi=result.perturbed_final_state.psi,
+        x=x,
+        y=y,
+        path=output_dir / "figures" / "periodic_double_harris_nonlinear_growth.png",
+    )
+    write_manifest(
+        manifest_path,
+        config=result.diagnostics,
+        outputs={
+            "diagnostics": diagnostics_path.name,
+            "validation": validation_path.name,
+            "history": history_path.name,
+            "periodic_double_harris_nonlinear_growth": str(
+                figure_path.relative_to(output_dir)
+            ),
+        },
+        claim_level="validation",
+        claim_scope=(
+            "Small-grid nonlinear growth validation for an unstable periodic "
+            "double-Harris current sheet; not a production plasmoid/Rutherford claim."
+        ),
+    )
+    return manifest_path, result.validation
+
+
 def _dense_matrix(operator) -> np.ndarray:
     vector_size = int(operator.shape[0])
     basis = np.eye(vector_size, dtype=np.float64)
@@ -760,6 +1074,24 @@ def _select_real_decaying_eigenpair(
     return int(candidates[np.argmax(eigenvalues[mask].real)])
 
 
+def _select_unstable_eigenpair(
+    eigenvalues: np.ndarray,
+    *,
+    gauge_eigenvalue_radius: float,
+    min_growth_rate: float,
+) -> int:
+    mask = (np.abs(eigenvalues) > gauge_eigenvalue_radius) & (
+        eigenvalues.real >= min_growth_rate
+    )
+    if not np.any(mask):
+        raise RuntimeError(
+            "periodic double-Harris spectrum has no unstable non-gauge mode "
+            f"with Re(lambda) >= {min_growth_rate}"
+        )
+    candidates = np.flatnonzero(mask)
+    return int(candidates[np.argmax(eigenvalues[mask].real)])
+
+
 def _rk4_linear_replay(
     matrix: np.ndarray,
     vector0: np.ndarray,
@@ -781,6 +1113,44 @@ def _rk4_linear_replay(
             saved_times.append((step_index + 1) * dt)
             saved_states.append(state.copy())
     return np.asarray(saved_times), np.vstack(saved_states)
+
+
+def _trajectory_difference_norms(
+    base_initial: ReducedMHDState,
+    saved_times,
+    base_states: ReducedMHDState,
+    perturbed_initial: ReducedMHDState,
+    perturbed_states: ReducedMHDState,
+    *,
+    perturbation_amplitude: float,
+) -> tuple[np.ndarray, np.ndarray]:
+    states_base = (base_initial,) + tuple(
+        ReducedMHDState(psi=base_states.psi[index], omega=base_states.omega[index])
+        for index in range(base_states.psi.shape[0])
+    )
+    states_perturbed = (perturbed_initial,) + tuple(
+        ReducedMHDState(
+            psi=perturbed_states.psi[index],
+            omega=perturbed_states.omega[index],
+        )
+        for index in range(perturbed_states.psi.shape[0])
+    )
+    times = np.concatenate(
+        (
+            np.asarray([0.0], dtype=np.float64),
+            np.asarray(saved_times, dtype=np.float64),
+        )
+    )
+    amplitudes = []
+    for base_state, perturbed_state in zip(states_base, states_perturbed, strict=True):
+        difference = ReducedMHDState(
+            psi=perturbed_state.psi - base_state.psi,
+            omega=perturbed_state.omega - base_state.omega,
+        )
+        amplitudes.append(
+            _array_norm(flatten_reduced_mhd_state(difference)) / perturbation_amplitude
+        )
+    return times, np.asarray(amplitudes, dtype=np.float64)
 
 
 def _normalized_bridge_perturbation(grid: CartesianGrid) -> ReducedMHDState:
@@ -869,3 +1239,52 @@ def _validate_nonlinear_bridge_inputs(
         raise ValueError("min_convergence_order must be positive")
     if max_finest_relative_error <= 0.0:
         raise ValueError("max_finest_relative_error must be positive")
+
+
+def _validate_double_harris_growth_inputs(
+    *,
+    shape: tuple[int, int],
+    width: float,
+    amplitude: float,
+    resistivity: float,
+    viscosity: float,
+    perturbation_amplitude: float,
+    dt: float,
+    t_end: float,
+    save_every: int,
+    min_linear_growth_rate: float,
+    min_nonlinear_growth_factor: float,
+    max_relative_growth_error: float,
+    max_selected_residual_norm: float,
+    max_selected_eigenvalue_imag: float,
+) -> None:
+    if len(shape) != 2 or min(shape) < 6:
+        raise ValueError("shape must contain two dimensions, each at least 6")
+    if width <= 0.0:
+        raise ValueError("width must be positive")
+    if amplitude == 0.0:
+        raise ValueError("amplitude must be nonzero")
+    if resistivity <= 0.0:
+        raise ValueError("resistivity must be positive")
+    if viscosity <= 0.0:
+        raise ValueError("viscosity must be positive")
+    if perturbation_amplitude <= 0.0:
+        raise ValueError("perturbation_amplitude must be positive")
+    if dt <= 0.0:
+        raise ValueError("dt must be positive")
+    if t_end <= dt:
+        raise ValueError("t_end must be greater than dt")
+    if save_every < 1:
+        raise ValueError("save_every must be >= 1")
+    if round(t_end / dt) // save_every < 4:
+        raise ValueError("save_every must leave at least four saved samples")
+    if min_linear_growth_rate <= 0.0:
+        raise ValueError("min_linear_growth_rate must be positive")
+    if min_nonlinear_growth_factor <= 1.0:
+        raise ValueError("min_nonlinear_growth_factor must be greater than one")
+    if max_relative_growth_error <= 0.0:
+        raise ValueError("max_relative_growth_error must be positive")
+    if max_selected_residual_norm <= 0.0:
+        raise ValueError("max_selected_residual_norm must be positive")
+    if max_selected_eigenvalue_imag <= 0.0:
+        raise ValueError("max_selected_eigenvalue_imag must be positive")

@@ -50,6 +50,7 @@ manifest writer paths:
 | Direct Harris eigenvalue | Dense finite-difference reduced-MHD tearing eigenproblem at the published reference case. | Single-case tearing eigenvalue validation. | [eigenvalue.py](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/eigenvalue.py), [test_linear_tearing_eigenvalue_validation.py](https://github.com/uwplasma/MHX/blob/main/tests/test_linear_tearing_eigenvalue_validation.py) |
 | Finite-domain dispersion/layer | Growth sign, eigenpair residuals, and eigenfunction localization over small scans. | FAST branch and shape validation. | [tearing_eigen.py](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/tearing_eigen.py), [test_linear_tearing_eigenvalue_validation.py](https://github.com/uwplasma/MHX/blob/main/tests/test_linear_tearing_eigenvalue_validation.py) |
 | Time-domain replay | RK4 integration of a known linear eigenmode and refit of $\gamma$. | Growth-fit plumbing validation. | [tearing_eigen.py](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/tearing_eigen.py), [test_linear_tearing_eigenvalue_validation.py](https://github.com/uwplasma/MHX/blob/main/tests/test_linear_tearing_eigenvalue_validation.py) |
+| Double-Harris nonlinear growth | Dense unstable periodic double-Harris eigenmode grows in the full nonlinear solver. | Small-grid instability-path validation, not Rutherford/plasmoid production. | [current_sheet.py](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/current_sheet.py), [test_current_sheet_eigenvalue_validation.py](https://github.com/uwplasma/MHX/blob/main/tests/test_current_sheet_eigenvalue_validation.py) |
 | Nonlinear energy budget | Reduced-MHD identity $dE/dt=-\eta\langle j^2\rangle-\nu\langle\omega^2\rangle$. | Nonlinear conservation/dissipation validation. | [nonlinear.py](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/nonlinear.py), [test_nonlinear_energy_budget_validation.py](https://github.com/uwplasma/MHX/blob/main/tests/test_nonlinear_energy_budget_validation.py) |
 | Nonlinear duration policy | $t_\mathrm{end}\ge s_fN_e/\gamma$ before linear-growth or island claims. | Claim-boundary validation. | [duration_policy.py](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/duration_policy.py), [test_duration_policy.py](https://github.com/uwplasma/MHX/blob/main/tests/test_duration_policy.py) |
 | Seed-robust QI | Metric stability under deterministic tiny seed perturbations. | FAST sensitivity validation, not production UQ. | [seed_robust_qi.py](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/seed_robust_qi.py), [test_seed_robust_qi.py](https://github.com/uwplasma/MHX/blob/main/tests/test_seed_robust_qi.py) |
@@ -71,6 +72,7 @@ mhx validate all --outdir outputs/reviewer/validation_suite
 mhx benchmark timing --outdir outputs/reviewer/timing --repeats 3 --warmups 1
 mhx benchmark seed-robust-qi --outdir outputs/reviewer/seed_robust_qi
 mhx benchmark seed-robust-qi-sweep --outdir outputs/reviewer/seed_robust_qi_sweep
+mhx benchmark double-harris-growth --outdir outputs/reviewer/double_harris_growth
 mhx campaign rutherford-template --outdir outputs/reviewer/rutherford_template
 mhx campaign rutherford-run-fast --outdir outputs/reviewer/rutherford_fast
 mhx validate readiness --suite outputs/reviewer/validation_suite --outdir outputs/reviewer/readiness
@@ -85,6 +87,7 @@ The resulting evidence bundle should contain:
 - `outputs/reviewer/timing/timing.json`
 - `outputs/reviewer/seed_robust_qi/validation.json`
 - `outputs/reviewer/seed_robust_qi_sweep/validation.json`
+- `outputs/reviewer/double_harris_growth/validation.json`
 - `outputs/reviewer/rutherford_template/duration_assessment.json`
 - `outputs/reviewer/rutherford_fast/rutherford_fast_histories.npz`
 - `outputs/reviewer/readiness/readiness.json`
@@ -99,6 +102,7 @@ The current repository can defend:
 - finite-domain tearing branch sign/residual checks;
 - eigenfunction-layer localization in a FAST scan;
 - time-domain replay of known linear eigenmodes;
+- small-grid nonlinear growth of an unstable periodic double-Harris sheet;
 - nonlinear reduced-MHD energy-budget consistency;
 - explicit duration gates that prevent short nonlinear CI runs from being
   overclaimed;

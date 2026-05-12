@@ -22,16 +22,19 @@ from mhx.benchmarks import (
     write_periodic_current_sheet_eigenvalue_validation,
     write_periodic_current_sheet_nonlinear_bridge_validation,
     write_periodic_current_sheet_timedomain_validation,
+    write_periodic_double_harris_nonlinear_growth_validation,
     write_power_iteration_validation,
     write_reconnection_scaling_validation,
     write_reduced_mhd_linear_eigenmode_validation,
     write_resistive_decay_validation,
     write_timing_benchmark,
 )
+from mhx.runtime import configure_jax
 
 
 def main() -> None:
     """Regenerate deterministic validation figures used by the docs."""
+    configure_jax(enable_x64=True)
     run_dir = Path("outputs/docs_validation/resistive_decay")
     scaling_run_dir = Path("outputs/docs_validation/reconnection_scaling")
     fkr_window_run_dir = Path("outputs/docs_validation/fkr_window")
@@ -54,6 +57,9 @@ def main() -> None:
     )
     periodic_current_sheet_nonlinear_bridge_run_dir = Path(
         "outputs/docs_validation/periodic_current_sheet_nonlinear_bridge"
+    )
+    periodic_double_harris_growth_run_dir = Path(
+        "outputs/docs_validation/periodic_double_harris_nonlinear_growth"
     )
     nonlinear_energy_budget_run_dir = Path("outputs/docs_validation/nonlinear_energy_budget")
     nonlinear_duration_audit_run_dir = Path("outputs/docs_validation/nonlinear_duration_audit")
@@ -84,6 +90,9 @@ def main() -> None:
     periodic_current_sheet_nonlinear_bridge_docs_dir = Path(
         "docs/_static/validation/periodic_current_sheet_nonlinear_bridge"
     )
+    periodic_double_harris_growth_docs_dir = Path(
+        "docs/_static/validation/periodic_double_harris_nonlinear_growth"
+    )
     nonlinear_energy_budget_docs_dir = Path("docs/_static/validation/nonlinear_energy_budget")
     nonlinear_duration_audit_docs_dir = Path("docs/_static/validation/nonlinear_duration_audit")
     diffusion_eigen_docs_dir = Path("docs/_static/validation/diffusion_eigenvalue")
@@ -108,6 +117,9 @@ def main() -> None:
     )
     write_periodic_current_sheet_nonlinear_bridge_validation(
         periodic_current_sheet_nonlinear_bridge_run_dir
+    )
+    write_periodic_double_harris_nonlinear_growth_validation(
+        periodic_double_harris_growth_run_dir
     )
     write_nonlinear_energy_budget_validation(nonlinear_energy_budget_run_dir)
     write_nonlinear_duration_audit(nonlinear_duration_audit_run_dir)
@@ -202,6 +214,13 @@ def main() -> None:
         / "periodic_current_sheet_nonlinear_bridge.png",
         periodic_current_sheet_nonlinear_bridge_docs_dir
         / "periodic_current_sheet_nonlinear_bridge.png",
+    )
+    periodic_double_harris_growth_docs_dir.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(
+        periodic_double_harris_growth_run_dir
+        / "figures"
+        / "periodic_double_harris_nonlinear_growth.png",
+        periodic_double_harris_growth_docs_dir / "periodic_double_harris_nonlinear_growth.png",
     )
     nonlinear_energy_budget_docs_dir.mkdir(parents=True, exist_ok=True)
     shutil.copy2(

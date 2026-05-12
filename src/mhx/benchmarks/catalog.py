@@ -347,6 +347,29 @@ def validation_catalog_entries() -> tuple[BenchmarkCatalogEntry, ...]:
             ),
         ),
         BenchmarkCatalogEntry(
+            name="periodic_double_harris_nonlinear_growth",
+            command=(
+                "mhx benchmark double-harris-growth "
+                "--outdir outputs/benchmarks/periodic_double_harris_nonlinear_growth"
+            ),
+            schema="mhx.validation.periodic_double_harris_nonlinear_growth.v1",
+            purpose=(
+                "Small-grid nonlinear reduced-MHD growth gate: an unstable dense "
+                "double-Harris eigenmode grows in the full nonlinear solver."
+            ),
+            expected_outputs=(
+                "diagnostics.json",
+                "validation.json",
+                "periodic_double_harris_nonlinear_growth.npz",
+                "figures/periodic_double_harris_nonlinear_growth.png",
+            ),
+            literature_anchor=(
+                "Periodic spectral analogue of the Harris current sheet used in "
+                "FKR/Coppi tearing theory; validates growth plumbing before "
+                "long Rutherford/plasmoid production runs."
+            ),
+        ),
+        BenchmarkCatalogEntry(
             name="nonlinear_energy_budget",
             command=(
                 "mhx benchmark nonlinear-energy-budget "

@@ -12,6 +12,7 @@ from mhx.benchmarks.current_sheet import (
     write_periodic_current_sheet_eigenvalue_validation,
     write_periodic_current_sheet_nonlinear_bridge_validation,
     write_periodic_current_sheet_timedomain_validation,
+    write_periodic_double_harris_nonlinear_growth_validation,
 )
 from mhx.benchmarks.decay import write_resistive_decay_validation
 from mhx.benchmarks.duration_policy import write_duration_policy
@@ -146,6 +147,11 @@ def validation_suite_cases() -> tuple[ValidationSuiteCase, ...]:
             name="periodic_current_sheet_nonlinear_bridge",
             command="mhx benchmark current-sheet-nonlinear-bridge",
             runner=write_periodic_current_sheet_nonlinear_bridge_validation,
+        ),
+        ValidationSuiteCase(
+            name="periodic_double_harris_nonlinear_growth",
+            command="mhx benchmark double-harris-growth",
+            runner=write_periodic_double_harris_nonlinear_growth_validation,
         ),
         ValidationSuiteCase(
             name="nonlinear_energy_budget",

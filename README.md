@@ -152,6 +152,7 @@ mhx benchmark cosine-equilibrium-linearization --outdir outputs/benchmarks/cosin
 mhx benchmark current-sheet-eigenvalue --outdir outputs/benchmarks/periodic_current_sheet_eigenvalue
 mhx benchmark current-sheet-timedomain --outdir outputs/benchmarks/periodic_current_sheet_timedomain
 mhx benchmark current-sheet-nonlinear-bridge --outdir outputs/benchmarks/periodic_current_sheet_nonlinear_bridge
+mhx benchmark double-harris-growth --outdir outputs/benchmarks/periodic_double_harris_nonlinear_growth
 mhx benchmark nonlinear-energy-budget --outdir outputs/benchmarks/nonlinear_energy_budget
 mhx benchmark nonlinear-duration-audit --outdir outputs/benchmarks/nonlinear_duration_audit
 mhx benchmark duration-policy --outdir outputs/benchmarks/duration_policy
@@ -196,6 +197,12 @@ and the time-domain eigenmode replay gate:
 and the periodic current-sheet time-domain operator replay:
 
 ![Periodic current-sheet time-domain replay](docs/_static/validation/periodic_current_sheet_timedomain/periodic_current_sheet_timedomain.png)
+
+and the first unstable nonlinear current-sheet growth gate, which initializes a
+periodic double-Harris sheet from a dense unstable eigenmode and checks that
+the full nonlinear solver grows the perturbation at the expected rate:
+
+![Periodic double-Harris nonlinear growth](docs/_static/validation/periodic_double_harris_nonlinear_growth/periodic_double_harris_nonlinear_growth.png)
 
 The nonlinear code-validity gates now include a full reduced-MHD
 energy/dissipation budget and a duration audit that explicitly shows why the
@@ -277,6 +284,10 @@ trajectories.
 and the nonlinear current-sheet differentiability bridge:
 
 ![Nonlinear current-sheet differentiability bridge](docs/_static/validation/periodic_current_sheet_nonlinear_bridge/periodic_current_sheet_nonlinear_bridge.png)
+
+and the unstable double-Harris nonlinear-growth gate:
+
+![Periodic double-Harris nonlinear growth](docs/_static/validation/periodic_double_harris_nonlinear_growth/periodic_double_harris_nonlinear_growth.png)
 
 and the exact resistive-decay gate:
 

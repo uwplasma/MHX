@@ -70,6 +70,7 @@ mhx benchmark cosine-equilibrium-linearization --outdir outputs/benchmarks/cosin
 mhx benchmark current-sheet-eigenvalue --outdir outputs/benchmarks/periodic_current_sheet_eigenvalue
 mhx benchmark current-sheet-timedomain --outdir outputs/benchmarks/periodic_current_sheet_timedomain
 mhx benchmark current-sheet-nonlinear-bridge --outdir outputs/benchmarks/periodic_current_sheet_nonlinear_bridge
+mhx benchmark double-harris-growth --outdir outputs/benchmarks/periodic_double_harris_nonlinear_growth
 mhx benchmark nonlinear-energy-budget --outdir outputs/benchmarks/nonlinear_energy_budget
 mhx benchmark nonlinear-duration-audit --outdir outputs/benchmarks/nonlinear_duration_audit
 mhx benchmark duration-policy --outdir outputs/benchmarks/duration_policy
@@ -178,6 +179,13 @@ The nonlinear current-sheet differentiability bridge command writes:
 - `validation.json`
 - `periodic_current_sheet_nonlinear_bridge.npz`
 - `figures/periodic_current_sheet_nonlinear_bridge.png`
+
+The periodic double-Harris nonlinear-growth command writes:
+
+- `diagnostics.json`
+- `validation.json`
+- `periodic_double_harris_nonlinear_growth.npz`
+- `figures/periodic_double_harris_nonlinear_growth.png`
 
 The nonlinear energy-budget command writes:
 

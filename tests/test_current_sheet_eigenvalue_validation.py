@@ -10,12 +10,15 @@ from mhx.benchmarks import (
     PERIODIC_CURRENT_SHEET_EIGENVALUE_SCHEMA,
     PERIODIC_CURRENT_SHEET_NONLINEAR_BRIDGE_SCHEMA,
     PERIODIC_CURRENT_SHEET_TIMEDOMAIN_SCHEMA,
+    PERIODIC_DOUBLE_HARRIS_NONLINEAR_GROWTH_SCHEMA,
     run_periodic_current_sheet_eigenvalue_validation,
     run_periodic_current_sheet_nonlinear_bridge_validation,
     run_periodic_current_sheet_timedomain_validation,
+    run_periodic_double_harris_nonlinear_growth_validation,
     write_periodic_current_sheet_eigenvalue_validation,
     write_periodic_current_sheet_nonlinear_bridge_validation,
     write_periodic_current_sheet_timedomain_validation,
+    write_periodic_double_harris_nonlinear_growth_validation,
 )
 from mhx.cli.main import app
 
@@ -87,6 +90,19 @@ def test_periodic_current_sheet_nonlinear_bridge_is_second_order() -> None:
     assert result.tangent_norm > 0.0
 
 
+def test_periodic_double_harris_nonlinear_growth_gate() -> None:
+    result = run_periodic_double_harris_nonlinear_growth_validation(shape=(8, 8))
+    assert result.diagnostics["schema"] == PERIODIC_DOUBLE_HARRIS_NONLINEAR_GROWTH_SCHEMA
+    assert result.validation["passed"] is True
+    assert all(result.validation["checks"].values())
+    assert result.selected_eigenvalue.real > 0.0
+    assert result.fitted_growth_rate > 0.0
+    assert result.growth_factor > 2.0
+    assert result.relative_growth_error < 0.15
+    assert result.time.shape == result.perturbation_norm.shape
+    assert result.perturbation_norm[-1] > result.perturbation_norm[0]
+
+
 def test_periodic_current_sheet_nonlinear_bridge_rejects_invalid_inputs() -> None:
     with pytest.raises(ValueError, match="shape"):
         run_periodic_current_sheet_nonlinear_bridge_validation(shape=(3, 6))
@@ -141,6 +157,42 @@ def test_write_periodic_current_sheet_eigenvalue_artifacts_and_cli(tmp_path) -> 
             "6",
             "--ny",
             "6",
+        ],
+    )
+    assert cli_result.exit_code == 0, cli_result.stdout
+    assert (outdir / "validation.json").exists()
+
+
+def test_write_periodic_double_harris_nonlinear_growth_artifacts_and_cli(tmp_path) -> None:
+    manifest_path, validation = write_periodic_double_harris_nonlinear_growth_validation(
+        tmp_path,
+        shape=(8, 8),
+    )
+    assert manifest_path == tmp_path / "manifest.json"
+    assert validation["passed"] is True
+    diagnostics = json.loads((tmp_path / "diagnostics.json").read_text())
+    assert diagnostics["references"]["scope"].startswith("Nonlinear periodic")
+    history = np.load(tmp_path / "periodic_double_harris_nonlinear_growth.npz")
+    assert history["schema"] == PERIODIC_DOUBLE_HARRIS_NONLINEAR_GROWTH_SCHEMA
+    assert history["time"].shape == history["perturbation_norm"].shape
+    assert history["growth_factor"] > 2.0
+    assert history["base_initial_psi"].shape == (8, 8)
+    assert (
+        tmp_path / "figures" / "periodic_double_harris_nonlinear_growth.png"
+    ).stat().st_size > 0
+
+    outdir = tmp_path / "cli-double-harris"
+    cli_result = CliRunner().invoke(
+        app,
+        [
+            "benchmark",
+            "double-harris-growth",
+            "--outdir",
+            str(outdir),
+            "--nx",
+            "8",
+            "--ny",
+            "8",
         ],
     )
     assert cli_result.exit_code == 0, cli_result.stdout

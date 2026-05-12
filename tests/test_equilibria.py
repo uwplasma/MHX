@@ -10,6 +10,7 @@ from mhx.config import MeshConfig, PhysicsConfig, RunConfig, TimeConfig
 from mhx.grids import CartesianGrid
 from mhx.physics import (
     CosineTearingEquilibrium,
+    PeriodicDoubleHarrisEquilibrium,
     ZeroEquilibrium,
     build_equilibrium,
     default_equilibrium_registry,
@@ -18,9 +19,10 @@ from mhx.physics import (
 
 def test_default_equilibrium_registry_metadata_and_errors() -> None:
     registry = default_equilibrium_registry()
-    assert registry.names() == ("cosine_tearing", "zero")
+    assert registry.names() == ("cosine_tearing", "periodic_double_harris", "zero")
     metadata = {item.name: item for item in registry.metadata()}
     assert "current sheet" in metadata["cosine_tearing"].description
+    assert "double-Harris" in metadata["periodic_double_harris"].description
     assert metadata["cosine_tearing"].parameters["perturbation_amplitude"] == pytest.approx(
         1.0e-3
     )
@@ -40,6 +42,23 @@ def test_cosine_tearing_equilibrium_parameter_controls_perturbation() -> None:
     expected_delta = 1.0e-3 * jnp.cos(x) * jnp.cos(y)
     assert float(jnp.max(jnp.abs(perturbation_delta - expected_delta))) < 1.0e-12
     assert float(jnp.max(jnp.abs(small.omega))) == 0.0
+
+
+def test_periodic_double_harris_equilibrium_has_two_current_sheets() -> None:
+    grid = CartesianGrid.from_mesh_config(MeshConfig(shape=(32, 32)))
+    state = PeriodicDoubleHarrisEquilibrium(width=0.4).initial_state(grid)
+    configured = build_equilibrium(
+        "periodic_double_harris",
+        {
+            "width": 0.4,
+            "perturbation_amplitude": 1.0e-4,
+            "perturbation_mode": (0, 1),
+        },
+    ).initial_state(grid)
+    assert state.psi.shape == (32, 32)
+    assert float(jnp.abs(jnp.mean(state.psi))) < 1.0e-12
+    assert float(jnp.max(jnp.abs(state.omega))) == 0.0
+    assert float(jnp.max(jnp.abs(configured.psi - state.psi))) > 0.0
 
 
 def test_zero_equilibrium_and_configured_run_diagnostics() -> None:
@@ -64,4 +83,5 @@ def test_equilibrium_cli_list() -> None:
     result = runner.invoke(app, ["physics", "equilibria"])
     assert result.exit_code == 0
     assert "cosine_tearing" in result.stdout
+    assert "periodic_double_harris" in result.stdout
     assert "zero" in result.stdout

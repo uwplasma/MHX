@@ -28,6 +28,7 @@ Every figure included in the paper-style documentation should have:
 | Harris $\Delta'$ and eigenvalue | `harris_delta_prime.png`, `linear_tearing_eigenvalue.png` | `validation` | Ready as tearing-specific validation for documented regimes. |
 | Dispersion/layer/time replay | `linear_tearing_dispersion.png`, `linear_tearing_layer.png`, `linear_tearing_timedomain.png` | `validation` | Ready as FAST branch, shape, and growth-fit gates. |
 | Periodic current sheet | `periodic_current_sheet_spectrum.png`, `periodic_current_sheet_timedomain.png`, `periodic_current_sheet_nonlinear_bridge.png` | `validation` | Ready as operator and differentiability gates. |
+| Periodic double-Harris growth | `periodic_double_harris_nonlinear_growth.png` | `validation` | Ready as small-grid instability-path evidence; not a Rutherford/plasmoid production claim. |
 | Nonlinear energy budget | `nonlinear_energy_budget.png` | `validation` | Ready as nonlinear conservation/dissipation evidence. |
 | Nonlinear duration audit | `nonlinear_duration_audit.png` | `validation` | Ready as an overclaim-prevention figure. |
 | Seed-robust QI | `qi_summary.png` | `validation` | Ready as FAST seed-sensitivity evidence after generation in the evidence bundle. |
@@ -57,6 +58,14 @@ The strongest current nonlinear code-validity result is the energy-budget gate:
 :width: 760px
 ```
 
+The strongest current nonlinear instability-path result is the double-Harris
+growth gate:
+
+```{image} _static/validation/periodic_double_harris_nonlinear_growth/periodic_double_harris_nonlinear_growth.png
+:alt: Periodic double-Harris nonlinear growth gate
+:width: 760px
+```
+
 The most important claim-boundary figure is the nonlinear duration audit:
 
 ```{image} _static/validation/nonlinear_duration_audit/nonlinear_duration_audit.png
@@ -64,9 +73,9 @@ The most important claim-boundary figure is the nonlinear duration audit:
 :width: 760px
 ```
 
-These three figures should be shown together in reviewer discussions: one
-tearing benchmark, one nonlinear identity, and one explicit warning that short
-nonlinear runs are not island/plasmoid evidence.
+These four figures should be shown together in reviewer discussions: one
+tearing benchmark, one nonlinear growth-path gate, one nonlinear identity, and
+one explicit warning that short nonlinear runs are not island/plasmoid evidence.
 
 ## Nonlinear plot acceptance gates
 

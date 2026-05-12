@@ -750,6 +750,69 @@ Expected files:
 
 ![Nonlinear current-sheet differentiability bridge](_static/validation/periodic_current_sheet_nonlinear_bridge/periodic_current_sheet_nonlinear_bridge.png)
 
+## Periodic double-Harris nonlinear growth gate
+
+The stable cosine-current-sheet spectrum above is intentionally conservative:
+it protects the code from spurious positive growth but does not demonstrate
+tearing. MHX now adds a small-grid instability gate using a periodic
+double-Harris sheet,
+
+$$
+B_y(x)=A\left[\tanh\left(\frac{x-L_x/4}{a}\right)
+-\tanh\left(\frac{x-3L_x/4}{a}\right)-1\right],
+$$
+
+with a zero-mean flux $\psi_0$ satisfying $B_y=\partial_x\psi_0$ to the sign
+convention used by the reduced-MHD solver. The gate assembles the dense
+matrix-free Jacobian $L=D F(\psi_0,0)$, selects the fastest non-gauge unstable
+eigenmode $Lv=\gamma v$, and advances two full nonlinear trajectories:
+
+$$
+q_b(t)=\Phi_t(q_0),\qquad
+q_p(t)=\Phi_t(q_0+\epsilon v).
+$$
+
+The measured finite-amplitude difference
+
+$$
+A(t)=\frac{\|q_p(t)-q_b(t)\|_2}{\epsilon}
+$$
+
+must grow by more than a factor of two and its fitted rate must remain within a
+documented tolerance of the frozen-base eigenvalue. This is the first MHX
+validation artifact that shows a physically unstable current sheet growing in
+the nonlinear solver. It is still **not** a Rutherford-island or plasmoid-chain
+production claim: the grid is deliberately tiny, the base sheet is periodic,
+and publication claims still require duration, resolution, time-step, seed, and
+aspect-ratio sweeps. The literature anchors are the classical tearing-mode
+instability of Furth--Killeen--Rosenbluth
+([Physics of Fluids 6, 459, 1963](https://cir.nii.ac.jp/crid/1363107370207531008))
+and the high-Lundquist-number plasmoid-chain scalings of
+Loureiro--Schekochihin--Cowley
+([arXiv:astro-ph/0703631](https://arxiv.org/abs/astro-ph/0703631)), with
+later nonlinear plasmoid-chain simulations by Samtaney et al.
+([arXiv:0903.0542](https://arxiv.org/abs/0903.0542)).
+
+```bash
+mhx benchmark double-harris-growth \
+  --outdir outputs/benchmarks/periodic_double_harris_nonlinear_growth
+```
+
+Expected files:
+
+- `outputs/benchmarks/periodic_double_harris_nonlinear_growth/diagnostics.json`
+- `outputs/benchmarks/periodic_double_harris_nonlinear_growth/validation.json`
+- `outputs/benchmarks/periodic_double_harris_nonlinear_growth/periodic_double_harris_nonlinear_growth.npz`
+- `outputs/benchmarks/periodic_double_harris_nonlinear_growth/figures/periodic_double_harris_nonlinear_growth.png`
+
+![Periodic double-Harris nonlinear growth gate](_static/validation/periodic_double_harris_nonlinear_growth/periodic_double_harris_nonlinear_growth.png)
+
+Source anchors:
+
+- [double-Harris equilibrium](https://github.com/uwplasma/MHX/blob/main/src/mhx/physics/equilibria.py)
+- [growth benchmark implementation](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/current_sheet.py)
+- [growth benchmark tests](https://github.com/uwplasma/MHX/blob/main/tests/test_current_sheet_eigenvalue_validation.py)
+
 ## Nonlinear reduced-MHD energy budget
 
 The first full nonlinear PDE gate is deliberately not a plasmoid claim. It

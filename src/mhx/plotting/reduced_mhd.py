@@ -1062,6 +1062,99 @@ def plot_nonlinear_current_sheet_bridge(
     return output_path
 
 
+def plot_double_harris_nonlinear_growth(
+    times,
+    perturbation_norm,
+    expected_perturbation_norm,
+    *,
+    selected_eigenvalue: float,
+    fitted_growth_rate: float,
+    relative_growth_error: float,
+    base_initial_psi,
+    base_final_psi,
+    perturbed_final_psi,
+    x,
+    y,
+    path: str | Path,
+) -> Path:
+    """Plot unstable double-Harris nonlinear growth validation diagnostics."""
+    import matplotlib.pyplot as plt
+
+    output_path = Path(path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    time_values = np.asarray(times)
+    norm_values = np.asarray(perturbation_norm)
+    expected_values = np.asarray(expected_perturbation_norm)
+    fit_values = norm_values[0] * np.exp(fitted_growth_rate * time_values)
+    x_mesh, y_mesh = np.meshgrid(np.asarray(x), np.asarray(y), indexing="ij")
+    flux_difference = np.asarray(perturbed_final_psi) - np.asarray(base_final_psi)
+
+    fig, axes = plt.subplots(2, 2, figsize=(11.2, 8.0), constrained_layout=True)
+    axes[0, 0].semilogy(time_values, norm_values, "o", markersize=3.5, label="nonlinear pair")
+    axes[0, 0].semilogy(
+        time_values,
+        expected_values,
+        "-",
+        linewidth=1.4,
+        label=rf"frozen linear $\gamma={selected_eigenvalue:.3f}$",
+    )
+    axes[0, 0].semilogy(
+        time_values,
+        fit_values,
+        "--",
+        linewidth=1.2,
+        label=rf"fit $\gamma={fitted_growth_rate:.3f}$",
+    )
+    axes[0, 0].set_xlabel("time")
+    axes[0, 0].set_ylabel(r"$\|\delta q(t)\|_2/\epsilon$")
+    axes[0, 0].set_title(rf"growth-rate error {relative_growth_error:.2%}")
+    axes[0, 0].legend(frameon=False, fontsize=8)
+
+    contours = axes[0, 1].contour(
+        x_mesh,
+        y_mesh,
+        np.asarray(base_initial_psi),
+        levels=18,
+        linewidths=0.8,
+    )
+    axes[0, 1].clabel(contours, inline=True, fontsize=6)
+    axes[0, 1].set_title("Initial double-Harris flux")
+    axes[0, 1].set_xlabel("x")
+    axes[0, 1].set_ylabel("y")
+
+    final_contours = axes[1, 0].contour(
+        x_mesh,
+        y_mesh,
+        np.asarray(perturbed_final_psi),
+        levels=18,
+        linewidths=0.8,
+    )
+    axes[1, 0].clabel(final_contours, inline=True, fontsize=6)
+    axes[1, 0].set_title("Final perturbed flux")
+    axes[1, 0].set_xlabel("x")
+    axes[1, 0].set_ylabel("y")
+
+    vmax = max(float(np.max(np.abs(flux_difference))), np.finfo(float).eps)
+    image = axes[1, 1].imshow(
+        flux_difference.T,
+        origin="lower",
+        extent=(float(np.min(x)), float(np.max(x)), float(np.min(y)), float(np.max(y))),
+        cmap="RdBu_r",
+        vmin=-vmax,
+        vmax=vmax,
+        aspect="auto",
+    )
+    axes[1, 1].set_title(r"Final $\delta\psi$ relative to base run")
+    axes[1, 1].set_xlabel("x")
+    axes[1, 1].set_ylabel("y")
+    fig.colorbar(image, ax=axes[1, 1], shrink=0.82)
+
+    fig.suptitle("Periodic double-Harris nonlinear growth gate")
+    fig.savefig(output_path, dpi=220)
+    plt.close(fig)
+    return output_path
+
+
 def plot_nonlinear_energy_budget(
     times,
     total_energy_values,

@@ -30,6 +30,7 @@ from mhx.benchmarks import (
     write_periodic_current_sheet_eigenvalue_validation,
     write_periodic_current_sheet_nonlinear_bridge_validation,
     write_periodic_current_sheet_timedomain_validation,
+    write_periodic_double_harris_nonlinear_growth_validation,
     write_power_iteration_validation,
     write_readiness_report,
     write_reconnection_scaling_validation,
@@ -995,6 +996,41 @@ def benchmark_current_sheet_nonlinear_bridge(
         viscosity=nu,
         dt=dt,
         steps=steps,
+    )
+    typer.echo(f"wrote {manifest_path}")
+    if not validation["passed"]:
+        raise typer.Exit(code=1)
+
+
+@benchmark_app.command("double-harris-growth")
+def benchmark_double_harris_growth(
+    outdir: Annotated[
+        Path,
+        typer.Option(
+            "--outdir",
+            help="Output directory for unstable double-Harris nonlinear-growth artifacts.",
+        ),
+    ] = Path("outputs/benchmarks/periodic_double_harris_nonlinear_growth"),
+    nx: Annotated[int, typer.Option("--nx", help="Grid points in x.")] = 8,
+    ny: Annotated[int, typer.Option("--ny", help="Grid points in y.")] = 8,
+    width: Annotated[float, typer.Option("--width", help="Current-sheet half-width proxy.")] = 0.4,
+    eta: Annotated[float, typer.Option("--eta", help="Resistivity.")] = 5.0e-3,
+    nu: Annotated[float, typer.Option("--nu", help="Viscosity.")] = 5.0e-3,
+    dt: Annotated[float, typer.Option("--dt", help="RK4 time step.")] = 1.0e-2,
+    t_end: Annotated[float, typer.Option("--t-end", help="Final nonlinear time.")] = 4.0,
+    save_every: Annotated[int, typer.Option("--save-every", help="Saved-step stride.")] = 20,
+) -> None:
+    """Validate unstable nonlinear growth of a periodic double-Harris current sheet."""
+    _configure_validation_precision()
+    manifest_path, validation = write_periodic_double_harris_nonlinear_growth_validation(
+        outdir,
+        shape=(nx, ny),
+        width=width,
+        resistivity=eta,
+        viscosity=nu,
+        dt=dt,
+        t_end=t_end,
+        save_every=save_every,
     )
     typer.echo(f"wrote {manifest_path}")
     if not validation["passed"]:
