@@ -106,6 +106,50 @@ def test_periodic_double_harris_nonlinear_growth_gate() -> None:
     assert result.perturbation_norm[-1] > result.perturbation_norm[0]
 
 
+def test_periodic_double_harris_nonlinear_growth_rejects_invalid_inputs() -> None:
+    with pytest.raises(ValueError, match="shape"):
+        run_periodic_double_harris_nonlinear_growth_validation(shape=(5, 8))
+    with pytest.raises(ValueError, match="width"):
+        run_periodic_double_harris_nonlinear_growth_validation(width=0.0)
+    with pytest.raises(ValueError, match="amplitude"):
+        run_periodic_double_harris_nonlinear_growth_validation(amplitude=0.0)
+    with pytest.raises(ValueError, match="resistivity"):
+        run_periodic_double_harris_nonlinear_growth_validation(resistivity=0.0)
+    with pytest.raises(ValueError, match="viscosity"):
+        run_periodic_double_harris_nonlinear_growth_validation(viscosity=0.0)
+    with pytest.raises(ValueError, match="perturbation_amplitude"):
+        run_periodic_double_harris_nonlinear_growth_validation(perturbation_amplitude=0.0)
+    with pytest.raises(ValueError, match="dt"):
+        run_periodic_double_harris_nonlinear_growth_validation(dt=0.0)
+    with pytest.raises(ValueError, match="t_end"):
+        run_periodic_double_harris_nonlinear_growth_validation(t_end=0.001)
+    with pytest.raises(ValueError, match="save_every"):
+        run_periodic_double_harris_nonlinear_growth_validation(save_every=0)
+    with pytest.raises(ValueError, match="at least four"):
+        run_periodic_double_harris_nonlinear_growth_validation(t_end=0.1, save_every=100)
+    with pytest.raises(ValueError, match="min_linear_growth_rate"):
+        run_periodic_double_harris_nonlinear_growth_validation(min_linear_growth_rate=0.0)
+    with pytest.raises(ValueError, match="min_nonlinear_growth_factor"):
+        run_periodic_double_harris_nonlinear_growth_validation(
+            min_nonlinear_growth_factor=1.0
+        )
+    with pytest.raises(ValueError, match="max_relative_growth_error"):
+        run_periodic_double_harris_nonlinear_growth_validation(max_relative_growth_error=0.0)
+    with pytest.raises(ValueError, match="max_selected_residual_norm"):
+        run_periodic_double_harris_nonlinear_growth_validation(
+            max_selected_residual_norm=0.0
+        )
+    with pytest.raises(ValueError, match="max_selected_eigenvalue_imag"):
+        run_periodic_double_harris_nonlinear_growth_validation(
+            max_selected_eigenvalue_imag=0.0
+        )
+    with pytest.raises(RuntimeError, match="no unstable"):
+        run_periodic_double_harris_nonlinear_growth_validation(
+            shape=(8, 8),
+            min_linear_growth_rate=10.0,
+        )
+
+
 def test_periodic_double_harris_seeded_long_run_gate() -> None:
     result = run_periodic_double_harris_seeded_long_run_validation(
         shape=(16, 16),
@@ -125,6 +169,51 @@ def test_periodic_double_harris_seeded_long_run_gate() -> None:
     assert result.fitted_early_growth_rate > 0.0
     assert result.early_growth_factor > 1.0
     assert np.max(result.total_energy) <= result.total_energy[0] * (1.0 + 1.0e-8)
+
+
+def test_periodic_double_harris_seeded_long_run_rejects_invalid_inputs() -> None:
+    with pytest.raises(ValueError, match="shape"):
+        run_periodic_double_harris_seeded_long_run_validation(shape=(6, 8))
+    with pytest.raises(ValueError, match="width"):
+        run_periodic_double_harris_seeded_long_run_validation(width=0.0)
+    with pytest.raises(ValueError, match="amplitude"):
+        run_periodic_double_harris_seeded_long_run_validation(amplitude=0.0)
+    with pytest.raises(ValueError, match="non-negative"):
+        run_periodic_double_harris_seeded_long_run_validation(resistivity=-1.0)
+    with pytest.raises(ValueError, match="perturbation_amplitude"):
+        run_periodic_double_harris_seeded_long_run_validation(perturbation_amplitude=0.0)
+    with pytest.raises(ValueError, match="perturbation_mode"):
+        run_periodic_double_harris_seeded_long_run_validation(perturbation_mode=(0, 0))
+    with pytest.raises(ValueError, match="dt"):
+        run_periodic_double_harris_seeded_long_run_validation(dt=0.0)
+    with pytest.raises(ValueError, match="t_end"):
+        run_periodic_double_harris_seeded_long_run_validation(t_end=0.0)
+    with pytest.raises(ValueError, match="at least two"):
+        run_periodic_double_harris_seeded_long_run_validation(t_end=0.001, dt=0.01)
+    with pytest.raises(ValueError, match="save_every"):
+        run_periodic_double_harris_seeded_long_run_validation(save_every=0)
+    with pytest.raises(ValueError, match="ordered"):
+        run_periodic_double_harris_seeded_long_run_validation(fit_window=(2.0, 1.0))
+    with pytest.raises(ValueError, match="must not exceed"):
+        run_periodic_double_harris_seeded_long_run_validation(fit_window=(0.0, 31.0))
+    with pytest.raises(ValueError, match="at least three"):
+        run_periodic_double_harris_seeded_long_run_validation(
+            t_end=2.0,
+            save_every=200,
+            fit_window=(0.0, 1.0),
+        )
+    with pytest.raises(ValueError, match="min_saved_samples"):
+        run_periodic_double_harris_seeded_long_run_validation(min_saved_samples=2)
+    with pytest.raises(ValueError, match="min_early_growth_rate"):
+        run_periodic_double_harris_seeded_long_run_validation(min_early_growth_rate=0.0)
+    with pytest.raises(ValueError, match="min_early_growth_factor"):
+        run_periodic_double_harris_seeded_long_run_validation(min_early_growth_factor=1.0)
+    with pytest.raises(ValueError, match="min_max_growth_factor"):
+        run_periodic_double_harris_seeded_long_run_validation(min_max_growth_factor=1.0)
+    with pytest.raises(ValueError, match="max_relative_energy_increase"):
+        run_periodic_double_harris_seeded_long_run_validation(
+            max_relative_energy_increase=-1.0
+        )
 
 
 def test_periodic_current_sheet_nonlinear_bridge_rejects_invalid_inputs() -> None:
@@ -270,6 +359,24 @@ def test_write_periodic_double_harris_seeded_long_run_artifacts_and_cli(tmp_path
     )
     assert cli_result.exit_code == 0, cli_result.stdout
     assert (outdir / "validation.json").exists()
+
+
+def test_write_periodic_double_harris_seeded_long_run_movies(tmp_path) -> None:
+    manifest_path, validation = write_periodic_double_harris_seeded_long_run_validation(
+        tmp_path,
+        shape=(16, 16),
+        t_end=10.0,
+        save_every=100,
+        fit_window=(0.0, 6.0),
+        min_max_growth_factor=1.2,
+        movies=True,
+    )
+    assert manifest_path == tmp_path / "manifest.json"
+    assert validation["passed"] is True
+    assert (tmp_path / "figures" / "periodic_double_harris_flux.gif").stat().st_size > 0
+    assert (
+        tmp_path / "figures" / "periodic_double_harris_current.gif"
+    ).stat().st_size > 0
 
 
 def test_write_periodic_current_sheet_timedomain_artifacts_and_cli(tmp_path) -> None:
