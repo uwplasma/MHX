@@ -461,6 +461,58 @@ def validation_catalog_entries() -> tuple[BenchmarkCatalogEntry, ...]:
             ),
         ),
         BenchmarkCatalogEntry(
+            name="neural_ode_latent_fit",
+            command="mhx neural-ode train --outdir outputs/neural_ode/latent_ode_fast",
+            schema="mhx.neural_ode.training.gates.v1",
+            purpose=(
+                "Deterministic fitted random-feature latent ODE with frozen "
+                "train/validation/test splits, baselines, predictions, and metrics."
+            ),
+            expected_outputs=(
+                "dataset.npz",
+                "splits.json",
+                "baseline_metrics.json",
+                "calibration.json",
+                "latent_ode_model.json",
+                "latent_ode_metrics.json",
+                "latent_ode_predictions.npz",
+                "figures/latent_ode_predictions.png",
+                "figures/latent_ode_rmse_comparison.png",
+                "manifest.json",
+            ),
+            literature_anchor=(
+                "Continuous-time surrogate modeling protocol: fitted autonomous "
+                "latent dynamics are compared against frozen deterministic "
+                "baselines on held-out seeds."
+            ),
+        ),
+        BenchmarkCatalogEntry(
+            name="rutherford_production_execution",
+            command=(
+                "mhx campaign rutherford-plan-production --outdir outputs/campaigns/rutherford "
+                "&& mhx campaign rutherford-execute outputs/campaigns/rutherford --max-steps 4"
+            ),
+            schema="mhx.campaign.rutherford_execution.v1",
+            purpose=(
+                "Restartable Rutherford campaign executor that consumes the "
+                "production plan, advances a real reduced-MHD chunk, writes "
+                "checkpoint state, histories, figures, resume plan, and manifest."
+            ),
+            expected_outputs=(
+                "diagnostics.json",
+                "validation.json",
+                "production_history.npz",
+                "checkpoints/checkpoint_index.json",
+                "resume_plan.json",
+                "figures/production_histories.png",
+                "manifest.json",
+            ),
+            literature_anchor=(
+                "Operational bridge from Rutherford nonlinear-island duration "
+                "planning to real restartable reduced-MHD campaign artifacts."
+            ),
+        ),
+        BenchmarkCatalogEntry(
             name="duration_policy",
             command="mhx benchmark duration-policy --outdir outputs/benchmarks/duration_policy",
             schema="mhx.duration_policy.v1",

@@ -128,7 +128,32 @@ This writes `outputs/smoke/artifact_manifest.json` with schema
 ## Validation-suite outputs
 
 `mhx validate all --outdir outputs/validation_suite` executes the active FAST
-validation gates and writes:
+validation cases, including the seed-QI sweep, fitted latent ODE, and
+restartable Rutherford execution chunk. Two important closed-lane schemas are:
+
+### Rutherford production execution
+
+`mhx campaign rutherford-execute <run-dir>` writes:
+
+| File | Schema / contents |
+| --- | --- |
+| `production_history.npz` | `mhx.campaign.rutherford_history.v1`; keys `step`, `time`, `reconnected_flux`, `rutherford_island_width`, `reconnection_rate_proxy`, `magnetic_energy`, `kinetic_energy`, `total_energy`, `dissipation_budget_residual`, `magnetic_divergence_linf`, `current_density_linf`. |
+| `checkpoints/state_step_*.npz` | `mhx.campaign.rutherford_state.v1`; keys `step`, `time`, `psi`, `omega`. |
+| `diagnostics.json` | `mhx.campaign.rutherford_execution.v1`; start/end step, target step, run controls, divergence and energy-growth summaries. |
+| `validation.json` | `mhx.campaign.rutherford_execution.gates.v1`; finite-history, checkpoint, energy, divergence, and movie gates. |
+
+### Fitted neural ODE
+
+`mhx neural-ode train --outdir outputs/neural_ode/latent_ode_fast` writes:
+
+| File | Schema / contents |
+| --- | --- |
+| `latent_ode_model.json` | `mhx.neural_ode.latent_model.v1`; random-feature weights, ridge coefficient matrix, target names, and training controls. |
+| `latent_ode_metrics.json` | `mhx.neural_ode.latent_metrics.v1`; train/validation/test MAE/RMSE and ratio to the best baseline. |
+| `latent_ode_predictions.npz` | Prediction tensor, target tensor, times, seeds, and target names. |
+| `validation.json` | `mhx.neural_ode.training.gates.v1`; finite-model, finite-prediction, split, and held-out forecast gates. |
+
+The suite also writes:
 
 - `validation_suite.json`: schema `mhx.validation.suite.v1`, aggregate pass/fail
   status, `jax_enable_x64`, case list, per-case validation schemas, checks, and

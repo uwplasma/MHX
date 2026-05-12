@@ -37,6 +37,12 @@
 .. automodule:: mhx.neural_ode.reproducibility
    :members:
 
+.. automodule:: mhx.campaigns
+   :members:
+
+.. automodule:: mhx.campaigns.production
+   :members:
+
 .. automodule:: mhx.physics
    :members:
 

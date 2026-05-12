@@ -4,6 +4,7 @@ from mhx.plotting.diagnostics import write_diagnostic_figures_for_run
 from mhx.plotting.reduced_mhd import (
     plot_arnoldi_ritz_values,
     plot_cosine_equilibrium_linearization_errors,
+    plot_current_density_gif,
     plot_decay_amplitude,
     plot_decay_energy,
     plot_decay_relative_error,
@@ -40,6 +41,7 @@ __all__ = [
     "plot_decay_energy",
     "plot_decay_relative_error",
     "plot_diffusion_eigenvalue_error",
+    "plot_current_density_gif",
     "plot_energy_history",
     "plot_fkr_growth_rate_validation",
     "plot_fkr_scaling",

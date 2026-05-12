@@ -2,18 +2,24 @@ from __future__ import annotations
 
 import json
 
+import numpy as np
 import pytest
 from typer.testing import CliRunner
 
 from mhx.campaigns import (
     PRODUCTION_RUTHERFORD_CHECKPOINT_INDEX_SCHEMA,
+    PRODUCTION_RUTHERFORD_EXECUTION_SCHEMA,
+    PRODUCTION_RUTHERFORD_HISTORY_SCHEMA,
     PRODUCTION_RUTHERFORD_PLAN_SCHEMA,
     PRODUCTION_RUTHERFORD_RESUME_SCHEMA,
+    PRODUCTION_RUTHERFORD_STATE_SCHEMA,
     WalltimePolicy,
+    execute_rutherford_production_campaign,
     load_checkpoint_index,
     plan_rutherford_production_campaign,
     select_resume_checkpoint,
     write_checkpoint_metadata,
+    write_rutherford_production_execution,
     write_rutherford_production_plan,
     write_rutherford_resume_plan,
 )
@@ -193,6 +199,82 @@ def test_production_campaign_cli_plan_and_resume(tmp_path) -> None:
     assert (tmp_path / "resume_plan.json").exists()
 
 
+def test_production_execution_runs_real_chunk_and_resumes(tmp_path) -> None:
+    write_rutherford_production_plan(
+        tmp_path,
+        shape=(8, 8),
+        dt=1.0e-2,
+        target_saved_frames=10,
+        min_production_resolution=8,
+        walltime_policy=WalltimePolicy(
+            max_walltime_hours=1.0,
+            seconds_per_step_estimate=0.1,
+            checkpoint_interval_minutes=1.0,
+            preemption_margin_minutes=1.0,
+        ),
+    )
+
+    result = execute_rutherford_production_campaign(
+        tmp_path,
+        max_steps=4,
+        seed=0,
+        write_movies=False,
+    )
+
+    assert result.validation["passed"] is True
+    assert result.diagnostics["schema"] == PRODUCTION_RUTHERFORD_EXECUTION_SCHEMA
+    assert result.start_step == 0
+    assert result.end_step == 4
+    assert (tmp_path / "production_history.npz").exists()
+    assert (tmp_path / "figures" / "production_histories.png").stat().st_size > 0
+    assert (tmp_path / "checkpoints" / "state_step_000000000004.npz").exists()
+    assert (tmp_path / "resume_plan.json").exists()
+    with np.load(tmp_path / "production_history.npz") as data:
+        assert str(data["schema"]) == PRODUCTION_RUTHERFORD_HISTORY_SCHEMA
+        assert data["time"].shape[0] >= 2
+        assert np.isfinite(data["total_energy"]).all()
+    with np.load(tmp_path / "checkpoints" / "state_step_000000000004.npz") as data:
+        assert str(data["schema"]) == PRODUCTION_RUTHERFORD_STATE_SCHEMA
+        assert int(data["step"]) == 4
+
+    second = execute_rutherford_production_campaign(
+        tmp_path,
+        max_steps=2,
+        seed=0,
+        write_movies=False,
+    )
+    assert second.start_step == 4
+    assert second.end_step == 6
+    with np.load(tmp_path / "production_history.npz") as data:
+        assert int(data["step"][-1]) == 6
+
+
+def test_production_execution_cli_writes_movies_for_tiny_chunk(tmp_path) -> None:
+    write_rutherford_production_plan(
+        tmp_path,
+        shape=(8, 8),
+        dt=1.0e-2,
+        target_saved_frames=10,
+        min_production_resolution=8,
+    )
+    result = CliRunner().invoke(
+        app,
+        [
+            "campaign",
+            "rutherford-execute",
+            str(tmp_path),
+            "--max-steps",
+            "2",
+            "--movies",
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert (tmp_path / "manifest.json").exists()
+    assert (tmp_path / "figures" / "fixed_scale_flux_movie.gif").stat().st_size > 0
+    assert (tmp_path / "figures" / "fixed_scale_current_density_movie.gif").stat().st_size > 0
+
+
 def test_production_campaign_scaffold_rejects_invalid_controls(tmp_path) -> None:
     with pytest.raises(ValueError, match="max_walltime_hours"):
         WalltimePolicy(max_walltime_hours=0.0).validated()
@@ -237,6 +319,17 @@ def test_production_campaign_scaffold_rejects_invalid_controls(tmp_path) -> None
             time=0.0,
             state_path="missing.npz",
         )
+    with pytest.raises(FileNotFoundError, match="campaign plan"):
+        write_rutherford_production_execution(tmp_path / "missing", max_steps=1)
+    write_rutherford_production_plan(
+        tmp_path / "invalid-execution",
+        shape=(8, 8),
+        dt=1.0e-2,
+        target_saved_frames=10,
+        min_production_resolution=8,
+    )
+    with pytest.raises(ValueError, match="max_steps"):
+        write_rutherford_production_execution(tmp_path / "invalid-execution", max_steps=-1)
 
 
 def test_checkpoint_index_error_paths_and_absolute_artifacts(tmp_path) -> None:

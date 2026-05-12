@@ -26,9 +26,11 @@ the direct Harris-sheet tearing eigenvalue gate for one published reference
 case, finite-domain dispersion and time-domain eigenmode replay gates,
 eigenfunction-localization gates, matrix-free operator checks, a nonlinear
 energy/dissipation budget gate, a nonlinear-duration audit that prevents
-overclaiming short CI runs, and extension APIs. Full FKR/Coppi dispersion
-scans, Rutherford island growth, nonlinear plasmoid dynamics, and neural-ODE
-inverse-design claims remain roadmap items.
+overclaiming short CI runs, seed-robust QI sweeps, a restartable Rutherford
+execution lane, a fitted latent-ODE validation lane, and extension APIs. Full
+FKR/Coppi production scans, converged Rutherford island growth, nonlinear
+plasmoid dynamics, and production neural-ODE inverse-design claims remain
+roadmap items.
 
 See `docs/audit.md` for the current skeptical validation audit and maturity
 table, and `docs/time_windows.md` for the enforced duration policy.
@@ -55,10 +57,11 @@ The most useful reviewer entry points are:
 - [Skeptical audit](docs/audit.md): current maturity table and explicit
   non-claims.
 
-Current nonlinear runs are intentionally short validation gates. They support
-operator, differentiability, energy-budget, schema, and seed-sensitivity checks.
-They do **not** yet support Rutherford island growth, Sweet-Parker plasmoids, or
-neural-ODE production claims.
+Current nonlinear CI runs are intentionally short validation gates. They support
+operator, differentiability, energy-budget, schema, seed-sensitivity,
+restart/resume, and latent-ODE train/test checks. They do **not** yet support
+converged Rutherford island growth, Sweet-Parker plasmoids, or neural-ODE
+production claims.
 
 ## Literature-anchored movies
 
@@ -70,6 +73,8 @@ theory schematics, not from unvalidated nonlinear production simulations.
 | --- | --- | --- |
 | ![Harris tearing layer sweep](docs/_static/readme/harris_layer_sweep.gif) | Direct Harris-sheet eigenproblem: growth decreases with S while the resonant flow/current layer narrows. | Classical tearing localization from [FKR 1963](https://doi.org/10.1063/1.1706761) and the reduced-MHD Harris eigenproblem used by [MacTaggart 2019](https://eprints.gla.ac.uk/191898/1/191898.pdf). |
 | ![Plasmoid scaling schematic](docs/_static/readme/plasmoid_scaling_schematic.gif) | Schematic Sweet-Parker sheet fragmentation with $\gamma_{\max}\tau_A\propto S^{1/4}$ and $k_{\max}L\propto S^{3/8}$. | [Loureiro, Schekochihin & Cowley 2007](https://arxiv.org/abs/astro-ph/0703631); schematic only, not yet a nonlinear MHX plasmoid claim. |
+| ![Restartable Rutherford flux chunk](docs/_static/validation/rutherford_production_execution/fixed_scale_flux_movie.gif) | Real restartable Rutherford executor chunk with fixed-scale magnetic flux. | Execution-path validation for the chunked production runner; not a completed long Rutherford claim. |
+| ![Restartable Rutherford current chunk](docs/_static/validation/rutherford_production_execution/fixed_scale_current_density_movie.gif) | Same chunk shown through current density, using fixed color limits. | Checks the movie/artifact lane and the current-density visualization contract. |
 
 The active public API is `v1`. Check it with:
 
@@ -158,11 +163,15 @@ mhx benchmark catalog --outdir outputs/benchmarks/catalog
 mhx benchmark seed-robust-qi --outdir outputs/benchmarks/seed_robust_qi
 mhx benchmark seed-robust-qi-sweep --outdir outputs/benchmarks/seed_robust_qi_sweep
 mhx neural-ode dataset --outdir outputs/neural_ode/seed_qi_fast
+mhx neural-ode train --outdir outputs/neural_ode/latent_ode_fast
 mhx campaign rutherford-template --outdir outputs/campaigns/rutherford_template
 mhx campaign rutherford-run-fast --outdir outputs/campaigns/rutherford_fast
 mhx campaign rutherford-plan-production --outdir outputs/campaigns/rutherford_production_plan
 mhx campaign rutherford-resume-plan outputs/campaigns/rutherford_production_plan
+mhx campaign rutherford-execute outputs/campaigns/rutherford_production_plan --max-steps 128
 python examples/make_rutherford_production_plan.py --outdir outputs/examples/rutherford_production_plan
+python examples/run_rutherford_production_chunk.py --outdir outputs/examples/rutherford_chunk --movies
+python examples/train_latent_ode_fast.py --outdir outputs/examples/latent_ode_fast
 mhx validate all --outdir outputs/validation_suite
 mhx validate readiness --suite outputs/validation_suite --outdir outputs/validation_readiness
 ```
@@ -198,16 +207,30 @@ satisfy `t_end >= safety_factor * e_folds / gamma`:
 ![Nonlinear duration audit](docs/_static/validation/nonlinear_duration_audit/nonlinear_duration_audit.png)
 
 For the next long nonlinear step, generate a duration-guarded Rutherford
-campaign template before launching any expensive run:
+production plan before launching any expensive run:
 
 ```bash
-mhx campaign rutherford-template \
-  --outdir outputs/campaigns/rutherford_template \
+mhx campaign rutherford-plan-production \
+  --outdir outputs/campaigns/rutherford_production_plan \
   --nx 128 --ny 128 --dt 0.1 --target-saved-frames 400
 ```
 
 The resulting manifest is labeled `claim_level = "production_template"`; it is
 a reproducible plan, not a completed nonlinear reconnection result.
+
+To execute a restartable chunk from that plan:
+
+```bash
+mhx campaign rutherford-execute \
+  outputs/campaigns/rutherford_production_plan \
+  --max-steps 128 --movies
+```
+
+This writes `production_history.npz`, `diagnostics.json`, `validation.json`,
+`resume_plan.json`, `checkpoints/state_step_*.npz`,
+`figures/production_histories.png`, and optional fixed-scale GIFs. A partial
+chunk remains `claim_level = "validation"` until the planned target is actually
+completed and convergence evidence is attached.
 
 To exercise the Rutherford diagnostic schema without making a production claim:
 
@@ -222,7 +245,18 @@ This writes `rutherford_fast_histories.npz`, `diagnostics.json`,
 `figures/rutherford_fast_histories.png`. The manifest remains
 `claim_level = "validation"`.
 
-To build the deterministic no-training neural-ODE reproducibility bundle:
+To build the deterministic neural-ODE reproducibility bundle and fit the
+CI-scale latent ODE:
+
+```bash
+mhx neural-ode dataset --outdir outputs/neural_ode/seed_qi_fast
+mhx neural-ode train --outdir outputs/neural_ode/latent_ode_fast
+```
+
+The training command writes `latent_ode_model.json`,
+`latent_ode_metrics.json`, `latent_ode_predictions.npz`, and
+`figures/latent_ode_rmse_comparison.png` in addition to the dataset, split,
+baseline, and calibration artifacts.
 
 ```bash
 mhx neural-ode dataset \
@@ -235,9 +269,10 @@ mhx neural-ode dataset \
 This writes `dataset.npz`, `splits.json`, `baseline_metrics.json`,
 `calibration.json`, `experiment_spec.json`, `validation.json`,
 `manifest.json`, and the figures `dataset_targets.png`, `baseline_rmse.png`,
-and `calibration_coverage.png`.
-The artifact freezes the data/split/baseline contract that future trainable
-neural ODE models must beat; it is not itself a trained surrogate claim.
+and `calibration_coverage.png`. Use `mhx neural-ode train` to add
+`latent_ode_model.json`, `latent_ode_predictions.npz`, and fitted train/test
+metrics; both commands remain validation-level until trained on production
+trajectories.
 
 and the nonlinear current-sheet differentiability bridge:
 

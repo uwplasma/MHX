@@ -1,10 +1,10 @@
-"""Production Rutherford-campaign planning and checkpoint/resume metadata.
+"""Production Rutherford-campaign planning, execution, and checkpoint metadata.
 
-This module intentionally does not run expensive nonlinear simulations. It
-defines the reviewer-facing contract that a production executor must satisfy:
-duration gates, walltime chunking, checkpoint records, resume selection, and a
-runbook with required artifacts. The existing FAST runner remains in
-``mhx.benchmarks.campaign_runner`` and keeps its validation-only claim level.
+This module defines the reviewer-facing contract that a production executor must
+satisfy: duration gates, walltime chunking, checkpoint records, resume
+selection, histories, movies, and artifact manifests. The executor can run small
+validation chunks in CI and the same code path can continue a long campaign on a
+scheduler without changing schemas.
 """
 
 from __future__ import annotations
@@ -17,6 +17,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+import jax.numpy as jnp
+import numpy as np
+
 from mhx.benchmarks.campaigns import (
     RUTHERFORD_CAMPAIGN_TEMPLATE_SCHEMA,
     build_rutherford_campaign_template,
@@ -25,8 +28,20 @@ from mhx.benchmarks.duration_policy import (
     DEFAULT_PRODUCTION_EFOLDS,
     HARRIS_REFERENCE_GROWTH_RATE,
 )
+from mhx.benchmarks.seed_robust_qi import seeded_tearing_initial_state
 from mhx.config import RunConfig
-from mhx.io import write_manifest
+from mhx.diagnostics import (
+    island_width_from_mode,
+    magnetic_divergence_linf,
+    reconnected_flux_amplitude,
+    trajectory_energies,
+)
+from mhx.equations.reduced_mhd import current_density, reduced_mhd_rhs
+from mhx.grids import CartesianGrid
+from mhx.io import write_artifact_manifest, write_manifest
+from mhx.plotting import plot_current_density_gif, plot_flux_gif
+from mhx.state import ReducedMHDParams, ReducedMHDState, ReducedMHDTrajectory
+from mhx.time_integrators import rk4_step
 from mhx.versioning import require_supported_api_version
 
 PRODUCTION_RUTHERFORD_PLAN_SCHEMA = "mhx.campaign.rutherford_production_plan.v1"
@@ -34,6 +49,9 @@ PRODUCTION_RUTHERFORD_RUNBOOK_SCHEMA = "mhx.campaign.rutherford_runbook.v1"
 PRODUCTION_RUTHERFORD_CHECKPOINT_SCHEMA = "mhx.campaign.rutherford_checkpoint.v1"
 PRODUCTION_RUTHERFORD_CHECKPOINT_INDEX_SCHEMA = "mhx.campaign.rutherford_checkpoint_index.v1"
 PRODUCTION_RUTHERFORD_RESUME_SCHEMA = "mhx.campaign.rutherford_resume_plan.v1"
+PRODUCTION_RUTHERFORD_EXECUTION_SCHEMA = "mhx.campaign.rutherford_execution.v1"
+PRODUCTION_RUTHERFORD_HISTORY_SCHEMA = "mhx.campaign.rutherford_history.v1"
+PRODUCTION_RUTHERFORD_STATE_SCHEMA = "mhx.campaign.rutherford_state.v1"
 
 
 @dataclass(frozen=True)
@@ -141,6 +159,19 @@ class ResumePlan:
         }
 
 
+@dataclass(frozen=True)
+class ProductionExecutionResult:
+    """A completed walltime chunk from a Rutherford campaign executor."""
+
+    run_dir: Path
+    start_step: int
+    end_step: int
+    target_step: int
+    completed_target: bool
+    diagnostics: dict[str, Any]
+    validation: dict[str, Any]
+
+
 def plan_rutherford_production_campaign(
     *,
     harris_growth_rate: float = HARRIS_REFERENCE_GROWTH_RATE,
@@ -194,7 +225,7 @@ def plan_rutherford_production_campaign(
         "api_version": require_supported_api_version(context="rutherford production plan"),
         "claim_level": "production_template",
         "claim_boundary": (
-            "Planning, checkpoint, and runbook scaffold for a future long nonlinear "
+            "Planning, checkpoint, and runbook contract for a long nonlinear "
             "Rutherford campaign; not a completed production simulation."
         ),
         "config": template.config.to_dict(),
@@ -312,7 +343,7 @@ def write_rutherford_production_plan(
         claim_level="production_template",
         claim_scope=(
             "Production Rutherford campaign planning, walltime, checkpoint, and "
-            "resume scaffold. This is not a completed production simulation."
+            "resume contract. This is not a completed production simulation."
         ),
     )
     return manifest_path, plan.validation
@@ -456,7 +487,7 @@ def select_resume_checkpoint(
         "invalid_checkpoint_count": len(index["checkpoints"]) - len(candidates),
     }
     command_contract = {
-        "executor_status": "external_or_future_long_run_executor_required",
+        "executor_status": "mhx_campaign_rutherford_execute_available",
         "resume_from_checkpoint": None
         if checkpoint is None
         else checkpoint["metadata_path"],
@@ -497,6 +528,273 @@ def write_rutherford_resume_plan(
     return path, resume_plan.validation
 
 
+def write_rutherford_production_execution(
+    run_dir: str | Path,
+    *,
+    max_steps: int | None = None,
+    seed: int = 0,
+    noise_amplitude: float = 1.0e-6,
+    write_movies: bool = False,
+    allow_production_claim: bool = False,
+    max_relative_energy_growth: float = 1.0e-9,
+    max_divergence_linf: float = 1.0e-9,
+    walltime_elapsed_seconds: float = 0.0,
+) -> tuple[Path, dict[str, Any]]:
+    """Run one restartable Rutherford campaign chunk and write real artifacts.
+
+    The function consumes ``campaign_plan.json`` and ``checkpoints/`` in
+    ``run_dir``.  If no checkpoint is valid it starts from the deterministic
+    initial condition; otherwise it resumes from the latest valid state.  Small
+    CI runs normally use ``max_steps`` and keep ``claim_level = validation``.
+    A completed target run can only emit ``claim_level = production`` when
+    ``allow_production_claim`` is set and all execution gates pass.
+    """
+    result = execute_rutherford_production_campaign(
+        run_dir,
+        max_steps=max_steps,
+        seed=seed,
+        noise_amplitude=noise_amplitude,
+        write_movies=write_movies,
+        allow_production_claim=allow_production_claim,
+        max_relative_energy_growth=max_relative_energy_growth,
+        max_divergence_linf=max_divergence_linf,
+        walltime_elapsed_seconds=walltime_elapsed_seconds,
+    )
+    return result.run_dir / "manifest.json", result.validation
+
+
+def execute_rutherford_production_campaign(
+    run_dir: str | Path,
+    *,
+    max_steps: int | None = None,
+    seed: int = 0,
+    noise_amplitude: float = 1.0e-6,
+    write_movies: bool = False,
+    allow_production_claim: bool = False,
+    max_relative_energy_growth: float = 1.0e-9,
+    max_divergence_linf: float = 1.0e-9,
+    walltime_elapsed_seconds: float = 0.0,
+) -> ProductionExecutionResult:
+    """Execute a real restartable Rutherford campaign chunk."""
+    root = Path(run_dir)
+    if max_steps is not None and max_steps < 0:
+        raise ValueError("max_steps must be non-negative when provided")
+    if noise_amplitude < 0.0:
+        raise ValueError("noise_amplitude must be non-negative")
+    if max_relative_energy_growth < 0.0:
+        raise ValueError("max_relative_energy_growth must be non-negative")
+    if max_divergence_linf < 0.0:
+        raise ValueError("max_divergence_linf must be non-negative")
+    if walltime_elapsed_seconds < 0.0:
+        raise ValueError("walltime_elapsed_seconds must be non-negative")
+    plan = _load_production_plan(root)
+    config = plan["config"]
+    mesh = config["mesh"]
+    time_config = config["time"]
+    physics = config["physics"]
+    diagnostics_config = config["diagnostics"]
+    shape = tuple(int(item) for item in mesh["shape"])
+    grid = CartesianGrid(
+        shape=shape,
+        lower=tuple(float(item) for item in mesh["lower"]),
+        upper=tuple(float(item) for item in mesh["upper"]),
+    )
+    dt = float(time_config["dt"])
+    save_every = int(time_config["save_every"])
+    target_step = int(plan["estimated_steps"])
+    mode = tuple(int(item) for item in diagnostics_config.get("mode", (1, 1)))
+    magnetic_shear = float(
+        physics.get("equilibrium_parameters", {}).get("magnetic_shear", 1.0)
+    )
+    resistivity = float(physics["resistivity"])
+    viscosity = float(physics["viscosity"])
+    params = ReducedMHDParams(resistivity=resistivity, viscosity=viscosity)
+    resume_plan = select_resume_checkpoint(root, target_step=target_step)
+    start_step = int(resume_plan.start_step)
+    initial_state = (
+        _load_checkpoint_state(root, resume_plan.checkpoint)
+        if resume_plan.checkpoint is not None
+        else seeded_tearing_initial_state(
+            grid,
+            seed=seed,
+            perturbation_amplitude=float(
+                physics.get("equilibrium_parameters", {}).get(
+                    "perturbation_amplitude",
+                    1.0e-3,
+                )
+            ),
+            noise_amplitude=noise_amplitude,
+        )
+    )
+    remaining_steps = max(0, target_step - start_step)
+    steps_to_run = remaining_steps if max_steps is None else min(int(max_steps), remaining_steps)
+
+    saved_steps, saved_times, saved_states = _advance_campaign_chunk(
+        initial_state,
+        params=params,
+        grid=grid,
+        start_step=start_step,
+        steps=steps_to_run,
+        dt=dt,
+        save_every=save_every,
+    )
+    end_step = start_step + steps_to_run
+    final_state = saved_states[-1] if saved_states else initial_state
+    history = _history_from_saved_states(
+        saved_steps=saved_steps,
+        saved_times=saved_times,
+        saved_states=saved_states,
+        lengths=grid.lengths,
+        mode=mode,
+        magnetic_shear=magnetic_shear,
+    )
+    history = _append_history(root / "production_history.npz", history)
+
+    diagnostics_path = root / "diagnostics.json"
+    validation_path = root / "validation.json"
+    history_path = root / "production_history.npz"
+    state_path = root / "checkpoints" / f"state_step_{end_step:012d}.npz"
+    figures_dir = root / "figures"
+    state_path.parent.mkdir(parents=True, exist_ok=True)
+    _write_campaign_state(state_path, step=end_step, time=end_step * dt, state=final_state)
+    _write_campaign_history(history_path, history=history)
+
+    chunk_trajectory = _trajectory_from_saved_states(saved_times, saved_states)
+    figure_outputs = _write_execution_figures(
+        figures_dir,
+        history=history,
+        trajectory=chunk_trajectory,
+        extent=(
+            float(mesh["lower"][0]),
+            float(mesh["upper"][0]),
+            float(mesh["lower"][1]),
+            float(mesh["upper"][1]),
+        ),
+        lengths=grid.lengths,
+        write_movies=write_movies and bool(saved_states),
+    )
+    completed_target = end_step >= target_step
+    max_growth = _max_relative_energy_growth(history["total_energy"])
+    divergence = (
+        float(history["magnetic_divergence_linf"][-1])
+        if history["magnetic_divergence_linf"].size
+        else float(magnetic_divergence_linf(final_state, lengths=grid.lengths))
+    )
+    checks = {
+        "campaign_plan_loaded": True,
+        "checkpoint_resume_contract_used": True,
+        "executor_made_progress_or_target_already_complete": steps_to_run > 0 or completed_target,
+        "finite_histories": all(np.isfinite(value).all() for value in history.values()),
+        "checkpoint_state_written": state_path.exists(),
+        "checkpoint_metadata_written": True,
+        "energy_growth_within_tolerance": max_growth <= max_relative_energy_growth,
+        "magnetic_divergence_within_tolerance": divergence <= max_divergence_linf,
+        "movies_written_when_requested": (not write_movies) or all(
+            (root / relative_path).exists()
+            for key, relative_path in figure_outputs.items()
+            if key.endswith("_movie")
+        ),
+    }
+    claim_level = (
+        "production"
+        if completed_target and allow_production_claim and all(checks.values())
+        else "validation"
+    )
+    checks["production_claim_requires_explicit_completion"] = (
+        claim_level != "production" or (completed_target and allow_production_claim)
+    )
+    diagnostics = {
+        "schema": PRODUCTION_RUTHERFORD_EXECUTION_SCHEMA,
+        "plan_schema": plan.get("schema"),
+        "api_version": require_supported_api_version(context="rutherford execution"),
+        "claim_level": claim_level,
+        "claim_boundary": (
+            "Restartable Rutherford campaign execution using the production "
+            "checkpoint/history schema. Partial chunks are validation artifacts; "
+            "production claims require completing the target and enabling the "
+            "explicit production-claim gate."
+        ),
+        "start_step": start_step,
+        "end_step": end_step,
+        "steps_run": steps_to_run,
+        "target_step": target_step,
+        "completed_target": completed_target,
+        "dt": dt,
+        "save_every": save_every,
+        "shape": list(shape),
+        "seed": int(seed),
+        "noise_amplitude": float(noise_amplitude),
+        "resistivity": resistivity,
+        "viscosity": viscosity,
+        "mode": list(mode),
+        "max_relative_energy_growth": max_growth,
+        "final_magnetic_divergence_linf": divergence,
+        "history_samples": int(history["time"].size),
+        "resume_start_checkpoint": resume_plan.command_contract["resume_from_checkpoint"],
+        "allow_production_claim": bool(allow_production_claim),
+    }
+    validation = {
+        "schema": "mhx.campaign.rutherford_execution.gates.v1",
+        "passed": all(checks.values()),
+        "checks": checks,
+        "thresholds": {
+            "max_relative_energy_growth": max_relative_energy_growth,
+            "max_divergence_linf": max_divergence_linf,
+        },
+        "diagnostics": diagnostics,
+    }
+    diagnostics_path.write_text(json.dumps(diagnostics, indent=2, sort_keys=True), encoding="utf-8")
+    validation_path.write_text(json.dumps(validation, indent=2, sort_keys=True), encoding="utf-8")
+    checkpoint_record = write_checkpoint_metadata(
+        root,
+        step=end_step,
+        time=end_step * dt,
+        state_path=state_path.relative_to(root),
+        history_path=history_path.relative_to(root),
+        diagnostics_path=diagnostics_path.relative_to(root),
+        walltime_elapsed_seconds=walltime_elapsed_seconds,
+        metrics={
+            "total_energy": float(history["total_energy"][-1]),
+            "magnetic_divergence_linf": divergence,
+            "rutherford_island_width": float(history["rutherford_island_width"][-1]),
+            "reconnected_flux": float(history["reconnected_flux"][-1]),
+        },
+        completed=completed_target,
+    )
+    write_rutherford_resume_plan(root, target_step=target_step)
+    manifest_path = root / "manifest.json"
+    if manifest_path.exists():
+        manifest_path.unlink()
+    write_artifact_manifest(root)
+    outputs = {
+        "diagnostics": diagnostics_path.name,
+        "validation": validation_path.name,
+        "histories": history_path.name,
+        "checkpoint_state": state_path.relative_to(root).as_posix(),
+        "checkpoint_metadata": checkpoint_record.relative_to(root).as_posix(),
+        "checkpoint_index": "checkpoints/checkpoint_index.json",
+        "resume_plan": "resume_plan.json",
+        "artifact_manifest": "artifact_manifest.json",
+        **figure_outputs,
+    }
+    write_manifest(
+        manifest_path,
+        config=diagnostics,
+        outputs=outputs,
+        claim_level=claim_level,
+        claim_scope=diagnostics["claim_boundary"],
+    )
+    return ProductionExecutionResult(
+        run_dir=root,
+        start_step=start_step,
+        end_step=end_step,
+        target_step=target_step,
+        completed_target=completed_target,
+        diagnostics=diagnostics,
+        validation=validation,
+    )
+
+
 def _required_production_outputs() -> dict[str, tuple[str, ...]]:
     return {
         "histories": (
@@ -535,6 +833,253 @@ def _required_production_outputs() -> dict[str, tuple[str, ...]]:
             "artifact_manifest.json",
         ),
     }
+
+
+def _load_production_plan(run_dir: Path) -> dict[str, Any]:
+    path = run_dir / "campaign_plan.json"
+    if not path.exists():
+        raise FileNotFoundError(f"campaign plan is missing: {path}")
+    plan = json.loads(path.read_text(encoding="utf-8"))
+    if plan.get("schema") != PRODUCTION_RUTHERFORD_PLAN_SCHEMA:
+        raise ValueError(f"unsupported production-plan schema in {path}")
+    return plan
+
+
+def _load_checkpoint_state(
+    run_dir: Path,
+    checkpoint: dict[str, Any] | None,
+) -> ReducedMHDState:
+    if checkpoint is None:
+        raise ValueError("checkpoint must not be None")
+    state_record = checkpoint.get("artifacts", {}).get("state", {})
+    state_path = Path(state_record.get("path", ""))
+    absolute_path = state_path if state_path.is_absolute() else run_dir / state_path
+    with np.load(absolute_path, allow_pickle=False) as data:
+        schema = str(data["schema"])
+        if schema != PRODUCTION_RUTHERFORD_STATE_SCHEMA:
+            raise ValueError(f"unsupported Rutherford state schema {schema!r}")
+        return ReducedMHDState(
+            psi=jnp.asarray(data["psi"]),
+            omega=jnp.asarray(data["omega"]),
+        )
+
+
+def _advance_campaign_chunk(
+    state0: ReducedMHDState,
+    *,
+    params: ReducedMHDParams,
+    grid: CartesianGrid,
+    start_step: int,
+    steps: int,
+    dt: float,
+    save_every: int,
+) -> tuple[np.ndarray, np.ndarray, tuple[ReducedMHDState, ...]]:
+    if steps < 0:
+        raise ValueError("steps must be non-negative")
+    if steps == 0:
+        return (
+            np.asarray([start_step], dtype=np.int64),
+            np.asarray([start_step * dt], dtype=np.float64),
+            (state0,),
+        )
+
+    def rhs(state: ReducedMHDState) -> ReducedMHDState:
+        return reduced_mhd_rhs(state, params, lengths=grid.lengths)
+
+    active_state = state0
+    saved_steps: list[int] = [start_step]
+    saved_times: list[float] = [start_step * dt]
+    saved_states: list[ReducedMHDState] = [state0]
+    for local_step in range(1, steps + 1):
+        active_state = rk4_step(active_state, rhs, dt)
+        global_step = start_step + local_step
+        if global_step % save_every == 0 or local_step == steps:
+            saved_steps.append(global_step)
+            saved_times.append(global_step * dt)
+            saved_states.append(active_state)
+    return (
+        np.asarray(saved_steps, dtype=np.int64),
+        np.asarray(saved_times, dtype=np.float64),
+        tuple(saved_states),
+    )
+
+
+def _history_from_saved_states(
+    *,
+    saved_steps: np.ndarray,
+    saved_times: np.ndarray,
+    saved_states: tuple[ReducedMHDState, ...],
+    lengths: tuple[float, float],
+    mode: tuple[int, int],
+    magnetic_shear: float,
+) -> dict[str, np.ndarray]:
+    trajectory = _trajectory_from_saved_states(saved_times, saved_states)
+    energies = trajectory_energies(trajectory, lengths=lengths)
+    reconnected_flux = np.asarray(
+        [float(reconnected_flux_amplitude(state, mode=mode)) for state in saved_states],
+        dtype=np.float64,
+    )
+    island_width = np.asarray(
+        [
+            float(island_width_from_mode(state, mode=mode, magnetic_shear=magnetic_shear))
+            for state in saved_states
+        ],
+        dtype=np.float64,
+    )
+    current_linf = np.asarray(
+        [
+            float(jnp.max(jnp.abs(current_density(state.psi, lengths=lengths))))
+            for state in saved_states
+        ],
+        dtype=np.float64,
+    )
+    divergence = np.asarray(
+        [float(magnetic_divergence_linf(state, lengths=lengths)) for state in saved_states],
+        dtype=np.float64,
+    )
+    time = np.asarray(saved_times, dtype=np.float64)
+    total = np.asarray(energies["total"], dtype=np.float64)
+    reconnection_rate = _safe_gradient(reconnected_flux, time)
+    dissipation_budget_residual = np.maximum(_safe_gradient(total, time), 0.0)
+    return {
+        "step": np.asarray(saved_steps, dtype=np.int64),
+        "time": time,
+        "reconnected_flux": reconnected_flux,
+        "rutherford_island_width": island_width,
+        "reconnection_rate_proxy": reconnection_rate,
+        "magnetic_energy": np.asarray(energies["magnetic"], dtype=np.float64),
+        "kinetic_energy": np.asarray(energies["kinetic"], dtype=np.float64),
+        "total_energy": total,
+        "dissipation_budget_residual": dissipation_budget_residual,
+        "magnetic_divergence_linf": divergence,
+        "current_density_linf": current_linf,
+    }
+
+
+def _append_history(path: Path, new_history: dict[str, np.ndarray]) -> dict[str, np.ndarray]:
+    if not path.exists():
+        return new_history
+    with np.load(path, allow_pickle=False) as existing_data:
+        existing = {
+            key: np.asarray(existing_data[key])
+            for key in new_history
+            if key in existing_data
+        }
+    if not existing:
+        return new_history
+    last_step = int(existing["step"][-1])
+    keep = np.asarray(new_history["step"], dtype=np.int64) > last_step
+    if not np.any(keep):
+        return existing
+    return {
+        key: np.concatenate((np.asarray(existing[key]), np.asarray(value)[keep]))
+        for key, value in new_history.items()
+    }
+
+
+def _write_campaign_history(path: Path, *, history: dict[str, np.ndarray]) -> Path:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    np.savez_compressed(
+        path,
+        schema=np.asarray(PRODUCTION_RUTHERFORD_HISTORY_SCHEMA),
+        **history,
+    )
+    return path
+
+
+def _write_campaign_state(
+    path: Path,
+    *,
+    step: int,
+    time: float,
+    state: ReducedMHDState,
+) -> Path:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    np.savez_compressed(
+        path,
+        schema=np.asarray(PRODUCTION_RUTHERFORD_STATE_SCHEMA),
+        step=np.asarray(step, dtype=np.int64),
+        time=np.asarray(time, dtype=np.float64),
+        psi=np.asarray(state.psi),
+        omega=np.asarray(state.omega),
+    )
+    return path
+
+
+def _write_execution_figures(
+    figure_dir: Path,
+    *,
+    history: dict[str, np.ndarray],
+    trajectory: ReducedMHDTrajectory,
+    extent: tuple[float, float, float, float],
+    lengths: tuple[float, float],
+    write_movies: bool,
+) -> dict[str, str]:
+    import matplotlib.pyplot as plt
+
+    figure_dir.mkdir(parents=True, exist_ok=True)
+    history_path = figure_dir / "production_histories.png"
+    fig, axes = plt.subplots(2, 2, figsize=(9.8, 6.8), constrained_layout=True)
+    axes[0, 0].plot(history["time"], history["reconnected_flux"])
+    axes[0, 0].set_title("Reconnected flux")
+    axes[0, 1].plot(history["time"], history["rutherford_island_width"])
+    axes[0, 1].set_title("Rutherford island width")
+    axes[1, 0].plot(history["time"], history["reconnection_rate_proxy"])
+    axes[1, 0].set_title("Reconnection-rate proxy")
+    axes[1, 1].plot(history["time"], history["magnetic_energy"], label=r"$E_B$")
+    axes[1, 1].plot(history["time"], history["kinetic_energy"], label=r"$E_K$")
+    axes[1, 1].plot(history["time"], history["total_energy"], label=r"$E$")
+    axes[1, 1].set_title("Energy")
+    axes[1, 1].legend(frameon=False, fontsize="small")
+    for axis in axes.ravel():
+        axis.set_xlabel("time")
+        axis.grid(True, alpha=0.25)
+    fig.savefig(history_path, dpi=180)
+    plt.close(fig)
+    outputs = {"production_histories": history_path.relative_to(figure_dir.parent).as_posix()}
+    if write_movies:
+        flux_path = plot_flux_gif(
+            trajectory,
+            path=figure_dir / "fixed_scale_flux_movie.gif",
+            extent=extent,
+        )
+        current_path = plot_current_density_gif(
+            trajectory,
+            path=figure_dir / "fixed_scale_current_density_movie.gif",
+            extent=extent,
+            lengths=lengths,
+        )
+        outputs["fixed_scale_flux_movie"] = flux_path.relative_to(figure_dir.parent).as_posix()
+        outputs["fixed_scale_current_density_movie"] = current_path.relative_to(
+            figure_dir.parent
+        ).as_posix()
+    return outputs
+
+
+def _trajectory_from_saved_states(
+    times: np.ndarray,
+    states: tuple[ReducedMHDState, ...],
+) -> ReducedMHDTrajectory:
+    return ReducedMHDTrajectory(
+        times=jnp.asarray(times),
+        states=ReducedMHDState(
+            psi=jnp.stack([state.psi for state in states]),
+            omega=jnp.stack([state.omega for state in states]),
+        ),
+    )
+
+
+def _safe_gradient(values: np.ndarray, time: np.ndarray) -> np.ndarray:
+    if values.size < 2 or time.size < 2:
+        return np.zeros_like(values, dtype=np.float64)
+    return np.asarray(np.gradient(values, time), dtype=np.float64)
+
+
+def _max_relative_energy_growth(total_energy: np.ndarray) -> float:
+    if total_energy.size < 2:
+        return 0.0
+    energy_scale = max(abs(float(total_energy[0])), np.finfo(np.float64).tiny)
+    return float(np.max(np.diff(total_energy)) / energy_scale)
 
 
 def _initial_checkpoint_index(
@@ -612,7 +1157,7 @@ def _render_runbook(diagnostics: dict[str, Any], job_array: dict[str, Any]) -> s
 
 Schema: `{PRODUCTION_RUTHERFORD_RUNBOOK_SCHEMA}`
 
-This runbook is a production **execution scaffold**. It proves that the
+This runbook is a production **execution contract**. It proves that the
 duration, walltime chunking, checkpoint cadence, and artifact contracts are
 defined before a long nonlinear run starts. It is not a completed production
 simulation.

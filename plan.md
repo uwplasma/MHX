@@ -5179,3 +5179,74 @@ Every agent must append an entry here. Do not delete previous entries.
   and current movies with checksummed manifests.
 - Train and evaluate latent/neural ODE models against the frozen dataset,
   baseline, and calibration protocol.
+
+### 2026-05-12 — Agent: Codex, closed-lane executor and latent-ODE push
+
+**Summary**
+
+- Converted the Rutherford production lane from plan/resume scaffolding into a
+  real restartable execution path. `mhx campaign rutherford-execute` now
+  consumes `campaign_plan.json`, resumes from the latest valid checkpoint,
+  advances a reduced-MHD RK4 chunk, writes `production_history.npz`,
+  `checkpoints/state_step_*.npz`, checkpoint metadata, `resume_plan.json`,
+  figures, optional fixed-scale flux/current GIFs, and manifests.
+- Converted the neural-ODE lane from dataset/baseline-only scaffolding into a
+  fitted deterministic random-feature latent ODE experiment. `mhx neural-ode
+  train` now writes model parameters, predictions, train/validation/test MAE and
+  RMSE, baseline comparisons, plots, and hashes.
+- Added validation-suite, readiness, benchmark-catalog, docs, README, CI, and
+  example coverage for both closed lanes.
+- Added committed documentation media for the restartable Rutherford chunk and
+  latent-ODE prediction/RMSE figures under `docs/_static/validation/`.
+
+**Files changed**
+
+- Updated `src/mhx/campaigns/production.py`, `src/mhx/neural_ode/reproducibility.py`,
+  `src/mhx/cli/main.py`, validation-suite/catalog/readiness modules, plotting
+  helpers, CI, docs, README, and focused tests.
+- Added `examples/run_rutherford_production_chunk.py` and
+  `examples/train_latent_ode_fast.py`.
+
+**Tests run**
+
+- `python -m ruff check src tests examples tools` passed.
+- `python tools/check_legacy_imports.py` passed.
+- `sphinx-build -W -b html docs docs/_build/html` passed.
+- `python -m pytest --cov=mhx --cov-report=term-missing --cov-fail-under=95`
+  passed: 181 tests, 95.17% coverage.
+- `mhx validate all --outdir outputs/dev/validation_suite_final` passed with
+  27 validation cases.
+- `mhx validate readiness --suite outputs/dev/validation_suite_final --outdir
+  outputs/dev/readiness_final` passed with public release ready and nonlinear
+  publication claims still blocked.
+
+**Decisions made**
+
+- Partial Rutherford execution chunks are `claim_level = "validation"`. A
+  completed target can only emit `claim_level = "production"` when the explicit
+  production-claim flag is enabled and gates pass.
+- The fitted latent ODE is a real train/test workflow but remains
+  `claim_level = "validation"` because it is trained on FAST seed-QI data, not
+  production-quality nonlinear reconnection trajectories.
+
+**Problems / blockers**
+
+- The executor is now real; the remaining blocker is running enough walltime
+  chunks at production resolution and attaching convergence, seed-QI, and movie
+  artifacts before making paper-grade nonlinear Rutherford/plasmoid claims.
+- Neural-ODE publication claims still require training on production-quality
+  datasets and demonstrating robust improvement over baselines on held-out
+  regimes.
+
+**Progress**
+
+- Estimated plan completion: 97%.
+
+**Next steps**
+
+- Launch the restartable Rutherford executor for enough chunks to reach the
+  duration target at medium/production resolution.
+- Add automated convergence promotion gates that can upgrade a completed
+  execution bundle from validation to production.
+- Train the latent/neural ODE on production-quality trajectories and freeze a
+  reviewer-facing comparison table against baselines.

@@ -93,13 +93,15 @@ evidence of production Rutherford island growth.
 
 The operational details and production acceptance criteria are documented in
 [campaign_runner.md](campaign_runner.md). In short: the FAST runner proves the
-schema, diagnostic names, plot path, and seed determinism. A production runner
-must additionally prove duration, convergence, budget closure, fixed-color
-movies, and reproducibility.
+schema, diagnostic names, plot path, and seed determinism. The production
+executor now proves restartable chunk execution, checkpoint metadata, history
+schemas, resume plans, optional fixed-scale GIFs, and artifact hashes. A paper
+claim still requires enough chunks to complete the planned duration plus
+convergence, budget closure, fixed-color movies, and seed/QI evidence.
 
-## Production planning and resume scaffold
+## Production planning, execution, and resume
 
-The production scaffold extends the template into an operational bundle with
+The production plan extends the template into an operational bundle with
 walltime chunking, checkpoint cadence, resume metadata, and a runbook:
 
 ```bash
@@ -118,13 +120,23 @@ Expected additional files:
 - `outputs/campaigns/rutherford_production_plan/checkpoints/checkpoint_index.json`
 
 The checkpoint index is intentionally empty at planning time. A long-run
-executor registers restartable state files with
-`mhx.campaigns.write_checkpoint_metadata(...)`; the command
-`mhx campaign rutherford-resume-plan <run-dir>` then chooses the latest valid
+executor now registers restartable state files with:
+
+```bash
+mhx campaign rutherford-execute \
+  outputs/campaigns/rutherford_production_plan \
+  --max-steps 128 --movies
+```
+
+This writes `production_history.npz`, `diagnostics.json`, `validation.json`,
+`checkpoints/state_step_*.npz`, `resume_plan.json`, and
+`figures/production_histories.png`. The command
+`mhx campaign rutherford-resume-plan <run-dir>` chooses the latest valid
 checkpoint by verifying artifact hashes.
 
 A laptop-safe example that writes the same planning bundle is available at
-`examples/make_rutherford_production_plan.py`.
+`examples/make_rutherford_production_plan.py`; an executable chunk example is
+available at `examples/run_rutherford_production_chunk.py`.
 
 ## Source links
 
@@ -132,7 +144,7 @@ A laptop-safe example that writes the same planning bundle is available at
   [`src/mhx/benchmarks/campaigns.py`](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/campaigns.py)
 - FAST campaign runner:
   [`src/mhx/benchmarks/campaign_runner.py`](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/campaign_runner.py)
-- Production campaign scaffold:
+- Production campaign executor:
   [`src/mhx/campaigns/production.py`](https://github.com/uwplasma/MHX/blob/main/src/mhx/campaigns/production.py)
 - Duration guard:
   [`src/mhx/benchmarks/duration_policy.py`](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/duration_policy.py)
@@ -142,5 +154,5 @@ A laptop-safe example that writes the same planning bundle is available at
   [`tests/test_campaign_templates.py`](https://github.com/uwplasma/MHX/blob/main/tests/test_campaign_templates.py)
 - FAST runner tests:
   [`tests/test_campaign_runner.py`](https://github.com/uwplasma/MHX/blob/main/tests/test_campaign_runner.py)
-- Production scaffold tests:
+- Production executor tests:
   [`tests/test_production_campaign_scaffold.py`](https://github.com/uwplasma/MHX/blob/main/tests/test_production_campaign_scaffold.py)

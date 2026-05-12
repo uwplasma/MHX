@@ -34,9 +34,11 @@ Every figure included in the paper-style documentation should have:
 | Seed-robust QI sweep | `qi_sweep_cv.png`, `qi_sweep_mean_drift.png` | `validation` | Ready as FAST perturbation-amplitude sensitivity evidence. |
 | Rutherford FAST runner | `rutherford_fast_histories.png` | `validation` | Ready as schema/diagnostic demonstration only. |
 | Readiness report | `readiness_matrix.png` | `validation` | Ready as a release-vs-paper claim boundary figure. |
-| Rutherford production | not generated | none | Not ready. Requires long run plus convergence. |
+| Rutherford production executor | `production_histories.png`, optional fixed-scale GIFs | `validation` for partial chunks | Ready as restart/resume execution evidence; not yet a converged nonlinear physics claim. |
+| Rutherford production physics | long-run histories and convergence figures | `production` only after full target completion | Not ready. Requires long run plus convergence. |
 | Plasmoid production | not generated | none | Not ready. Requires long thin sheet, secondary islands, and convergence. |
-| Neural ODE | not generated | none | Not ready. Requires deterministic dataset, baselines, and calibration. |
+| Neural ODE dataset/baselines | `dataset_targets.png`, `baseline_rmse.png`, `calibration_coverage.png` | `validation` | Ready as reproducibility protocol. |
+| Fitted latent ODE | `latent_ode_predictions.png`, `latent_ode_rmse_comparison.png` | `validation` | Ready as FAST train/test evidence; not yet production surrogate evidence. |
 
 ## Validation figures already shipped
 

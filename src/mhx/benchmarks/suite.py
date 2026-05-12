@@ -51,7 +51,6 @@ from mhx.io import (
     write_manifest,
     write_reduced_mhd_trajectory_npz,
 )
-from mhx.neural_ode import write_neural_ode_reproducibility_bundle
 from mhx.runtime import configure_jax
 from mhx.versioning import VALIDATION_SUITE_SCHEMA, require_supported_api_version
 
@@ -172,6 +171,16 @@ def validation_suite_cases() -> tuple[ValidationSuiteCase, ...]:
             name="neural_ode_reproducibility",
             command="mhx neural-ode dataset",
             runner=_write_neural_ode_reproducibility_validation,
+        ),
+        ValidationSuiteCase(
+            name="neural_ode_latent_fit",
+            command="mhx neural-ode train",
+            runner=_write_neural_ode_training_validation,
+        ),
+        ValidationSuiteCase(
+            name="rutherford_production_execution",
+            command="mhx campaign rutherford-execute",
+            runner=_write_rutherford_production_execution_validation,
         ),
         ValidationSuiteCase(
             name="duration_policy",
@@ -297,6 +306,8 @@ def _write_linear_tearing_fast_validation(outdir: Path) -> tuple[Path, dict[str,
 def _write_neural_ode_reproducibility_validation(
     outdir: Path,
 ) -> tuple[Path, dict[str, Any]]:
+    from mhx.neural_ode import write_neural_ode_reproducibility_bundle
+
     return write_neural_ode_reproducibility_bundle(
         outdir,
         shape=(8, 8),
@@ -304,6 +315,51 @@ def _write_neural_ode_reproducibility_validation(
         steps=4,
         dt=1.0e-2,
         write_figures=True,
+    )
+
+
+def _write_neural_ode_training_validation(outdir: Path) -> tuple[Path, dict[str, Any]]:
+    from mhx.neural_ode import write_neural_ode_training_bundle
+
+    return write_neural_ode_training_bundle(
+        outdir,
+        shape=(8, 8),
+        seeds=(0, 1, 2, 3),
+        steps=4,
+        dt=1.0e-2,
+        hidden_size=4,
+        write_figures=True,
+    )
+
+
+def _write_rutherford_production_execution_validation(
+    outdir: Path,
+) -> tuple[Path, dict[str, Any]]:
+    from mhx.campaigns import (
+        WalltimePolicy,
+        write_rutherford_production_execution,
+        write_rutherford_production_plan,
+    )
+
+    write_rutherford_production_plan(
+        outdir,
+        shape=(8, 8),
+        dt=1.0e-2,
+        target_saved_frames=120,
+        min_production_resolution=8,
+        walltime_policy=WalltimePolicy(
+            max_walltime_hours=1.0,
+            seconds_per_step_estimate=0.1,
+            checkpoint_interval_minutes=1.0,
+            preemption_margin_minutes=1.0,
+        ),
+    )
+    return write_rutherford_production_execution(
+        outdir,
+        max_steps=4,
+        seed=0,
+        noise_amplitude=1.0e-6,
+        write_movies=False,
     )
 
 

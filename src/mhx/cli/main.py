@@ -45,6 +45,7 @@ from mhx.benchmarks import (
 )
 from mhx.campaigns import (
     WalltimePolicy,
+    write_rutherford_production_execution,
     write_rutherford_production_plan,
     write_rutherford_resume_plan,
 )
@@ -62,7 +63,10 @@ from mhx.io import (
     write_manifest,
     write_reduced_mhd_trajectory_npz,
 )
-from mhx.neural_ode import write_neural_ode_reproducibility_bundle
+from mhx.neural_ode import (
+    write_neural_ode_reproducibility_bundle,
+    write_neural_ode_training_bundle,
+)
 from mhx.physics import (
     PHYSICS_API_VERSION,
     PHYSICS_ENTRY_POINT_GROUP,
@@ -384,6 +388,61 @@ def campaign_rutherford_resume_plan(
     """Write a resume plan from the latest valid production checkpoint."""
     path, validation = write_rutherford_resume_plan(run_dir, target_step=target_step)
     typer.echo(f"wrote {path}")
+    if not validation["passed"]:
+        raise typer.Exit(code=1)
+
+
+@campaign_app.command("rutherford-execute")
+def campaign_rutherford_execute(
+    run_dir: Annotated[
+        Path,
+        typer.Argument(help="Production campaign run directory with campaign_plan.json."),
+    ],
+    max_steps: Annotated[
+        int | None,
+        typer.Option("--max-steps", help="Maximum RK4 steps for this walltime chunk."),
+    ] = None,
+    seed: Annotated[
+        int,
+        typer.Option("--seed", help="Initial-condition seed used if no checkpoint is valid."),
+    ] = 0,
+    noise_amplitude: Annotated[
+        float,
+        typer.Option("--noise-amplitude", help="Seeded smooth perturbation amplitude."),
+    ] = 1.0e-6,
+    movies_enabled: Annotated[
+        bool,
+        typer.Option("--movies/--no-movies", help="Write fixed-scale flux/current GIFs."),
+    ] = False,
+    allow_production_claim: Annotated[
+        bool,
+        typer.Option(
+            "--allow-production-claim/--validation-claim",
+            help="Allow claim_level=production only when target completion gates pass.",
+        ),
+    ] = False,
+    max_relative_energy_growth: Annotated[
+        float,
+        typer.Option("--max-relative-energy-growth", help="Energy monotonicity tolerance."),
+    ] = 1.0e-9,
+    max_divergence_linf: Annotated[
+        float,
+        typer.Option("--max-divergence-linf", help="Magnetic-divergence tolerance."),
+    ] = 1.0e-9,
+) -> None:
+    """Run one restartable Rutherford production-campaign walltime chunk."""
+    _configure_validation_precision()
+    manifest_path, validation = write_rutherford_production_execution(
+        run_dir,
+        max_steps=max_steps,
+        seed=seed,
+        noise_amplitude=noise_amplitude,
+        write_movies=movies_enabled,
+        allow_production_claim=allow_production_claim,
+        max_relative_energy_growth=max_relative_energy_growth,
+        max_divergence_linf=max_divergence_linf,
+    )
+    typer.echo(f"wrote {manifest_path}")
     if not validation["passed"]:
         raise typer.Exit(code=1)
 
@@ -1104,6 +1163,71 @@ def neural_ode_dataset(
         psi_noise_amplitude=noise_amplitude,
         split_seed=split_seed,
         observation_count=observation_count,
+        write_figures=figures_enabled,
+    )
+    typer.echo(f"wrote {manifest_path}")
+    if not validation["passed"]:
+        raise typer.Exit(code=1)
+
+
+@neural_ode_app.command("train")
+def neural_ode_train(
+    outdir: Annotated[
+        Path,
+        typer.Option("--outdir", help="Output directory for fitted neural-ODE artifacts."),
+    ] = Path("outputs/neural_ode/latent_ode_fast"),
+    seeds: Annotated[
+        str,
+        typer.Option("--seeds", help="Comma-separated deterministic seed list."),
+    ] = "0,1,2,3,4,5",
+    nx: Annotated[int, typer.Option("--nx", help="Grid points in x.")] = 16,
+    ny: Annotated[int, typer.Option("--ny", help="Grid points in y.")] = 16,
+    steps: Annotated[int, typer.Option("--steps", help="RK4 steps per seed.")] = 24,
+    dt: Annotated[float, typer.Option("--dt", help="RK4 time step.")] = 1.0e-2,
+    eta: Annotated[float, typer.Option("--eta", help="Resistivity.")] = 1.0e-3,
+    nu: Annotated[float, typer.Option("--nu", help="Viscosity.")] = 1.0e-3,
+    noise_amplitude: Annotated[
+        float,
+        typer.Option("--noise-amplitude", help="Smooth seeded psi-noise amplitude."),
+    ] = 1.0e-8,
+    split_seed: Annotated[
+        int,
+        typer.Option("--split-seed", help="Seed for train/validation/test split."),
+    ] = 314159,
+    observation_count: Annotated[
+        int,
+        typer.Option("--observation-count", help="Prefix samples visible to forecasters."),
+    ] = 2,
+    hidden_size: Annotated[
+        int,
+        typer.Option("--hidden-size", help="Random tanh features in the latent ODE."),
+    ] = 8,
+    ridge: Annotated[
+        float,
+        typer.Option("--ridge", help="Ridge regularization for latent-ODE regression."),
+    ] = 1.0e-8,
+    model_seed: Annotated[
+        int,
+        typer.Option("--model-seed", help="Deterministic random-feature seed."),
+    ] = 0,
+    figures_enabled: Annotated[bool, typer.Option("--figures/--no-figures")] = True,
+) -> None:
+    """Fit a deterministic random-feature latent ODE on FAST seed-QI trajectories."""
+    _configure_validation_precision()
+    manifest_path, validation = write_neural_ode_training_bundle(
+        outdir,
+        seeds=_parse_int_tuple(seeds),
+        shape=(nx, ny),
+        steps=steps,
+        dt=dt,
+        resistivity=eta,
+        viscosity=nu,
+        psi_noise_amplitude=noise_amplitude,
+        split_seed=split_seed,
+        observation_count=observation_count,
+        hidden_size=hidden_size,
+        ridge=ridge,
+        model_seed=model_seed,
         write_figures=figures_enabled,
     )
     typer.echo(f"wrote {manifest_path}")

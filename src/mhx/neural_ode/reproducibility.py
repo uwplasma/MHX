@@ -1,9 +1,9 @@
-"""Deterministic neural-ODE dataset and baseline reproducibility artifacts.
+"""Deterministic neural-ODE dataset, baseline, and fitted latent-ODE artifacts.
 
-This module does not train a neural ODE.  It freezes the data contract that a
-future neural-ODE experiment must consume: deterministic seed-ensemble
-trajectories, train/validation/test split manifests, cheap baseline forecasts,
-calibration summaries, plots, and a manifest with hashes.
+This module freezes the data contract that neural-ODE experiments consume and
+ships a deterministic random-feature latent ODE fit.  The fit is deliberately
+small enough for CI, but it is a real train/validation/test experiment with
+baselines, calibration, model parameters, predictions, figures, and hashes.
 """
 
 from __future__ import annotations
@@ -36,6 +36,9 @@ NEURAL_ODE_BASELINE_SCHEMA = "mhx.neural_ode.baselines.v1"
 NEURAL_ODE_CALIBRATION_SCHEMA = "mhx.neural_ode.calibration.v1"
 NEURAL_ODE_EXPERIMENT_SCHEMA = "mhx.neural_ode.experiment_spec.v1"
 NEURAL_ODE_REPRODUCIBILITY_GATES_SCHEMA = "mhx.neural_ode.reproducibility.gates.v1"
+NEURAL_ODE_LATENT_MODEL_SCHEMA = "mhx.neural_ode.latent_model.v1"
+NEURAL_ODE_LATENT_METRICS_SCHEMA = "mhx.neural_ode.latent_metrics.v1"
+NEURAL_ODE_TRAINING_GATES_SCHEMA = "mhx.neural_ode.training.gates.v1"
 
 DEFAULT_FEATURE_NAMES = (
     "mode_amplitude",
@@ -84,6 +87,16 @@ class BaselineEvaluation:
     metrics: dict[str, Any]
     calibration: dict[str, Any]
     predictions: dict[str, np.ndarray]
+
+
+@dataclass(frozen=True)
+class LatentODEFit:
+    """Deterministic random-feature latent-ODE fit and forecast metrics."""
+
+    model: dict[str, Any]
+    metrics: dict[str, Any]
+    predictions: np.ndarray
+    validation: dict[str, Any]
 
 
 def build_seed_qi_trajectory_dataset(
@@ -328,6 +341,243 @@ def evaluate_baselines(
     return BaselineEvaluation(metrics=metrics, calibration=calibration, predictions=predictions)
 
 
+def fit_latent_ode(
+    dataset: NeuralODEDataset,
+    split: SplitManifest,
+    baseline: BaselineEvaluation,
+    *,
+    observation_count: int = 2,
+    hidden_size: int = 8,
+    ridge: float = 1.0e-8,
+    random_seed: int = 0,
+) -> LatentODEFit:
+    """Fit a deterministic random-feature neural ODE to train trajectories.
+
+    The model uses the autonomous form ``dz/dt = W phi(z)`` where ``z`` is the
+    target vector and ``phi`` concatenates ``z``, random tanh features, and a
+    constant bias.  ``W`` is solved by ridge regression from train-set finite
+    differences, then integrated forward with explicit Euler on the saved time
+    grid.
+    """
+    if observation_count < 1:
+        raise ValueError("observation_count must be >= 1")
+    if observation_count >= dataset.times.size:
+        raise ValueError("observation_count must leave forecast targets")
+    if hidden_size < 1:
+        raise ValueError("hidden_size must be >= 1")
+    if ridge < 0.0:
+        raise ValueError("ridge must be non-negative")
+    targets = np.asarray(dataset.targets, dtype=np.float64)
+    train_indices = _indices_for_ids(dataset.seeds, split.train)
+    target_dim = targets.shape[-1]
+    rng = np.random.default_rng(int(random_seed))
+    feature_weights = rng.normal(
+        scale=1.0 / np.sqrt(max(1, target_dim)),
+        size=(target_dim, hidden_size),
+    )
+    feature_bias = rng.normal(scale=0.1, size=(hidden_size,))
+    train_states = targets[train_indices, :-1, :].reshape((-1, target_dim))
+    dt = np.diff(dataset.times)
+    derivatives = (
+        np.diff(targets[train_indices], axis=1)
+        / dt.reshape((1, -1, 1))
+    ).reshape((-1, target_dim))
+    design = _latent_features(train_states, feature_weights, feature_bias)
+    lhs = design.T @ design + ridge * np.eye(design.shape[1], dtype=np.float64)
+    rhs = design.T @ derivatives
+    coefficients = np.linalg.solve(lhs, rhs)
+    predictions = _integrate_latent_ode(
+        targets,
+        dataset.times,
+        coefficients,
+        feature_weights,
+        feature_bias,
+        observation_count=observation_count,
+    )
+    metrics = _latent_ode_metrics(
+        dataset,
+        split,
+        baseline,
+        predictions,
+        observation_count=observation_count,
+    )
+    model = {
+        "schema": NEURAL_ODE_LATENT_MODEL_SCHEMA,
+        "model_family": "ridge_random_feature_autonomous_latent_ode",
+        "target_names": list(dataset.target_names),
+        "observation_count": int(observation_count),
+        "hidden_size": int(hidden_size),
+        "ridge": float(ridge),
+        "random_seed": int(random_seed),
+        "feature_weights": feature_weights.tolist(),
+        "feature_bias": feature_bias.tolist(),
+        "coefficients": coefficients.tolist(),
+        "equation": "dz_dt = coefficients.T @ [z, tanh(z @ feature_weights + feature_bias), 1]",
+    }
+    checks = {
+        "finite_coefficients": bool(np.isfinite(coefficients).all()),
+        "finite_predictions": bool(np.isfinite(predictions).all()),
+        "finite_metrics": bool(metrics["checks"]["finite_metrics"]),
+        "split_manifest_passed": bool(split.diagnostics["passed"]),
+        "has_test_forecast": bool(metrics["splits"]["test"]["sample_count"] >= 1),
+    }
+    validation = {
+        "schema": NEURAL_ODE_TRAINING_GATES_SCHEMA,
+        "passed": all(checks.values()),
+        "checks": checks,
+        "diagnostics": {
+            "model_schema": NEURAL_ODE_LATENT_MODEL_SCHEMA,
+            "metrics_schema": NEURAL_ODE_LATENT_METRICS_SCHEMA,
+            "claim_level": "validation",
+            "claim_boundary": (
+                "Deterministic fitted latent-ODE experiment on FAST seed-QI "
+                "trajectories; not a production surrogate or extrapolation claim."
+            ),
+        },
+    }
+    return LatentODEFit(
+        model=model,
+        metrics=metrics,
+        predictions=predictions,
+        validation=validation,
+    )
+
+
+def write_neural_ode_training_bundle(
+    outdir: str | Path,
+    *,
+    shape: tuple[int, int] = (16, 16),
+    seeds: Sequence[int] | None = None,
+    seed_count: int = 6,
+    base_seed: int = 20240511,
+    split_seed: int = 314159,
+    steps: int = 24,
+    dt: float = 1.0e-2,
+    save_every: int = 1,
+    resistivity: float = 1.0e-3,
+    viscosity: float = 1.0e-3,
+    perturbation_amplitude: float = 1.0e-3,
+    psi_noise_amplitude: float = 1.0e-8,
+    observation_count: int = 2,
+    hidden_size: int = 8,
+    ridge: float = 1.0e-8,
+    model_seed: int = 0,
+    write_figures: bool = True,
+) -> tuple[Path, dict[str, Any]]:
+    """Write dataset, baselines, fitted latent ODE, predictions, and figures."""
+    output_dir = Path(outdir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    dataset = build_seed_qi_trajectory_dataset(
+        shape=shape,
+        seeds=seeds,
+        seed_count=seed_count,
+        base_seed=base_seed,
+        steps=steps,
+        dt=dt,
+        save_every=save_every,
+        resistivity=resistivity,
+        viscosity=viscosity,
+        perturbation_amplitude=perturbation_amplitude,
+        psi_noise_amplitude=psi_noise_amplitude,
+    )
+    split = make_train_val_test_split(dataset.seeds, split_seed=split_seed)
+    baseline = evaluate_baselines(dataset, split, observation_count=observation_count)
+    latent = fit_latent_ode(
+        dataset,
+        split,
+        baseline,
+        observation_count=observation_count,
+        hidden_size=hidden_size,
+        ridge=ridge,
+        random_seed=model_seed,
+    )
+    experiment = _experiment_spec(dataset, split, baseline)
+    experiment["protocol"]["trainable_latent_ode"] = {
+        "model_schema": NEURAL_ODE_LATENT_MODEL_SCHEMA,
+        "metrics_schema": NEURAL_ODE_LATENT_METRICS_SCHEMA,
+        "hidden_size": int(hidden_size),
+        "ridge": float(ridge),
+        "model_seed": int(model_seed),
+    }
+    validation = _training_validation_report(dataset, split, baseline, latent, experiment)
+
+    dataset_path = output_dir / "dataset.npz"
+    splits_path = output_dir / "splits.json"
+    baseline_metrics_path = output_dir / "baseline_metrics.json"
+    calibration_path = output_dir / "calibration.json"
+    model_path = output_dir / "latent_ode_model.json"
+    latent_metrics_path = output_dir / "latent_ode_metrics.json"
+    predictions_path = output_dir / "latent_ode_predictions.npz"
+    experiment_path = output_dir / "experiment_spec.json"
+    validation_path = output_dir / "validation.json"
+    manifest_path = output_dir / "manifest.json"
+
+    _write_dataset_npz(dataset_path, dataset)
+    splits_path.write_text(
+        json.dumps(split.diagnostics, indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+    baseline_metrics_path.write_text(
+        json.dumps(baseline.metrics, indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+    calibration_path.write_text(
+        json.dumps(baseline.calibration, indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+    model_path.write_text(json.dumps(latent.model, indent=2, sort_keys=True), encoding="utf-8")
+    latent_metrics_path.write_text(
+        json.dumps(latent.metrics, indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+    np.savez_compressed(
+        predictions_path,
+        schema=np.asarray(NEURAL_ODE_LATENT_METRICS_SCHEMA),
+        predictions=latent.predictions,
+        targets=dataset.targets,
+        times=dataset.times,
+        seeds=dataset.seeds,
+        target_names=np.asarray(dataset.target_names),
+    )
+    experiment_path.write_text(json.dumps(experiment, indent=2, sort_keys=True), encoding="utf-8")
+    validation_path.write_text(json.dumps(validation, indent=2, sort_keys=True), encoding="utf-8")
+    outputs = {
+        "dataset": dataset_path.name,
+        "splits": splits_path.name,
+        "baseline_metrics": baseline_metrics_path.name,
+        "calibration": calibration_path.name,
+        "latent_ode_model": model_path.name,
+        "latent_ode_metrics": latent_metrics_path.name,
+        "latent_ode_predictions": predictions_path.name,
+        "experiment_spec": experiment_path.name,
+        "validation": validation_path.name,
+    }
+    if write_figures:
+        figure_paths = _write_neural_ode_training_figures(
+            dataset,
+            baseline,
+            latent,
+            output_dir / "figures",
+        )
+        outputs.update(
+            {
+                name: path.relative_to(output_dir).as_posix()
+                for name, path in figure_paths.items()
+            }
+        )
+    write_manifest(
+        manifest_path,
+        config=experiment,
+        outputs=outputs,
+        claim_level="validation",
+        claim_scope=(
+            "Deterministic fitted latent-ODE experiment with frozen splits, "
+            "baselines, metrics, calibration, and predictions."
+        ),
+    )
+    return manifest_path, validation
+
+
 def write_neural_ode_reproducibility_bundle(
     outdir: str | Path,
     *,
@@ -374,18 +624,7 @@ def write_neural_ode_reproducibility_bundle(
     experiment_path = output_dir / "experiment_spec.json"
     validation_path = output_dir / "validation.json"
     manifest_path = output_dir / "manifest.json"
-    np.savez_compressed(
-        dataset_path,
-        schema=np.asarray(NEURAL_ODE_DATASET_SCHEMA),
-        seeds=dataset.seeds,
-        times=dataset.times,
-        features=dataset.features,
-        targets=dataset.targets,
-        feature_names=np.asarray(dataset.feature_names),
-        target_names=np.asarray(dataset.target_names),
-        diagnostics_json=np.asarray(json.dumps(dataset.diagnostics, sort_keys=True)),
-        source_diagnostics_json=np.asarray(json.dumps(dataset.source_diagnostics, sort_keys=True)),
-    )
+    _write_dataset_npz(dataset_path, dataset)
     splits_path.write_text(
         json.dumps(split.diagnostics, indent=2, sort_keys=True),
         encoding="utf-8",
@@ -433,6 +672,194 @@ def write_neural_ode_reproducibility_bundle(
         ),
     )
     return manifest_path, validation
+
+
+def _write_dataset_npz(path: Path, dataset: NeuralODEDataset) -> Path:
+    np.savez_compressed(
+        path,
+        schema=np.asarray(NEURAL_ODE_DATASET_SCHEMA),
+        seeds=dataset.seeds,
+        times=dataset.times,
+        features=dataset.features,
+        targets=dataset.targets,
+        feature_names=np.asarray(dataset.feature_names),
+        target_names=np.asarray(dataset.target_names),
+        diagnostics_json=np.asarray(json.dumps(dataset.diagnostics, sort_keys=True)),
+        source_diagnostics_json=np.asarray(json.dumps(dataset.source_diagnostics, sort_keys=True)),
+    )
+    return path
+
+
+def _latent_features(
+    states: np.ndarray,
+    feature_weights: np.ndarray,
+    feature_bias: np.ndarray,
+) -> np.ndarray:
+    nonlinear = np.tanh(states @ feature_weights + feature_bias.reshape((1, -1)))
+    bias = np.ones((states.shape[0], 1), dtype=np.float64)
+    return np.concatenate((states, nonlinear, bias), axis=1)
+
+
+def _integrate_latent_ode(
+    targets: np.ndarray,
+    times: np.ndarray,
+    coefficients: np.ndarray,
+    feature_weights: np.ndarray,
+    feature_bias: np.ndarray,
+    *,
+    observation_count: int,
+) -> np.ndarray:
+    predictions = np.array(targets, dtype=np.float64, copy=True)
+    start_index = observation_count - 1
+    predictions[:, start_index, :] = targets[:, start_index, :]
+    for time_index in range(start_index, times.size - 1):
+        dt = float(times[time_index + 1] - times[time_index])
+        states = predictions[:, time_index, :]
+        derivative = _latent_features(states, feature_weights, feature_bias) @ coefficients
+        predictions[:, time_index + 1, :] = states + dt * derivative
+    return predictions
+
+
+def _latent_ode_metrics(
+    dataset: NeuralODEDataset,
+    split: SplitManifest,
+    baseline: BaselineEvaluation,
+    predictions: np.ndarray,
+    *,
+    observation_count: int,
+) -> dict[str, Any]:
+    forecast_slice = slice(observation_count, None)
+    split_indices = {
+        "train": _indices_for_ids(dataset.seeds, split.train),
+        "validation": _indices_for_ids(dataset.seeds, split.validation),
+        "test": _indices_for_ids(dataset.seeds, split.test),
+    }
+    split_scores = {}
+    for split_name, indices in split_indices.items():
+        residual = (
+            dataset.targets[indices, forecast_slice, :]
+            - predictions[indices, forecast_slice, :]
+        )
+        scores = _forecast_scores(residual, dataset.target_names)
+        scores["sample_count"] = int(indices.size)
+        split_scores[split_name] = scores
+    best_baseline_test_rmse = min(
+        float(metrics["test"]["rmse"])
+        for metrics in baseline.metrics["baselines"].values()
+    )
+    latent_test_rmse = float(split_scores["test"]["rmse"])
+    checks = {
+        "finite_metrics": bool(
+            np.isfinite(
+                [
+                    split_scores["train"]["rmse"],
+                    split_scores["validation"]["rmse"],
+                    latent_test_rmse,
+                    best_baseline_test_rmse,
+                ]
+            ).all()
+        ),
+        "nonnegative_errors": bool(latent_test_rmse >= 0.0 and best_baseline_test_rmse >= 0.0),
+    }
+    return {
+        "schema": NEURAL_ODE_LATENT_METRICS_SCHEMA,
+        "observation_count": int(observation_count),
+        "target_names": list(dataset.target_names),
+        "splits": split_scores,
+        "best_baseline_test_rmse": best_baseline_test_rmse,
+        "latent_ode_test_rmse": latent_test_rmse,
+        "test_rmse_ratio_to_best_baseline": latent_test_rmse
+        / max(best_baseline_test_rmse, np.finfo(np.float64).eps),
+        "checks": checks,
+        "passed": all(checks.values()),
+    }
+
+
+def _training_validation_report(
+    dataset: NeuralODEDataset,
+    split: SplitManifest,
+    baseline: BaselineEvaluation,
+    latent: LatentODEFit,
+    experiment: Mapping[str, Any],
+) -> dict[str, Any]:
+    checks = {
+        "source_seed_qi_validation_passed": bool(dataset.diagnostics["source_validation_passed"]),
+        "split_manifest_passed": bool(split.diagnostics["passed"]),
+        "baseline_metrics_passed": bool(baseline.metrics["passed"]),
+        "latent_training_passed": bool(latent.validation["passed"]),
+        "latent_metrics_passed": bool(latent.metrics["passed"]),
+        "predictions_match_target_shape": bool(latent.predictions.shape == dataset.targets.shape),
+    }
+    return {
+        "schema": NEURAL_ODE_TRAINING_GATES_SCHEMA,
+        "passed": all(checks.values()),
+        "checks": checks,
+        "diagnostics": {
+            **experiment,
+            "latent_ode": {
+                "model_schema": NEURAL_ODE_LATENT_MODEL_SCHEMA,
+                "metrics_schema": NEURAL_ODE_LATENT_METRICS_SCHEMA,
+                "test_rmse_ratio_to_best_baseline": latent.metrics[
+                    "test_rmse_ratio_to_best_baseline"
+                ],
+            },
+        },
+    }
+
+
+def _write_neural_ode_training_figures(
+    dataset: NeuralODEDataset,
+    baseline: BaselineEvaluation,
+    latent: LatentODEFit,
+    figure_dir: Path,
+) -> dict[str, Path]:
+    import matplotlib.pyplot as plt
+
+    figure_dir.mkdir(parents=True, exist_ok=True)
+    prediction_path = figure_dir / "latent_ode_predictions.png"
+    rmse_path = figure_dir / "latent_ode_rmse_comparison.png"
+    target_index = 0
+    fig, ax = plt.subplots(figsize=(7.2, 4.2), constrained_layout=True)
+    for seed_index, seed in enumerate(dataset.seeds):
+        ax.plot(
+            dataset.times,
+            dataset.targets[seed_index, :, target_index],
+            color="0.75",
+            linewidth=1.0,
+        )
+        ax.plot(
+            dataset.times,
+            latent.predictions[seed_index, :, target_index],
+            linestyle="--",
+            linewidth=1.2,
+            label=f"seed {int(seed)}",
+        )
+    ax.set_title(f"Latent ODE forecasts: {dataset.target_names[target_index]}")
+    ax.set_xlabel("time")
+    ax.set_ylabel(dataset.target_names[target_index])
+    ax.grid(True, alpha=0.25)
+    ax.legend(fontsize="x-small", ncols=2)
+    fig.savefig(prediction_path, dpi=180)
+    plt.close(fig)
+
+    baseline_names = list(baseline.metrics["baselines"])
+    rmse_values = [
+        baseline.metrics["baselines"][name]["test"]["rmse"]
+        for name in baseline_names
+    ]
+    labels = [*baseline_names, "latent_ode"]
+    values = [*rmse_values, latent.metrics["latent_ode_test_rmse"]]
+    fig, ax = plt.subplots(figsize=(7.4, 3.8), constrained_layout=True)
+    ax.bar(labels, values, color=["#9ecae1"] * len(baseline_names) + ["#31a354"])
+    ax.set_ylabel("test RMSE")
+    ax.set_title("Fitted latent ODE vs deterministic baselines")
+    ax.tick_params(axis="x", rotation=20)
+    fig.savefig(rmse_path, dpi=180)
+    plt.close(fig)
+    return {
+        "latent_ode_prediction_figure": prediction_path,
+        "latent_ode_rmse_comparison": rmse_path,
+    }
 
 
 def _trajectory_feature_matrix(
@@ -575,17 +1002,18 @@ def _experiment_spec(
         "baseline_passed": bool(baseline.metrics["passed"]),
         "protocol": {
             "purpose": (
-                "Freeze deterministic trajectory data, split manifests, and cheap "
-                "baselines before introducing trainable neural-ODE components."
+                "Freeze deterministic trajectory data, split manifests, cheap "
+                "baselines, and fitted latent-ODE comparisons under one schema."
             ),
-            "no_expensive_training": True,
-            "future_neural_ode_contract": {
+            "ci_scale_training_only": True,
+            "neural_ode_contract": {
                 "inputs": "features[n_seed, n_time, n_feature], times[n_time]",
                 "targets": "targets[n_seed, n_time, n_target]",
                 "required_comparisons": [
                     "persistence",
                     "linear_prefix",
                     "train_mean_time",
+                    "fitted_latent_ode",
                 ],
                 "required_reports": [
                     "MAE/RMSE by split",

@@ -126,6 +126,49 @@ def plot_flux_gif(
     return output_path
 
 
+def plot_current_density_gif(
+    trajectory: ReducedMHDTrajectory,
+    *,
+    path: str | Path,
+    extent: tuple[float, float, float, float] | None = None,
+    lengths: tuple[float, float] = (2.0 * np.pi, 2.0 * np.pi),
+    duration: float = 0.15,
+) -> Path:
+    """Write an animated GIF of saved out-of-plane current-density frames."""
+    import imageio.v2 as imageio
+    import matplotlib.pyplot as plt
+
+    from mhx.equations.reduced_mhd import current_density
+
+    output_path = Path(path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    current_values = np.asarray(
+        [np.asarray(current_density(psi, lengths=lengths)) for psi in trajectory.states.psi]
+    )
+    vmax = float(np.max(np.abs(current_values)))
+    vmax = max(vmax, np.finfo(np.float64).eps)
+    frames = []
+    for index, current in enumerate(current_values):
+        fig, ax = plt.subplots(figsize=(4.5, 4.0), constrained_layout=True)
+        image = ax.imshow(
+            current.T,
+            origin="lower",
+            cmap="RdBu_r",
+            vmin=-vmax,
+            vmax=vmax,
+            extent=extent,
+        )
+        ax.set_title(f"Current density frame {index}")
+        ax.set_xlabel("x")
+        ax.set_ylabel("y")
+        fig.colorbar(image, ax=ax, shrink=0.8)
+        fig.canvas.draw()
+        frames.append(np.asarray(fig.canvas.buffer_rgba())[..., :3].copy())
+        plt.close(fig)
+    imageio.mimsave(output_path, frames, duration=duration)
+    return output_path
+
+
 def plot_decay_amplitude(times, numerical, exact, *, path: str | Path) -> Path:
     """Plot exact and numerical resistive-decay mode amplitudes."""
     import matplotlib.pyplot as plt

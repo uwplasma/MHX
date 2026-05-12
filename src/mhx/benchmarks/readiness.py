@@ -30,6 +30,8 @@ REQUIRED_PUBLIC_RELEASE_CASES = (
     "nonlinear_duration_audit",
     "seed_robust_qi",
     "seed_robust_qi_sweep",
+    "neural_ode_latent_fit",
+    "rutherford_production_execution",
     "duration_policy",
     "diffusion_eigenvalue",
     "power_iteration",
