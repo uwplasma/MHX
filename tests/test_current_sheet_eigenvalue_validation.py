@@ -11,14 +11,17 @@ from mhx.benchmarks import (
     PERIODIC_CURRENT_SHEET_NONLINEAR_BRIDGE_SCHEMA,
     PERIODIC_CURRENT_SHEET_TIMEDOMAIN_SCHEMA,
     PERIODIC_DOUBLE_HARRIS_NONLINEAR_GROWTH_SCHEMA,
+    PERIODIC_DOUBLE_HARRIS_SEEDED_LONG_RUN_SCHEMA,
     run_periodic_current_sheet_eigenvalue_validation,
     run_periodic_current_sheet_nonlinear_bridge_validation,
     run_periodic_current_sheet_timedomain_validation,
     run_periodic_double_harris_nonlinear_growth_validation,
+    run_periodic_double_harris_seeded_long_run_validation,
     write_periodic_current_sheet_eigenvalue_validation,
     write_periodic_current_sheet_nonlinear_bridge_validation,
     write_periodic_current_sheet_timedomain_validation,
     write_periodic_double_harris_nonlinear_growth_validation,
+    write_periodic_double_harris_seeded_long_run_validation,
 )
 from mhx.cli.main import app
 
@@ -101,6 +104,27 @@ def test_periodic_double_harris_nonlinear_growth_gate() -> None:
     assert result.relative_growth_error < 0.15
     assert result.time.shape == result.perturbation_norm.shape
     assert result.perturbation_norm[-1] > result.perturbation_norm[0]
+
+
+def test_periodic_double_harris_seeded_long_run_gate() -> None:
+    result = run_periodic_double_harris_seeded_long_run_validation(
+        shape=(16, 16),
+        t_end=10.0,
+        save_every=100,
+        fit_window=(0.0, 6.0),
+        min_max_growth_factor=1.2,
+    )
+    assert result.diagnostics["schema"] == PERIODIC_DOUBLE_HARRIS_SEEDED_LONG_RUN_SCHEMA
+    assert result.validation["passed"] is True
+    assert all(result.validation["checks"].values())
+    assert result.time.shape == result.perturbation_norm.shape
+    assert result.magnetic_energy.shape == result.time.shape
+    assert result.kinetic_energy.shape == result.time.shape
+    assert result.total_energy.shape == result.time.shape
+    assert result.current_density_linf.shape == result.time.shape
+    assert result.fitted_early_growth_rate > 0.0
+    assert result.early_growth_factor > 1.0
+    assert np.max(result.total_energy) <= result.total_energy[0] * (1.0 + 1.0e-8)
 
 
 def test_periodic_current_sheet_nonlinear_bridge_rejects_invalid_inputs() -> None:
@@ -193,6 +217,55 @@ def test_write_periodic_double_harris_nonlinear_growth_artifacts_and_cli(tmp_pat
             "8",
             "--ny",
             "8",
+        ],
+    )
+    assert cli_result.exit_code == 0, cli_result.stdout
+    assert (outdir / "validation.json").exists()
+
+
+def test_write_periodic_double_harris_seeded_long_run_artifacts_and_cli(tmp_path) -> None:
+    manifest_path, validation = write_periodic_double_harris_seeded_long_run_validation(
+        tmp_path,
+        shape=(16, 16),
+        t_end=10.0,
+        save_every=100,
+        fit_window=(0.0, 6.0),
+        min_max_growth_factor=1.2,
+    )
+    assert manifest_path == tmp_path / "manifest.json"
+    assert validation["passed"] is True
+    diagnostics = json.loads((tmp_path / "diagnostics.json").read_text())
+    assert diagnostics["references"]["scope"].startswith("Longer seeded")
+    history = np.load(tmp_path / "periodic_double_harris_seeded_long_run.npz")
+    assert history["schema"] == PERIODIC_DOUBLE_HARRIS_SEEDED_LONG_RUN_SCHEMA
+    assert history["time"].shape == history["perturbation_norm"].shape
+    assert history["total_energy"].shape == history["time"].shape
+    assert history["current_density_linf"].shape == history["time"].shape
+    assert history["perturbed_psi"].shape[1:] == (16, 16)
+    assert (
+        tmp_path / "figures" / "periodic_double_harris_seeded_long_run.png"
+    ).stat().st_size > 0
+
+    outdir = tmp_path / "cli-double-harris-long"
+    cli_result = CliRunner().invoke(
+        app,
+        [
+            "benchmark",
+            "double-harris-long-run",
+            "--outdir",
+            str(outdir),
+            "--nx",
+            "16",
+            "--ny",
+            "16",
+            "--t-end",
+            "10",
+            "--save-every",
+            "100",
+            "--fit-stop",
+            "6",
+            "--min-max-growth-factor",
+            "1.2",
         ],
     )
     assert cli_result.exit_code == 0, cli_result.stdout

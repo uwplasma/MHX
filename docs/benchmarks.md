@@ -71,6 +71,7 @@ mhx benchmark current-sheet-eigenvalue --outdir outputs/benchmarks/periodic_curr
 mhx benchmark current-sheet-timedomain --outdir outputs/benchmarks/periodic_current_sheet_timedomain
 mhx benchmark current-sheet-nonlinear-bridge --outdir outputs/benchmarks/periodic_current_sheet_nonlinear_bridge
 mhx benchmark double-harris-growth --outdir outputs/benchmarks/periodic_double_harris_nonlinear_growth
+mhx benchmark double-harris-long-run --outdir outputs/benchmarks/periodic_double_harris_seeded_long_run
 mhx benchmark nonlinear-energy-budget --outdir outputs/benchmarks/nonlinear_energy_budget
 mhx benchmark nonlinear-duration-audit --outdir outputs/benchmarks/nonlinear_duration_audit
 mhx benchmark duration-policy --outdir outputs/benchmarks/duration_policy
@@ -186,6 +187,15 @@ The periodic double-Harris nonlinear-growth command writes:
 - `validation.json`
 - `periodic_double_harris_nonlinear_growth.npz`
 - `figures/periodic_double_harris_nonlinear_growth.png`
+
+The periodic double-Harris seeded long-run command writes:
+
+- `diagnostics.json`
+- `validation.json`
+- `periodic_double_harris_seeded_long_run.npz`
+- `figures/periodic_double_harris_seeded_long_run.png`
+- optional `figures/periodic_double_harris_flux.gif` and
+  `figures/periodic_double_harris_current.gif` with `--movies`
 
 The nonlinear energy-budget command writes:
 

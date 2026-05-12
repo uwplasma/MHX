@@ -45,6 +45,17 @@ write_nonlinear_energy_budget_validation(
 )
 ```
 
+The current-sheet long replay uses the periodic double-Harris initializer from
+[`equilibria.py`](https://github.com/uwplasma/MHX/blob/main/src/mhx/physics/equilibria.py)
+and the scalable base-vs-seeded benchmark in
+[`current_sheet.py`](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/current_sheet.py):
+
+```bash
+mhx benchmark double-harris-long-run \
+  --outdir outputs/long_runs/periodic_double_harris_seeded_128_t100_20260512 \
+  --nx 128 --ny 128 --t-end 100 --save-every 200 --fit-stop 10 --no-movies
+```
+
 ## Rutherford-duration executor run
 
 The `96×96` Rutherford-duration executor run completed the configured duration
@@ -114,6 +125,43 @@ This is good evidence that nonlinear Poisson brackets, spectral current,
 dissipation signs, and RK4 integration remain coherent over a substantially
 longer run than the FAST CI defaults.
 
+## Seeded double-Harris long replay
+
+The new periodic double-Harris run is the first long nonlinear current-sheet
+replay in this rebuild that shows an early instability-path response rather
+than pure decay of a stable cosine equilibrium. It advances a base run and a
+seeded run on the same grid and measures
+
+$$
+A_s(t)=\frac{\|q_s(t)-q_b(t)\|_2}{\epsilon}.
+$$
+
+| Quantity | Value |
+| --- | ---: |
+| grid | `128×128` |
+| RK4 steps | 10,000 |
+| final time | 100.0 |
+| saved samples | 51 |
+| early fitted growth rate | `0.141` |
+| early amplification | `5.27×` |
+| maximum amplification | `7.35×` |
+| final/initial total energy | `0.351` |
+| max kinetic energy | `6.13e-7` |
+| elapsed walltime | `61.9 s` |
+| gates | passed |
+
+![Seeded double-Harris 128x128 long replay](_static/validation/long_runs/double_harris_seeded_128_t100.png)
+
+### Skeptical interpretation
+
+This result is a real improvement over the earlier Rutherford-duration cosine
+run because the perturbation grows for several Alfvén times before saturating
+and relaxing. It still does **not** close a paper-grade reconnection claim:
+the kinetic energy remains very small, the current-sheet peak decays under the
+chosen resistivity/viscosity, and the run has no resolution, time-step, seed,
+or aspect-ratio sweep. The correct conclusion is that MHX now has a scalable
+nonlinear current-sheet validation lane suitable for those sweeps.
+
 ## Current claim boundary
 
 These runs support:
@@ -121,6 +169,7 @@ These runs support:
 - long-run stability of the current reduced-MHD code path;
 - production-executor artifact correctness under a completed duration target;
 - nonlinear energy/dissipation-budget correctness for an active nonlinear state.
+- early seeded-growth response for a periodic double-Harris current-sheet replay.
 
 These runs do not yet support:
 
@@ -129,8 +178,7 @@ These runs do not yet support:
 - Sweet-Parker reconnection-rate scaling;
 - publication-grade reconnection claims.
 
-The next required code/physics step is to replace the periodic cosine
-duration-run initial condition with a calibrated unstable Harris/current-sheet
-nonlinear setup that is consistent with the validated linear tearing benchmark,
-then repeat this page with convergence and seed-robustness sweeps.
-
+The next required physics step is to turn the double-Harris replay into a
+convergence campaign: sweep resolution, time step, seed amplitude/mode, sheet
+width/aspect ratio, and Lundquist number, then promote only those figures whose
+scalings survive the sweep.

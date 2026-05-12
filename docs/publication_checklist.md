@@ -29,6 +29,7 @@ Every figure included in the paper-style documentation should have:
 | Dispersion/layer/time replay | `linear_tearing_dispersion.png`, `linear_tearing_layer.png`, `linear_tearing_timedomain.png` | `validation` | Ready as FAST branch, shape, and growth-fit gates. |
 | Periodic current sheet | `periodic_current_sheet_spectrum.png`, `periodic_current_sheet_timedomain.png`, `periodic_current_sheet_nonlinear_bridge.png` | `validation` | Ready as operator and differentiability gates. |
 | Periodic double-Harris growth | `periodic_double_harris_nonlinear_growth.png` | `validation` | Ready as small-grid instability-path evidence; not a Rutherford/plasmoid production claim. |
+| Seeded double-Harris long run | `periodic_double_harris_seeded_long_run.png`, optional flux/current GIFs | `validation` | Ready as bounded nonlinear evidence with early growth and dissipative energy; still needs convergence and seed/aspect-ratio sweeps. |
 | Nonlinear energy budget | `nonlinear_energy_budget.png` | `validation` | Ready as nonlinear conservation/dissipation evidence. |
 | Nonlinear duration audit | `nonlinear_duration_audit.png` | `validation` | Ready as an overclaim-prevention figure. |
 | Seed-robust QI | `qi_summary.png` | `validation` | Ready as FAST seed-sensitivity evidence after generation in the evidence bundle. |
@@ -63,6 +64,14 @@ growth gate:
 
 ```{image} _static/validation/periodic_double_harris_nonlinear_growth/periodic_double_harris_nonlinear_growth.png
 :alt: Periodic double-Harris nonlinear growth gate
+:width: 760px
+```
+
+The strongest current scalable nonlinear replay is the seeded double-Harris
+long-run gate:
+
+```{image} _static/validation/periodic_double_harris_seeded_long_run/figures/periodic_double_harris_seeded_long_run.png
+:alt: Seeded periodic double-Harris nonlinear long run
 :width: 760px
 ```
 

@@ -31,6 +31,7 @@ from mhx.benchmarks import (
     write_periodic_current_sheet_nonlinear_bridge_validation,
     write_periodic_current_sheet_timedomain_validation,
     write_periodic_double_harris_nonlinear_growth_validation,
+    write_periodic_double_harris_seeded_long_run_validation,
     write_power_iteration_validation,
     write_readiness_report,
     write_reconnection_scaling_validation,
@@ -1031,6 +1032,67 @@ def benchmark_double_harris_growth(
         dt=dt,
         t_end=t_end,
         save_every=save_every,
+    )
+    typer.echo(f"wrote {manifest_path}")
+    if not validation["passed"]:
+        raise typer.Exit(code=1)
+
+
+@benchmark_app.command("double-harris-long-run")
+def benchmark_double_harris_long_run(
+    outdir: Annotated[
+        Path,
+        typer.Option(
+            "--outdir",
+            help="Output directory for seeded double-Harris long-run artifacts.",
+        ),
+    ] = Path("outputs/benchmarks/periodic_double_harris_seeded_long_run"),
+    nx: Annotated[int, typer.Option("--nx", help="Grid points in x.")] = 64,
+    ny: Annotated[int, typer.Option("--ny", help="Grid points in y.")] = 64,
+    width: Annotated[float, typer.Option("--width", help="Current-sheet half-width proxy.")] = 0.4,
+    eta: Annotated[float, typer.Option("--eta", help="Resistivity.")] = 5.0e-3,
+    nu: Annotated[float, typer.Option("--nu", help="Viscosity.")] = 5.0e-3,
+    perturbation_amplitude: Annotated[
+        float,
+        typer.Option("--perturbation-amplitude", help="Seed flux perturbation amplitude."),
+    ] = 1.0e-3,
+    mode_x: Annotated[int, typer.Option("--mode-x", help="Seed Fourier mode in x.")] = 2,
+    mode_y: Annotated[int, typer.Option("--mode-y", help="Seed Fourier mode in y.")] = 1,
+    dt: Annotated[float, typer.Option("--dt", help="RK4 time step.")] = 1.0e-2,
+    t_end: Annotated[float, typer.Option("--t-end", help="Final nonlinear time.")] = 30.0,
+    save_every: Annotated[int, typer.Option("--save-every", help="Saved-step stride.")] = 100,
+    fit_start: Annotated[float, typer.Option("--fit-start", help="Early fit window start.")] = 0.0,
+    fit_stop: Annotated[float, typer.Option("--fit-stop", help="Early fit window stop.")] = 10.0,
+    min_early_growth_rate: Annotated[
+        float,
+        typer.Option("--min-early-growth-rate", help="Minimum fitted early growth rate."),
+    ] = 5.0e-2,
+    min_max_growth_factor: Annotated[
+        float,
+        typer.Option("--min-max-growth-factor", help="Minimum maximum normalized growth."),
+    ] = 2.0,
+    movies: Annotated[
+        bool,
+        typer.Option("--movies/--no-movies", help="Write fixed-scale flux/current GIFs."),
+    ] = False,
+) -> None:
+    """Run a scalable seeded periodic double-Harris nonlinear validation replay."""
+    _configure_validation_precision()
+    manifest_path, validation = write_periodic_double_harris_seeded_long_run_validation(
+        outdir,
+        shape=(nx, ny),
+        width=width,
+        resistivity=eta,
+        viscosity=nu,
+        perturbation_amplitude=perturbation_amplitude,
+        perturbation_mode=(mode_x, mode_y),
+        dt=dt,
+        t_end=t_end,
+        save_every=save_every,
+        fit_window=(fit_start, fit_stop),
+        min_early_growth_rate=min_early_growth_rate,
+        min_max_growth_factor=min_max_growth_factor,
+        movies=movies,
     )
     typer.echo(f"wrote {manifest_path}")
     if not validation["passed"]:

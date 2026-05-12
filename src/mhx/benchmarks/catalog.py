@@ -370,6 +370,28 @@ def validation_catalog_entries() -> tuple[BenchmarkCatalogEntry, ...]:
             ),
         ),
         BenchmarkCatalogEntry(
+            name="periodic_double_harris_seeded_long_run",
+            command=(
+                "mhx benchmark double-harris-long-run "
+                "--outdir outputs/benchmarks/periodic_double_harris_seeded_long_run"
+            ),
+            schema="mhx.validation.periodic_double_harris_seeded_long_run.v1",
+            purpose=(
+                "Scalable seeded nonlinear double-Harris replay with energy, "
+                "current-density, early-growth, and movie-ready trajectory outputs."
+            ),
+            expected_outputs=(
+                "diagnostics.json",
+                "validation.json",
+                "periodic_double_harris_seeded_long_run.npz",
+                "figures/periodic_double_harris_seeded_long_run.png",
+            ),
+            literature_anchor=(
+                "Intermediate evidence step between tiny dense-eigenmode gates "
+                "and converged FKR/Coppi or Sweet-Parker/plasmoid production campaigns."
+            ),
+        ),
+        BenchmarkCatalogEntry(
             name="nonlinear_energy_budget",
             command=(
                 "mhx benchmark nonlinear-energy-budget "

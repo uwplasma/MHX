@@ -1155,6 +1155,99 @@ def plot_double_harris_nonlinear_growth(
     return output_path
 
 
+def plot_double_harris_seeded_long_run(
+    times,
+    perturbation_norm,
+    magnetic_energy,
+    kinetic_energy,
+    total_energy_values,
+    current_density_linf,
+    initial_psi,
+    final_psi,
+    base_final_psi,
+    *,
+    fitted_early_growth_rate: float,
+    fit_window: tuple[float, float],
+    path: str | Path,
+) -> Path:
+    """Plot seeded double-Harris long-run histories and flux morphology."""
+    import matplotlib.pyplot as plt
+
+    output_path = Path(path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    time_values = np.asarray(times)
+    norm_values = np.asarray(perturbation_norm)
+    magnetic = np.asarray(magnetic_energy)
+    kinetic = np.asarray(kinetic_energy)
+    total = np.asarray(total_energy_values)
+    current_linf = np.asarray(current_density_linf)
+    fit_mask = (time_values >= fit_window[0]) & (time_values <= fit_window[1])
+    reference = (
+        norm_values[fit_mask][0]
+        * np.exp(fitted_early_growth_rate * (time_values - time_values[fit_mask][0]))
+    )
+    flux_delta = np.asarray(final_psi) - np.asarray(base_final_psi)
+
+    fig, axes = plt.subplots(2, 3, figsize=(14.0, 7.8), constrained_layout=True)
+    axes[0, 0].semilogy(time_values, norm_values, "o-", markersize=3.0, label="saved run")
+    axes[0, 0].semilogy(
+        time_values[fit_mask],
+        reference[fit_mask],
+        "--",
+        linewidth=1.2,
+        label=rf"early fit $\gamma={fitted_early_growth_rate:.3f}$",
+    )
+    axes[0, 0].axvspan(fit_window[0], fit_window[1], color="0.85", zorder=-1, label="fit window")
+    axes[0, 0].set_xlabel("time")
+    axes[0, 0].set_ylabel(r"$\|\delta q(t)\|_2/\epsilon$")
+    axes[0, 0].set_title("Perturbed-minus-base norm")
+    axes[0, 0].legend(frameon=False, fontsize=8)
+
+    axes[0, 1].plot(time_values, magnetic, color="#3266a8", label=r"$E_B$")
+    axes[0, 1].plot(time_values, total, color="black", label=r"$E$")
+    axes[0, 1].set_xlabel("time")
+    axes[0, 1].set_ylabel("mean energy")
+    axes[0, 1].set_title("Dissipative energy history")
+    axes[0, 1].legend(frameon=False, fontsize=8)
+    kinetic_axis = axes[0, 1].twinx()
+    kinetic_axis.semilogy(time_values, kinetic, color="#b54a4a", label=r"$E_K$")
+    kinetic_axis.set_ylabel("kinetic energy")
+    kinetic_axis.legend(frameon=False, fontsize=8, loc="lower right")
+
+    axes[0, 2].plot(time_values, current_linf, color="#8c4fb4")
+    axes[0, 2].set_xlabel("time")
+    axes[0, 2].set_ylabel(r"$\|j_z\|_\infty$")
+    axes[0, 2].set_title("Peak current density")
+
+    axes[1, 0].imshow(np.asarray(initial_psi).T, origin="lower", cmap="viridis")
+    axes[1, 0].set_title("Initial seeded flux")
+    axes[1, 0].set_xlabel("x-index")
+    axes[1, 0].set_ylabel("y-index")
+
+    axes[1, 1].imshow(np.asarray(final_psi).T, origin="lower", cmap="viridis")
+    axes[1, 1].set_title("Final seeded flux")
+    axes[1, 1].set_xlabel("x-index")
+    axes[1, 1].set_ylabel("y-index")
+
+    vmax = max(float(np.max(np.abs(flux_delta))), np.finfo(float).eps)
+    image = axes[1, 2].imshow(
+        flux_delta.T,
+        origin="lower",
+        cmap="RdBu_r",
+        vmin=-vmax,
+        vmax=vmax,
+    )
+    axes[1, 2].set_title(r"Final perturbed minus base $\psi$")
+    axes[1, 2].set_xlabel("x-index")
+    axes[1, 2].set_ylabel("y-index")
+    fig.colorbar(image, ax=axes[1, 2], shrink=0.8)
+
+    fig.suptitle("Seeded periodic double-Harris nonlinear long run")
+    fig.savefig(output_path, dpi=220)
+    plt.close(fig)
+    return output_path
+
+
 def plot_nonlinear_energy_budget(
     times,
     total_energy_values,

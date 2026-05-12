@@ -12,12 +12,20 @@ import jax.numpy as jnp
 import numpy as np
 
 from mhx.config import MeshConfig
-from mhx.equations.reduced_mhd import linearized_reduced_mhd_operator, reduced_mhd_rhs
+from mhx.diagnostics import kinetic_energy, magnetic_energy
+from mhx.equations.reduced_mhd import (
+    current_density,
+    linearized_reduced_mhd_operator,
+    reduced_mhd_rhs,
+)
 from mhx.grids import CartesianGrid
 from mhx.io import write_manifest
 from mhx.physics import CosineTearingEquilibrium, PeriodicDoubleHarrisEquilibrium
 from mhx.plotting import (
+    plot_current_density_gif,
     plot_double_harris_nonlinear_growth,
+    plot_double_harris_seeded_long_run,
+    plot_flux_gif,
     plot_nonlinear_current_sheet_bridge,
     plot_periodic_current_sheet_spectrum,
     plot_periodic_current_sheet_timedomain,
@@ -25,6 +33,7 @@ from mhx.plotting import (
 from mhx.state import (
     ReducedMHDParams,
     ReducedMHDState,
+    ReducedMHDTrajectory,
     flatten_reduced_mhd_state,
     unflatten_reduced_mhd_state,
 )
@@ -41,6 +50,9 @@ PERIODIC_CURRENT_SHEET_NONLINEAR_BRIDGE_SCHEMA = (
 )
 PERIODIC_DOUBLE_HARRIS_NONLINEAR_GROWTH_SCHEMA = (
     "mhx.validation.periodic_double_harris_nonlinear_growth.v1"
+)
+PERIODIC_DOUBLE_HARRIS_SEEDED_LONG_RUN_SCHEMA = (
+    "mhx.validation.periodic_double_harris_seeded_long_run.v1"
 )
 
 
@@ -112,6 +124,27 @@ class PeriodicDoubleHarrisNonlinearGrowthResult:
     base_initial_state: ReducedMHDState
     base_final_state: ReducedMHDState
     perturbed_final_state: ReducedMHDState
+    diagnostics: dict[str, Any]
+    validation: dict[str, Any]
+
+
+@dataclass(frozen=True)
+class PeriodicDoubleHarrisSeededLongRunResult:
+    """Resolution-oriented nonlinear replay of a seeded periodic double-Harris sheet."""
+
+    time: np.ndarray
+    perturbation_norm: np.ndarray
+    magnetic_energy: np.ndarray
+    kinetic_energy: np.ndarray
+    total_energy: np.ndarray
+    current_density_linf: np.ndarray
+    fitted_early_growth_rate: float
+    early_growth_factor: float
+    max_growth_factor: float
+    base_trajectory: ReducedMHDTrajectory
+    perturbed_trajectory: ReducedMHDTrajectory
+    base_initial_state: ReducedMHDState
+    perturbed_initial_state: ReducedMHDState
     diagnostics: dict[str, Any]
     validation: dict[str, Any]
 
@@ -747,6 +780,192 @@ def run_periodic_double_harris_nonlinear_growth_validation(
     )
 
 
+def run_periodic_double_harris_seeded_long_run_validation(
+    *,
+    shape: tuple[int, int] = (64, 64),
+    width: float = 0.4,
+    amplitude: float = 1.0,
+    resistivity: float = 5.0e-3,
+    viscosity: float = 5.0e-3,
+    perturbation_amplitude: float = 1.0e-3,
+    perturbation_mode: tuple[int, int] = (2, 1),
+    dt: float = 1.0e-2,
+    t_end: float = 30.0,
+    save_every: int = 100,
+    fit_window: tuple[float, float] = (0.0, 10.0),
+    min_saved_samples: int = 8,
+    min_early_growth_rate: float = 5.0e-2,
+    min_early_growth_factor: float = 1.5,
+    min_max_growth_factor: float = 2.0,
+    max_relative_energy_increase: float = 1.0e-8,
+) -> PeriodicDoubleHarrisSeededLongRunResult:
+    r"""Run a longer seeded periodic double-Harris nonlinear replay.
+
+    Unlike :func:`run_periodic_double_harris_nonlinear_growth_validation`, this
+    benchmark does not assemble a dense Jacobian and does not require the whole
+    trajectory to follow a frozen linear eigenvalue. It is a scalable nonlinear
+    evidence run: the base sheet and a seeded sheet are advanced at the requested
+    resolution, an early-time exponential window is fitted, and the full saved
+    trajectory is checked for finite fields, dissipative total-energy behavior,
+    and sustained resolved current-sheet diagnostics.
+    """
+    _validate_double_harris_seeded_long_run_inputs(
+        shape=shape,
+        width=width,
+        amplitude=amplitude,
+        resistivity=resistivity,
+        viscosity=viscosity,
+        perturbation_amplitude=perturbation_amplitude,
+        perturbation_mode=perturbation_mode,
+        dt=dt,
+        t_end=t_end,
+        save_every=save_every,
+        fit_window=fit_window,
+        min_saved_samples=min_saved_samples,
+        min_early_growth_rate=min_early_growth_rate,
+        min_early_growth_factor=min_early_growth_factor,
+        min_max_growth_factor=min_max_growth_factor,
+        max_relative_energy_increase=max_relative_energy_increase,
+    )
+    grid = CartesianGrid.from_mesh_config(MeshConfig(shape=shape))
+    base_initial = PeriodicDoubleHarrisEquilibrium(
+        width=width,
+        amplitude=amplitude,
+    ).initial_state(grid)
+    perturbed_initial = PeriodicDoubleHarrisEquilibrium(
+        width=width,
+        amplitude=amplitude,
+        perturbation_amplitude=perturbation_amplitude,
+        perturbation_mode=perturbation_mode,
+    ).initial_state(grid)
+    params = ReducedMHDParams(resistivity=resistivity, viscosity=viscosity)
+
+    def rhs(state: ReducedMHDState) -> ReducedMHDState:
+        return reduced_mhd_rhs(state, params, lengths=grid.lengths)
+
+    steps = round(t_end / dt)
+    base_trajectory = evolve_rk4(
+        base_initial,
+        rhs,
+        dt=dt,
+        steps=steps,
+        save_every=save_every,
+    )
+    perturbed_trajectory = evolve_rk4(
+        perturbed_initial,
+        rhs,
+        dt=dt,
+        steps=steps,
+        save_every=save_every,
+    )
+    time, perturbation_norm = _trajectory_difference_norms(
+        base_initial,
+        base_trajectory.times,
+        base_trajectory.states,
+        perturbed_initial,
+        perturbed_trajectory.states,
+        perturbation_amplitude=perturbation_amplitude,
+    )
+    energies = _trajectory_energy_and_current_histories(
+        perturbed_initial,
+        perturbed_trajectory.states,
+        lengths=grid.lengths,
+    )
+    fit_mask = (time >= fit_window[0]) & (time <= fit_window[1])
+    fit_time = time[fit_mask]
+    fit_norm = perturbation_norm[fit_mask]
+    fitted_early_growth_rate = float(np.polyfit(fit_time, np.log(fit_norm), 1)[0])
+    early_growth_factor = float(fit_norm[-1] / fit_norm[0])
+    max_growth_factor = float(np.max(perturbation_norm) / perturbation_norm[0])
+    initial_energy = float(energies["total"][0])
+    relative_energy_increase = float(
+        max(0.0, np.max(energies["total"]) - initial_energy) / max(initial_energy, 1.0e-300)
+    )
+    checks = {
+        "finite_histories": bool(
+            np.isfinite(perturbation_norm).all()
+            and np.isfinite(energies["magnetic"]).all()
+            and np.isfinite(energies["kinetic"]).all()
+            and np.isfinite(energies["total"]).all()
+            and np.isfinite(energies["current_density_linf"]).all()
+        ),
+        "full_duration_reached": bool(time[-1] >= t_end - 0.5 * dt),
+        "enough_saved_samples": bool(time.size >= min_saved_samples),
+        "early_growth_positive": fitted_early_growth_rate >= min_early_growth_rate,
+        "early_difference_grows": early_growth_factor >= min_early_growth_factor,
+        "nonlinear_difference_reaches_visible_growth": max_growth_factor >= min_max_growth_factor,
+        "total_energy_is_dissipative": relative_energy_increase <= max_relative_energy_increase,
+    }
+    diagnostics = {
+        "schema": PERIODIC_DOUBLE_HARRIS_SEEDED_LONG_RUN_SCHEMA,
+        "shape": list(shape),
+        "equilibrium": "periodic_double_harris",
+        "width": width,
+        "amplitude": amplitude,
+        "resistivity": resistivity,
+        "viscosity": viscosity,
+        "perturbation_amplitude": perturbation_amplitude,
+        "perturbation_mode": list(perturbation_mode),
+        "dt": dt,
+        "t_end": t_end,
+        "save_every": save_every,
+        "steps": steps,
+        "samples": int(time.size),
+        "fit_window": list(fit_window),
+        "fitted_early_growth_rate": fitted_early_growth_rate,
+        "early_growth_factor": early_growth_factor,
+        "max_growth_factor": max_growth_factor,
+        "initial_total_energy": initial_energy,
+        "final_total_energy": float(energies["total"][-1]),
+        "relative_energy_increase": relative_energy_increase,
+        "max_kinetic_energy": float(np.max(energies["kinetic"])),
+        "max_current_density_linf": float(np.max(energies["current_density_linf"])),
+        "references": {
+            "scope": (
+                "Longer seeded nonlinear reduced-MHD replay at scalable grid size. "
+                "This is stronger than a dense tiny-grid eigenmode replay, but it is "
+                "still a validation artifact until duration, resolution, seed, and "
+                "aspect-ratio sweeps are completed."
+            ),
+            "literature": (
+                "Anchored to Harris-sheet tearing and plasmoid-current-sheet "
+                "validation practice; the command supplies histories and movies "
+                "needed before FKR/Coppi or Sweet-Parker/plasmoid claims."
+            ),
+        },
+    }
+    validation = {
+        "schema": "mhx.validation.periodic_double_harris_seeded_long_run.gates.v1",
+        "passed": all(checks.values()),
+        "checks": checks,
+        "thresholds": {
+            "min_saved_samples": min_saved_samples,
+            "min_early_growth_rate": min_early_growth_rate,
+            "min_early_growth_factor": min_early_growth_factor,
+            "min_max_growth_factor": min_max_growth_factor,
+            "max_relative_energy_increase": max_relative_energy_increase,
+        },
+        "diagnostics": diagnostics,
+    }
+    return PeriodicDoubleHarrisSeededLongRunResult(
+        time=time,
+        perturbation_norm=perturbation_norm,
+        magnetic_energy=energies["magnetic"],
+        kinetic_energy=energies["kinetic"],
+        total_energy=energies["total"],
+        current_density_linf=energies["current_density_linf"],
+        fitted_early_growth_rate=fitted_early_growth_rate,
+        early_growth_factor=early_growth_factor,
+        max_growth_factor=max_growth_factor,
+        base_trajectory=base_trajectory,
+        perturbed_trajectory=perturbed_trajectory,
+        base_initial_state=base_initial,
+        perturbed_initial_state=perturbed_initial,
+        diagnostics=diagnostics,
+        validation=validation,
+    )
+
+
 def write_periodic_current_sheet_eigenvalue_validation(
     outdir: str | Path,
     **kwargs: Any,
@@ -1013,6 +1232,107 @@ def write_periodic_double_harris_nonlinear_growth_validation(
     return manifest_path, result.validation
 
 
+def write_periodic_double_harris_seeded_long_run_validation(
+    outdir: str | Path,
+    *,
+    movies: bool = False,
+    **kwargs: Any,
+) -> tuple[Path, dict[str, Any]]:
+    """Write seeded double-Harris long-run JSON, NPZ, figures, GIFs, and manifest."""
+    output_dir = Path(outdir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    result = run_periodic_double_harris_seeded_long_run_validation(**kwargs)
+
+    diagnostics_path = output_dir / "diagnostics.json"
+    validation_path = output_dir / "validation.json"
+    history_path = output_dir / "periodic_double_harris_seeded_long_run.npz"
+    manifest_path = output_dir / "manifest.json"
+    diagnostics_path.write_text(
+        json.dumps(result.diagnostics, indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+    validation_path.write_text(
+        json.dumps(result.validation, indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+    np.savez_compressed(
+        history_path,
+        schema=PERIODIC_DOUBLE_HARRIS_SEEDED_LONG_RUN_SCHEMA,
+        time=result.time,
+        perturbation_norm=result.perturbation_norm,
+        magnetic_energy=result.magnetic_energy,
+        kinetic_energy=result.kinetic_energy,
+        total_energy=result.total_energy,
+        current_density_linf=result.current_density_linf,
+        fitted_early_growth_rate=result.fitted_early_growth_rate,
+        early_growth_factor=result.early_growth_factor,
+        max_growth_factor=result.max_growth_factor,
+        base_time=np.asarray(result.base_trajectory.times),
+        perturbed_time=np.asarray(result.perturbed_trajectory.times),
+        base_psi=np.asarray(result.base_trajectory.states.psi),
+        base_omega=np.asarray(result.base_trajectory.states.omega),
+        perturbed_psi=np.asarray(result.perturbed_trajectory.states.psi),
+        perturbed_omega=np.asarray(result.perturbed_trajectory.states.omega),
+        base_initial_psi=np.asarray(result.base_initial_state.psi),
+        base_initial_omega=np.asarray(result.base_initial_state.omega),
+        perturbed_initial_psi=np.asarray(result.perturbed_initial_state.psi),
+        perturbed_initial_omega=np.asarray(result.perturbed_initial_state.omega),
+    )
+    grid = CartesianGrid.from_mesh_config(MeshConfig(shape=tuple(result.diagnostics["shape"])))
+    figure_path = plot_double_harris_seeded_long_run(
+        result.time,
+        result.perturbation_norm,
+        result.magnetic_energy,
+        result.kinetic_energy,
+        result.total_energy,
+        result.current_density_linf,
+        result.perturbed_initial_state.psi,
+        result.perturbed_trajectory.states.psi[-1],
+        result.base_trajectory.states.psi[-1],
+        fitted_early_growth_rate=result.fitted_early_growth_rate,
+        fit_window=tuple(result.diagnostics["fit_window"]),
+        path=output_dir / "figures" / "periodic_double_harris_seeded_long_run.png",
+    )
+    outputs: dict[str, str] = {
+        "diagnostics": diagnostics_path.name,
+        "validation": validation_path.name,
+        "history": history_path.name,
+        "periodic_double_harris_seeded_long_run": str(
+            figure_path.relative_to(output_dir)
+        ),
+    }
+    if movies:
+        extent = (0.0, grid.lengths[0], 0.0, grid.lengths[1])
+        flux_path = plot_flux_gif(
+            result.perturbed_trajectory,
+            path=output_dir / "figures" / "periodic_double_harris_flux.gif",
+            extent=extent,
+        )
+        current_path = plot_current_density_gif(
+            result.perturbed_trajectory,
+            path=output_dir / "figures" / "periodic_double_harris_current.gif",
+            extent=extent,
+            lengths=grid.lengths,
+        )
+        outputs["periodic_double_harris_flux_movie"] = str(
+            flux_path.relative_to(output_dir)
+        )
+        outputs["periodic_double_harris_current_movie"] = str(
+            current_path.relative_to(output_dir)
+        )
+    write_manifest(
+        manifest_path,
+        config=result.diagnostics,
+        outputs=outputs,
+        claim_level="validation",
+        claim_scope=(
+            "Seeded longer nonlinear periodic double-Harris replay with finite, "
+            "dissipative histories; not yet a converged plasmoid/Rutherford claim."
+        ),
+    )
+    return manifest_path, result.validation
+
+
 def _dense_matrix(operator) -> np.ndarray:
     vector_size = int(operator.shape[0])
     basis = np.eye(vector_size, dtype=np.float64)
@@ -1153,6 +1473,35 @@ def _trajectory_difference_norms(
     return times, np.asarray(amplitudes, dtype=np.float64)
 
 
+def _trajectory_energy_and_current_histories(
+    initial_state: ReducedMHDState,
+    saved_states: ReducedMHDState,
+    *,
+    lengths: tuple[float, float],
+) -> dict[str, np.ndarray]:
+    states = (initial_state,) + tuple(
+        ReducedMHDState(psi=saved_states.psi[index], omega=saved_states.omega[index])
+        for index in range(saved_states.psi.shape[0])
+    )
+    magnetic = []
+    kinetic = []
+    current_linf = []
+    for state in states:
+        magnetic.append(float(magnetic_energy(state, lengths=lengths)))
+        kinetic.append(float(kinetic_energy(state, lengths=lengths)))
+        current_linf.append(
+            float(jnp.max(jnp.abs(current_density(state.psi, lengths=lengths))))
+        )
+    magnetic_array = np.asarray(magnetic, dtype=np.float64)
+    kinetic_array = np.asarray(kinetic, dtype=np.float64)
+    return {
+        "magnetic": magnetic_array,
+        "kinetic": kinetic_array,
+        "total": magnetic_array + kinetic_array,
+        "current_density_linf": np.asarray(current_linf, dtype=np.float64),
+    }
+
+
 def _normalized_bridge_perturbation(grid: CartesianGrid) -> ReducedMHDState:
     x, y = grid.mesh()
     length_x, length_y = grid.lengths
@@ -1288,3 +1637,68 @@ def _validate_double_harris_growth_inputs(
         raise ValueError("max_selected_residual_norm must be positive")
     if max_selected_eigenvalue_imag <= 0.0:
         raise ValueError("max_selected_eigenvalue_imag must be positive")
+
+
+def _validate_double_harris_seeded_long_run_inputs(
+    *,
+    shape: tuple[int, int],
+    width: float,
+    amplitude: float,
+    resistivity: float,
+    viscosity: float,
+    perturbation_amplitude: float,
+    perturbation_mode: tuple[int, int],
+    dt: float,
+    t_end: float,
+    save_every: int,
+    fit_window: tuple[float, float],
+    min_saved_samples: int,
+    min_early_growth_rate: float,
+    min_early_growth_factor: float,
+    min_max_growth_factor: float,
+    max_relative_energy_increase: float,
+) -> None:
+    if len(shape) != 2 or shape[0] < 8 or shape[1] < 8:
+        raise ValueError("shape must contain two dimensions >= 8")
+    if width <= 0.0:
+        raise ValueError("width must be positive")
+    if amplitude == 0.0:
+        raise ValueError("amplitude must be nonzero")
+    if resistivity < 0.0 or viscosity < 0.0:
+        raise ValueError("resistivity and viscosity must be non-negative")
+    if perturbation_amplitude <= 0.0:
+        raise ValueError("perturbation_amplitude must be positive")
+    if len(perturbation_mode) != 2 or perturbation_mode == (0, 0):
+        raise ValueError("perturbation_mode must be a nonzero two-index mode")
+    if dt <= 0.0:
+        raise ValueError("dt must be positive")
+    if t_end <= 0.0:
+        raise ValueError("t_end must be positive")
+    steps = round(t_end / dt)
+    if steps < 2:
+        raise ValueError("t_end / dt must allow at least two RK4 steps")
+    if save_every <= 0 or save_every > steps:
+        raise ValueError("save_every must be positive and no larger than steps")
+    fit_start, fit_stop = fit_window
+    if fit_start < 0.0 or fit_stop <= fit_start:
+        raise ValueError("fit_window must be ordered and non-negative")
+    if fit_stop > t_end:
+        raise ValueError("fit_window stop must not exceed t_end")
+    saved_fit_count = 1 + sum(
+        1
+        for step_index in range(steps)
+        if (step_index + 1) % save_every == 0
+        and fit_start <= (step_index + 1) * dt <= fit_stop
+    )
+    if saved_fit_count < 3:
+        raise ValueError("fit_window must include at least three saved samples")
+    if min_saved_samples < 3:
+        raise ValueError("min_saved_samples must be at least three")
+    if min_early_growth_rate <= 0.0:
+        raise ValueError("min_early_growth_rate must be positive")
+    if min_early_growth_factor <= 1.0:
+        raise ValueError("min_early_growth_factor must exceed one")
+    if min_max_growth_factor <= 1.0:
+        raise ValueError("min_max_growth_factor must exceed one")
+    if max_relative_energy_increase < 0.0:
+        raise ValueError("max_relative_energy_increase must be non-negative")

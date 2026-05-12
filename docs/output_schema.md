@@ -468,6 +468,25 @@ writes:
   growth history with fitted and frozen-linear references plus initial/final
   flux panels.
 
+## Periodic double-Harris seeded long-run outputs
+
+`mhx benchmark double-harris-long-run --outdir outputs/benchmarks/periodic_double_harris_seeded_long_run`
+writes:
+
+- `diagnostics.json`: scalable seeded nonlinear replay diagnostics with schema
+  `mhx.validation.periodic_double_harris_seeded_long_run.v1`.
+- `validation.json`: pass/fail gates for finite histories, full-duration
+  completion, sample count, early growth, visible amplification, and
+  dissipative total-energy behavior.
+- `periodic_double_harris_seeded_long_run.npz`: saved time, normalized
+  perturbed-minus-base norm, magnetic/kinetic/total energy, peak current
+  density, fitted early growth rate, base/perturbed trajectories, and initial
+  states.
+- `figures/periodic_double_harris_seeded_long_run.png`: early-growth,
+  energy, current-density, flux, and perturbed-minus-base morphology panels.
+- Optional `figures/periodic_double_harris_flux.gif` and
+  `figures/periodic_double_harris_current.gif` when `--movies` is supplied.
+
 ## Nonlinear energy-budget outputs
 
 `mhx benchmark nonlinear-energy-budget --outdir outputs/benchmarks/nonlinear_energy_budget`

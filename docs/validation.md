@@ -807,10 +807,63 @@ Expected files:
 
 ![Periodic double-Harris nonlinear growth gate](_static/validation/periodic_double_harris_nonlinear_growth/periodic_double_harris_nonlinear_growth.png)
 
+## Seeded double-Harris long-run validation
+
+The dense eigenmode gate above is intentionally tiny because it assembles the
+full Jacobian. The next bridge is a scalable nonlinear run that does **not**
+assemble the dense spectrum. It advances a base periodic double-Harris sheet
+and a seeded sheet,
+
+$$
+q_b(t)=\Phi_t(q_0),\qquad
+q_s(t)=\Phi_t(q_0+\epsilon\cos(2x)\cos y),
+$$
+
+and tracks the normalized difference, total energy, kinetic energy, and peak
+current density:
+
+$$
+A_s(t)=\frac{\|q_s(t)-q_b(t)\|_2}{\epsilon},\qquad
+E(t)=\frac{1}{2}\langle |\nabla\psi|^2+|\nabla\phi|^2\rangle,\qquad
+\|j_z\|_\infty=\|-\nabla^2\psi\|_\infty .
+$$
+
+This command is meant for bounded nonlinear evidence runs under laptop/CI
+budgets and for producing reviewer-visible movies before a full production
+campaign. It gates finite histories, full-duration completion, an early-time
+growth fit, visible maximum amplification, and dissipative total-energy
+behavior. The committed `64×64`, `t_end=30` evidence bundle gives
+`gamma_early = 0.118`, early amplification `5.27×`, maximum amplification
+`7.89×`, and zero measured total-energy increase. The result is stronger than
+a smoke test, but it remains a validation artifact rather than a converged
+Rutherford/plasmoid claim because the late-time perturbation saturates/relaxes
+and no resolution/seed/aspect-ratio sweep has yet closed.
+
+```bash
+mhx benchmark double-harris-long-run \
+  --outdir outputs/benchmarks/periodic_double_harris_seeded_long_run \
+  --nx 64 --ny 64 --t-end 30 --save-every 100 --movies
+```
+
+Expected files:
+
+- `outputs/benchmarks/periodic_double_harris_seeded_long_run/diagnostics.json`
+- `outputs/benchmarks/periodic_double_harris_seeded_long_run/validation.json`
+- `outputs/benchmarks/periodic_double_harris_seeded_long_run/periodic_double_harris_seeded_long_run.npz`
+- `outputs/benchmarks/periodic_double_harris_seeded_long_run/figures/periodic_double_harris_seeded_long_run.png`
+- `outputs/benchmarks/periodic_double_harris_seeded_long_run/figures/periodic_double_harris_flux.gif`
+- `outputs/benchmarks/periodic_double_harris_seeded_long_run/figures/periodic_double_harris_current.gif`
+
+![Seeded periodic double-Harris nonlinear long run](_static/validation/periodic_double_harris_seeded_long_run/figures/periodic_double_harris_seeded_long_run.png)
+
+![Seeded double-Harris magnetic flux movie](_static/validation/periodic_double_harris_seeded_long_run/figures/periodic_double_harris_flux.gif)
+
+![Seeded double-Harris current-density movie](_static/validation/periodic_double_harris_seeded_long_run/figures/periodic_double_harris_current.gif)
+
 Source anchors:
 
 - [double-Harris equilibrium](https://github.com/uwplasma/MHX/blob/main/src/mhx/physics/equilibria.py)
-- [growth benchmark implementation](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/current_sheet.py)
+- [growth and long-run benchmark implementation](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/current_sheet.py)
 - [growth benchmark tests](https://github.com/uwplasma/MHX/blob/main/tests/test_current_sheet_eigenvalue_validation.py)
 
 ## Nonlinear reduced-MHD energy budget
