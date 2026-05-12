@@ -1,0 +1,190 @@
+# Campaign runner operations
+
+This page describes how MHX should move from FAST validation artifacts to long
+nonlinear reconnection campaigns. It is intentionally operational: reviewers
+should be able to see what was run, why it was long enough, what files were
+written, and why a result is or is not a production physics claim.
+
+## Current runner status
+
+MHX currently ships four campaign-level commands:
+
+```bash
+mhx campaign rutherford-template --outdir outputs/campaigns/rutherford_template
+mhx campaign rutherford-run-fast --outdir outputs/campaigns/rutherford_fast
+mhx campaign rutherford-plan-production --outdir outputs/campaigns/rutherford_production_plan
+mhx campaign rutherford-resume-plan outputs/campaigns/rutherford_production_plan
+```
+
+The first command writes a duration-guarded production template. The second
+command runs a tiny deterministic nonlinear trajectory and writes the same
+diagnostic vocabulary used by the future Rutherford campaign. The second command
+is still `claim_level = "validation"` unless explicitly configured as smoke; it
+is not a production nonlinear result.
+
+The third and fourth commands are stronger production scaffolding: they write a
+runbook, scheduler-chunk plan, checkpoint index schema, required output list,
+and resume selection contract. They still do not advance the PDE, so their
+manifest remains `claim_level = "production_template"`.
+
+Source links:
+
+- [Campaign template implementation](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/campaigns.py)
+- [FAST runner implementation](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/campaign_runner.py)
+- [Duration guard](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/duration_policy.py)
+- [Production campaign scaffold](https://github.com/uwplasma/MHX/blob/main/src/mhx/campaigns/production.py)
+- [Public campaign API](https://github.com/uwplasma/MHX/blob/main/src/mhx/campaigns/__init__.py)
+- [CLI commands](https://github.com/uwplasma/MHX/blob/main/src/mhx/cli/main.py)
+- [Campaign tests](https://github.com/uwplasma/MHX/blob/main/tests/test_campaign_runner.py)
+- [Production scaffold tests](https://github.com/uwplasma/MHX/blob/main/tests/test_production_campaign_scaffold.py)
+
+## Duration gate
+
+For a mode with linear growth rate $\gamma$, any growth or island-formation
+claim must satisfy
+
+$$
+t_\mathrm{end} \ge s_f\frac{N_e}{\gamma}.
+$$
+
+Here $N_e$ is the number of required e-folds and $s_f$ is a safety factor. The
+default Harris reference used by MHX is $\gamma\simeq0.0131$, so:
+
+$$
+10/\gamma \approx 763.4,\qquad 3\times10/\gamma\approx2290.1.
+$$
+
+The first number is a minimum linear-growth observation window. The second is
+the default Rutherford-template window, leaving room for a resolved linear
+phase plus nonlinear island tracking. A shorter run may still be useful as a
+code-validity gate, but it must not be labeled as nonlinear reconnection
+evidence.
+
+## FAST runner artifacts
+
+The FAST runner writes:
+
+- `rutherford_fast_histories.npz`
+- `diagnostics.json`
+- `validation.json`
+- `campaign_template.json`
+- `manifest.json`
+- `figures/rutherford_fast_histories.png`
+- optionally `figures/rutherford_fast_flux.gif`
+
+The NPZ history keys are:
+
+| Key | Meaning |
+| --- | --- |
+| `time` | Saved times for each trajectory. |
+| `seed` | Seed associated with each saved trajectory row. |
+| `reconnected_flux` | Reconnecting-mode flux proxy. |
+| `rutherford_island_width` | $W=4\sqrt{|\psi_1|/|B_y'(0)|}$ proxy. |
+| `reconnection_rate_proxy` | Finite-difference time derivative of reconnecting flux. |
+| `magnetic_energy`, `kinetic_energy`, `total_energy` | Reduced-MHD energy diagnostics. |
+| `magnetic_divergence_linf` | Spectral solenoidal-field check. |
+| `current_density_linf` | Current-density magnitude proxy. |
+
+These names are intentionally the same names that should appear in a future
+production Rutherford campaign. That lets plotting, manifests, and reviewers
+reuse one schema.
+
+## Production planning artifacts
+
+The production scaffold writes these files without running the expensive PDE:
+
+- `campaign_plan.json` with schema `mhx.campaign.rutherford_production_plan.v1`;
+- `campaign_config.toml` with the effective long-run configuration;
+- `validation.json` with duration, resolution, walltime, and artifact gates;
+- `runbook.md` with the launch/restart checklist;
+- `job_array.json` with scheduler-neutral walltime chunks;
+- `checkpoints/checkpoint_index.json` with schema
+  `mhx.campaign.rutherford_checkpoint_index.v1`;
+- `manifest.json` with `claim_level = "production_template"`.
+
+The checkpoint index starts empty. Long-run executors register restartable state
+files with:
+
+```python
+from mhx.campaigns import write_checkpoint_metadata
+
+write_checkpoint_metadata(
+    "outputs/campaigns/rutherford_production_plan",
+    step=1000,
+    time=100.0,
+    state_path="checkpoints/state_0000001000.npz",
+    history_path="histories.npz",
+    metrics={
+        "total_energy": 0.997,
+        "magnetic_divergence_linf": 2.0e-13,
+    },
+)
+```
+
+Each checkpoint record stores the step, physical time, walltime spent, metrics,
+artifact paths, file sizes, and SHA-256 hashes. `mhx campaign
+rutherford-resume-plan <run-dir>` selects the latest valid checkpoint at or
+before the target step. If files are missing or hashes change, the resume plan
+marks the checkpoint invalid and falls back to step zero rather than silently
+continuing from a corrupted state.
+
+## Production campaign acceptance criteria
+
+A production Rutherford or plasmoid campaign should pass all of the following:
+
+| Requirement | Reviewer reason |
+| --- | --- |
+| Duration guard passes for the declared $\gamma$, $N_e$, and $s_f$. | Prevents short runs from being interpreted as nonlinear evolution. |
+| At least two spatial resolutions and two time steps are archived. | Separates physics from discretization artifacts. |
+| Energy-budget residual remains below the documented tolerance. | Checks bracket cancellation and dissipation signs during the long run. |
+| Magnetic divergence remains near spectral roundoff or a documented tolerance. | Catches projection/derivative mistakes. |
+| Seed-robust QI is run on the production diagnostic family. | Checks that the reported metrics are not seed accidents. |
+| Flux/current movies use fixed color limits and include timestamps. | Makes visual comparisons honest across resolutions and seeds. |
+| Artifact manifests include hashes, config, git commit, API version, and dependencies. | Makes reviewer reruns and diffs possible. |
+
+## Proposed production directory
+
+```text
+outputs/campaigns/rutherford_production/
+  campaign_config.toml
+  config_effective.json
+  diagnostics.json
+  validation.json
+  trajectory.npz
+  histories.npz
+  energy_budget.json
+  convergence/
+    nx064_dt0.10/
+    nx128_dt0.10/
+    nx128_dt0.05/
+  seed_qi/
+  figures/
+    island_width.png
+    reconnected_flux.png
+    reconnection_rate.png
+    energy_budget.png
+    current_sheet_geometry.png
+    flux_movie.gif
+    current_movie.gif
+  artifact_manifest.json
+  manifest.json
+```
+
+This layout is not yet fully automated for production runs. The FAST runner and
+template writer are the validated scaffolding that should be extended. The
+production-plan command now initializes `checkpoints/checkpoint_index.json` and
+`job_array.json`; the remaining hard boundary is the actual walltime-aware PDE
+executor that writes real state checkpoints and long histories.
+
+## Reviewer questions to answer before claiming production
+
+1. Which growth rate set the duration?
+2. How many e-folds were covered before nonlinear island tracking?
+3. Did island width show the expected algebraic phase after the linear phase?
+4. Did the energy budget remain closed over the full run?
+5. Did the result persist under resolution, time-step, and seed changes?
+6. Are flux/current movies plotted with fixed ranges?
+7. Are all files reproducible from the checked-in command sequence?
+
+If the answer to any question is unknown, the result should remain a validation
+artifact, not a paper claim.

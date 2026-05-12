@@ -9,9 +9,10 @@ under `legacy/old_mhx/`.
 ## Active scope boundaries
 
 The current repository supports deterministic FAST validation, seed-robust QI
-checks, and short validation-grade campaign artifacts. Long nonlinear
-Rutherford/plasmoid production campaigns are still gated as future
-`production` claims and must pass duration plus convergence checks before being
+checks, short validation-grade campaign artifacts, and production campaign
+planning with checkpoint/resume metadata. Long nonlinear Rutherford/plasmoid
+production campaigns are still gated as future `production` claims and must pass
+duration, checkpoint-restart, convergence, and artifact-hash checks before being
 used as paper evidence.
 
 ```{toctree}
@@ -25,9 +26,13 @@ output_schema
 benchmarks
 performance
 validation
+reviewer_evidence
 seed_robust_qi
+neural_ode_reproducibility
 time_windows
 campaigns
+campaign_runner
+publication_checklist
 paper_plan
 media
 audit

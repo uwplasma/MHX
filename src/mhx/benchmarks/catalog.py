@@ -412,6 +412,55 @@ def validation_catalog_entries() -> tuple[BenchmarkCatalogEntry, ...]:
             ),
         ),
         BenchmarkCatalogEntry(
+            name="seed_robust_qi_sweep",
+            command=(
+                "mhx benchmark seed-robust-qi-sweep "
+                "--outdir outputs/benchmarks/seed_robust_qi_sweep"
+            ),
+            schema="mhx.validation.seed_robust_qi_sweep.v1",
+            purpose=(
+                "Common-seed perturbation-amplitude sweep that gates both seed "
+                "spread and mean drift of FAST trajectory diagnostics."
+            ),
+            expected_outputs=(
+                "diagnostics.json",
+                "validation.json",
+                "sweep.npz",
+                "figures/qi_sweep_cv.png",
+                "figures/qi_sweep_mean_drift.png",
+                "manifest.json",
+            ),
+            literature_anchor=(
+                "Reproducibility and perturbation-sensitivity gate before generated "
+                "data are used for inverse design, calibration, or neural-ODE fits."
+            ),
+        ),
+        BenchmarkCatalogEntry(
+            name="neural_ode_reproducibility",
+            command="mhx neural-ode dataset --outdir outputs/neural_ode/seed_qi_fast",
+            schema="mhx.neural_ode.experiment_spec.v1",
+            purpose=(
+                "Deterministic seed-QI trajectory dataset, train/validation/test "
+                "split manifest, no-training baselines, and calibration artifacts "
+                "for future neural-ODE surrogate experiments."
+            ),
+            expected_outputs=(
+                "dataset.npz",
+                "splits.json",
+                "baseline_metrics.json",
+                "calibration.json",
+                "experiment_spec.json",
+                "figures/dataset_targets.png",
+                "figures/baseline_rmse.png",
+                "figures/calibration_coverage.png",
+                "manifest.json",
+            ),
+            literature_anchor=(
+                "Reproducible surrogate-model protocol: fixed data splits, "
+                "baselines, and calibration before any neural-ODE performance claim."
+            ),
+        ),
+        BenchmarkCatalogEntry(
             name="duration_policy",
             command="mhx benchmark duration-policy --outdir outputs/benchmarks/duration_policy",
             schema="mhx.duration_policy.v1",

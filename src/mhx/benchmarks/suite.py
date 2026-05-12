@@ -34,7 +34,10 @@ from mhx.benchmarks.nonlinear import write_nonlinear_energy_budget_validation
 from mhx.benchmarks.nonlinear_duration import write_nonlinear_duration_audit
 from mhx.benchmarks.report import validate_run
 from mhx.benchmarks.scaling import write_reconnection_scaling_validation
-from mhx.benchmarks.seed_robust_qi import write_seed_robust_qi_validation
+from mhx.benchmarks.seed_robust_qi import (
+    write_seed_robust_qi_sweep,
+    write_seed_robust_qi_validation,
+)
 from mhx.benchmarks.tearing import run_linear_tearing_smoke
 from mhx.benchmarks.tearing_eigen import (
     write_linear_tearing_dispersion_validation,
@@ -48,6 +51,7 @@ from mhx.io import (
     write_manifest,
     write_reduced_mhd_trajectory_npz,
 )
+from mhx.neural_ode import write_neural_ode_reproducibility_bundle
 from mhx.runtime import configure_jax
 from mhx.versioning import VALIDATION_SUITE_SCHEMA, require_supported_api_version
 
@@ -158,6 +162,16 @@ def validation_suite_cases() -> tuple[ValidationSuiteCase, ...]:
             name="seed_robust_qi",
             command="mhx benchmark seed-robust-qi",
             runner=write_seed_robust_qi_validation,
+        ),
+        ValidationSuiteCase(
+            name="seed_robust_qi_sweep",
+            command="mhx benchmark seed-robust-qi-sweep",
+            runner=_write_seed_robust_qi_sweep_validation,
+        ),
+        ValidationSuiteCase(
+            name="neural_ode_reproducibility",
+            command="mhx neural-ode dataset",
+            runner=_write_neural_ode_reproducibility_validation,
         ),
         ValidationSuiteCase(
             name="duration_policy",
@@ -278,6 +292,30 @@ def _write_linear_tearing_fast_validation(outdir: Path) -> tuple[Path, dict[str,
     )
     _, validation = validate_run(outdir)
     return manifest_path, validation
+
+
+def _write_neural_ode_reproducibility_validation(
+    outdir: Path,
+) -> tuple[Path, dict[str, Any]]:
+    return write_neural_ode_reproducibility_bundle(
+        outdir,
+        shape=(8, 8),
+        seeds=(0, 1, 2, 3),
+        steps=4,
+        dt=1.0e-2,
+        write_figures=True,
+    )
+
+
+def _write_seed_robust_qi_sweep_validation(outdir: Path) -> tuple[Path, dict[str, Any]]:
+    return write_seed_robust_qi_sweep(
+        outdir,
+        shape=(8, 8),
+        seeds=(0, 1, 2, 3),
+        noise_amplitudes=(0.0, 1.0e-9, 1.0e-8),
+        steps=8,
+        dt=1.0e-2,
+    )
 
 
 def _suite_markdown(summary: dict[str, Any]) -> str:

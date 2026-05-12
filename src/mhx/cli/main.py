@@ -31,15 +31,22 @@ from mhx.benchmarks import (
     write_periodic_current_sheet_nonlinear_bridge_validation,
     write_periodic_current_sheet_timedomain_validation,
     write_power_iteration_validation,
+    write_readiness_report,
     write_reconnection_scaling_validation,
     write_reduced_mhd_linear_eigenmode_validation,
     write_resistive_decay_validation,
     write_run_report,
     write_rutherford_campaign_fast,
     write_rutherford_campaign_template,
+    write_seed_robust_qi_sweep,
     write_seed_robust_qi_validation,
     write_timing_benchmark,
     write_validation_suite,
+)
+from mhx.campaigns import (
+    WalltimePolicy,
+    write_rutherford_production_plan,
+    write_rutherford_resume_plan,
 )
 from mhx.config import RunConfig, load_config
 from mhx.diagnostics import (
@@ -55,6 +62,7 @@ from mhx.io import (
     write_manifest,
     write_reduced_mhd_trajectory_npz,
 )
+from mhx.neural_ode import write_neural_ode_reproducibility_bundle
 from mhx.physics import (
     PHYSICS_API_VERSION,
     PHYSICS_ENTRY_POINT_GROUP,
@@ -81,12 +89,17 @@ campaign_app = typer.Typer(no_args_is_help=True, help="Production campaign templ
 physics_app = typer.Typer(no_args_is_help=True, help="Physics plugin inspection.")
 diagnostics_app = typer.Typer(no_args_is_help=True, help="Diagnostic registry inspection.")
 validate_app = typer.Typer(no_args_is_help=True, help="Validation-suite workflows.")
+neural_ode_app = typer.Typer(
+    no_args_is_help=True,
+    help="Neural-ODE reproducibility datasets and baseline artifacts.",
+)
 app.add_typer(benchmark_app, name="benchmark")
 app.add_typer(api_app, name="api")
 app.add_typer(campaign_app, name="campaign")
 app.add_typer(physics_app, name="physics")
 app.add_typer(diagnostics_app, name="diagnostics")
 app.add_typer(validate_app, name="validate")
+app.add_typer(neural_ode_app, name="neural-ode")
 
 
 @app.command()
@@ -285,6 +298,92 @@ def campaign_rutherford_run_fast(
         write_gif=gif,
     )
     typer.echo(f"wrote {manifest_path}")
+    if not validation["passed"]:
+        raise typer.Exit(code=1)
+
+
+@campaign_app.command("rutherford-plan-production")
+def campaign_rutherford_plan_production(
+    outdir: Annotated[
+        Path,
+        typer.Option("--outdir", help="Output directory for production-plan artifacts."),
+    ] = Path("outputs/campaigns/rutherford_production_plan"),
+    harris_growth_rate: Annotated[
+        float,
+        typer.Option("--harris-growth-rate", help="Reference Harris growth rate gamma."),
+    ] = 1.31e-2,
+    production_efolds: Annotated[
+        float,
+        typer.Option("--production-efolds", help="Required e-folds before nonlinear claims."),
+    ] = 10.0,
+    safety_factor: Annotated[
+        float,
+        typer.Option("--safety-factor", help="Extra multiplier for nonlinear tracking."),
+    ] = 3.0,
+    nx: Annotated[int, typer.Option("--nx", help="Production x resolution.")] = 128,
+    ny: Annotated[int, typer.Option("--ny", help="Production y resolution.")] = 128,
+    dt: Annotated[float, typer.Option("--dt", help="Production fixed time step.")] = 0.1,
+    target_saved_frames: Annotated[
+        int,
+        typer.Option("--target-saved-frames", help="Target saved frames for figures/movies."),
+    ] = 400,
+    max_walltime_hours: Annotated[
+        float,
+        typer.Option("--max-walltime-hours", help="Scheduler walltime budget per job."),
+    ] = 12.0,
+    seconds_per_step_estimate: Annotated[
+        float,
+        typer.Option("--seconds-per-step-estimate", help="Conservative runtime model."),
+    ] = 0.5,
+    checkpoint_interval_minutes: Annotated[
+        float,
+        typer.Option("--checkpoint-interval-minutes", help="Target checkpoint cadence."),
+    ] = 30.0,
+    preemption_margin_minutes: Annotated[
+        float,
+        typer.Option("--preemption-margin-minutes", help="Walltime reserved for safe exit."),
+    ] = 20.0,
+    min_production_resolution: Annotated[
+        int,
+        typer.Option("--min-production-resolution", help="Minimum reviewer-facing grid size."),
+    ] = 96,
+) -> None:
+    """Write production Rutherford planning, walltime, and checkpoint artifacts."""
+    manifest_path, validation = write_rutherford_production_plan(
+        outdir,
+        harris_growth_rate=harris_growth_rate,
+        production_efolds=production_efolds,
+        safety_factor=safety_factor,
+        shape=(nx, ny),
+        dt=dt,
+        target_saved_frames=target_saved_frames,
+        min_production_resolution=min_production_resolution,
+        walltime_policy=WalltimePolicy(
+            max_walltime_hours=max_walltime_hours,
+            seconds_per_step_estimate=seconds_per_step_estimate,
+            checkpoint_interval_minutes=checkpoint_interval_minutes,
+            preemption_margin_minutes=preemption_margin_minutes,
+        ),
+    )
+    typer.echo(f"wrote {manifest_path}")
+    if not validation["passed"]:
+        raise typer.Exit(code=1)
+
+
+@campaign_app.command("rutherford-resume-plan")
+def campaign_rutherford_resume_plan(
+    run_dir: Annotated[
+        Path,
+        typer.Argument(help="Production campaign run directory containing checkpoints/."),
+    ],
+    target_step: Annotated[
+        int | None,
+        typer.Option("--target-step", help="Override the campaign target step."),
+    ] = None,
+) -> None:
+    """Write a resume plan from the latest valid production checkpoint."""
+    path, validation = write_rutherford_resume_plan(run_dir, target_step=target_step)
+    typer.echo(f"wrote {path}")
     if not validation["passed"]:
         raise typer.Exit(code=1)
 
@@ -921,6 +1020,97 @@ def benchmark_seed_robust_qi(
         raise typer.Exit(code=1)
 
 
+@benchmark_app.command("seed-robust-qi-sweep")
+def benchmark_seed_robust_qi_sweep(
+    outdir: Annotated[
+        Path,
+        typer.Option(
+            "--outdir",
+            help="Output directory for seed/amplitude-sweep QI artifacts.",
+        ),
+    ] = Path("outputs/benchmarks/seed_robust_qi_sweep"),
+    seeds: Annotated[
+        str,
+        typer.Option("--seeds", help="Comma-separated deterministic seed list."),
+    ] = "0,1,2,3",
+    amplitudes: Annotated[
+        str,
+        typer.Option("--amplitudes", help="Comma-separated sorted noise amplitudes."),
+    ] = "0,1e-9,1e-8",
+    nx: Annotated[int, typer.Option("--nx", help="Grid points in x.")] = 16,
+    ny: Annotated[int, typer.Option("--ny", help="Grid points in y.")] = 16,
+    steps: Annotated[int, typer.Option("--steps", help="RK4 steps per amplitude.")] = 12,
+    dt: Annotated[float, typer.Option("--dt", help="RK4 time step.")] = 1.0e-2,
+    eta: Annotated[float, typer.Option("--eta", help="Resistivity.")] = 1.0e-3,
+    nu: Annotated[float, typer.Option("--nu", help="Viscosity.")] = 1.0e-3,
+) -> None:
+    """Run a common-seed perturbation-amplitude sweep for FAST metric QI."""
+    _configure_validation_precision()
+    manifest_path, validation = write_seed_robust_qi_sweep(
+        outdir,
+        seeds=_parse_int_tuple(seeds),
+        noise_amplitudes=_parse_float_tuple(amplitudes),
+        shape=(nx, ny),
+        steps=steps,
+        dt=dt,
+        resistivity=eta,
+        viscosity=nu,
+    )
+    typer.echo(f"wrote {manifest_path}")
+    if not validation["passed"]:
+        raise typer.Exit(code=1)
+
+
+@neural_ode_app.command("dataset")
+def neural_ode_dataset(
+    outdir: Annotated[
+        Path,
+        typer.Option("--outdir", help="Output directory for neural-ODE artifacts."),
+    ] = Path("outputs/neural_ode/seed_qi_fast"),
+    seeds: Annotated[
+        str,
+        typer.Option("--seeds", help="Comma-separated deterministic seed list."),
+    ] = "0,1,2,3,4,5",
+    nx: Annotated[int, typer.Option("--nx", help="Grid points in x.")] = 16,
+    ny: Annotated[int, typer.Option("--ny", help="Grid points in y.")] = 16,
+    steps: Annotated[int, typer.Option("--steps", help="RK4 steps per seed.")] = 24,
+    dt: Annotated[float, typer.Option("--dt", help="RK4 time step.")] = 1.0e-2,
+    eta: Annotated[float, typer.Option("--eta", help="Resistivity.")] = 1.0e-3,
+    nu: Annotated[float, typer.Option("--nu", help="Viscosity.")] = 1.0e-3,
+    noise_amplitude: Annotated[
+        float,
+        typer.Option("--noise-amplitude", help="Smooth seeded psi-noise amplitude."),
+    ] = 1.0e-8,
+    split_seed: Annotated[
+        int,
+        typer.Option("--split-seed", help="Seed for train/validation/test split."),
+    ] = 314159,
+    observation_count: Annotated[
+        int,
+        typer.Option("--observation-count", help="Prefix samples visible to baselines."),
+    ] = 2,
+    figures_enabled: Annotated[bool, typer.Option("--figures/--no-figures")] = True,
+) -> None:
+    """Write deterministic neural-ODE dataset, splits, baselines, and calibration."""
+    _configure_validation_precision()
+    manifest_path, validation = write_neural_ode_reproducibility_bundle(
+        outdir,
+        seeds=_parse_int_tuple(seeds),
+        shape=(nx, ny),
+        steps=steps,
+        dt=dt,
+        resistivity=eta,
+        viscosity=nu,
+        psi_noise_amplitude=noise_amplitude,
+        split_seed=split_seed,
+        observation_count=observation_count,
+        write_figures=figures_enabled,
+    )
+    typer.echo(f"wrote {manifest_path}")
+    if not validation["passed"]:
+        raise typer.Exit(code=1)
+
+
 @benchmark_app.command("duration-policy")
 def benchmark_duration_policy(
     outdir: Annotated[
@@ -1021,6 +1211,27 @@ def validate_all(
     summary_path, summary = write_validation_suite(outdir)
     typer.echo(f"wrote {summary_path}")
     if not summary["passed"]:
+        raise typer.Exit(code=1)
+
+
+@validate_app.command("readiness")
+def validate_readiness(
+    suite: Annotated[
+        Path,
+        typer.Option(
+            "--suite",
+            help="Validation-suite directory or validation_suite.json file.",
+        ),
+    ] = Path("outputs/validation_suite"),
+    outdir: Annotated[
+        Path,
+        typer.Option("--outdir", help="Output directory for readiness artifacts."),
+    ] = Path("outputs/validation/readiness"),
+) -> None:
+    """Assess public-release and nonlinear-publication readiness."""
+    diagnostics_path, validation = write_readiness_report(outdir, suite)
+    typer.echo(f"wrote {diagnostics_path}")
+    if not validation["passed"]:
         raise typer.Exit(code=1)
 
 

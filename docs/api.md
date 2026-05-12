@@ -31,6 +31,12 @@
 .. automodule:: mhx.benchmarks.timing
    :members:
 
+.. automodule:: mhx.neural_ode
+   :members:
+
+.. automodule:: mhx.neural_ode.reproducibility
+   :members:
+
 .. automodule:: mhx.physics
    :members:
 

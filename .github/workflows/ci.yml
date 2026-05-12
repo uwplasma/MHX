@@ -90,15 +90,20 @@ jobs:
           mhx benchmark nonlinear-energy-budget --outdir outputs/ci/nonlinear_energy_budget
           mhx benchmark nonlinear-duration-audit --outdir outputs/ci/nonlinear_duration_audit
           mhx benchmark seed-robust-qi --outdir outputs/ci/seed_robust_qi --nx 8 --ny 8 --seeds 0,1,2,3 --t-end 0.08
+          mhx benchmark seed-robust-qi-sweep --outdir outputs/ci/seed_robust_qi_sweep --nx 8 --ny 8 --seeds 0,1,2,3 --amplitudes 0,1e-9 --steps 4
           mhx benchmark duration-policy --outdir outputs/ci/duration_policy
           mhx benchmark diffusion-eigenvalue --outdir outputs/ci/diffusion_eigenvalue
           mhx benchmark power-iteration --outdir outputs/ci/power_iteration
           mhx benchmark arnoldi --outdir outputs/ci/arnoldi
           mhx benchmark timing --outdir outputs/ci/timing --repeats 1 --warmups 0
           mhx benchmark catalog --outdir outputs/ci/catalog
+          mhx neural-ode dataset --outdir outputs/ci/neural_ode_seed_qi --nx 8 --ny 8 --seeds 0,1,2,3 --steps 4
           mhx campaign rutherford-template --outdir outputs/ci/rutherford_template --nx 96 --ny 96 --dt 0.2 --target-saved-frames 200
           mhx campaign rutherford-run-fast --outdir outputs/ci/rutherford_fast --nx 8 --ny 8 --t-end 0.04
+          mhx campaign rutherford-plan-production --outdir outputs/ci/rutherford_production_plan --nx 96 --ny 96 --dt 0.5 --target-saved-frames 120 --max-walltime-hours 1.0 --seconds-per-step-estimate 2.0 --checkpoint-interval-minutes 10.0 --preemption-margin-minutes 5.0
+          mhx campaign rutherford-resume-plan outputs/ci/rutherford_production_plan --target-step 10
           mhx validate all --outdir outputs/ci/validation_suite
+          mhx validate readiness --suite outputs/ci/validation_suite --outdir outputs/ci/readiness
           python examples/make_readme_media.py
           mhx run examples/linear_tearing_twofluid_toy.toml --outdir outputs/ci/twofluid_toy
           mhx figures outputs/ci/twofluid_toy --gif
@@ -157,6 +162,10 @@ jobs:
           test -f outputs/ci/seed_robust_qi/validation.json
           test -f outputs/ci/seed_robust_qi/ensemble.npz
           test -f outputs/ci/seed_robust_qi/figures/qi_summary.png
+          test -f outputs/ci/seed_robust_qi_sweep/validation.json
+          test -f outputs/ci/seed_robust_qi_sweep/sweep.npz
+          test -f outputs/ci/seed_robust_qi_sweep/figures/qi_sweep_cv.png
+          test -f outputs/ci/seed_robust_qi_sweep/figures/qi_sweep_mean_drift.png
           test -f outputs/ci/duration_policy/duration_policy.json
           test -f outputs/ci/duration_policy/duration_policy.md
           test -f outputs/ci/duration_policy/validation.json
@@ -171,6 +180,15 @@ jobs:
           test -f outputs/ci/timing/figures/timing_summary.png
           test -f outputs/ci/catalog/benchmark_catalog.json
           test -f outputs/ci/catalog/benchmark_catalog.md
+          test -f outputs/ci/neural_ode_seed_qi/dataset.npz
+          test -f outputs/ci/neural_ode_seed_qi/splits.json
+          test -f outputs/ci/neural_ode_seed_qi/baseline_metrics.json
+          test -f outputs/ci/neural_ode_seed_qi/calibration.json
+          test -f outputs/ci/neural_ode_seed_qi/experiment_spec.json
+          test -f outputs/ci/neural_ode_seed_qi/validation.json
+          test -f outputs/ci/neural_ode_seed_qi/figures/dataset_targets.png
+          test -f outputs/ci/neural_ode_seed_qi/figures/baseline_rmse.png
+          test -f outputs/ci/neural_ode_seed_qi/figures/calibration_coverage.png
           test -f outputs/ci/rutherford_template/campaign.json
           test -f outputs/ci/rutherford_template/campaign_config.toml
           test -f outputs/ci/rutherford_template/duration_assessment.json
@@ -178,6 +196,9 @@ jobs:
           test -f outputs/ci/rutherford_fast/rutherford_fast_histories.npz
           test -f outputs/ci/rutherford_fast/figures/rutherford_fast_histories.png
           test -f outputs/ci/rutherford_fast/validation.json
+          test -f outputs/ci/rutherford_production_plan/campaign_plan.json
+          test -f outputs/ci/rutherford_production_plan/checkpoints/checkpoint_index.json
+          test -f outputs/ci/rutherford_production_plan/resume_plan.json
           test -f outputs/ci/validation_suite/validation_suite.json
           test -f outputs/ci/validation_suite/validation_suite.md
           test -f outputs/ci/validation_suite/fkr_growth_rate/figures/fkr_growth_rate.png
@@ -193,7 +214,13 @@ jobs:
           test -f outputs/ci/validation_suite/nonlinear_energy_budget/figures/nonlinear_energy_budget.png
           test -f outputs/ci/validation_suite/nonlinear_duration_audit/figures/nonlinear_duration_audit.png
           test -f outputs/ci/validation_suite/seed_robust_qi/figures/qi_summary.png
+          test -f outputs/ci/validation_suite/seed_robust_qi_sweep/figures/qi_sweep_cv.png
+          test -f outputs/ci/validation_suite/neural_ode_reproducibility/validation.json
+          test -f outputs/ci/validation_suite/neural_ode_reproducibility/figures/baseline_rmse.png
           test -f outputs/ci/validation_suite/duration_policy/duration_policy.json
+          test -f outputs/ci/readiness/readiness.json
+          test -f outputs/ci/readiness/readiness.md
+          test -f outputs/ci/readiness/figures/readiness_matrix.png
           test -f docs/_static/readme/harris_layer_sweep.gif
           test -f docs/_static/readme/plasmoid_scaling_schematic.gif
           test "$(stat -c%s docs/_static/readme/harris_layer_sweep.gif)" -lt 200000

@@ -91,11 +91,56 @@ within tolerance, magnetic divergence is bounded, and the manifest uses
 `claim_level = "validation"` or `claim_level = "smoke"`. It must not be used as
 evidence of production Rutherford island growth.
 
+The operational details and production acceptance criteria are documented in
+[campaign_runner.md](campaign_runner.md). In short: the FAST runner proves the
+schema, diagnostic names, plot path, and seed determinism. A production runner
+must additionally prove duration, convergence, budget closure, fixed-color
+movies, and reproducibility.
+
+## Production planning and resume scaffold
+
+The production scaffold extends the template into an operational bundle with
+walltime chunking, checkpoint cadence, resume metadata, and a runbook:
+
+```bash
+mhx campaign rutherford-plan-production \
+  --outdir outputs/campaigns/rutherford_production_plan \
+  --nx 128 --ny 128 \
+  --dt 0.1 \
+  --target-saved-frames 400
+```
+
+Expected additional files:
+
+- `outputs/campaigns/rutherford_production_plan/campaign_plan.json`
+- `outputs/campaigns/rutherford_production_plan/runbook.md`
+- `outputs/campaigns/rutherford_production_plan/job_array.json`
+- `outputs/campaigns/rutherford_production_plan/checkpoints/checkpoint_index.json`
+
+The checkpoint index is intentionally empty at planning time. A long-run
+executor registers restartable state files with
+`mhx.campaigns.write_checkpoint_metadata(...)`; the command
+`mhx campaign rutherford-resume-plan <run-dir>` then chooses the latest valid
+checkpoint by verifying artifact hashes.
+
+A laptop-safe example that writes the same planning bundle is available at
+`examples/make_rutherford_production_plan.py`.
+
 ## Source links
 
-- Campaign template implementation: `src/mhx/benchmarks/campaigns.py`
-- FAST campaign runner: `src/mhx/benchmarks/campaign_runner.py`
-- Duration guard: `src/mhx/benchmarks/duration_policy.py`
-- CLI entrypoint: `src/mhx/cli/main.py`
-- Tests: `tests/test_campaign_templates.py`
-- FAST runner tests: `tests/test_campaign_runner.py`
+- Campaign template implementation:
+  [`src/mhx/benchmarks/campaigns.py`](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/campaigns.py)
+- FAST campaign runner:
+  [`src/mhx/benchmarks/campaign_runner.py`](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/campaign_runner.py)
+- Production campaign scaffold:
+  [`src/mhx/campaigns/production.py`](https://github.com/uwplasma/MHX/blob/main/src/mhx/campaigns/production.py)
+- Duration guard:
+  [`src/mhx/benchmarks/duration_policy.py`](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/duration_policy.py)
+- CLI entrypoint:
+  [`src/mhx/cli/main.py`](https://github.com/uwplasma/MHX/blob/main/src/mhx/cli/main.py)
+- Tests:
+  [`tests/test_campaign_templates.py`](https://github.com/uwplasma/MHX/blob/main/tests/test_campaign_templates.py)
+- FAST runner tests:
+  [`tests/test_campaign_runner.py`](https://github.com/uwplasma/MHX/blob/main/tests/test_campaign_runner.py)
+- Production scaffold tests:
+  [`tests/test_production_campaign_scaffold.py`](https://github.com/uwplasma/MHX/blob/main/tests/test_production_campaign_scaffold.py)

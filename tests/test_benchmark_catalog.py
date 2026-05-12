@@ -29,9 +29,11 @@ def test_validation_catalog_entries_cover_expected_gates() -> None:
     assert "nonlinear_energy_budget" in names
     assert "nonlinear_duration_audit" in names
     assert "seed_robust_qi" in names
+    assert "seed_robust_qi_sweep" in names
+    assert "neural_ode_reproducibility" in names
     assert "duration_policy" in names
     assert "arnoldi" in names
-    assert all(entry.command.startswith("mhx benchmark") for entry in entries)
+    assert all(entry.command.startswith(("mhx benchmark", "mhx neural-ode")) for entry in entries)
     assert all(entry.expected_outputs for entry in entries)
 
 

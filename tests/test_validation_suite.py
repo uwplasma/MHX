@@ -29,6 +29,8 @@ def test_validation_suite_cases_are_unique() -> None:
     assert "nonlinear_energy_budget" in names
     assert "nonlinear_duration_audit" in names
     assert "seed_robust_qi" in names
+    assert "seed_robust_qi_sweep" in names
+    assert "neural_ode_reproducibility" in names
     assert "duration_policy" in names
 
 
@@ -125,6 +127,19 @@ def test_write_validation_suite_artifacts_and_cli(tmp_path) -> None:
     assert (
         tmp_path / "suite" / "seed_robust_qi" / "figures" / "qi_summary.png"
     ).stat().st_size > 0
+    assert (
+        tmp_path / "suite" / "seed_robust_qi_sweep" / "figures" / "qi_sweep_cv.png"
+    ).stat().st_size > 0
+    assert (
+        tmp_path
+        / "suite"
+        / "neural_ode_reproducibility"
+        / "figures"
+        / "baseline_rmse.png"
+    ).stat().st_size > 0
+    assert (
+        tmp_path / "suite" / "neural_ode_reproducibility" / "validation.json"
+    ).exists()
     assert (tmp_path / "suite" / "duration_policy" / "duration_policy.json").exists()
     persisted = json.loads((tmp_path / "suite" / "validation_suite.json").read_text())
     assert persisted["cases"][0]["passed"] is True

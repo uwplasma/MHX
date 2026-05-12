@@ -33,6 +33,33 @@ inverse-design claims remain roadmap items.
 See `docs/audit.md` for the current skeptical validation audit and maturity
 table, and `docs/time_windows.md` for the enforced duration policy.
 
+## Reviewer evidence and claim boundaries
+
+MHX now treats every artifact as one of four claim levels:
+
+| Level | Meaning |
+| --- | --- |
+| `smoke` | Runs and writes finite, schema-valid outputs. |
+| `validation` | Passes a specific documented physics or API gate. |
+| `production_template` | Defines a long-run plan that is duration guarded but not yet a completed simulation. |
+| `production` | Requires a long run, convergence suite, seed/QI check, movies, and checksummed manifest. |
+
+The most useful reviewer entry points are:
+
+- [Reviewer evidence map](docs/reviewer_evidence.md): claim levels, gates,
+  source-code links, and reproduction commands.
+- [Publication plot checklist](docs/publication_checklist.md): what figures are
+  ready, what is validation-only, and what remains before paper claims.
+- [Campaign runner operations](docs/campaign_runner.md): how FAST campaign
+  artifacts differ from long Rutherford/plasmoid production runs.
+- [Skeptical audit](docs/audit.md): current maturity table and explicit
+  non-claims.
+
+Current nonlinear runs are intentionally short validation gates. They support
+operator, differentiability, energy-budget, schema, and seed-sensitivity checks.
+They do **not** yet support Rutherford island growth, Sweet-Parker plasmoids, or
+neural-ODE production claims.
+
 ## Literature-anchored movies
 
 These small GIFs are intended to make the validation story visible at a glance.
@@ -128,8 +155,16 @@ mhx benchmark power-iteration --outdir outputs/benchmarks/power_iteration
 mhx benchmark arnoldi --outdir outputs/benchmarks/arnoldi
 mhx benchmark timing --outdir outputs/benchmarks/timing --repeats 3 --warmups 1
 mhx benchmark catalog --outdir outputs/benchmarks/catalog
+mhx benchmark seed-robust-qi --outdir outputs/benchmarks/seed_robust_qi
+mhx benchmark seed-robust-qi-sweep --outdir outputs/benchmarks/seed_robust_qi_sweep
+mhx neural-ode dataset --outdir outputs/neural_ode/seed_qi_fast
 mhx campaign rutherford-template --outdir outputs/campaigns/rutherford_template
+mhx campaign rutherford-run-fast --outdir outputs/campaigns/rutherford_fast
+mhx campaign rutherford-plan-production --outdir outputs/campaigns/rutherford_production_plan
+mhx campaign rutherford-resume-plan outputs/campaigns/rutherford_production_plan
+python examples/make_rutherford_production_plan.py --outdir outputs/examples/rutherford_production_plan
 mhx validate all --outdir outputs/validation_suite
+mhx validate readiness --suite outputs/validation_suite --outdir outputs/validation_readiness
 ```
 
 Current reviewer-facing validation figures include the direct Harris-sheet
@@ -173,6 +208,36 @@ mhx campaign rutherford-template \
 
 The resulting manifest is labeled `claim_level = "production_template"`; it is
 a reproducible plan, not a completed nonlinear reconnection result.
+
+To exercise the Rutherford diagnostic schema without making a production claim:
+
+```bash
+mhx campaign rutherford-run-fast \
+  --outdir outputs/campaigns/rutherford_fast \
+  --nx 16 --ny 16 --t-end 0.2 --seed 0
+```
+
+This writes `rutherford_fast_histories.npz`, `diagnostics.json`,
+`validation.json`, `manifest.json`, and
+`figures/rutherford_fast_histories.png`. The manifest remains
+`claim_level = "validation"`.
+
+To build the deterministic no-training neural-ODE reproducibility bundle:
+
+```bash
+mhx neural-ode dataset \
+  --outdir outputs/neural_ode/seed_qi_fast \
+  --seeds 0,1,2,3,4,5 \
+  --nx 16 --ny 16 \
+  --steps 24
+```
+
+This writes `dataset.npz`, `splits.json`, `baseline_metrics.json`,
+`calibration.json`, `experiment_spec.json`, `validation.json`,
+`manifest.json`, and the figures `dataset_targets.png`, `baseline_rmse.png`,
+and `calibration_coverage.png`.
+The artifact freezes the data/split/baseline contract that future trainable
+neural ODE models must beat; it is not itself a trained surrogate claim.
 
 and the nonlinear current-sheet differentiability bridge:
 

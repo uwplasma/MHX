@@ -100,3 +100,18 @@ Publication-grade nonlinear plots also need:
 - current-sheet length/thickness and reconnection-rate proxies;
 - magnetic/kinetic/total energy and integrated dissipation residuals;
 - artifact manifests with code commit, API version, and dependency set.
+
+## Practical duration labels
+
+Use these labels consistently in docs, figures, and manifests:
+
+| Label | Duration status | Allowed use |
+| --- | --- | --- |
+| `short_validation` | Shorter than the relevant e-fold window. | Operator, IO, schema, differentiability, and energy-budget checks. |
+| `linear_window` | At least $N_e/\gamma$. | Linear growth-rate measurement if the mode remains in the linear regime. |
+| `nonlinear_window` | At least $s_fN_e/\gamma$ with $s_f>1$. | Candidate island-growth or plasmoid campaign, still subject to convergence. |
+| `overresolved_window` | Longer than the nonlinear window and accompanied by convergence checks. | Preferred for production paper figures. |
+
+The label should be stored in the run notes or manifest claim scope. If the
+label is `short_validation`, figures should not use wording such as "Rutherford
+phase", "plasmoid onset", or "nonlinear saturation".

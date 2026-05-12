@@ -171,6 +171,43 @@ writes:
 - `manifest.json`: top-level claim metadata with
   `claim_level = "production_template"`.
 
+## FAST Rutherford runner outputs
+
+`mhx campaign rutherford-run-fast --outdir outputs/campaigns/rutherford_fast`
+writes validation-grade campaign artifacts:
+
+- `rutherford_fast_histories.npz`: schema
+  `mhx.campaign.rutherford_fast.histories.v1`, with `time`, `seed`,
+  `reconnected_flux`, `rutherford_island_width`, `reconnection_rate_proxy`,
+  `magnetic_energy`, `kinetic_energy`, `total_energy`,
+  `magnetic_divergence_linf`, and `current_density_linf`.
+- `diagnostics.json`: scalar pass/fail diagnostics and run metadata.
+- `validation.json`: finite-value, duration, energy-growth, divergence, and
+  claim-level checks.
+- `campaign_template.json`: copy of the production-template requirements used
+  to interpret the FAST run.
+- `figures/rutherford_fast_histories.png`: quick-look histories.
+- `manifest.json`: top-level claim metadata with
+  `claim_level = "validation"` unless explicitly configured otherwise.
+
+The schema intentionally mirrors the future long Rutherford campaign history
+keys, but the FAST runner is not a production nonlinear result.
+
+## Seed-robust QI outputs
+
+`mhx benchmark seed-robust-qi --outdir outputs/benchmarks/seed_robust_qi`
+writes:
+
+- `diagnostics.json`: schema `mhx.validation.seed_robust_qi.v1`,
+  including sample means, standard deviations, CVs, and gate results.
+- `validation.json`: schema `mhx.validation.seed_robust_qi.gates.v1`,
+  including per-metric pass/fail checks.
+- `ensemble.npz`: seed list and full metric samples for `gamma_fit`,
+  final energies, and magnetic-divergence error.
+- `figures/qi_summary.png`: compact metric stability summary when plotting
+  dependencies are available.
+- `manifest.json`: top-level claim metadata with `claim_level = "validation"`.
+
 ## Exact-decay validation outputs
 
 `mhx benchmark decay --outdir outputs/benchmarks/resistive_decay` writes:
@@ -491,6 +528,27 @@ writes:
 Absolute timings are machine-dependent. The schema is meant for artifact
 comparison across commits on the same runner class, not as a universal
 performance guarantee.
+
+## Neural-ODE reproducibility outputs
+
+`mhx neural-ode dataset --outdir outputs/neural_ode/seed_qi_fast` writes a
+deterministic no-training bundle for future neural-ODE work:
+
+| File | Schema | Meaning |
+| --- | --- | --- |
+| `dataset.npz` | `mhx.neural_ode.dataset.v1` | Seed-QI trajectory tensor, target tensor, times, seeds, and feature names. |
+| `splits.json` | `mhx.neural_ode.splits.v1` | Disjoint train/validation/test seed IDs and split checks. |
+| `baseline_metrics.json` | `mhx.neural_ode.baselines.v1` | Persistence, linear-prefix, and train-mean MAE/RMSE scores. |
+| `calibration.json` | `mhx.neural_ode.calibration.v1` | Empirical 1-sigma and 2-sigma residual coverage. |
+| `experiment_spec.json` | `mhx.neural_ode.experiment_spec.v1` | Reviewer-facing experiment contract and future neural-ODE requirements. |
+| `validation.json` | `mhx.neural_ode.reproducibility.gates.v1` | Gate summary tying seed-QI validation, splits, baselines, and calibration together. |
+| `manifest.json` | `mhx.manifest.v1` | Hashes and `claim_level = "validation"`. |
+
+`dataset.npz` keys are `schema`, `seeds`, `times`, `features`, `targets`,
+`feature_names`, `target_names`, `diagnostics_json`, and
+`source_diagnostics_json`. The v1 array convention is
+`features[n_seed, n_time, n_feature]` and
+`targets[n_seed, n_time, n_target]`.
 
 ## Benchmark catalog outputs
 

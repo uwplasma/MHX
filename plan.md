@@ -5105,3 +5105,77 @@ Every agent must append an entry here. Do not delete previous entries.
   from `production_template` to `production`.
 - Add paper-pipeline checks that fail if README/docs try to display production
   media without a matching `claim_level = "production"` manifest.
+
+### 2026-05-12 — Agent: Codex, large multi-lane push
+
+**Summary**
+
+- Added a stronger seed-robust QI amplitude-sweep lane that gates seed spread
+  and mean drift across perturbation amplitudes.
+- Added production Rutherford planning scaffolding with walltime policy,
+  checkpoint-index schema, checkpoint metadata writer, resume-plan selector,
+  job-array metadata, and a laptop-safe example.
+- Added deterministic neural-ODE reproducibility artifacts: FAST seed-QI
+  dataset, train/validation/test split manifest, no-training baselines,
+  calibration report, figures, and CLI.
+- Added a readiness report that separates public-release readiness from
+  nonlinear publication-claim readiness.
+- Expanded reviewer evidence, campaign, neural-ODE, publication checklist,
+  output-schema, README, API, and CI artifact checks.
+
+**Files changed**
+
+- Added `src/mhx/campaigns/`, `src/mhx/neural_ode/`,
+  `src/mhx/benchmarks/readiness.py`,
+  `docs/neural_ode_reproducibility.md`, `docs/reviewer_evidence.md`,
+  `docs/campaign_runner.md`, `docs/publication_checklist.md`,
+  `examples/make_neural_ode_reproducibility.py`,
+  `examples/make_rutherford_production_plan.py`,
+  `tests/test_neural_ode_reproducibility.py`,
+  `tests/test_production_campaign_scaffold.py`, and
+  `tests/test_readiness_report.py`.
+- Updated seed-QI, benchmark catalog/suite, CLI, CI, README, docs, and tests.
+
+**Tests run**
+
+- `python -m ruff check src tests examples tools` passed.
+- `python tools/check_legacy_imports.py` passed.
+- `sphinx-build -W -b html docs docs/_build/html` passed.
+- `python -m pytest --cov=mhx --cov-report=term-missing --cov-fail-under=95`
+  passed: 177 tests, 95.35% coverage.
+- CLI smoke checks passed for `mhx benchmark seed-robust-qi-sweep`,
+  `mhx neural-ode dataset`, `mhx campaign rutherford-plan-production`, and
+  `mhx campaign rutherford-resume-plan`.
+
+**Decisions made**
+
+- The seed-QI sweep remains a `validation` claim: it checks reproducibility and
+  perturbation sensitivity, not production uncertainty quantification.
+- The Rutherford production scaffold remains `production_template`: it defines
+  how to run, checkpoint, resume, and audit a long simulation but does not yet
+  advance the nonlinear PDE for a publication result.
+- The neural-ODE lane deliberately ships deterministic datasets, splits,
+  baselines, and calibration before any trainable neural model claim.
+- The readiness report is allowed to pass for public release while explicitly
+  marking nonlinear production-paper claims as blocked.
+
+**Problems / blockers**
+
+- Long nonlinear Rutherford/plasmoid production simulations still need an
+  actual walltime-aware executor, real checkpoints, convergence sweeps, and
+  production fixed-scale movies.
+- Neural-ODE novelty still requires trainable latent/neural ODE models that
+  beat the frozen baselines on validation/test splits.
+
+**Progress**
+
+- Estimated plan completion: 95%.
+
+**Next steps**
+
+- Implement the walltime-aware production executor that consumes the Rutherford
+  production plan and writes real restartable checkpoints.
+- Add medium/production nonlinear convergence campaigns and fixed-color flux
+  and current movies with checksummed manifests.
+- Train and evaluate latent/neural ODE models against the frozen dataset,
+  baseline, and calibration protocol.

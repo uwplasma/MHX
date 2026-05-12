@@ -20,7 +20,9 @@ from mhx.state import ReducedMHDParams, ReducedMHDState, ReducedMHDTrajectory
 from mhx.time_integrators import evolve_rk4
 
 SEED_ROBUST_QI_SCHEMA = "mhx.validation.seed_robust_qi.v1"
+SEED_ROBUST_QI_SWEEP_SCHEMA = "mhx.validation.seed_robust_qi_sweep.v1"
 SEED_ROBUST_QI_GATES_SCHEMA = "mhx.validation.seed_robust_qi.gates.v1"
+SEED_ROBUST_QI_SWEEP_GATES_SCHEMA = "mhx.validation.seed_robust_qi_sweep.gates.v1"
 DEFAULT_QI_METRICS = (
     "gamma_fit",
     "final_total_energy",
@@ -59,6 +61,21 @@ class SeedRobustQIResult:
     metric_names: tuple[str, ...] = ()
     metric_values: np.ndarray | None = None
     summaries: dict[str, dict[str, Any]] | None = None
+
+
+@dataclass(frozen=True)
+class SeedRobustQISweepResult:
+    """Noise-amplitude sweep of seed-robust QI metrics."""
+
+    seeds: tuple[int, ...]
+    noise_amplitudes: tuple[float, ...]
+    metric_names: tuple[str, ...]
+    metric_values: np.ndarray
+    per_amplitude: tuple[SeedRobustQIResult, ...]
+    metric_cv_max: dict[str, float]
+    metric_relative_mean_drift_max: dict[str, float]
+    diagnostics: dict[str, Any]
+    validation: dict[str, Any]
 
 
 def run_seed_robust_qi(
@@ -224,6 +241,228 @@ def run_seed_robust_qi(
         diagnostics=diagnostics,
         validation=validation,
     )
+
+
+def run_seed_robust_qi_sweep(
+    *,
+    shape: tuple[int, int] = (16, 16),
+    seed_count: int = 4,
+    base_seed: int = 20240512,
+    seeds: Sequence[int] | None = None,
+    noise_amplitudes: Sequence[float] = (0.0, 1.0e-9, 1.0e-8),
+    perturbation_amplitude: float = 1.0e-3,
+    resistivity: float = 1.0e-3,
+    viscosity: float = 1.0e-3,
+    dt: float = 1.0e-2,
+    steps: int = 12,
+    save_every: int = 1,
+    metric_names: Sequence[str] = DEFAULT_QI_METRICS,
+    max_relative_mean_drift: Mapping[str, float] | None = None,
+    max_cv: Mapping[str, float] | None = None,
+    max_divergence_linf: float = 1.0e-9,
+) -> SeedRobustQISweepResult:
+    """Run a common-seed noise-amplitude sweep and gate metric sensitivity.
+
+    This is stronger than a single-amplitude seed ensemble: it checks that FAST
+    diagnostics remain stable both across seeds and across an ordered family of
+    admissible perturbation amplitudes.  The default remains intentionally cheap
+    enough for CI.
+    """
+    active_amplitudes = tuple(float(value) for value in noise_amplitudes)
+    _validate_qi_sweep_inputs(
+        seed_count=seed_count,
+        seeds=seeds,
+        noise_amplitudes=active_amplitudes,
+        max_divergence_linf=max_divergence_linf,
+        steps=steps,
+        dt=dt,
+    )
+    active_seeds = (
+        tuple(int(seed) for seed in seeds)
+        if seeds is not None
+        else tuple(int(seed) for seed in generate_seed_ensemble(base_seed, seed_count))
+    )
+    names = tuple(str(name) for name in metric_names)
+    per_amplitude: list[SeedRobustQIResult] = []
+    metric_planes = []
+    for amplitude in active_amplitudes:
+        result = run_seed_robust_qi_validation(
+            shape=shape,
+            seed_count=len(active_seeds),
+            base_seed=base_seed,
+            seeds=active_seeds,
+            perturbation_amplitude=perturbation_amplitude,
+            psi_noise_amplitude=amplitude,
+            resistivity=resistivity,
+            viscosity=viscosity,
+            dt=dt,
+            steps=steps,
+            save_every=save_every,
+            metric_names=names,
+        )
+        per_amplitude.append(result)
+        metric_planes.append(result.metric_values)
+    metric_values = np.asarray(metric_planes, dtype=np.float64)
+    means = np.mean(metric_values, axis=1)
+    stds = np.std(metric_values, axis=1, ddof=1) if len(active_seeds) > 1 else np.zeros_like(means)
+    baseline = means[0]
+    metric_cv_max = {}
+    metric_relative_mean_drift_max = {}
+    drift_thresholds = _default_qi_sweep_drift_thresholds()
+    if max_relative_mean_drift is not None:
+        drift_thresholds.update(
+            {
+                str(key): float(value)
+                for key, value in max_relative_mean_drift.items()
+            }
+        )
+    cv_thresholds = _default_qi_sweep_cv_thresholds()
+    if max_cv is not None:
+        cv_thresholds.update({str(key): float(value) for key, value in max_cv.items()})
+    for index, name in enumerate(names):
+        scale = max(
+            float(np.max(np.abs(means[:, index]))),
+            abs(float(baseline[index])),
+            np.finfo(np.float64).eps,
+        )
+        metric_cv_max[name] = float(np.max(stds[:, index] / scale))
+        metric_relative_mean_drift_max[name] = float(
+            np.max(np.abs(means[:, index] - baseline[index]) / scale)
+        )
+    checks: dict[str, bool] = {
+        "finite_metric_cube": bool(np.isfinite(metric_values).all()),
+        "common_unique_seeds": len(set(active_seeds)) == len(active_seeds),
+        "ordered_nonnegative_amplitudes": bool(
+            np.all(np.diff(np.asarray(active_amplitudes, dtype=np.float64)) >= 0.0)
+        ),
+        "all_single_amplitude_gates_passed": all(
+            bool(result.validation["passed"]) for result in per_amplitude
+        ),
+    }
+    for name in names:
+        drift_limit = drift_thresholds.get(name)
+        if drift_limit is not None:
+            checks[f"{name}_mean_drift_within_tolerance"] = (
+                metric_relative_mean_drift_max[name] <= drift_limit
+            )
+        cv_limit = cv_thresholds.get(name)
+        if cv_limit is not None:
+            checks[f"{name}_cv_within_tolerance"] = metric_cv_max[name] <= cv_limit
+    if "final_magnetic_divergence_linf" in names:
+        divergence_index = names.index("final_magnetic_divergence_linf")
+        checks["divergence_below_tolerance_all_amplitudes"] = bool(
+            np.max(metric_values[:, :, divergence_index]) <= max_divergence_linf
+        )
+    diagnostics = {
+        "schema": SEED_ROBUST_QI_SWEEP_SCHEMA,
+        "shape": list(shape),
+        "seed_count": len(active_seeds),
+        "base_seed": int(base_seed),
+        "seeds": [int(seed) for seed in active_seeds],
+        "noise_amplitudes": list(active_amplitudes),
+        "perturbation_amplitude": perturbation_amplitude,
+        "resistivity": resistivity,
+        "viscosity": viscosity,
+        "dt": dt,
+        "steps": steps,
+        "save_every": save_every,
+        "metric_names": list(names),
+        "metric_cv_max": metric_cv_max,
+        "metric_relative_mean_drift_max": metric_relative_mean_drift_max,
+        "per_amplitude": [
+            {
+                "noise_amplitude": amplitude,
+                "passed": bool(result.validation["passed"]),
+                "summaries": result.summaries,
+            }
+            for amplitude, result in zip(active_amplitudes, per_amplitude, strict=True)
+        ],
+        "references": {
+            "scope": (
+                "Amplitude-sweep quality indicator for seed-sensitive FAST "
+                "diagnostics before inverse-design or neural-ODE data generation."
+            ),
+            "claim_boundary": (
+                "This validates robustness of cheap metrics under small seeded "
+                "perturbations; it is not a turbulent ensemble or UQ result."
+            ),
+        },
+    }
+    validation = {
+        "schema": SEED_ROBUST_QI_SWEEP_GATES_SCHEMA,
+        "passed": all(checks.values()),
+        "checks": checks,
+        "thresholds": {
+            "max_relative_mean_drift": drift_thresholds,
+            "max_cv": cv_thresholds,
+            "max_divergence_linf": max_divergence_linf,
+        },
+        "diagnostics": diagnostics,
+    }
+    return SeedRobustQISweepResult(
+        seeds=active_seeds,
+        noise_amplitudes=active_amplitudes,
+        metric_names=names,
+        metric_values=metric_values,
+        per_amplitude=tuple(per_amplitude),
+        metric_cv_max=metric_cv_max,
+        metric_relative_mean_drift_max=metric_relative_mean_drift_max,
+        diagnostics=diagnostics,
+        validation=validation,
+    )
+
+
+def write_seed_robust_qi_sweep(
+    outdir: str | Path,
+    *,
+    write_figures: bool = True,
+    **kwargs: Any,
+) -> tuple[Path, dict[str, Any]]:
+    """Write seed-robust amplitude-sweep diagnostics and reviewer figures."""
+    output_dir = Path(outdir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    result = run_seed_robust_qi_sweep(**kwargs)
+    diagnostics_path = output_dir / "diagnostics.json"
+    validation_path = output_dir / "validation.json"
+    sweep_path = output_dir / "sweep.npz"
+    manifest_path = output_dir / "manifest.json"
+    diagnostics_path.write_text(
+        json.dumps(result.diagnostics, indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+    validation_path.write_text(
+        json.dumps(result.validation, indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+    np.savez_compressed(
+        sweep_path,
+        schema=np.asarray(SEED_ROBUST_QI_SWEEP_SCHEMA),
+        seeds=np.asarray(result.seeds, dtype=np.int64),
+        noise_amplitudes=np.asarray(result.noise_amplitudes, dtype=np.float64),
+        metric_names=np.asarray(result.metric_names),
+        metric_values=result.metric_values,
+    )
+    outputs = {
+        "diagnostics": diagnostics_path.name,
+        "validation": validation_path.name,
+        "sweep": sweep_path.name,
+    }
+    if write_figures:
+        figure_paths = _write_qi_sweep_figures(result, output_dir / "figures")
+        outputs.update(
+            {key: str(path.relative_to(output_dir)) for key, path in figure_paths.items()}
+        )
+    write_manifest(
+        manifest_path,
+        config=result.diagnostics,
+        outputs=outputs,
+        claim_level="validation",
+        claim_scope=(
+            "Seed-robust QI amplitude sweep for FAST reduced-MHD trajectories; "
+            "not a production uncertainty-quantification claim."
+        ),
+    )
+    return manifest_path, result.validation
 
 
 def write_seed_robust_qi(
@@ -828,6 +1067,56 @@ def _write_qi_summary_figure(result: SeedRobustQIResult, path: Path) -> Path:
     return output_path
 
 
+def _write_qi_sweep_figures(
+    result: SeedRobustQISweepResult,
+    figure_dir: Path,
+) -> dict[str, Path]:
+    import matplotlib.pyplot as plt
+
+    output_dir = Path(figure_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    amplitudes = np.asarray(result.noise_amplitudes, dtype=np.float64)
+    x = np.arange(amplitudes.size)
+    labels = [f"{value:.0e}" for value in amplitudes]
+    cv_path = output_dir / "qi_sweep_cv.png"
+    drift_path = output_dir / "qi_sweep_mean_drift.png"
+
+    fig, ax = plt.subplots(figsize=(7.2, 4.0), constrained_layout=True)
+    for index, name in enumerate(result.metric_names):
+        values = result.metric_values[:, :, index]
+        scale = max(float(np.max(np.abs(np.mean(values, axis=1)))), np.finfo(np.float64).eps)
+        cvs = np.std(values, axis=1, ddof=1) / scale
+        ax.plot(x, np.maximum(cvs, np.finfo(np.float64).tiny), "o-", label=name)
+    ax.set_yscale("log")
+    ax.set_xticks(x, labels)
+    ax.set_xlabel(r"noise amplitude $\epsilon$")
+    ax.set_ylabel("seed spread / metric scale")
+    ax.set_title("Seed spread across perturbation-amplitude sweep")
+    ax.legend(fontsize=7, ncols=2)
+    fig.savefig(cv_path, dpi=180)
+    plt.close(fig)
+
+    means = np.mean(result.metric_values, axis=1)
+    baseline = means[0]
+    fig, ax = plt.subplots(figsize=(7.2, 4.0), constrained_layout=True)
+    for index, name in enumerate(result.metric_names):
+        scale = max(float(np.max(np.abs(means[:, index]))), np.finfo(np.float64).eps)
+        drift = np.abs(means[:, index] - baseline[index]) / scale
+        ax.plot(x, np.maximum(drift, np.finfo(np.float64).tiny), "o-", label=name)
+    ax.set_yscale("log")
+    ax.set_xticks(x, labels)
+    ax.set_xlabel(r"noise amplitude $\epsilon$")
+    ax.set_ylabel("relative mean drift from baseline")
+    ax.set_title("Metric drift across seed-noise amplitudes")
+    ax.legend(fontsize=7, ncols=2)
+    fig.savefig(drift_path, dpi=180)
+    plt.close(fig)
+    return {
+        "qi_sweep_cv": cv_path,
+        "qi_sweep_mean_drift": drift_path,
+    }
+
+
 def _gate_to_dict(gate: QIMetricGate | None) -> dict[str, float | str | None] | None:
     if gate is None:
         return None
@@ -842,3 +1131,56 @@ def _gate_to_dict(gate: QIMetricGate | None) -> dict[str, float | str | None] | 
         "max_abs_max": gate.max_abs_max,
         "cv_floor": gate.cv_floor,
     }
+
+
+def _default_qi_sweep_drift_thresholds() -> dict[str, float]:
+    return {
+        "gamma_fit": 5.0e-2,
+        "final_total_energy": 1.0e-3,
+        "final_magnetic_energy": 1.0e-3,
+        "final_kinetic_energy": 5.0e-1,
+        "final_magnetic_divergence_linf": 1.0,
+    }
+
+
+def _default_qi_sweep_cv_thresholds() -> dict[str, float]:
+    return {
+        "gamma_fit": 5.0e-2,
+        "final_total_energy": 1.0e-3,
+        "final_magnetic_energy": 1.0e-3,
+        "final_kinetic_energy": 5.0e-1,
+    }
+
+
+def _validate_qi_sweep_inputs(
+    *,
+    seed_count: int,
+    seeds: Sequence[int] | None,
+    noise_amplitudes: tuple[float, ...],
+    max_divergence_linf: float,
+    steps: int,
+    dt: float,
+) -> None:
+    if seeds is None and seed_count < 2:
+        raise ValueError("seed_count must be >= 2")
+    if seeds is not None:
+        active_seeds = tuple(int(seed) for seed in seeds)
+        if len(active_seeds) < 2:
+            raise ValueError("at least two seeds are required")
+        if len(set(active_seeds)) != len(active_seeds):
+            raise ValueError("seeds must be unique")
+    if len(noise_amplitudes) < 2:
+        raise ValueError("at least two noise amplitudes are required")
+    if any(value < 0.0 for value in noise_amplitudes):
+        raise ValueError("noise amplitudes must be non-negative")
+    if any(
+        right < left
+        for left, right in zip(noise_amplitudes, noise_amplitudes[1:], strict=False)
+    ):
+        raise ValueError("noise amplitudes must be sorted in nondecreasing order")
+    if steps < 1:
+        raise ValueError("steps must be >= 1")
+    if dt <= 0.0:
+        raise ValueError("dt must be positive")
+    if max_divergence_linf < 0.0:
+        raise ValueError("max_divergence_linf must be non-negative")

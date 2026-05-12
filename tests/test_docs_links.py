@@ -11,9 +11,13 @@ DOCS = ROOT / "docs"
 
 REQUIRED_TOCTREE_ENTRIES = {
     "validation",
+    "reviewer_evidence",
     "seed_robust_qi",
+    "neural_ode_reproducibility",
     "performance",
     "campaigns",
+    "campaign_runner",
+    "publication_checklist",
     "paper_plan",
 }
 
@@ -31,6 +35,7 @@ REQUIRED_SOURCE_LINKS = {
     "docs/paper_plan.md": {
         "src/mhx/benchmarks/campaigns.py",
         "src/mhx/benchmarks/campaign_runner.py",
+        "src/mhx/neural_ode/reproducibility.py",
         "src/mhx/benchmarks/seed_robust_qi.py",
         "src/mhx/cli/main.py",
         "src/mhx/physics/equilibria.py",
@@ -40,6 +45,35 @@ REQUIRED_SOURCE_LINKS = {
         "src/mhx/benchmarks/suite.py",
         "src/mhx/cli/main.py",
         "tests/test_seed_robust_qi.py",
+    },
+    "docs/neural_ode_reproducibility.md": {
+        "src/mhx/neural_ode/reproducibility.py",
+        "src/mhx/neural_ode/__init__.py",
+        "src/mhx/cli/main.py",
+        "examples/make_neural_ode_reproducibility.py",
+        "tests/test_neural_ode_reproducibility.py",
+    },
+    "docs/reviewer_evidence.md": {
+        "src/mhx/benchmarks/seed_robust_qi.py",
+        "src/mhx/benchmarks/campaign_runner.py",
+        "src/mhx/benchmarks/duration_policy.py",
+        "src/mhx/benchmarks/readiness.py",
+        "tests/test_campaign_runner.py",
+    },
+    "docs/campaign_runner.md": {
+        "src/mhx/benchmarks/campaigns.py",
+        "src/mhx/benchmarks/campaign_runner.py",
+        "src/mhx/benchmarks/duration_policy.py",
+        "src/mhx/campaigns/production.py",
+        "src/mhx/campaigns/__init__.py",
+        "tests/test_campaign_runner.py",
+        "tests/test_production_campaign_scaffold.py",
+    },
+    "docs/publication_checklist.md": {
+        "examples/make_validation_media.py",
+        "examples/make_readme_media.py",
+        "src/mhx/plotting/reduced_mhd.py",
+        "tests/test_readme_media.py",
     },
 }
 
@@ -68,7 +102,33 @@ def test_required_source_links_point_to_existing_paths() -> None:
 def test_remaining_large_push_gap_is_explicitly_tracked() -> None:
     combined_text = "\n".join(
         (DOCS / name).read_text(encoding="utf-8")
-        for name in ("index.md", "paper_plan.md", "validation.md")
+        for name in (
+            "index.md",
+            "paper_plan.md",
+            "validation.md",
+            "campaign_runner.md",
+            "publication_checklist.md",
+        )
     )
     assert "campaign_runner.md" in combined_text
-    assert "long runner exists" in combined_text or "planned" in combined_text
+    assert "expensive long-run executor is still planned" in combined_text
+    assert "production nonlinear result" in combined_text
+
+
+def test_reviewer_claim_boundaries_are_explicit() -> None:
+    reviewer_text = (DOCS / "reviewer_evidence.md").read_text(encoding="utf-8")
+    checklist_text = (DOCS / "publication_checklist.md").read_text(encoding="utf-8")
+    runner_text = (DOCS / "campaign_runner.md").read_text(encoding="utf-8")
+
+    for claim_level in (
+        "`smoke`",
+        "`validation`",
+        "`production_template`",
+        "`production`",
+    ):
+        assert claim_level in reviewer_text
+
+    assert "not production UQ" in reviewer_text
+    assert "not a production nonlinear result" in runner_text
+    assert "Rutherford production" in checklist_text
+    assert "Neural-ODE" in checklist_text

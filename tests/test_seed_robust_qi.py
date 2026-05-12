@@ -9,15 +9,18 @@ import pytest
 from mhx.benchmarks.seed_robust_qi import (
     DEFAULT_QI_METRICS,
     SEED_ROBUST_QI_SCHEMA,
+    SEED_ROBUST_QI_SWEEP_SCHEMA,
     QIMetricGate,
     compute_metric_statistics,
     generate_seed_ensemble,
     make_seeded_initial_state,
     run_seed_robust_qi,
+    run_seed_robust_qi_sweep,
     run_seed_robust_qi_validation,
     seeded_perturbation,
     seeded_tearing_initial_state,
     write_seed_robust_qi,
+    write_seed_robust_qi_sweep,
     write_seed_robust_qi_validation,
 )
 from mhx.config import MeshConfig
@@ -201,6 +204,69 @@ def test_write_seed_robust_qi_validation_without_figures(tmp_path) -> None:
     manifest = json.loads(manifest_path.read_text())
     assert validation["passed"] is True
     assert "qi_summary" not in manifest["outputs"]
+
+
+def test_seed_robust_qi_sweep_is_deterministic_and_gated() -> None:
+    result = run_seed_robust_qi_sweep(
+        shape=(8, 8),
+        seeds=(0, 1, 2),
+        noise_amplitudes=(0.0, 1.0e-9),
+        steps=4,
+        dt=1.0e-2,
+    )
+    repeated = run_seed_robust_qi_sweep(
+        shape=(8, 8),
+        seeds=(0, 1, 2),
+        noise_amplitudes=(0.0, 1.0e-9),
+        steps=4,
+        dt=1.0e-2,
+    )
+
+    assert result.validation["passed"] is True
+    assert result.metric_values.shape == (2, 3, len(DEFAULT_QI_METRICS))
+    np.testing.assert_allclose(result.metric_values, repeated.metric_values)
+    assert result.diagnostics["schema"] == SEED_ROBUST_QI_SWEEP_SCHEMA
+    assert result.metric_cv_max["final_total_energy"] < 1.0e-3
+    assert result.metric_relative_mean_drift_max["gamma_fit"] < 5.0e-2
+
+
+def test_write_seed_robust_qi_sweep_artifacts(tmp_path) -> None:
+    manifest_path, validation = write_seed_robust_qi_sweep(
+        tmp_path,
+        shape=(8, 8),
+        seeds=(0, 1, 2),
+        noise_amplitudes=(0.0, 1.0e-9),
+        steps=4,
+        dt=1.0e-2,
+    )
+
+    assert manifest_path == tmp_path / "manifest.json"
+    assert validation["passed"] is True
+    assert (tmp_path / "diagnostics.json").exists()
+    assert (tmp_path / "validation.json").exists()
+    assert (tmp_path / "sweep.npz").exists()
+    assert (tmp_path / "figures" / "qi_sweep_cv.png").stat().st_size > 0
+    assert (tmp_path / "figures" / "qi_sweep_mean_drift.png").stat().st_size > 0
+    with np.load(tmp_path / "sweep.npz") as data:
+        assert str(data["schema"]) == SEED_ROBUST_QI_SWEEP_SCHEMA
+        assert data["metric_values"].shape == (2, 3, len(DEFAULT_QI_METRICS))
+
+
+def test_seed_robust_qi_sweep_rejects_invalid_inputs() -> None:
+    with pytest.raises(ValueError, match="seed_count"):
+        run_seed_robust_qi_sweep(seed_count=1)
+    with pytest.raises(ValueError, match="unique"):
+        run_seed_robust_qi_sweep(seeds=(0, 0))
+    with pytest.raises(ValueError, match="at least two noise"):
+        run_seed_robust_qi_sweep(seeds=(0, 1), noise_amplitudes=(0.0,))
+    with pytest.raises(ValueError, match="non-negative"):
+        run_seed_robust_qi_sweep(seeds=(0, 1), noise_amplitudes=(-1.0, 0.0))
+    with pytest.raises(ValueError, match="sorted"):
+        run_seed_robust_qi_sweep(seeds=(0, 1), noise_amplitudes=(1.0e-8, 0.0))
+    with pytest.raises(ValueError, match="steps"):
+        run_seed_robust_qi_sweep(seeds=(0, 1), steps=0)
+    with pytest.raises(ValueError, match="dt"):
+        run_seed_robust_qi_sweep(seeds=(0, 1), dt=0.0)
 
 
 def test_seed_robust_qi_rejects_invalid_inputs() -> None:
