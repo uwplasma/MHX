@@ -26,6 +26,7 @@ output_schema
 benchmarks
 performance
 validation
+long_run_evidence
 reviewer_evidence
 seed_robust_qi
 neural_ode_reproducibility
