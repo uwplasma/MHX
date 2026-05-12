@@ -155,4 +155,4 @@ available at `examples/run_rutherford_production_chunk.py`.
 - FAST runner tests:
   [`tests/test_campaign_runner.py`](https://github.com/uwplasma/MHX/blob/main/tests/test_campaign_runner.py)
 - Production executor tests:
-  [`tests/test_production_campaign_scaffold.py`](https://github.com/uwplasma/MHX/blob/main/tests/test_production_campaign_scaffold.py)
+  [`tests/test_production_campaign.py`](https://github.com/uwplasma/MHX/blob/main/tests/test_production_campaign.py)

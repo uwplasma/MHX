@@ -1,8 +1,8 @@
 """Write a non-expensive Rutherford production planning bundle.
 
 This example is safe for laptops and CI because it does not run the nonlinear
-PDE. It writes the reviewer-facing walltime/checkpoint/resume scaffold that a
-long production executor must satisfy.
+PDE. It writes the reviewer-facing walltime/checkpoint/resume contract used by
+the restartable production executor.
 """
 
 from __future__ import annotations
@@ -27,7 +27,7 @@ def main() -> None:
     )
     parser.add_argument("--nx", type=int, default=96)
     parser.add_argument("--ny", type=int, default=96)
-    parser.add_argument("--dt", type=float, default=0.5)
+    parser.add_argument("--dt", type=float, default=0.2)
     parser.add_argument("--target-saved-frames", type=int, default=120)
     parser.add_argument("--max-walltime-hours", type=float, default=1.0)
     parser.add_argument("--seconds-per-step-estimate", type=float, default=2.0)

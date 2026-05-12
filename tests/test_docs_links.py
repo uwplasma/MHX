@@ -67,7 +67,7 @@ REQUIRED_SOURCE_LINKS = {
         "src/mhx/campaigns/production.py",
         "src/mhx/campaigns/__init__.py",
         "tests/test_campaign_runner.py",
-        "tests/test_production_campaign_scaffold.py",
+        "tests/test_production_campaign.py",
     },
     "docs/publication_checklist.md": {
         "examples/make_validation_media.py",
@@ -99,7 +99,7 @@ def test_required_source_links_point_to_existing_paths() -> None:
             assert source_path in text, f"{doc_path} should link to {source_path}"
 
 
-def test_remaining_large_push_gap_is_explicitly_tracked() -> None:
+def test_remaining_long_run_gap_is_explicitly_tracked() -> None:
     combined_text = "\n".join(
         (DOCS / name).read_text(encoding="utf-8")
         for name in (
@@ -111,7 +111,7 @@ def test_remaining_large_push_gap_is_explicitly_tracked() -> None:
         )
     )
     assert "campaign_runner.md" in combined_text
-    assert "expensive long-run executor is still planned" in combined_text
+    assert "completed long-run artifact bundle" in combined_text
     assert "production nonlinear result" in combined_text
 
 

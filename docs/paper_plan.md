@@ -39,7 +39,7 @@ reconnection, physics plugins, and neural surrogate experiments**
 | Nonlinear reduced-MHD budget | Supported for a periodic multi-mode state. | Add longer current-sheet runs with same budget diagnostics. |
 | Rutherford island growth | Not yet supported. | Run long enough for many linear e-folds, then track $W(t)$ and compare algebraic growth. |
 | Sweet-Parker/plasmoid chains | Not yet supported. | Resolve long thin sheets and secondary islands at adequate Lundquist number. |
-| Neural ODE surrogate for reconnection metrics | Deterministic FAST dataset/split/baseline/calibration artifacts implemented; no trainable surrogate claim yet. | Train a latent/neural ODE against the frozen `mhx.neural_ode.dataset.v1` contract and beat the documented baselines. |
+| Neural ODE surrogate for reconnection metrics | Deterministic FAST dataset/split/baseline/calibration artifacts plus a latent-ODE fit bundle are implemented. | Extend the fixed dataset to medium/production trajectories and demonstrate out-of-distribution failure modes quantitatively. |
 
 ## New large-push lanes
 
@@ -49,17 +49,17 @@ Two validation lanes have been added with explicit claim boundaries:
 | --- | --- | --- |
 | `seed_robust_qi.md` | Implemented as FAST seed-ensemble validation for smooth perturbation sensitivity. It is not production UQ. | QI implementation lives in [seed_robust_qi.py](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/seed_robust_qi.py); deterministic initial conditions remain in [equilibria.py](https://github.com/uwplasma/MHX/blob/main/src/mhx/physics/equilibria.py#L35). |
 | FAST Rutherford campaign runner | Implemented for validation-grade histories and schema checks. It is not a long production campaign. | Template writing lives in [campaigns.py](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/campaigns.py#L42); FAST runner lives in [campaign_runner.py](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/campaign_runner.py). |
-| `neural_ode_reproducibility.md` | Implemented as deterministic FAST dataset, train/validation/test splits, no-training baselines, and residual calibration. It is not a trained neural surrogate. | Dataset and baseline implementation lives in [reproducibility.py](https://github.com/uwplasma/MHX/blob/main/src/mhx/neural_ode/reproducibility.py). |
+| `neural_ode_reproducibility.md` | Implemented as deterministic FAST dataset, train/validation/test splits, no-training baselines, residual calibration, and a latent-ODE fit. It is not yet a production surrogate claim. | Dataset, baseline, and latent-ODE implementation lives in [reproducibility.py](https://github.com/uwplasma/MHX/blob/main/src/mhx/neural_ode/reproducibility.py). |
 
 Both lanes are exposed through the CLI in
 [main.py](https://github.com/uwplasma/MHX/blob/main/src/mhx/cli/main.py).
 
 The production operations guide now exists as [campaign_runner.md](campaign_runner.md).
 It documents the FAST runner, production plan, duration gate, checkpoint/resume
-metadata, required production artifacts, and review questions. The actual
-expensive long-run executor is still planned, so paper text should say "FAST
-campaign validation" or "production campaign scaffold" rather than "production
-campaign result" until a completed production artifact bundle exists.
+metadata, required production artifacts, restartable executor chunks, and review
+questions. Paper text should still say "FAST campaign validation" or
+"production executor chunk" rather than "production campaign result" until a
+completed long-run artifact bundle exists.
 
 ## Nonlinear duration requirement
 

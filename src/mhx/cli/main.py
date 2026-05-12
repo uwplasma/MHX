@@ -106,6 +106,33 @@ app.add_typer(validate_app, name="validate")
 app.add_typer(neural_ode_app, name="neural-ode")
 
 
+def _exit_if_validation_failed(validation: dict[str, object], *, context: str) -> None:
+    """Emit failed validation checks before returning a nonzero CLI status."""
+    if bool(validation.get("passed")):
+        return
+    checks = validation.get("checks", {})
+    if isinstance(checks, dict):
+        failed = sorted(str(key) for key, value in checks.items() if not bool(value))
+        if failed:
+            typer.secho(
+                f"{context} failed validation checks: {', '.join(failed)}",
+                fg=typer.colors.RED,
+                err=True,
+            )
+    diagnostics = validation.get("diagnostics", {})
+    if isinstance(diagnostics, dict):
+        for key in (
+            "max_relative_energy_growth",
+            "final_magnetic_divergence_linf",
+            "steps_run",
+            "dt",
+            "shape",
+        ):
+            if key in diagnostics:
+                typer.echo(f"{key}: {diagnostics[key]}", err=True)
+    raise typer.Exit(code=1)
+
+
 @app.command()
 def version() -> None:
     """Print the MHX package version."""
@@ -443,8 +470,7 @@ def campaign_rutherford_execute(
         max_divergence_linf=max_divergence_linf,
     )
     typer.echo(f"wrote {manifest_path}")
-    if not validation["passed"]:
-        raise typer.Exit(code=1)
+    _exit_if_validation_failed(validation, context="rutherford-execute")
 
 
 @app.command()

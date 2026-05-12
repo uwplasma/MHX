@@ -5250,3 +5250,49 @@ Every agent must append an entry here. Do not delete previous entries.
   execution bundle from validation to production.
 - Train the latent/neural ODE on production-quality trajectories and freeze a
   reviewer-facing comparison table against baselines.
+
+### 2026-05-12 — Agent: Codex, CI artifact hardening and closed-lane cleanup
+
+**Summary**
+
+- Fixed the benchmark-artifacts CI failure by using the stable Rutherford
+  production-executor step size (`dt = 0.2`) instead of the unstable CI value
+  (`dt = 0.5`) that correctly tripped the energy-growth gate.
+- Added explicit `mhx campaign rutherford-execute` diagnostics for failed
+  validation checks so CI logs now report the failing gate, energy growth,
+  divergence error, step count, time step, and grid shape.
+- Renamed the production-campaign test file from scaffold wording to
+  `tests/test_production_campaign.py` and updated docs/source-link tests.
+- Updated the paper-plan wording to reflect the real restartable executor and
+  fitted latent-ODE bundle while keeping long-run nonlinear production claims
+  explicitly blocked until completed convergence artifacts exist.
+
+**Tests run**
+
+- `python -m ruff check src tests examples tools` passed.
+- `python tools/check_legacy_imports.py` passed.
+- `sphinx-build -W -b html docs docs/_build/html` passed.
+- The CI artifact tail from Rutherford production execution through readiness,
+  README media, two-fluid toy, plugin demo, and artifact manifest passed
+  locally under `outputs/ci_local`.
+- `python -m pytest --cov=mhx --cov-report=term-missing --cov-fail-under=95`
+  passed: 182 tests, 95.15% coverage.
+
+**Decisions made**
+
+- Kept the strict energy-growth gate; the fix is a stable CI executor time
+  step, not relaxing a physical/numerical validation failure.
+- Kept completed nonlinear production claims blocked until the restartable
+  executor finishes the full duration target and convergence gates pass.
+
+**Progress**
+
+- Estimated plan completion: 98%.
+
+**Next steps**
+
+- Wait for GitHub Actions to confirm all jobs green on the pushed CI fix.
+- Promote medium/production Rutherford campaign chunks only after duration,
+  convergence, seed-robustness, and artifact-hash gates pass.
+- Extend latent-ODE experiments from FAST seed-QI data to medium nonlinear
+  trajectories before making publication-grade surrogate claims.

@@ -41,7 +41,7 @@ Source links:
 - [Public campaign API](https://github.com/uwplasma/MHX/blob/main/src/mhx/campaigns/__init__.py)
 - [CLI commands](https://github.com/uwplasma/MHX/blob/main/src/mhx/cli/main.py)
 - [Campaign tests](https://github.com/uwplasma/MHX/blob/main/tests/test_campaign_runner.py)
-- [Production executor tests](https://github.com/uwplasma/MHX/blob/main/tests/test_production_campaign_scaffold.py)
+- [Production executor tests](https://github.com/uwplasma/MHX/blob/main/tests/test_production_campaign.py)
 
 ## Duration gate
 

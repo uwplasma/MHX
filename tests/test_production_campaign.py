@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 
+import click
 import numpy as np
 import pytest
 from typer.testing import CliRunner
@@ -23,7 +24,7 @@ from mhx.campaigns import (
     write_rutherford_production_plan,
     write_rutherford_resume_plan,
 )
-from mhx.cli.main import app
+from mhx.cli.main import _exit_if_validation_failed, app
 
 
 def test_production_campaign_plan_writes_runbook_and_checkpoint_contract(tmp_path) -> None:
@@ -275,7 +276,30 @@ def test_production_execution_cli_writes_movies_for_tiny_chunk(tmp_path) -> None
     assert (tmp_path / "figures" / "fixed_scale_current_density_movie.gif").stat().st_size > 0
 
 
-def test_production_campaign_scaffold_rejects_invalid_controls(tmp_path) -> None:
+def test_cli_validation_failure_reports_failed_checks(capsys) -> None:
+    _exit_if_validation_failed({"passed": True}, context="unit")
+    validation = {
+        "passed": False,
+        "checks": {"stable": False, "finite": True},
+        "diagnostics": {
+            "max_relative_energy_growth": 1.5,
+            "final_magnetic_divergence_linf": 0.0,
+            "steps_run": 4,
+            "dt": 0.5,
+            "shape": [96, 96],
+        },
+    }
+
+    with pytest.raises(click.exceptions.Exit):
+        _exit_if_validation_failed(validation, context="unit")
+
+    captured = capsys.readouterr()
+    assert "unit failed validation checks: stable" in captured.err
+    assert "max_relative_energy_growth: 1.5" in captured.err
+    assert "shape: [96, 96]" in captured.err
+
+
+def test_production_campaign_rejects_invalid_controls(tmp_path) -> None:
     with pytest.raises(ValueError, match="max_walltime_hours"):
         WalltimePolicy(max_walltime_hours=0.0).validated()
     with pytest.raises(ValueError, match="seconds_per_step"):
