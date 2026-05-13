@@ -26,6 +26,64 @@ Expected files include:
 - `report.md`
 - `validation.json`
 
+## Reviewer command index
+
+Use this section as the detailed command catalog that the README intentionally
+does not carry. Each command writes `claim_level = "validation"` unless the
+linked campaign documentation states that it is a `production_template`.
+
+```bash
+mhx benchmark run --config examples/linear_tearing.toml --outdir outputs/benchmarks/linear_tearing_fast --gif
+mhx benchmark validate outputs/benchmarks/linear_tearing_fast
+mhx benchmark decay --outdir outputs/benchmarks/resistive_decay
+mhx benchmark scaling --outdir outputs/benchmarks/reconnection_scaling
+mhx benchmark fkr-window --outdir outputs/benchmarks/fkr_window
+mhx benchmark fkr-growth --outdir outputs/benchmarks/fkr_growth_rate
+mhx benchmark harris-delta-prime --outdir outputs/benchmarks/harris_delta_prime
+mhx benchmark linear-tearing-eigenvalue --outdir outputs/benchmarks/linear_tearing_eigenvalue
+mhx benchmark linear-tearing-dispersion --outdir outputs/benchmarks/linear_tearing_dispersion
+mhx benchmark linear-tearing-layer --outdir outputs/benchmarks/linear_tearing_layer
+mhx benchmark linear-tearing-timedomain --outdir outputs/benchmarks/linear_tearing_timedomain
+mhx benchmark linearized-rhs --outdir outputs/benchmarks/linearized_rhs
+mhx benchmark reduced-mhd-eigenmode --outdir outputs/benchmarks/reduced_mhd_eigenmode
+mhx benchmark cosine-equilibrium-linearization --outdir outputs/benchmarks/cosine_equilibrium_linearization
+mhx benchmark current-sheet-eigenvalue --outdir outputs/benchmarks/periodic_current_sheet_eigenvalue
+mhx benchmark current-sheet-timedomain --outdir outputs/benchmarks/periodic_current_sheet_timedomain
+mhx benchmark current-sheet-nonlinear-bridge --outdir outputs/benchmarks/periodic_current_sheet_nonlinear_bridge
+mhx benchmark double-harris-growth --outdir outputs/benchmarks/periodic_double_harris_nonlinear_growth
+mhx benchmark double-harris-long-run --outdir outputs/benchmarks/periodic_double_harris_seeded_long_run --movies
+mhx benchmark double-harris-convergence --outdir outputs/benchmarks/periodic_double_harris_convergence
+mhx benchmark nonlinear-energy-budget --outdir outputs/benchmarks/nonlinear_energy_budget
+mhx benchmark nonlinear-duration-audit --outdir outputs/benchmarks/nonlinear_duration_audit
+mhx benchmark duration-policy --outdir outputs/benchmarks/duration_policy
+mhx benchmark diffusion-eigenvalue --outdir outputs/benchmarks/diffusion_eigenvalue
+mhx benchmark power-iteration --outdir outputs/benchmarks/power_iteration
+mhx benchmark arnoldi --outdir outputs/benchmarks/arnoldi
+mhx benchmark timing --outdir outputs/benchmarks/timing --repeats 3 --warmups 1
+mhx benchmark catalog --outdir outputs/benchmarks/catalog
+mhx benchmark seed-robust-qi --outdir outputs/benchmarks/seed_robust_qi
+mhx benchmark seed-robust-qi-sweep --outdir outputs/benchmarks/seed_robust_qi_sweep
+mhx neural-ode dataset --outdir outputs/neural_ode/seed_qi_fast
+mhx neural-ode train --outdir outputs/neural_ode/latent_ode_fast
+mhx campaign rutherford-template --outdir outputs/campaigns/rutherford_template
+mhx campaign rutherford-run-fast --outdir outputs/campaigns/rutherford_fast
+mhx campaign rutherford-plan-production --outdir outputs/campaigns/rutherford_production_plan
+mhx campaign rutherford-resume-plan outputs/campaigns/rutherford_production_plan
+mhx campaign rutherford-execute outputs/campaigns/rutherford_production_plan --max-steps 128
+python examples/make_rutherford_production_plan.py --outdir outputs/examples/rutherford_production_plan
+python examples/run_rutherford_production_chunk.py --outdir outputs/examples/rutherford_chunk --movies
+python examples/train_latent_ode_fast.py --outdir outputs/examples/latent_ode_fast
+mhx validate all --outdir outputs/validation_suite
+mhx validate readiness --suite outputs/validation_suite --outdir outputs/validation_readiness
+```
+
+The equation-heavy physics gates and still figures are on
+[validation.md](validation.md). Campaign scaffolds and restartable execution are
+documented in [campaigns.md](campaigns.md) and
+[campaign_runner.md](campaign_runner.md). Neural-ODE baseline comparison and
+fitted latent-ODE outputs are documented in
+[neural_ode_reproducibility.md](neural_ode_reproducibility.md).
+
 ## Exact-decay validation benchmark
 
 The first physics-gated numerical validation is a single Fourier mode in the

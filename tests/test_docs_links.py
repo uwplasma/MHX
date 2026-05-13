@@ -4,9 +4,11 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
+from urllib.parse import unquote, urlsplit
 
 ROOT = Path(__file__).resolve().parents[1]
 DOCS = ROOT / "docs"
+IMAGE_LINK_RE = re.compile(r"!\[[^\]]*\]\((?P<target>[^)\s]+)(?:\s+[^)]*)?\)")
 
 
 REQUIRED_TOCTREE_ENTRIES = {
@@ -75,6 +77,11 @@ REQUIRED_SOURCE_LINKS = {
         "src/mhx/plotting/reduced_mhd.py",
         "tests/test_readme_media.py",
     },
+    "docs/media.md": {
+        "examples/make_readme_media.py",
+        "src/mhx/benchmarks/current_sheet.py",
+        "tests/test_current_sheet_eigenvalue_validation.py",
+    },
 }
 
 
@@ -97,6 +104,21 @@ def test_required_source_links_point_to_existing_paths() -> None:
         for source_path in expected_paths:
             assert (ROOT / source_path).exists(), source_path
             assert source_path in text, f"{doc_path} should link to {source_path}"
+
+
+def test_docs_image_links_point_to_existing_files() -> None:
+    missing = []
+    for doc_path in DOCS.glob("*.md"):
+        for match in IMAGE_LINK_RE.finditer(doc_path.read_text(encoding="utf-8")):
+            target = match.group("target")
+            split_target = urlsplit(target)
+            if split_target.scheme:
+                continue
+            linked_path = (doc_path.parent / Path(unquote(split_target.path))).resolve()
+            if not linked_path.is_file():
+                missing.append(f"{doc_path.relative_to(ROOT)} -> {target}")
+
+    assert missing == []
 
 
 def test_remaining_long_run_gap_is_explicitly_tracked() -> None:

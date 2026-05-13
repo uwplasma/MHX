@@ -14,8 +14,41 @@ def main() -> None:
     """Write small GIFs used by the README and docs landing pages."""
     output_dir = Path("docs/_static/readme")
     output_dir.mkdir(parents=True, exist_ok=True)
+    _write_solver_movie_copy(
+        Path(
+            "docs/_static/validation/periodic_double_harris_seeded_long_run/"
+            "figures/periodic_double_harris_flux.gif"
+        ),
+        output_dir / "double_harris_reconnection.gif",
+    )
+    _write_solver_movie_copy(
+        Path(
+            "docs/_static/validation/periodic_double_harris_seeded_long_run/"
+            "figures/periodic_double_harris_current.gif"
+        ),
+        output_dir / "double_harris_current_sheet.gif",
+    )
     _write_harris_layer_sweep(output_dir / "harris_layer_sweep.gif")
     _write_plasmoid_scaling_schematic(output_dir / "plasmoid_scaling_schematic.gif")
+    _write_mhd_turbulence_schematic(output_dir / "mhd_turbulence_cascade.gif")
+
+
+def _write_solver_movie_copy(source: Path, path: Path) -> None:
+    """Compress an existing validation movie into a README-sized preview."""
+    if not source.exists():
+        raise FileNotFoundError(
+            f"{source} is missing; run examples/make_validation_media.py first"
+        )
+    frames = imageio.mimread(source)
+    stride = max(1, len(frames) // 20)
+    preview_frames = []
+    for frame in frames[::stride][:20]:
+        array = np.asarray(frame)
+        if array.shape[0] > 320:
+            scale = max(1, int(np.ceil(array.shape[0] / 320)))
+            array = array[::scale, ::scale]
+        preview_frames.append(array[..., :3].copy())
+    imageio.mimsave(path, preview_frames, duration=0.18, loop=0, palettesize=64)
 
 
 def _write_harris_layer_sweep(path: Path) -> None:
@@ -123,6 +156,58 @@ def _write_plasmoid_scaling_schematic(path: Path) -> None:
         frames.append(_figure_to_frame(fig))
         plt.close(fig)
     imageio.mimsave(path, frames, duration=0.65, loop=0, palettesize=64)
+
+
+def _write_mhd_turbulence_schematic(path: Path) -> None:
+    """Animate a compact schematic of 2-D MHD-like eddies and spectral transfer."""
+    import matplotlib.pyplot as plt
+
+    rng = np.random.default_rng(20260513)
+    n = 96
+    x = np.linspace(0.0, 2.0 * np.pi, n, endpoint=False)
+    y = np.linspace(0.0, 2.0 * np.pi, n, endpoint=False)
+    x_mesh, y_mesh = np.meshgrid(x, y, indexing="ij")
+    modes = []
+    for kx in range(1, 7):
+        for ky in range(1, 7):
+            wavenumber = np.hypot(kx, ky)
+            amplitude = wavenumber ** (-5.0 / 3.0)
+            phase = rng.uniform(0.0, 2.0 * np.pi)
+            drift = rng.normal(0.0, 0.35)
+            modes.append((kx, ky, amplitude, phase, drift, wavenumber))
+    frames = []
+    cascade_k = np.arange(1, 26)
+    for frame_index, phase_shift in enumerate(np.linspace(0.0, 2.0 * np.pi, 8)):
+        flux = np.zeros_like(x_mesh)
+        current = np.zeros_like(x_mesh)
+        for kx, ky, amplitude, phase, drift, wavenumber in modes:
+            angle = kx * x_mesh + ky * y_mesh + phase + drift * phase_shift
+            flux += amplitude * np.sin(angle)
+            current += (wavenumber**2) * amplitude * np.sin(angle)
+        flux /= max(float(np.std(flux)), np.finfo(float).eps)
+        current /= max(float(np.std(current)), np.finfo(float).eps)
+        spectrum = cascade_k ** (-5.0 / 3.0)
+        cutoff = 1.0 / (1.0 + np.exp(-(cascade_k - (5 + frame_index)) / 1.8))
+
+        fig, axes = plt.subplots(1, 3, figsize=(6.6, 2.35), constrained_layout=True)
+        axes[0].imshow(flux.T, origin="lower", cmap="viridis")
+        axes[0].set_title("magnetic-flux eddies")
+        axes[0].set_xticks([])
+        axes[0].set_yticks([])
+        axes[1].imshow(current.T, origin="lower", cmap="magma")
+        axes[1].set_title("current filaments")
+        axes[1].set_xticks([])
+        axes[1].set_yticks([])
+        axes[2].loglog(cascade_k, spectrum, color="#3266a8", label=r"$k^{-5/3}$ guide")
+        axes[2].loglog(cascade_k, spectrum * cutoff, color="#b54a4a", label="animated cascade")
+        axes[2].set_xlabel("wavenumber")
+        axes[2].set_ylabel("relative power")
+        axes[2].set_title("turbulent transfer")
+        axes[2].legend(frameon=False, fontsize=7)
+        fig.suptitle("MHD turbulence schematic")
+        frames.append(_figure_to_frame(fig))
+        plt.close(fig)
+    imageio.mimsave(path, frames, duration=0.2, loop=0, palettesize=48)
 
 
 def _figure_to_frame(fig) -> np.ndarray:

@@ -5,6 +5,20 @@ make MHX hard to overclaim: every scientific statement should point to a
 command, artifact schema, validation gate, source implementation, and explicit
 claim boundary.
 
+## Fast entry points
+
+- [Physics validation](validation.md) is the primary figure gallery: it keeps
+  the equations, citations, tolerances, expected files, source links, and still
+  figures for each validation gate.
+- [Benchmarks](benchmarks.md) is the command index for tests, validation
+  scaffolds, comparison lanes, neural-ODE bundles, and campaign examples.
+- [Validation media](media.md) carries literature-anchored GIFs and separates
+  solver output from schematic targets.
+- [Long-run evidence](long_run_evidence.md) records longer nonlinear runs with
+  skeptical interpretations and explicit non-claims.
+- [Publication checklist](publication_checklist.md) states which still figures
+  and movies are ready as validation evidence and which are production-only.
+
 ## Evidence standard
 
 A result is reviewer-ready only when all of the following are true:
