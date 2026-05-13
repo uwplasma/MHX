@@ -178,7 +178,9 @@ These runs do not yet support:
 - Sweet-Parker reconnection-rate scaling;
 - publication-grade reconnection claims.
 
-The next required physics step is to turn the double-Harris replay into a
-convergence campaign: sweep resolution, time step, seed amplitude/mode, sheet
-width/aspect ratio, and Lundquist number, then promote only those figures whose
-scalings survive the sweep.
+The next required physics step is no longer a single missing script: MHX now
+ships a FAST double-Harris convergence scaffold that sweeps tiny resolution and
+time-step cases and gates spread in early growth/amplification. To promote the
+result to production physics, extend that scaffold to larger resolution, seed
+amplitude/mode, sheet width/aspect ratio, Lundquist number, and duration sweeps,
+then promote only the figures whose scalings survive the full campaign.

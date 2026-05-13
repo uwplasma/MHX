@@ -75,6 +75,7 @@ theory schematics, not from unvalidated nonlinear production simulations.
 | ![Plasmoid scaling schematic](docs/_static/readme/plasmoid_scaling_schematic.gif) | Schematic Sweet-Parker sheet fragmentation with $\gamma_{\max}\tau_A\propto S^{1/4}$ and $k_{\max}L\propto S^{3/8}$. | [Loureiro, Schekochihin & Cowley 2007](https://arxiv.org/abs/astro-ph/0703631); schematic only, not yet a nonlinear MHX plasmoid claim. |
 | ![Seeded double-Harris flux](docs/_static/validation/periodic_double_harris_seeded_long_run/figures/periodic_double_harris_flux.gif) | Seeded periodic double-Harris nonlinear replay at `64×64`, showing magnetic-flux evolution over `t_end=30`. | Validation bridge from Harris tearing to longer nonlinear campaigns; bounded evidence, not a converged plasmoid/Rutherford claim. |
 | ![Seeded double-Harris current](docs/_static/validation/periodic_double_harris_seeded_long_run/figures/periodic_double_harris_current.gif) | Same seeded run through fixed-scale out-of-plane current density. | Checks current-density visualization and dissipative nonlinear replay before aspect-ratio/seed/resolution sweeps. |
+| ![Seeded double-Harris convergence](docs/_static/validation/periodic_double_harris_convergence/periodic_double_harris_convergence.png) | FAST resolution/time-step sweep for the seeded periodic double-Harris replay. | Convergence scaffold that gates spread in early growth/amplification before any production Rutherford/plasmoid claim. |
 | ![Restartable Rutherford flux chunk](docs/_static/validation/rutherford_production_execution/fixed_scale_flux_movie.gif) | Real restartable Rutherford executor chunk with fixed-scale magnetic flux. | Execution-path validation for the chunked production runner; not a completed long Rutherford claim. |
 | ![Restartable Rutherford current chunk](docs/_static/validation/rutherford_production_execution/fixed_scale_current_density_movie.gif) | Same chunk shown through current density, using fixed color limits. | Checks the movie/artifact lane and the current-density visualization contract. |
 
@@ -155,6 +156,8 @@ mhx benchmark current-sheet-eigenvalue --outdir outputs/benchmarks/periodic_curr
 mhx benchmark current-sheet-timedomain --outdir outputs/benchmarks/periodic_current_sheet_timedomain
 mhx benchmark current-sheet-nonlinear-bridge --outdir outputs/benchmarks/periodic_current_sheet_nonlinear_bridge
 mhx benchmark double-harris-growth --outdir outputs/benchmarks/periodic_double_harris_nonlinear_growth
+mhx benchmark double-harris-long-run --outdir outputs/benchmarks/periodic_double_harris_seeded_long_run --movies
+mhx benchmark double-harris-convergence --outdir outputs/benchmarks/periodic_double_harris_convergence
 mhx benchmark nonlinear-energy-budget --outdir outputs/benchmarks/nonlinear_energy_budget
 mhx benchmark nonlinear-duration-audit --outdir outputs/benchmarks/nonlinear_duration_audit
 mhx benchmark duration-policy --outdir outputs/benchmarks/duration_policy

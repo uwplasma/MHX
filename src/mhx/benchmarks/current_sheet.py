@@ -23,6 +23,7 @@ from mhx.io import write_manifest
 from mhx.physics import CosineTearingEquilibrium, PeriodicDoubleHarrisEquilibrium
 from mhx.plotting import (
     plot_current_density_gif,
+    plot_double_harris_convergence,
     plot_double_harris_nonlinear_growth,
     plot_double_harris_seeded_long_run,
     plot_flux_gif,
@@ -53,6 +54,9 @@ PERIODIC_DOUBLE_HARRIS_NONLINEAR_GROWTH_SCHEMA = (
 )
 PERIODIC_DOUBLE_HARRIS_SEEDED_LONG_RUN_SCHEMA = (
     "mhx.validation.periodic_double_harris_seeded_long_run.v1"
+)
+PERIODIC_DOUBLE_HARRIS_CONVERGENCE_SCHEMA = (
+    "mhx.validation.periodic_double_harris_convergence.v1"
 )
 
 
@@ -145,6 +149,24 @@ class PeriodicDoubleHarrisSeededLongRunResult:
     perturbed_trajectory: ReducedMHDTrajectory
     base_initial_state: ReducedMHDState
     perturbed_initial_state: ReducedMHDState
+    diagnostics: dict[str, Any]
+    validation: dict[str, Any]
+
+
+@dataclass(frozen=True)
+class PeriodicDoubleHarrisConvergenceResult:
+    """Resolution/time-step sweep for seeded periodic double-Harris evidence."""
+
+    case_kind: np.ndarray
+    resolution: np.ndarray
+    dt: np.ndarray
+    samples: np.ndarray
+    fitted_early_growth_rate: np.ndarray
+    early_growth_factor: np.ndarray
+    max_growth_factor: np.ndarray
+    relative_energy_increase: np.ndarray
+    max_current_density_linf: np.ndarray
+    max_kinetic_energy: np.ndarray
     diagnostics: dict[str, Any]
     validation: dict[str, Any]
 
@@ -966,6 +988,232 @@ def run_periodic_double_harris_seeded_long_run_validation(
     )
 
 
+def run_periodic_double_harris_convergence_validation(
+    *,
+    resolutions: tuple[int, ...] = (16, 24),
+    dt_values: tuple[float, ...] = (2.0e-2, 1.0e-2),
+    reference_resolution: int = 16,
+    width: float = 0.4,
+    amplitude: float = 1.0,
+    resistivity: float = 5.0e-3,
+    viscosity: float = 5.0e-3,
+    perturbation_amplitude: float = 1.0e-3,
+    perturbation_mode: tuple[int, int] = (2, 1),
+    reference_dt: float = 1.0e-2,
+    t_end: float = 8.0,
+    save_interval: float = 1.0,
+    fit_window: tuple[float, float] = (0.0, 4.0),
+    min_saved_samples: int = 5,
+    min_early_growth_rate: float = 1.0e-3,
+    min_early_growth_factor: float = 1.01,
+    min_max_growth_factor: float = 1.05,
+    max_relative_energy_increase: float = 1.0e-8,
+    max_relative_growth_rate_spread: float = 1.5,
+    max_relative_max_growth_spread: float = 3.0,
+) -> PeriodicDoubleHarrisConvergenceResult:
+    """Run a deterministic tiny convergence sweep for seeded double-Harris replay."""
+    _validate_double_harris_convergence_inputs(
+        resolutions=resolutions,
+        dt_values=dt_values,
+        reference_resolution=reference_resolution,
+        reference_dt=reference_dt,
+        t_end=t_end,
+        save_interval=save_interval,
+        fit_window=fit_window,
+        min_saved_samples=min_saved_samples,
+        min_early_growth_rate=min_early_growth_rate,
+        min_early_growth_factor=min_early_growth_factor,
+        min_max_growth_factor=min_max_growth_factor,
+        max_relative_energy_increase=max_relative_energy_increase,
+        max_relative_growth_rate_spread=max_relative_growth_rate_spread,
+        max_relative_max_growth_spread=max_relative_max_growth_spread,
+    )
+    cases: list[dict[str, Any]] = []
+    for resolution in resolutions:
+        save_every = _save_every_for_interval(reference_dt, save_interval)
+        result = run_periodic_double_harris_seeded_long_run_validation(
+            shape=(resolution, resolution),
+            width=width,
+            amplitude=amplitude,
+            resistivity=resistivity,
+            viscosity=viscosity,
+            perturbation_amplitude=perturbation_amplitude,
+            perturbation_mode=perturbation_mode,
+            dt=reference_dt,
+            t_end=t_end,
+            save_every=save_every,
+            fit_window=fit_window,
+            min_saved_samples=min_saved_samples,
+            min_early_growth_rate=min_early_growth_rate,
+            min_early_growth_factor=min_early_growth_factor,
+            min_max_growth_factor=min_max_growth_factor,
+            max_relative_energy_increase=max_relative_energy_increase,
+        )
+        cases.append(
+            _double_harris_convergence_case(
+                "resolution",
+                resolution=resolution,
+                dt=reference_dt,
+                save_every=save_every,
+                result=result,
+            )
+        )
+    for dt_value in dt_values:
+        save_every = _save_every_for_interval(dt_value, save_interval)
+        result = run_periodic_double_harris_seeded_long_run_validation(
+            shape=(reference_resolution, reference_resolution),
+            width=width,
+            amplitude=amplitude,
+            resistivity=resistivity,
+            viscosity=viscosity,
+            perturbation_amplitude=perturbation_amplitude,
+            perturbation_mode=perturbation_mode,
+            dt=dt_value,
+            t_end=t_end,
+            save_every=save_every,
+            fit_window=fit_window,
+            min_saved_samples=min_saved_samples,
+            min_early_growth_rate=min_early_growth_rate,
+            min_early_growth_factor=min_early_growth_factor,
+            min_max_growth_factor=min_max_growth_factor,
+            max_relative_energy_increase=max_relative_energy_increase,
+        )
+        cases.append(
+            _double_harris_convergence_case(
+                "timestep",
+                resolution=reference_resolution,
+                dt=dt_value,
+                save_every=save_every,
+                result=result,
+            )
+        )
+
+    case_kind = np.asarray([case["case_kind"] for case in cases])
+    resolution = np.asarray([case["resolution"] for case in cases], dtype=np.int64)
+    dt = np.asarray([case["dt"] for case in cases], dtype=np.float64)
+    samples = np.asarray([case["samples"] for case in cases], dtype=np.int64)
+    growth_rate = np.asarray(
+        [case["fitted_early_growth_rate"] for case in cases],
+        dtype=np.float64,
+    )
+    early_growth = np.asarray(
+        [case["early_growth_factor"] for case in cases],
+        dtype=np.float64,
+    )
+    max_growth = np.asarray(
+        [case["max_growth_factor"] for case in cases],
+        dtype=np.float64,
+    )
+    energy_increase = np.asarray(
+        [case["relative_energy_increase"] for case in cases],
+        dtype=np.float64,
+    )
+    max_current = np.asarray(
+        [case["max_current_density_linf"] for case in cases],
+        dtype=np.float64,
+    )
+    max_kinetic = np.asarray(
+        [case["max_kinetic_energy"] for case in cases],
+        dtype=np.float64,
+    )
+    resolution_mask = case_kind == "resolution"
+    timestep_mask = case_kind == "timestep"
+    resolution_growth_rate_spread = _relative_spread(growth_rate[resolution_mask])
+    timestep_growth_rate_spread = _relative_spread(growth_rate[timestep_mask])
+    resolution_max_growth_spread = _relative_spread(max_growth[resolution_mask])
+    timestep_max_growth_spread = _relative_spread(max_growth[timestep_mask])
+    checks = {
+        "finite_case_metrics": bool(
+            np.isfinite(growth_rate).all()
+            and np.isfinite(early_growth).all()
+            and np.isfinite(max_growth).all()
+            and np.isfinite(energy_increase).all()
+            and np.isfinite(max_current).all()
+            and np.isfinite(max_kinetic).all()
+        ),
+        "all_subcases_passed": all(case["passed"] for case in cases),
+        "early_growth_positive": bool(np.all(growth_rate >= min_early_growth_rate)),
+        "energy_dissipative": bool(np.all(energy_increase <= max_relative_energy_increase)),
+        "resolution_growth_rate_spread_bounded": (
+            resolution_growth_rate_spread <= max_relative_growth_rate_spread
+        ),
+        "timestep_growth_rate_spread_bounded": (
+            timestep_growth_rate_spread <= max_relative_growth_rate_spread
+        ),
+        "resolution_max_growth_spread_bounded": (
+            resolution_max_growth_spread <= max_relative_max_growth_spread
+        ),
+        "timestep_max_growth_spread_bounded": (
+            timestep_max_growth_spread <= max_relative_max_growth_spread
+        ),
+    }
+    diagnostics = {
+        "schema": PERIODIC_DOUBLE_HARRIS_CONVERGENCE_SCHEMA,
+        "equilibrium": "periodic_double_harris",
+        "resolutions": list(resolutions),
+        "dt_values": list(dt_values),
+        "reference_resolution": reference_resolution,
+        "reference_dt": reference_dt,
+        "width": width,
+        "amplitude": amplitude,
+        "resistivity": resistivity,
+        "viscosity": viscosity,
+        "perturbation_amplitude": perturbation_amplitude,
+        "perturbation_mode": list(perturbation_mode),
+        "t_end": t_end,
+        "save_interval": save_interval,
+        "fit_window": list(fit_window),
+        "case_count": len(cases),
+        "resolution_growth_rate_spread": resolution_growth_rate_spread,
+        "timestep_growth_rate_spread": timestep_growth_rate_spread,
+        "resolution_max_growth_spread": resolution_max_growth_spread,
+        "timestep_max_growth_spread": timestep_max_growth_spread,
+        "cases": cases,
+        "references": {
+            "scope": (
+                "Tiny deterministic resolution/time-step sweep for the seeded "
+                "periodic double-Harris replay. This promotes the single long-run "
+                "validation into a convergence scaffold; production reconnection "
+                "claims still require larger aspect-ratio, duration, seed, and "
+                "resolution campaigns."
+            ),
+            "literature": (
+                "Designed as a numerical-validation lane before Harris tearing, "
+                "Rutherford, and plasmoid scaling comparisons are claimed."
+            ),
+        },
+    }
+    validation = {
+        "schema": "mhx.validation.periodic_double_harris_convergence.gates.v1",
+        "passed": all(checks.values()),
+        "checks": checks,
+        "thresholds": {
+            "min_saved_samples": min_saved_samples,
+            "min_early_growth_rate": min_early_growth_rate,
+            "min_early_growth_factor": min_early_growth_factor,
+            "min_max_growth_factor": min_max_growth_factor,
+            "max_relative_energy_increase": max_relative_energy_increase,
+            "max_relative_growth_rate_spread": max_relative_growth_rate_spread,
+            "max_relative_max_growth_spread": max_relative_max_growth_spread,
+        },
+        "diagnostics": diagnostics,
+    }
+    return PeriodicDoubleHarrisConvergenceResult(
+        case_kind=case_kind,
+        resolution=resolution,
+        dt=dt,
+        samples=samples,
+        fitted_early_growth_rate=growth_rate,
+        early_growth_factor=early_growth,
+        max_growth_factor=max_growth,
+        relative_energy_increase=energy_increase,
+        max_current_density_linf=max_current,
+        max_kinetic_energy=max_kinetic,
+        diagnostics=diagnostics,
+        validation=validation,
+    )
+
+
 def write_periodic_current_sheet_eigenvalue_validation(
     outdir: str | Path,
     **kwargs: Any,
@@ -1333,6 +1581,78 @@ def write_periodic_double_harris_seeded_long_run_validation(
     return manifest_path, result.validation
 
 
+def write_periodic_double_harris_convergence_validation(
+    outdir: str | Path,
+    **kwargs: Any,
+) -> tuple[Path, dict[str, Any]]:
+    """Write seeded double-Harris convergence JSON, NPZ, figure, and manifest."""
+    output_dir = Path(outdir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    result = run_periodic_double_harris_convergence_validation(**kwargs)
+
+    diagnostics_path = output_dir / "diagnostics.json"
+    validation_path = output_dir / "validation.json"
+    history_path = output_dir / "periodic_double_harris_convergence.npz"
+    manifest_path = output_dir / "manifest.json"
+    diagnostics_path.write_text(
+        json.dumps(result.diagnostics, indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+    validation_path.write_text(
+        json.dumps(result.validation, indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+    np.savez_compressed(
+        history_path,
+        schema=PERIODIC_DOUBLE_HARRIS_CONVERGENCE_SCHEMA,
+        case_kind=result.case_kind,
+        resolution=result.resolution,
+        dt=result.dt,
+        samples=result.samples,
+        fitted_early_growth_rate=result.fitted_early_growth_rate,
+        early_growth_factor=result.early_growth_factor,
+        max_growth_factor=result.max_growth_factor,
+        relative_energy_increase=result.relative_energy_increase,
+        max_current_density_linf=result.max_current_density_linf,
+        max_kinetic_energy=result.max_kinetic_energy,
+    )
+    figure_path = plot_double_harris_convergence(
+        result.case_kind,
+        result.resolution,
+        result.dt,
+        result.fitted_early_growth_rate,
+        result.max_growth_factor,
+        result.relative_energy_increase,
+        result.max_current_density_linf,
+        max_relative_growth_rate_spread=float(
+            result.validation["thresholds"]["max_relative_growth_rate_spread"]
+        ),
+        max_relative_max_growth_spread=float(
+            result.validation["thresholds"]["max_relative_max_growth_spread"]
+        ),
+        path=output_dir / "figures" / "periodic_double_harris_convergence.png",
+    )
+    write_manifest(
+        manifest_path,
+        config=result.diagnostics,
+        outputs={
+            "diagnostics": diagnostics_path.name,
+            "validation": validation_path.name,
+            "history": history_path.name,
+            "periodic_double_harris_convergence": str(
+                figure_path.relative_to(output_dir)
+            ),
+        },
+        claim_level="validation",
+        claim_scope=(
+            "Tiny deterministic resolution/time-step sweep for seeded periodic "
+            "double-Harris replay; production claims require larger convergence "
+            "and seed/aspect-ratio campaigns."
+        ),
+    )
+    return manifest_path, result.validation
+
+
 def _dense_matrix(operator) -> np.ndarray:
     vector_size = int(operator.shape[0])
     basis = np.eye(vector_size, dtype=np.float64)
@@ -1500,6 +1820,48 @@ def _trajectory_energy_and_current_histories(
         "total": magnetic_array + kinetic_array,
         "current_density_linf": np.asarray(current_linf, dtype=np.float64),
     }
+
+
+def _double_harris_convergence_case(
+    case_kind: str,
+    *,
+    resolution: int,
+    dt: float,
+    save_every: int,
+    result: PeriodicDoubleHarrisSeededLongRunResult,
+) -> dict[str, Any]:
+    diagnostics = result.diagnostics
+    return {
+        "case_kind": case_kind,
+        "resolution": int(resolution),
+        "dt": float(dt),
+        "save_every": int(save_every),
+        "samples": int(diagnostics["samples"]),
+        "fitted_early_growth_rate": float(result.fitted_early_growth_rate),
+        "early_growth_factor": float(result.early_growth_factor),
+        "max_growth_factor": float(result.max_growth_factor),
+        "relative_energy_increase": float(diagnostics["relative_energy_increase"]),
+        "max_current_density_linf": float(diagnostics["max_current_density_linf"]),
+        "max_kinetic_energy": float(diagnostics["max_kinetic_energy"]),
+        "passed": bool(result.validation["passed"]),
+        "failed_checks": [
+            name
+            for name, passed in result.validation["checks"].items()
+            if not bool(passed)
+        ],
+    }
+
+
+def _save_every_for_interval(dt: float, save_interval: float) -> int:
+    return max(1, int(round(save_interval / dt)))
+
+
+def _relative_spread(values: np.ndarray) -> float:
+    value_array = np.asarray(values, dtype=np.float64)
+    if value_array.size < 2:
+        return 0.0
+    denominator = max(abs(float(np.mean(value_array))), np.finfo(float).eps)
+    return float((np.max(value_array) - np.min(value_array)) / denominator)
 
 
 def _normalized_bridge_perturbation(grid: CartesianGrid) -> ReducedMHDState:
@@ -1702,3 +2064,76 @@ def _validate_double_harris_seeded_long_run_inputs(
         raise ValueError("min_max_growth_factor must exceed one")
     if max_relative_energy_increase < 0.0:
         raise ValueError("max_relative_energy_increase must be non-negative")
+
+
+def _validate_double_harris_convergence_inputs(
+    *,
+    resolutions: tuple[int, ...],
+    dt_values: tuple[float, ...],
+    reference_resolution: int,
+    reference_dt: float,
+    t_end: float,
+    save_interval: float,
+    fit_window: tuple[float, float],
+    min_saved_samples: int,
+    min_early_growth_rate: float,
+    min_early_growth_factor: float,
+    min_max_growth_factor: float,
+    max_relative_energy_increase: float,
+    max_relative_growth_rate_spread: float,
+    max_relative_max_growth_spread: float,
+) -> None:
+    if len(resolutions) < 2:
+        raise ValueError("resolutions must contain at least two entries")
+    if any(resolution < 8 for resolution in resolutions):
+        raise ValueError("resolutions must be >= 8")
+    if len(set(resolutions)) != len(resolutions):
+        raise ValueError("resolutions must be unique")
+    if len(dt_values) < 2:
+        raise ValueError("dt_values must contain at least two entries")
+    if any(dt_value <= 0.0 for dt_value in dt_values):
+        raise ValueError("dt_values must be positive")
+    if len(set(dt_values)) != len(dt_values):
+        raise ValueError("dt_values must be unique")
+    if reference_resolution < 8:
+        raise ValueError("reference_resolution must be >= 8")
+    if reference_dt <= 0.0:
+        raise ValueError("reference_dt must be positive")
+    if t_end <= 0.0:
+        raise ValueError("t_end must be positive")
+    if save_interval <= 0.0:
+        raise ValueError("save_interval must be positive")
+    if save_interval > t_end:
+        raise ValueError("save_interval must not exceed t_end")
+    fit_start, fit_stop = fit_window
+    if fit_start < 0.0 or fit_stop <= fit_start:
+        raise ValueError("fit_window must be ordered and non-negative")
+    if fit_stop > t_end:
+        raise ValueError("fit_window stop must not exceed t_end")
+    for dt_value in (reference_dt, *dt_values):
+        save_every = _save_every_for_interval(dt_value, save_interval)
+        steps = round(t_end / dt_value)
+        if save_every > steps:
+            raise ValueError("save_interval leaves no saved samples")
+        saved_fit_count = 1 + sum(
+            1
+            for step_index in range(steps)
+            if (step_index + 1) % save_every == 0
+            and fit_start <= (step_index + 1) * dt_value <= fit_stop
+        )
+        if saved_fit_count < 3:
+            raise ValueError("fit_window must include at least three saved samples")
+    if min_saved_samples < 3:
+        raise ValueError("min_saved_samples must be at least three")
+    if min_early_growth_rate <= 0.0:
+        raise ValueError("min_early_growth_rate must be positive")
+    if min_early_growth_factor <= 1.0:
+        raise ValueError("min_early_growth_factor must exceed one")
+    if min_max_growth_factor <= 1.0:
+        raise ValueError("min_max_growth_factor must exceed one")
+    if max_relative_energy_increase < 0.0:
+        raise ValueError("max_relative_energy_increase must be non-negative")
+    if max_relative_growth_rate_spread <= 0.0:
+        raise ValueError("max_relative_growth_rate_spread must be positive")
+    if max_relative_max_growth_spread <= 0.0:
+        raise ValueError("max_relative_max_growth_spread must be positive")

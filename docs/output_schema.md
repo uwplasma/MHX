@@ -487,6 +487,25 @@ writes:
 - Optional `figures/periodic_double_harris_flux.gif` and
   `figures/periodic_double_harris_current.gif` when `--movies` is supplied.
 
+## Periodic double-Harris convergence outputs
+
+`mhx benchmark double-harris-convergence --outdir outputs/benchmarks/periodic_double_harris_convergence`
+writes:
+
+- `diagnostics.json`: convergence scaffold diagnostics with schema
+  `mhx.validation.periodic_double_harris_convergence.v1`, including
+  `resolutions`, `dt_values`, thresholds, per-case metrics, and spread
+  statistics.
+- `validation.json`: pass/fail gates for finite case metrics, successful
+  subcases, positive early growth, dissipative energy, and bounded
+  resolution/time-step spread.
+- `periodic_double_harris_convergence.npz`: stable keys `schema`, `case_kind`,
+  `resolution`, `dt`, `samples`, `fitted_early_growth_rate`,
+  `early_growth_factor`, `max_growth_factor`, `relative_energy_increase`,
+  `max_current_density_linf`, and `max_kinetic_energy`.
+- `figures/periodic_double_harris_convergence.png`: resolution/time-step
+  `gamma_fit`, nonlinear amplification, energy, and peak-current panels.
+
 ## Nonlinear energy-budget outputs
 
 `mhx benchmark nonlinear-energy-budget --outdir outputs/benchmarks/nonlinear_energy_budget`

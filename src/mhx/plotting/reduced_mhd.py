@@ -1248,6 +1248,118 @@ def plot_double_harris_seeded_long_run(
     return output_path
 
 
+def plot_double_harris_convergence(
+    case_kind,
+    resolution,
+    dt,
+    fitted_early_growth_rate,
+    max_growth_factor,
+    relative_energy_increase,
+    max_current_density_linf,
+    *,
+    max_relative_growth_rate_spread: float,
+    max_relative_max_growth_spread: float,
+    path: str | Path,
+) -> Path:
+    """Plot seeded double-Harris resolution/time-step convergence diagnostics."""
+    import matplotlib.pyplot as plt
+
+    output_path = Path(path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    kinds = np.asarray(case_kind).astype(str)
+    resolutions = np.asarray(resolution, dtype=float)
+    time_steps = np.asarray(dt, dtype=float)
+    growth_rate = np.asarray(fitted_early_growth_rate, dtype=float)
+    max_growth = np.asarray(max_growth_factor, dtype=float)
+    energy_increase = np.asarray(relative_energy_increase, dtype=float)
+    current_linf = np.asarray(max_current_density_linf, dtype=float)
+    resolution_mask = kinds == "resolution"
+    timestep_mask = kinds == "timestep"
+
+    fig, axes = plt.subplots(2, 2, figsize=(10.5, 7.6), constrained_layout=True)
+    _plot_convergence_panel(
+        axes[0, 0],
+        resolutions[resolution_mask],
+        growth_rate[resolution_mask],
+        xlabel="grid points per direction",
+        ylabel=r"early $\gamma$",
+        title=(
+            "Resolution sweep "
+            f"(spread gate {max_relative_growth_rate_spread:.2g})"
+        ),
+        xscale="linear",
+    )
+    _plot_convergence_panel(
+        axes[0, 1],
+        time_steps[timestep_mask],
+        growth_rate[timestep_mask],
+        xlabel=r"$\Delta t$",
+        ylabel=r"early $\gamma$",
+        title="Time-step sweep",
+        xscale="log",
+        invert_x=True,
+    )
+    case_positions = np.arange(1, kinds.size + 1)
+    case_labels = [
+        f"N={int(resolution_value)}"
+        if kind == "resolution"
+        else rf"$\Delta t$={dt_value:g}"
+        for kind, resolution_value, dt_value in zip(
+            kinds,
+            resolutions,
+            time_steps,
+            strict=True,
+        )
+    ]
+    axes[1, 0].scatter(
+        case_positions[resolution_mask],
+        max_growth[resolution_mask],
+        color="#3266a8",
+        label="resolution",
+    )
+    axes[1, 0].scatter(
+        case_positions[timestep_mask],
+        max_growth[timestep_mask],
+        marker="x",
+        color="#b54a4a",
+        label=r"$\Delta t$",
+    )
+    axes[1, 0].set_xticks(case_positions, labels=case_labels, rotation=20, ha="right")
+    axes[1, 0].set_xlabel("case")
+    axes[1, 0].set_ylabel("maximum amplification")
+    axes[1, 0].set_title(
+        f"Nonlinear amplification (spread gate {max_relative_max_growth_spread:.2g})"
+    )
+    axes[1, 0].legend(frameon=False, fontsize=8)
+
+    axes[1, 1].semilogy(
+        np.arange(1, growth_rate.size + 1),
+        np.maximum(energy_increase, np.finfo(float).eps),
+        "o-",
+        color="#3266a8",
+        label="relative energy increase",
+    )
+    current_axis = axes[1, 1].twinx()
+    current_axis.plot(
+        np.arange(1, current_linf.size + 1),
+        current_linf,
+        "s--",
+        color="#8c4fb4",
+        label=r"$\max\|j_z\|_\infty$",
+    )
+    axes[1, 1].set_xlabel("case index")
+    axes[1, 1].set_ylabel("energy-increase floor")
+    current_axis.set_ylabel(r"$\max\|j_z\|_\infty$")
+    axes[1, 1].set_title("Dissipation and resolved-current checks")
+    axes[1, 1].legend(frameon=False, fontsize=8, loc="upper left")
+    current_axis.legend(frameon=False, fontsize=8, loc="upper right")
+
+    fig.suptitle("Seeded periodic double-Harris convergence scaffold")
+    fig.savefig(output_path, dpi=220)
+    plt.close(fig)
+    return output_path
+
+
 def plot_nonlinear_energy_budget(
     times,
     total_energy_values,
@@ -1406,6 +1518,44 @@ def _cumulative_trapezoid_for_plot(times, values) -> np.ndarray:
             value_array[index - 1] + value_array[index]
         ) * (time_values[index] - time_values[index - 1])
     return integral
+
+
+def _plot_convergence_panel(
+    ax,
+    x_values,
+    y_values,
+    *,
+    xlabel: str,
+    ylabel: str,
+    title: str,
+    xscale: str,
+    invert_x: bool = False,
+) -> None:
+    x_array = np.asarray(x_values, dtype=float)
+    y_array = np.asarray(y_values, dtype=float)
+    order = np.argsort(x_array)
+    ax.plot(x_array[order], y_array[order], "o-", color="#3266a8")
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+    ax.set_title(title)
+    ax.set_xscale(xscale)
+    ax.ticklabel_format(axis="y", style="plain", useOffset=False)
+    y_span = float(np.max(y_array) - np.min(y_array))
+    y_center = float(np.mean(y_array))
+    if y_span <= max(abs(y_center) * 1.0e-6, np.finfo(float).eps):
+        pad = max(abs(y_center) * 1.0e-2, 1.0e-6)
+        ax.set_ylim(y_center - pad, y_center + pad)
+    if invert_x:
+        ax.invert_xaxis()
+    for x_value, y_value in zip(x_array[order], y_array[order], strict=False):
+        ax.annotate(
+            f"{y_value:.3f}",
+            (x_value, y_value),
+            textcoords="offset points",
+            xytext=(0, 6),
+            ha="center",
+            fontsize=8,
+        )
 
 
 def plot_plasmoid_scaling(lundquist, gamma, fastest_mode, *, path: str | Path) -> Path:

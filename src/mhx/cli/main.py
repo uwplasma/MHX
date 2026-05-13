@@ -30,6 +30,7 @@ from mhx.benchmarks import (
     write_periodic_current_sheet_eigenvalue_validation,
     write_periodic_current_sheet_nonlinear_bridge_validation,
     write_periodic_current_sheet_timedomain_validation,
+    write_periodic_double_harris_convergence_validation,
     write_periodic_double_harris_nonlinear_growth_validation,
     write_periodic_double_harris_seeded_long_run_validation,
     write_power_iteration_validation,
@@ -1093,6 +1094,96 @@ def benchmark_double_harris_long_run(
         min_early_growth_rate=min_early_growth_rate,
         min_max_growth_factor=min_max_growth_factor,
         movies=movies,
+    )
+    typer.echo(f"wrote {manifest_path}")
+    if not validation["passed"]:
+        raise typer.Exit(code=1)
+
+
+@benchmark_app.command("double-harris-convergence")
+def benchmark_double_harris_convergence(
+    outdir: Annotated[
+        Path,
+        typer.Option(
+            "--outdir",
+            help="Output directory for seeded double-Harris convergence artifacts.",
+        ),
+    ] = Path("outputs/benchmarks/periodic_double_harris_convergence"),
+    resolutions: Annotated[
+        str,
+        typer.Option("--resolutions", help="Comma-separated grid sizes for resolution sweep."),
+    ] = "16,24",
+    dt_values: Annotated[
+        str,
+        typer.Option("--dt-values", help="Comma-separated RK4 time steps for time-step sweep."),
+    ] = "0.02,0.01",
+    reference_resolution: Annotated[
+        int,
+        typer.Option("--reference-resolution", help="Grid size used for the time-step sweep."),
+    ] = 16,
+    reference_dt: Annotated[
+        float,
+        typer.Option("--reference-dt", help="Time step used for the resolution sweep."),
+    ] = 1.0e-2,
+    width: Annotated[float, typer.Option("--width", help="Current-sheet half-width proxy.")] = 0.4,
+    eta: Annotated[float, typer.Option("--eta", help="Resistivity.")] = 5.0e-3,
+    nu: Annotated[float, typer.Option("--nu", help="Viscosity.")] = 5.0e-3,
+    perturbation_amplitude: Annotated[
+        float,
+        typer.Option("--perturbation-amplitude", help="Seed flux perturbation amplitude."),
+    ] = 1.0e-3,
+    mode_x: Annotated[int, typer.Option("--mode-x", help="Seed Fourier mode in x.")] = 2,
+    mode_y: Annotated[int, typer.Option("--mode-y", help="Seed Fourier mode in y.")] = 1,
+    t_end: Annotated[float, typer.Option("--t-end", help="Final nonlinear time.")] = 8.0,
+    save_interval: Annotated[
+        float,
+        typer.Option("--save-interval", help="Approximate physical interval between saves."),
+    ] = 1.0,
+    fit_start: Annotated[float, typer.Option("--fit-start", help="Early fit window start.")] = 0.0,
+    fit_stop: Annotated[float, typer.Option("--fit-stop", help="Early fit window stop.")] = 4.0,
+    min_early_growth_rate: Annotated[
+        float,
+        typer.Option("--min-early-growth-rate", help="Minimum fitted early growth rate."),
+    ] = 1.0e-3,
+    min_max_growth_factor: Annotated[
+        float,
+        typer.Option("--min-max-growth-factor", help="Minimum maximum normalized growth."),
+    ] = 1.05,
+    max_relative_growth_rate_spread: Annotated[
+        float,
+        typer.Option(
+            "--max-relative-growth-rate-spread",
+            help="Maximum relative spread allowed in fitted early growth rates.",
+        ),
+    ] = 1.5,
+    max_relative_max_growth_spread: Annotated[
+        float,
+        typer.Option(
+            "--max-relative-max-growth-spread",
+            help="Maximum relative spread allowed in maximum amplification.",
+        ),
+    ] = 3.0,
+) -> None:
+    """Run seeded double-Harris resolution/time-step convergence scaffold."""
+    _configure_validation_precision()
+    manifest_path, validation = write_periodic_double_harris_convergence_validation(
+        outdir,
+        resolutions=_parse_int_tuple(resolutions),
+        dt_values=_parse_float_tuple(dt_values),
+        reference_resolution=reference_resolution,
+        reference_dt=reference_dt,
+        width=width,
+        resistivity=eta,
+        viscosity=nu,
+        perturbation_amplitude=perturbation_amplitude,
+        perturbation_mode=(mode_x, mode_y),
+        t_end=t_end,
+        save_interval=save_interval,
+        fit_window=(fit_start, fit_stop),
+        min_early_growth_rate=min_early_growth_rate,
+        min_max_growth_factor=min_max_growth_factor,
+        max_relative_growth_rate_spread=max_relative_growth_rate_spread,
+        max_relative_max_growth_spread=max_relative_max_growth_spread,
     )
     typer.echo(f"wrote {manifest_path}")
     if not validation["passed"]:

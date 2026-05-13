@@ -866,6 +866,49 @@ Source anchors:
 - [growth and long-run benchmark implementation](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/current_sheet.py)
 - [growth benchmark tests](https://github.com/uwplasma/MHX/blob/main/tests/test_current_sheet_eigenvalue_validation.py)
 
+## Seeded double-Harris convergence scaffold
+
+The next gate asks whether the measured early growth and nonlinear
+amplification are artifacts of one tiny grid or one RK4 step size. The command
+
+```bash
+mhx benchmark double-harris-convergence \
+  --outdir outputs/benchmarks/periodic_double_harris_convergence \
+  --resolutions 16,24 --dt-values 0.02,0.01 \
+  --reference-resolution 16 --t-end 8 --fit-stop 4
+```
+
+runs the same base-vs-seeded replay across a small resolution sweep and a small
+time-step sweep. For each case it records
+
+$$
+\gamma_\mathrm{fit},\quad
+G_\mathrm{early}=A_s(t_b)/A_s(t_a),\quad
+G_\mathrm{max}=\max_t A_s(t)/A_s(0),\quad
+\Delta E_+=\max_t(E(t)-E(0))_+/E(0).
+$$
+
+The gate requires finite metrics, positive early growth, dissipative total
+energy, successful subcase gates, and bounded relative spread in
+`gamma_fit`/`G_max`. This is still intentionally a **validation** scaffold, not
+a production claim: it is designed to prevent single-run overclaiming before
+larger aspect-ratio, Lundquist-number, seed, and duration sweeps are executed.
+
+Expected files:
+
+- `outputs/benchmarks/periodic_double_harris_convergence/diagnostics.json`
+- `outputs/benchmarks/periodic_double_harris_convergence/validation.json`
+- `outputs/benchmarks/periodic_double_harris_convergence/periodic_double_harris_convergence.npz`
+- `outputs/benchmarks/periodic_double_harris_convergence/figures/periodic_double_harris_convergence.png`
+
+![Seeded periodic double-Harris convergence scaffold](_static/validation/periodic_double_harris_convergence/periodic_double_harris_convergence.png)
+
+Source anchors:
+
+- [convergence runner](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/current_sheet.py)
+- [convergence CLI](https://github.com/uwplasma/MHX/blob/main/src/mhx/cli/main.py)
+- [convergence tests](https://github.com/uwplasma/MHX/blob/main/tests/test_current_sheet_eigenvalue_validation.py)
+
 ## Nonlinear reduced-MHD energy budget
 
 The first full nonlinear PDE gate is deliberately not a plasmoid claim. It

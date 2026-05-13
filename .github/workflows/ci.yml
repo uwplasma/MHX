@@ -89,6 +89,7 @@ jobs:
           mhx benchmark current-sheet-nonlinear-bridge --outdir outputs/ci/periodic_current_sheet_nonlinear_bridge
           mhx benchmark double-harris-growth --outdir outputs/ci/periodic_double_harris_nonlinear_growth
           mhx benchmark double-harris-long-run --outdir outputs/ci/periodic_double_harris_seeded_long_run --nx 16 --ny 16 --t-end 10 --save-every 100 --fit-stop 6 --min-max-growth-factor 1.2 --movies
+          mhx benchmark double-harris-convergence --outdir outputs/ci/periodic_double_harris_convergence --resolutions 16,18 --dt-values 0.02,0.01 --reference-resolution 16 --t-end 6 --fit-stop 3 --max-relative-growth-rate-spread 2.0
           mhx benchmark nonlinear-energy-budget --outdir outputs/ci/nonlinear_energy_budget
           mhx benchmark nonlinear-duration-audit --outdir outputs/ci/nonlinear_duration_audit
           mhx benchmark seed-robust-qi --outdir outputs/ci/seed_robust_qi --nx 8 --ny 8 --seeds 0,1,2,3 --t-end 0.08
@@ -165,6 +166,9 @@ jobs:
           test -f outputs/ci/periodic_double_harris_seeded_long_run/figures/periodic_double_harris_seeded_long_run.png
           test -f outputs/ci/periodic_double_harris_seeded_long_run/figures/periodic_double_harris_flux.gif
           test -f outputs/ci/periodic_double_harris_seeded_long_run/figures/periodic_double_harris_current.gif
+          test -f outputs/ci/periodic_double_harris_convergence/validation.json
+          test -f outputs/ci/periodic_double_harris_convergence/periodic_double_harris_convergence.npz
+          test -f outputs/ci/periodic_double_harris_convergence/figures/periodic_double_harris_convergence.png
           test -f outputs/ci/nonlinear_energy_budget/validation.json
           test -f outputs/ci/nonlinear_energy_budget/figures/nonlinear_energy_budget.png
           test -f outputs/ci/nonlinear_duration_audit/validation.json
@@ -228,6 +232,7 @@ jobs:
           test -f outputs/ci/validation_suite/periodic_current_sheet_timedomain/figures/periodic_current_sheet_timedomain.png
           test -f outputs/ci/validation_suite/periodic_current_sheet_nonlinear_bridge/figures/periodic_current_sheet_nonlinear_bridge.png
           test -f outputs/ci/validation_suite/periodic_double_harris_nonlinear_growth/figures/periodic_double_harris_nonlinear_growth.png
+          test -f outputs/ci/validation_suite/periodic_double_harris_convergence/figures/periodic_double_harris_convergence.png
           test -f outputs/ci/validation_suite/nonlinear_energy_budget/figures/nonlinear_energy_budget.png
           test -f outputs/ci/validation_suite/nonlinear_duration_audit/figures/nonlinear_duration_audit.png
           test -f outputs/ci/validation_suite/seed_robust_qi/figures/qi_summary.png

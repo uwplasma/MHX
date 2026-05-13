@@ -12,6 +12,7 @@ from mhx.benchmarks.current_sheet import (
     write_periodic_current_sheet_eigenvalue_validation,
     write_periodic_current_sheet_nonlinear_bridge_validation,
     write_periodic_current_sheet_timedomain_validation,
+    write_periodic_double_harris_convergence_validation,
     write_periodic_double_harris_nonlinear_growth_validation,
 )
 from mhx.benchmarks.decay import write_resistive_decay_validation
@@ -152,6 +153,11 @@ def validation_suite_cases() -> tuple[ValidationSuiteCase, ...]:
             name="periodic_double_harris_nonlinear_growth",
             command="mhx benchmark double-harris-growth",
             runner=write_periodic_double_harris_nonlinear_growth_validation,
+        ),
+        ValidationSuiteCase(
+            name="periodic_double_harris_convergence",
+            command="mhx benchmark double-harris-convergence",
+            runner=_write_periodic_double_harris_convergence_validation,
         ),
         ValidationSuiteCase(
             name="nonlinear_energy_budget",
@@ -321,6 +327,20 @@ def _write_neural_ode_reproducibility_validation(
         steps=4,
         dt=1.0e-2,
         write_figures=True,
+    )
+
+
+def _write_periodic_double_harris_convergence_validation(
+    outdir: Path,
+) -> tuple[Path, dict[str, Any]]:
+    return write_periodic_double_harris_convergence_validation(
+        outdir,
+        resolutions=(16, 18),
+        dt_values=(2.0e-2, 1.0e-2),
+        reference_resolution=16,
+        t_end=6.0,
+        fit_window=(0.0, 3.0),
+        max_relative_growth_rate_spread=2.0,
     )
 
 

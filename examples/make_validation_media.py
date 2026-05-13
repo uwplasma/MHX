@@ -22,6 +22,7 @@ from mhx.benchmarks import (
     write_periodic_current_sheet_eigenvalue_validation,
     write_periodic_current_sheet_nonlinear_bridge_validation,
     write_periodic_current_sheet_timedomain_validation,
+    write_periodic_double_harris_convergence_validation,
     write_periodic_double_harris_nonlinear_growth_validation,
     write_periodic_double_harris_seeded_long_run_validation,
     write_power_iteration_validation,
@@ -65,6 +66,9 @@ def main() -> None:
     periodic_double_harris_long_run_dir = Path(
         "outputs/docs_validation/periodic_double_harris_seeded_long_run"
     )
+    periodic_double_harris_convergence_run_dir = Path(
+        "outputs/docs_validation/periodic_double_harris_convergence"
+    )
     nonlinear_energy_budget_run_dir = Path("outputs/docs_validation/nonlinear_energy_budget")
     nonlinear_duration_audit_run_dir = Path("outputs/docs_validation/nonlinear_duration_audit")
     diffusion_eigen_run_dir = Path("outputs/docs_validation/diffusion_eigenvalue")
@@ -100,6 +104,9 @@ def main() -> None:
     periodic_double_harris_long_docs_dir = Path(
         "docs/_static/validation/periodic_double_harris_seeded_long_run"
     )
+    periodic_double_harris_convergence_docs_dir = Path(
+        "docs/_static/validation/periodic_double_harris_convergence"
+    )
     nonlinear_energy_budget_docs_dir = Path("docs/_static/validation/nonlinear_energy_budget")
     nonlinear_duration_audit_docs_dir = Path("docs/_static/validation/nonlinear_duration_audit")
     diffusion_eigen_docs_dir = Path("docs/_static/validation/diffusion_eigenvalue")
@@ -134,6 +141,14 @@ def main() -> None:
         t_end=30.0,
         save_every=100,
         movies=True,
+    )
+    write_periodic_double_harris_convergence_validation(
+        periodic_double_harris_convergence_run_dir,
+        resolutions=(16, 24),
+        dt_values=(2.0e-2, 1.0e-2),
+        reference_resolution=16,
+        t_end=8.0,
+        fit_window=(0.0, 4.0),
     )
     write_nonlinear_energy_budget_validation(nonlinear_energy_budget_run_dir)
     write_nonlinear_duration_audit(nonlinear_duration_audit_run_dir)
@@ -246,6 +261,13 @@ def main() -> None:
             periodic_double_harris_long_run_dir / "figures" / name,
             periodic_double_harris_long_docs_dir / "figures" / name,
         )
+    periodic_double_harris_convergence_docs_dir.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(
+        periodic_double_harris_convergence_run_dir
+        / "figures"
+        / "periodic_double_harris_convergence.png",
+        periodic_double_harris_convergence_docs_dir / "periodic_double_harris_convergence.png",
+    )
     nonlinear_energy_budget_docs_dir.mkdir(parents=True, exist_ok=True)
     shutil.copy2(
         nonlinear_energy_budget_run_dir / "figures" / "nonlinear_energy_budget.png",

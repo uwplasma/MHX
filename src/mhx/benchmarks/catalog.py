@@ -392,6 +392,30 @@ def validation_catalog_entries() -> tuple[BenchmarkCatalogEntry, ...]:
             ),
         ),
         BenchmarkCatalogEntry(
+            name="periodic_double_harris_convergence",
+            command=(
+                "mhx benchmark double-harris-convergence "
+                "--outdir outputs/benchmarks/periodic_double_harris_convergence"
+            ),
+            schema="mhx.validation.periodic_double_harris_convergence.v1",
+            purpose=(
+                "Tiny resolution/time-step convergence scaffold for the seeded "
+                "double-Harris replay. It verifies that early growth, amplification, "
+                "energy monotonicity, and peak-current diagnostics remain bounded "
+                "across deterministic FAST cases."
+            ),
+            expected_outputs=(
+                "diagnostics.json",
+                "validation.json",
+                "periodic_double_harris_convergence.npz",
+                "figures/periodic_double_harris_convergence.png",
+            ),
+            literature_anchor=(
+                "Numerical convergence evidence required before upgrading current-sheet "
+                "runs from validation artifacts to Harris/Rutherford/plasmoid claims."
+            ),
+        ),
+        BenchmarkCatalogEntry(
             name="nonlinear_energy_budget",
             command=(
                 "mhx benchmark nonlinear-energy-budget "

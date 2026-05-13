@@ -10,16 +10,19 @@ from mhx.benchmarks import (
     PERIODIC_CURRENT_SHEET_EIGENVALUE_SCHEMA,
     PERIODIC_CURRENT_SHEET_NONLINEAR_BRIDGE_SCHEMA,
     PERIODIC_CURRENT_SHEET_TIMEDOMAIN_SCHEMA,
+    PERIODIC_DOUBLE_HARRIS_CONVERGENCE_SCHEMA,
     PERIODIC_DOUBLE_HARRIS_NONLINEAR_GROWTH_SCHEMA,
     PERIODIC_DOUBLE_HARRIS_SEEDED_LONG_RUN_SCHEMA,
     run_periodic_current_sheet_eigenvalue_validation,
     run_periodic_current_sheet_nonlinear_bridge_validation,
     run_periodic_current_sheet_timedomain_validation,
+    run_periodic_double_harris_convergence_validation,
     run_periodic_double_harris_nonlinear_growth_validation,
     run_periodic_double_harris_seeded_long_run_validation,
     write_periodic_current_sheet_eigenvalue_validation,
     write_periodic_current_sheet_nonlinear_bridge_validation,
     write_periodic_current_sheet_timedomain_validation,
+    write_periodic_double_harris_convergence_validation,
     write_periodic_double_harris_nonlinear_growth_validation,
     write_periodic_double_harris_seeded_long_run_validation,
 )
@@ -216,6 +219,83 @@ def test_periodic_double_harris_seeded_long_run_rejects_invalid_inputs() -> None
         )
 
 
+def test_periodic_double_harris_convergence_gate() -> None:
+    result = run_periodic_double_harris_convergence_validation(
+        resolutions=(16, 18),
+        dt_values=(0.02, 0.01),
+        reference_resolution=16,
+        t_end=6.0,
+        fit_window=(0.0, 3.0),
+        max_relative_growth_rate_spread=2.0,
+    )
+    assert result.diagnostics["schema"] == PERIODIC_DOUBLE_HARRIS_CONVERGENCE_SCHEMA
+    assert result.validation["passed"] is True
+    assert all(result.validation["checks"].values())
+    assert result.case_kind.shape == (4,)
+    assert result.resolution.shape == result.dt.shape
+    assert result.fitted_early_growth_rate.shape == result.dt.shape
+    assert np.isfinite(result.fitted_early_growth_rate).all()
+    assert np.isfinite(result.max_growth_factor).all()
+    assert set(result.case_kind.tolist()) == {"resolution", "timestep"}
+    assert np.all(result.fitted_early_growth_rate > 0.0)
+    assert np.all(result.max_growth_factor > 1.0)
+
+
+def test_periodic_double_harris_convergence_rejects_invalid_inputs() -> None:
+    with pytest.raises(ValueError, match="resolutions"):
+        run_periodic_double_harris_convergence_validation(resolutions=(16,))
+    with pytest.raises(ValueError, match="resolutions"):
+        run_periodic_double_harris_convergence_validation(resolutions=(6, 16))
+    with pytest.raises(ValueError, match="unique"):
+        run_periodic_double_harris_convergence_validation(resolutions=(16, 16))
+    with pytest.raises(ValueError, match="dt_values"):
+        run_periodic_double_harris_convergence_validation(dt_values=(0.01,))
+    with pytest.raises(ValueError, match="positive"):
+        run_periodic_double_harris_convergence_validation(dt_values=(0.02, 0.0))
+    with pytest.raises(ValueError, match="unique"):
+        run_periodic_double_harris_convergence_validation(dt_values=(0.02, 0.02))
+    with pytest.raises(ValueError, match="reference_resolution"):
+        run_periodic_double_harris_convergence_validation(reference_resolution=6)
+    with pytest.raises(ValueError, match="reference_dt"):
+        run_periodic_double_harris_convergence_validation(reference_dt=0.0)
+    with pytest.raises(ValueError, match="t_end"):
+        run_periodic_double_harris_convergence_validation(t_end=0.0)
+    with pytest.raises(ValueError, match="save_interval"):
+        run_periodic_double_harris_convergence_validation(save_interval=0.0)
+    with pytest.raises(ValueError, match="must not exceed"):
+        run_periodic_double_harris_convergence_validation(save_interval=9.0, t_end=8.0)
+    with pytest.raises(ValueError, match="fit_window"):
+        run_periodic_double_harris_convergence_validation(fit_window=(2.0, 1.0))
+    with pytest.raises(ValueError, match="must not exceed"):
+        run_periodic_double_harris_convergence_validation(fit_window=(0.0, 9.0))
+    with pytest.raises(ValueError, match="at least three"):
+        run_periodic_double_harris_convergence_validation(
+            t_end=2.0,
+            fit_window=(0.0, 1.0),
+            save_interval=1.0,
+        )
+    with pytest.raises(ValueError, match="min_saved_samples"):
+        run_periodic_double_harris_convergence_validation(min_saved_samples=2)
+    with pytest.raises(ValueError, match="min_early_growth_rate"):
+        run_periodic_double_harris_convergence_validation(min_early_growth_rate=0.0)
+    with pytest.raises(ValueError, match="min_early_growth_factor"):
+        run_periodic_double_harris_convergence_validation(min_early_growth_factor=1.0)
+    with pytest.raises(ValueError, match="min_max_growth_factor"):
+        run_periodic_double_harris_convergence_validation(min_max_growth_factor=1.0)
+    with pytest.raises(ValueError, match="max_relative_energy_increase"):
+        run_periodic_double_harris_convergence_validation(
+            max_relative_energy_increase=-1.0
+        )
+    with pytest.raises(ValueError, match="max_relative_growth_rate_spread"):
+        run_periodic_double_harris_convergence_validation(
+            max_relative_growth_rate_spread=0.0
+        )
+    with pytest.raises(ValueError, match="max_relative_max_growth_spread"):
+        run_periodic_double_harris_convergence_validation(
+            max_relative_max_growth_spread=0.0
+        )
+
+
 def test_periodic_current_sheet_nonlinear_bridge_rejects_invalid_inputs() -> None:
     with pytest.raises(ValueError, match="shape"):
         run_periodic_current_sheet_nonlinear_bridge_validation(shape=(3, 6))
@@ -377,6 +457,55 @@ def test_write_periodic_double_harris_seeded_long_run_movies(tmp_path) -> None:
     assert (
         tmp_path / "figures" / "periodic_double_harris_current.gif"
     ).stat().st_size > 0
+
+
+def test_write_periodic_double_harris_convergence_artifacts_and_cli(tmp_path) -> None:
+    manifest_path, validation = write_periodic_double_harris_convergence_validation(
+        tmp_path,
+        resolutions=(16, 18),
+        dt_values=(0.02, 0.01),
+        reference_resolution=16,
+        t_end=6.0,
+        fit_window=(0.0, 3.0),
+        max_relative_growth_rate_spread=2.0,
+    )
+    assert manifest_path == tmp_path / "manifest.json"
+    assert validation["passed"] is True
+    diagnostics = json.loads((tmp_path / "diagnostics.json").read_text())
+    assert diagnostics["references"]["scope"].startswith("Tiny deterministic")
+    history = np.load(tmp_path / "periodic_double_harris_convergence.npz")
+    assert history["schema"] == PERIODIC_DOUBLE_HARRIS_CONVERGENCE_SCHEMA
+    assert history["case_kind"].shape == (4,)
+    assert history["resolution"].shape == history["dt"].shape
+    assert history["fitted_early_growth_rate"].shape == history["dt"].shape
+    assert (
+        tmp_path / "figures" / "periodic_double_harris_convergence.png"
+    ).stat().st_size > 0
+
+    outdir = tmp_path / "cli-double-harris-convergence"
+    cli_result = CliRunner().invoke(
+        app,
+        [
+            "benchmark",
+            "double-harris-convergence",
+            "--outdir",
+            str(outdir),
+            "--resolutions",
+            "16,18",
+            "--dt-values",
+            "0.02,0.01",
+            "--reference-resolution",
+            "16",
+            "--t-end",
+            "6",
+            "--fit-stop",
+            "3",
+            "--max-relative-growth-rate-spread",
+            "2.0",
+        ],
+    )
+    assert cli_result.exit_code == 0, cli_result.stdout
+    assert (outdir / "validation.json").exists()
 
 
 def test_write_periodic_current_sheet_timedomain_artifacts_and_cli(tmp_path) -> None:

@@ -27,6 +27,7 @@ def test_validation_suite_cases_are_unique() -> None:
     assert "periodic_current_sheet_timedomain" in names
     assert "periodic_current_sheet_nonlinear_bridge" in names
     assert "periodic_double_harris_nonlinear_growth" in names
+    assert "periodic_double_harris_convergence" in names
     assert "nonlinear_energy_budget" in names
     assert "nonlinear_duration_audit" in names
     assert "seed_robust_qi" in names
@@ -117,6 +118,13 @@ def test_write_validation_suite_artifacts_and_cli(tmp_path) -> None:
         / "periodic_double_harris_nonlinear_growth"
         / "figures"
         / "periodic_double_harris_nonlinear_growth.png"
+    ).stat().st_size > 0
+    assert (
+        tmp_path
+        / "suite"
+        / "periodic_double_harris_convergence"
+        / "figures"
+        / "periodic_double_harris_convergence.png"
     ).stat().st_size > 0
     assert (
         tmp_path
