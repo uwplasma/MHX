@@ -6,6 +6,7 @@ import shutil
 from pathlib import Path
 
 from mhx.benchmarks import (
+    double_harris_seeded_long_run_presets,
     write_arnoldi_validation,
     write_cosine_equilibrium_linearization_validation,
     write_diffusion_eigenvalue_validation,
@@ -135,11 +136,16 @@ def main() -> None:
     write_periodic_double_harris_nonlinear_growth_validation(
         periodic_double_harris_growth_run_dir
     )
+    double_harris_media_preset = double_harris_seeded_long_run_presets()[
+        "readme_release_media"
+    ]
     write_periodic_double_harris_seeded_long_run_validation(
         periodic_double_harris_long_run_dir,
         shape=(64, 64),
-        t_end=30.0,
-        save_every=100,
+        t_end=float(double_harris_media_preset["t_end"]),
+        save_every=int(double_harris_media_preset["save_every"]),
+        fit_window=tuple(double_harris_media_preset["fit_window"]),
+        duration_label=str(double_harris_media_preset["duration_label"]),
         movies=True,
     )
     write_periodic_double_harris_convergence_validation(

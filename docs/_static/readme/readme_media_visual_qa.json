@@ -1,0 +1,154 @@
+{
+  "generated_utc": "2026-05-15T21:21:07.405669+00:00",
+  "media": [
+    {
+      "duration_ms": 90,
+      "frame_count": 30,
+      "frame_shape": [
+        128,
+        128,
+        3
+      ],
+      "notes": "Solver-generated seeded-minus-base flux perturbation from the longest available nonlinear replay.",
+      "path": "docs/_static/readme/double_harris_reconnection.gif",
+      "source": {
+        "source": "outputs/long_runs/periodic_double_harris_seeded_128_t100_20260512/periodic_double_harris_seeded_long_run.npz",
+        "source_kind": "precomputed long-run artifact",
+        "source_samples": 51,
+        "source_shape": [
+          128,
+          128
+        ],
+        "t_end": 100.0,
+        "time_span": [
+          0.0,
+          100.0
+        ],
+        "validation_passed": true
+      },
+      "t_end": 100.0,
+      "time_span": [
+        0.0,
+        100.0
+      ]
+    },
+    {
+      "duration_ms": 90,
+      "frame_count": 30,
+      "frame_shape": [
+        128,
+        128,
+        3
+      ],
+      "notes": "Solver-generated seeded-minus-base current-density response from the same replay.",
+      "path": "docs/_static/readme/double_harris_current_sheet.gif",
+      "source": {
+        "source": "outputs/long_runs/periodic_double_harris_seeded_128_t100_20260512/periodic_double_harris_seeded_long_run.npz",
+        "source_kind": "precomputed long-run artifact",
+        "source_samples": 51,
+        "source_shape": [
+          128,
+          128
+        ],
+        "t_end": 100.0,
+        "time_span": [
+          0.0,
+          100.0
+        ],
+        "validation_passed": true
+      },
+      "t_end": 100.0,
+      "time_span": [
+        0.0,
+        100.0
+      ]
+    },
+    {
+      "duration_ms": 850,
+      "frame_count": 4,
+      "frame_shape": [
+        320,
+        700,
+        3
+      ],
+      "notes": "Validated linear Harris tearing layer/eigenfunction sweep over S.",
+      "path": "docs/_static/readme/harris_layer_sweep.gif",
+      "source": "run_linear_tearing_layer_validation(grid_points=128)",
+      "t_end": null,
+      "time_span": null
+    },
+    {
+      "duration_ms": 650,
+      "frame_count": 8,
+      "frame_shape": [
+        320,
+        700,
+        3
+      ],
+      "notes": "Theory schematic; not solver output.",
+      "path": "docs/_static/readme/plasmoid_scaling_schematic.gif",
+      "source": "Loureiro-Schekochihin-Cowley analytic scaling schematic",
+      "t_end": null,
+      "time_span": null
+    },
+    {
+      "duration_ms": 200,
+      "frame_count": 8,
+      "frame_shape": [
+        235,
+        660,
+        3
+      ],
+      "notes": "Engagement schematic; not solver output.",
+      "path": "docs/_static/readme/mhd_turbulence_cascade.gif",
+      "source": "Deterministic synthetic 2-D MHD-like Fourier cascade schematic",
+      "t_end": null,
+      "time_span": null
+    }
+  ],
+  "schema": "mhx.readme_media_visual_qa.v1",
+  "source_policy": "README double-Harris movies use the longest available periodic_double_harris_seeded_long_run.npz under outputs/long_runs or outputs/docs_validation. If none exists, this script writes a labeled 64\u00d764, t_end=60 fallback under docs/_static/readme.",
+  "visual_qa": {
+    "inspected_frames": [
+      {
+        "index": 0,
+        "label": "first",
+        "time": 0.0
+      },
+      {
+        "index": 25,
+        "label": "mid",
+        "time": 50.0
+      },
+      {
+        "index": 50,
+        "label": "final",
+        "time": 100.0
+      }
+    ],
+    "metrics": {
+      "current_linf_final": 0.7342330813407898,
+      "current_linf_first": 2.4958419799804688,
+      "current_linf_mid": 1.0095150470733643,
+      "current_linf_peak": 2.4958419799804688,
+      "current_linf_peak_time": 0.0,
+      "delta_current_linf_peak": 0.021403003484010696,
+      "delta_current_linf_peak_time": 6.0,
+      "flux_delta_linf_final": 0.0028100373268089562,
+      "flux_delta_linf_first": 0.0009984946376875303,
+      "flux_delta_linf_mid": 0.0033163414104152578
+    },
+    "observations": [
+      "The README flux movie shows the seeded-minus-base perturbation, because the full flux is dominated by the slowly diffusing background sheet at this validation amplitude.",
+      "The perturbation current forms localized filament pairs near the sheets; the strongest saved perturbation current occurs near t=6.0.",
+      "Total current-density snapshots keep the two opposite-signed double-Harris current-sheet bands visible while they dissipatively relax over the longer run.",
+      "Perturbed-minus-base flux grows from 9.985e-04 at t=0.0 to 3.316e-03 at t=50.0 and 2.810e-03 at t=100.0, consistent with a bounded nonlinear validation replay; this is not yet a production plasmoid/Rutherford claim."
+    ],
+    "snapshot_contact_sheets": {
+      "current_delta": "docs/_static/readme/double_harris_current_snapshots.png",
+      "current_sheet": "docs/_static/readme/double_harris_current_sheet_snapshots.png",
+      "flux_delta": "docs/_static/readme/double_harris_flux_snapshots.png"
+    },
+    "source": "outputs/long_runs/periodic_double_harris_seeded_128_t100_20260512/periodic_double_harris_seeded_long_run.npz"
+  }
+}

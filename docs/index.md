@@ -1,10 +1,9 @@
 # MHX documentation
 
-MHX is being rebuilt as a validation-first, differentiable JAX framework for
-magnetic reconnection and magnetohydrodynamics.
+MHX is a validation-first, differentiable JAX framework for magnetic
+reconnection and magnetohydrodynamics.
 
-The active package is under `src/mhx/`. The previous implementation is archived
-under `legacy/old_mhx/`.
+The active package is under `src/mhx/`.
 
 ## Active scope boundaries
 
@@ -15,16 +14,16 @@ production campaigns are still gated as future `production` claims and must pass
 duration, checkpoint-restart, convergence, and artifact-hash checks before being
 used as paper evidence.
 
-## Reviewer shortcuts
+## Evidence guide
 
-Start with these pages when checking validation evidence:
+Start with these pages when checking validation evidence and scope boundaries:
 
-- [Reviewer evidence map](reviewer_evidence.md) links claims to source files,
+- [Evidence map](reviewer_evidence.md) links claims to source files,
   tests, reproduction commands, artifacts, and explicit limitations.
 - [Physics validation](validation.md) contains the equations, citations,
-  still-figure gallery, and numerical gates that used to be too detailed for
+  still-figure gallery, and numerical gates that are intentionally kept out of
   the README.
-- [Benchmark command index](benchmarks.md) lists the validation, scaffold,
+- [Benchmark command index](benchmarks.md) lists validation, scaffold,
   comparison, campaign, and neural-ODE commands with expected output families.
 - [Validation movies](media.md) separates solver-generated movies from theory
   schematics and keeps the literature anchors next to the visuals.

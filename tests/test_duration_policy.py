@@ -24,6 +24,14 @@ def test_duration_policy_marks_short_runs_as_validation_only() -> None:
     assert by_name["linear_tearing_fast"].sufficient_for_nonlinear_claim is False
     assert by_name["nonlinear_energy_budget"].scope == "nonlinear_identity_gate"
     assert by_name["nonlinear_energy_budget"].sufficient_for_nonlinear_claim is False
+    assert by_name["double_harris_ci_fast_movie"].scope == "smoke"
+    assert by_name["double_harris_ci_fast_movie"].sufficient_for_nonlinear_claim is False
+    assert by_name["double_harris_readme_release_media"].scope == "validation_media"
+    assert by_name["double_harris_readme_release_media"].t_end > 30.0
+    assert (
+        by_name["double_harris_readme_release_media"].sufficient_for_nonlinear_claim
+        is False
+    )
     assert by_name["future_harris_linear_growth_campaign"].sufficient_for_production_claim is True
     assert by_name["future_harris_linear_growth_campaign"].sufficient_for_nonlinear_claim is False
     assert by_name["future_rutherford_island_campaign"].sufficient_for_nonlinear_claim is True

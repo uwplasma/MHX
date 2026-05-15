@@ -26,7 +26,7 @@ Expected files include:
 - `report.md`
 - `validation.json`
 
-## Reviewer command index
+## Detailed command index
 
 Use this section as the detailed command catalog that the README intentionally
 does not carry. Each command writes `claim_level = "validation"` unless the
@@ -353,14 +353,14 @@ mhx artifact-manifest outputs/ci
 ```
 
 The job uploads `outputs/ci` as the `mhx-fast-artifacts` GitHub Actions
-artifact. Reviewers can download it to inspect manifests, reports, PNG figures,
+artifact. Readers can download it to inspect manifests, reports, PNG figures,
 GIF movies, and `artifact_manifest.json` checksums generated from the exact
 commit under test.
 
-The catalog file `outputs/ci/catalog/benchmark_catalog.md` gives reviewers a
+The catalog file `outputs/ci/catalog/benchmark_catalog.md` gives readers a
 single table of active FAST gates, schemas, commands, and expected artifacts.
 
-For a single reviewer-facing pass/fail bundle, run:
+For a single pass/fail evidence bundle, run:
 
 ```bash
 mhx validate all --outdir outputs/validation_suite
@@ -497,8 +497,8 @@ moving the workflow to nonlinear perturbation studies.
 
 The nonlinear current-sheet bridge differentiates the complete RK4 saved
 trajectory map with JAX, then compares it to centered finite differences of
-full nonlinear trajectories. The expected $O(\epsilon^2)$ convergence is a
-reviewer-facing gate for differentiable programming claims; it is the step
+full nonlinear trajectories. The expected $O(\epsilon^2)$ convergence is an
+evidence gate for differentiable programming claims; it is the step
 between linear operator replay and future adjoint/inverse-design workflows.
 
 The nonlinear energy-budget gate advances a multi-mode nonlinear reduced-MHD

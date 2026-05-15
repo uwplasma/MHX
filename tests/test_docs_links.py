@@ -13,14 +13,19 @@ IMAGE_LINK_RE = re.compile(r"!\[[^\]]*\]\((?P<target>[^)\s]+)(?:\s+[^)]*)?\)")
 
 REQUIRED_TOCTREE_ENTRIES = {
     "validation",
+    "benchmarks",
     "reviewer_evidence",
+    "long_run_evidence",
     "seed_robust_qi",
     "neural_ode_reproducibility",
     "performance",
+    "time_windows",
     "campaigns",
     "campaign_runner",
     "publication_checklist",
     "paper_plan",
+    "media",
+    "audit",
 }
 
 REQUIRED_SOURCE_LINKS = {
@@ -80,7 +85,14 @@ REQUIRED_SOURCE_LINKS = {
     "docs/media.md": {
         "examples/make_readme_media.py",
         "src/mhx/benchmarks/current_sheet.py",
+        "src/mhx/campaigns/production.py",
         "tests/test_current_sheet_eigenvalue_validation.py",
+        "tests/test_production_campaign.py",
+    },
+    "docs/long_run_evidence.md": {
+        "src/mhx/benchmarks/nonlinear.py",
+        "src/mhx/benchmarks/current_sheet.py",
+        "src/mhx/physics/equilibria.py",
     },
 }
 
@@ -154,3 +166,31 @@ def test_reviewer_claim_boundaries_are_explicit() -> None:
     assert "not a production nonlinear result" in runner_text
     assert "Rutherford production" in checklist_text
     assert "Neural-ODE" in checklist_text
+
+
+def test_relocated_validation_content_has_doc_entrypoints() -> None:
+    readme_text = (ROOT / "README.md").read_text(encoding="utf-8")
+    index_text = (DOCS / "index.md").read_text(encoding="utf-8")
+    media_text = (DOCS / "media.md").read_text(encoding="utf-8")
+    long_run_text = (DOCS / "long_run_evidence.md").read_text(encoding="utf-8")
+    time_window_text = (DOCS / "time_windows.md").read_text(encoding="utf-8")
+
+    for doc_link in (
+        "docs/media.md",
+        "docs/validation.md",
+        "docs/benchmarks.md",
+        "docs/long_run_evidence.md",
+        "docs/campaign_runner.md",
+    ):
+        assert doc_link in readme_text
+
+    for doc_entry in ("media", "validation", "long_run_evidence", "time_windows"):
+        assert doc_entry in index_text
+
+    assert "_static/validation/periodic_double_harris_seeded_long_run" in media_text
+    assert "--t-end 100" in media_text
+    assert "readme_media_visual_qa.json" in media_text
+    assert "Rutherford-duration executor run" in long_run_text
+    assert "Current claim boundary" in long_run_text
+    assert "Practical duration labels" in time_window_text
+    assert "short_validation" in time_window_text

@@ -13,6 +13,7 @@ from mhx.benchmarks import (
     PERIODIC_DOUBLE_HARRIS_CONVERGENCE_SCHEMA,
     PERIODIC_DOUBLE_HARRIS_NONLINEAR_GROWTH_SCHEMA,
     PERIODIC_DOUBLE_HARRIS_SEEDED_LONG_RUN_SCHEMA,
+    double_harris_seeded_long_run_presets,
     run_periodic_current_sheet_eigenvalue_validation,
     run_periodic_current_sheet_nonlinear_bridge_validation,
     run_periodic_current_sheet_timedomain_validation,
@@ -43,6 +44,19 @@ def test_periodic_current_sheet_eigenvalue_gate() -> None:
     assert result.selected_residual_norm < 1.0e-9
     assert np.isfinite(result.eigenvalues.real).all()
     assert np.isfinite(result.eigenvalues.imag).all()
+
+
+def test_double_harris_media_duration_presets_are_labeled() -> None:
+    presets = double_harris_seeded_long_run_presets()
+    media = presets["readme_release_media"]
+    ci_fast = presets["ci_fast"]
+
+    assert media["duration_label"] == "readme_release_media"
+    assert media["t_end"] > media["documented_minimum_t_end"]
+    assert media["save_every"] < round(media["t_end"] / 0.01)
+    assert ci_fast["duration_label"] == "ci_fast"
+    assert ci_fast["t_end"] < ci_fast["documented_minimum_t_end"]
+    assert ci_fast["min_max_growth_factor"] == pytest.approx(1.2)
 
 
 def test_periodic_current_sheet_timedomain_replays_eigenmode() -> None:
@@ -198,7 +212,7 @@ def test_periodic_double_harris_seeded_long_run_rejects_invalid_inputs() -> None
     with pytest.raises(ValueError, match="ordered"):
         run_periodic_double_harris_seeded_long_run_validation(fit_window=(2.0, 1.0))
     with pytest.raises(ValueError, match="must not exceed"):
-        run_periodic_double_harris_seeded_long_run_validation(fit_window=(0.0, 31.0))
+        run_periodic_double_harris_seeded_long_run_validation(fit_window=(0.0, 101.0))
     with pytest.raises(ValueError, match="at least three"):
         run_periodic_double_harris_seeded_long_run_validation(
             t_end=2.0,
@@ -405,6 +419,13 @@ def test_write_periodic_double_harris_seeded_long_run_artifacts_and_cli(tmp_path
     assert validation["passed"] is True
     diagnostics = json.loads((tmp_path / "diagnostics.json").read_text())
     assert diagnostics["references"]["scope"].startswith("Longer seeded")
+    assert diagnostics["duration_label"] == "fast_validation"
+    assert diagnostics["ci_fast_duration"] is False
+    assert diagnostics["readme_release_media_grade"] is False
+    assert diagnostics["t_end"] < diagnostics["documented_readme_media_min_t_end"]
+    assert (
+        validation["checks"]["short_duration_is_labeled_fast"] is True
+    )
     history = np.load(tmp_path / "periodic_double_harris_seeded_long_run.npz")
     assert history["schema"] == PERIODIC_DOUBLE_HARRIS_SEEDED_LONG_RUN_SCHEMA
     assert history["time"].shape == history["perturbation_norm"].shape
@@ -427,18 +448,15 @@ def test_write_periodic_double_harris_seeded_long_run_artifacts_and_cli(tmp_path
             "16",
             "--ny",
             "16",
-            "--t-end",
-            "10",
-            "--save-every",
-            "100",
-            "--fit-stop",
-            "6",
-            "--min-max-growth-factor",
-            "1.2",
+            "--ci-fast",
         ],
     )
     assert cli_result.exit_code == 0, cli_result.stdout
     assert (outdir / "validation.json").exists()
+    cli_diagnostics = json.loads((outdir / "diagnostics.json").read_text())
+    assert cli_diagnostics["duration_label"] == "ci_fast"
+    assert cli_diagnostics["ci_fast_duration"] is True
+    assert cli_diagnostics["t_end"] == pytest.approx(10.0)
 
 
 def test_write_periodic_double_harris_seeded_long_run_movies(tmp_path) -> None:

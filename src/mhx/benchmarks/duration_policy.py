@@ -17,6 +17,7 @@ DEFAULT_PRODUCTION_EFOLDS = 10.0
 _VALIDATION_ONLY_SCOPES = frozenset(
     {
         "smoke",
+        "validation_media",
         "linear_operator_replay",
         "nonlinear_identity_gate",
         "differentiability_gate",
@@ -199,6 +200,22 @@ def duration_policy_assessments(
             growth_rate=harris_growth_rate,
             required_efolds=production_efolds,
             scope="nonlinear_identity_gate",
+        ),
+        assess_duration(
+            name="double_harris_ci_fast_movie",
+            purpose="bounded CI movie/rendering smoke path",
+            t_end=10.0,
+            growth_rate=harris_growth_rate,
+            required_efolds=production_efolds,
+            scope="smoke",
+        ),
+        assess_duration(
+            name="double_harris_readme_release_media",
+            purpose="README and release media generated from validation-grade run",
+            t_end=100.0,
+            growth_rate=harris_growth_rate,
+            required_efolds=production_efolds,
+            scope="validation_media",
         ),
         assess_duration(
             name="future_harris_linear_growth_campaign",

@@ -10,6 +10,7 @@ import typer
 
 from mhx._version import __version__
 from mhx.benchmarks import (
+    double_harris_seeded_long_run_presets,
     run_linear_tearing_smoke,
     validate_run,
     write_arnoldi_validation,
@@ -1060,8 +1061,8 @@ def benchmark_double_harris_long_run(
     mode_x: Annotated[int, typer.Option("--mode-x", help="Seed Fourier mode in x.")] = 2,
     mode_y: Annotated[int, typer.Option("--mode-y", help="Seed Fourier mode in y.")] = 1,
     dt: Annotated[float, typer.Option("--dt", help="RK4 time step.")] = 1.0e-2,
-    t_end: Annotated[float, typer.Option("--t-end", help="Final nonlinear time.")] = 30.0,
-    save_every: Annotated[int, typer.Option("--save-every", help="Saved-step stride.")] = 100,
+    t_end: Annotated[float, typer.Option("--t-end", help="Final nonlinear time.")] = 100.0,
+    save_every: Annotated[int, typer.Option("--save-every", help="Saved-step stride.")] = 200,
     fit_start: Annotated[float, typer.Option("--fit-start", help="Early fit window start.")] = 0.0,
     fit_stop: Annotated[float, typer.Option("--fit-stop", help="Early fit window stop.")] = 10.0,
     min_early_growth_rate: Annotated[
@@ -1076,9 +1077,24 @@ def benchmark_double_harris_long_run(
         bool,
         typer.Option("--movies/--no-movies", help="Write fixed-scale flux/current GIFs."),
     ] = False,
+    ci_fast: Annotated[
+        bool,
+        typer.Option(
+            "--ci-fast/--validation-duration",
+            help="Use the explicitly labeled bounded CI duration preset.",
+        ),
+    ] = False,
 ) -> None:
     """Run a scalable seeded periodic double-Harris nonlinear validation replay."""
     _configure_validation_precision()
+    duration_label = None
+    if ci_fast:
+        preset = double_harris_seeded_long_run_presets()["ci_fast"]
+        t_end = float(preset["t_end"])
+        save_every = int(preset["save_every"])
+        fit_start, fit_stop = tuple(preset["fit_window"])
+        min_max_growth_factor = float(preset["min_max_growth_factor"])
+        duration_label = str(preset["duration_label"])
     manifest_path, validation = write_periodic_double_harris_seeded_long_run_validation(
         outdir,
         shape=(nx, ny),
@@ -1091,6 +1107,7 @@ def benchmark_double_harris_long_run(
         t_end=t_end,
         save_every=save_every,
         fit_window=(fit_start, fit_stop),
+        duration_label=duration_label,
         min_early_growth_rate=min_early_growth_rate,
         min_max_growth_factor=min_max_growth_factor,
         movies=movies,

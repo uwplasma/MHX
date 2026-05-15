@@ -7,6 +7,7 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     strategy:
       fail-fast: false
       matrix:
@@ -35,6 +36,7 @@ jobs:
 
   docs:
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     env:
       JAX_PLATFORM_NAME: cpu
       JAX_ENABLE_X64: "1"
@@ -56,6 +58,7 @@ jobs:
 
   benchmark-artifacts:
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     env:
       JAX_PLATFORM_NAME: cpu
       JAX_ENABLE_X64: "1"
@@ -68,7 +71,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install -e ".[dev]"
-      - name: Generate FAST benchmark artifacts
+      - name: Generate bounded FAST validation artifacts
         run: |
           mhx benchmark run --config examples/linear_tearing.toml --outdir outputs/ci/linear_tearing_fast --gif
           mhx benchmark validate outputs/ci/linear_tearing_fast
@@ -88,7 +91,7 @@ jobs:
           mhx benchmark current-sheet-timedomain --outdir outputs/ci/periodic_current_sheet_timedomain
           mhx benchmark current-sheet-nonlinear-bridge --outdir outputs/ci/periodic_current_sheet_nonlinear_bridge
           mhx benchmark double-harris-growth --outdir outputs/ci/periodic_double_harris_nonlinear_growth
-          mhx benchmark double-harris-long-run --outdir outputs/ci/periodic_double_harris_seeded_long_run --nx 16 --ny 16 --t-end 10 --save-every 100 --fit-stop 6 --min-max-growth-factor 1.2 --movies
+          mhx benchmark double-harris-long-run --outdir outputs/ci/periodic_double_harris_seeded_long_run --nx 16 --ny 16 --ci-fast --movies
           mhx benchmark double-harris-convergence --outdir outputs/ci/periodic_double_harris_convergence --resolutions 16,18 --dt-values 0.02,0.01 --reference-resolution 16 --t-end 6 --fit-stop 3 --max-relative-growth-rate-spread 2.0
           mhx benchmark nonlinear-energy-budget --outdir outputs/ci/nonlinear_energy_budget
           mhx benchmark nonlinear-duration-audit --outdir outputs/ci/nonlinear_duration_audit
@@ -118,7 +121,7 @@ jobs:
           test -f outputs/ci/plugin_demo/figures/diagnostics/final_flux_l2_history.png
           mhx report outputs/ci/plugin_demo
           mhx artifact-manifest outputs/ci
-      - name: Validate artifact file set
+      - name: Validate bounded artifact file set
         run: |
           test -f outputs/ci/artifact_manifest.json
           test -f outputs/ci/linear_tearing_fast/manifest.json
@@ -264,6 +267,22 @@ jobs:
           test -f outputs/ci/plugin_demo/figures/flux_final.png
           test -f outputs/ci/plugin_demo/figures/flux_movie.gif
           test -f outputs/ci/plugin_demo/figures/diagnostics/final_flux_l2_history.png
+      - name: Enforce CI claim labels
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          allowed_claim_levels = {"smoke", "validation", "production_template"}
+          invalid = []
+          for manifest_path in Path("outputs/ci").rglob("manifest.json"):
+              manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+              claim_level = manifest.get("claim_level")
+              if claim_level is not None and claim_level not in allowed_claim_levels:
+                  invalid.append((str(manifest_path), claim_level))
+          if invalid:
+              raise SystemExit(f"CI artifacts must stay bounded: {invalid}")
+          PY
       - uses: actions/upload-artifact@v7.0.1
         with:
           name: mhx-fast-artifacts

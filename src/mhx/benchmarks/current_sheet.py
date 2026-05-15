@@ -58,6 +58,16 @@ PERIODIC_DOUBLE_HARRIS_SEEDED_LONG_RUN_SCHEMA = (
 PERIODIC_DOUBLE_HARRIS_CONVERGENCE_SCHEMA = (
     "mhx.validation.periodic_double_harris_convergence.v1"
 )
+DOUBLE_HARRIS_README_MEDIA_MIN_T_END = 30.0
+DOUBLE_HARRIS_README_RELEASE_T_END = 100.0
+DOUBLE_HARRIS_README_RELEASE_SAVE_EVERY = 200
+DOUBLE_HARRIS_README_RELEASE_FIT_WINDOW = (0.0, 10.0)
+DOUBLE_HARRIS_CI_FAST_T_END = 10.0
+DOUBLE_HARRIS_CI_FAST_SAVE_EVERY = 100
+DOUBLE_HARRIS_CI_FAST_FIT_WINDOW = (0.0, 6.0)
+DOUBLE_HARRIS_CI_FAST_MIN_MAX_GROWTH_FACTOR = 1.2
+DOUBLE_HARRIS_CI_FAST_DURATION_LABEL = "ci_fast"
+DOUBLE_HARRIS_README_RELEASE_DURATION_LABEL = "readme_release_media"
 
 
 @dataclass(frozen=True)
@@ -169,6 +179,27 @@ class PeriodicDoubleHarrisConvergenceResult:
     max_kinetic_energy: np.ndarray
     diagnostics: dict[str, Any]
     validation: dict[str, Any]
+
+
+def double_harris_seeded_long_run_presets() -> dict[str, dict[str, Any]]:
+    """Return named duration presets for seeded double-Harris media workflows."""
+    return {
+        "readme_release_media": {
+            "duration_label": DOUBLE_HARRIS_README_RELEASE_DURATION_LABEL,
+            "t_end": DOUBLE_HARRIS_README_RELEASE_T_END,
+            "save_every": DOUBLE_HARRIS_README_RELEASE_SAVE_EVERY,
+            "fit_window": DOUBLE_HARRIS_README_RELEASE_FIT_WINDOW,
+            "documented_minimum_t_end": DOUBLE_HARRIS_README_MEDIA_MIN_T_END,
+        },
+        "ci_fast": {
+            "duration_label": DOUBLE_HARRIS_CI_FAST_DURATION_LABEL,
+            "t_end": DOUBLE_HARRIS_CI_FAST_T_END,
+            "save_every": DOUBLE_HARRIS_CI_FAST_SAVE_EVERY,
+            "fit_window": DOUBLE_HARRIS_CI_FAST_FIT_WINDOW,
+            "min_max_growth_factor": DOUBLE_HARRIS_CI_FAST_MIN_MAX_GROWTH_FACTOR,
+            "documented_minimum_t_end": DOUBLE_HARRIS_README_MEDIA_MIN_T_END,
+        },
+    }
 
 
 def run_periodic_current_sheet_eigenvalue_validation(
@@ -812,9 +843,10 @@ def run_periodic_double_harris_seeded_long_run_validation(
     perturbation_amplitude: float = 1.0e-3,
     perturbation_mode: tuple[int, int] = (2, 1),
     dt: float = 1.0e-2,
-    t_end: float = 30.0,
-    save_every: int = 100,
-    fit_window: tuple[float, float] = (0.0, 10.0),
+    t_end: float = DOUBLE_HARRIS_README_RELEASE_T_END,
+    save_every: int = DOUBLE_HARRIS_README_RELEASE_SAVE_EVERY,
+    fit_window: tuple[float, float] = DOUBLE_HARRIS_README_RELEASE_FIT_WINDOW,
+    duration_label: str | None = None,
     min_saved_samples: int = 8,
     min_early_growth_rate: float = 5.0e-2,
     min_early_growth_factor: float = 1.5,
@@ -850,6 +882,10 @@ def run_periodic_double_harris_seeded_long_run_validation(
         max_relative_energy_increase=max_relative_energy_increase,
     )
     grid = CartesianGrid.from_mesh_config(MeshConfig(shape=shape))
+    resolved_duration_label = _resolve_double_harris_duration_label(
+        t_end=t_end,
+        duration_label=duration_label,
+    )
     base_initial = PeriodicDoubleHarrisEquilibrium(
         width=width,
         amplitude=amplitude,
@@ -913,6 +949,15 @@ def run_periodic_double_harris_seeded_long_run_validation(
         ),
         "full_duration_reached": bool(time[-1] >= t_end - 0.5 * dt),
         "enough_saved_samples": bool(time.size >= min_saved_samples),
+        "readme_release_media_duration_exceeds_documented_minimum": bool(
+            resolved_duration_label != DOUBLE_HARRIS_README_RELEASE_DURATION_LABEL
+            or t_end > DOUBLE_HARRIS_README_MEDIA_MIN_T_END
+        ),
+        "short_duration_is_labeled_fast": bool(
+            t_end >= DOUBLE_HARRIS_README_MEDIA_MIN_T_END
+            or resolved_duration_label
+            in {DOUBLE_HARRIS_CI_FAST_DURATION_LABEL, "fast_validation"}
+        ),
         "early_growth_positive": fitted_early_growth_rate >= min_early_growth_rate,
         "early_difference_grows": early_growth_factor >= min_early_growth_factor,
         "nonlinear_difference_reaches_visible_growth": max_growth_factor >= min_max_growth_factor,
@@ -931,6 +976,14 @@ def run_periodic_double_harris_seeded_long_run_validation(
         "dt": dt,
         "t_end": t_end,
         "save_every": save_every,
+        "duration_label": resolved_duration_label,
+        "documented_readme_media_min_t_end": DOUBLE_HARRIS_README_MEDIA_MIN_T_END,
+        "readme_release_media_grade": bool(
+            resolved_duration_label == DOUBLE_HARRIS_README_RELEASE_DURATION_LABEL
+        ),
+        "ci_fast_duration": bool(
+            resolved_duration_label == DOUBLE_HARRIS_CI_FAST_DURATION_LABEL
+        ),
         "steps": steps,
         "samples": int(time.size),
         "fit_window": list(fit_window),
@@ -962,6 +1015,7 @@ def run_periodic_double_harris_seeded_long_run_validation(
         "checks": checks,
         "thresholds": {
             "min_saved_samples": min_saved_samples,
+            "documented_readme_media_min_t_end": DOUBLE_HARRIS_README_MEDIA_MIN_T_END,
             "min_early_growth_rate": min_early_growth_rate,
             "min_early_growth_factor": min_early_growth_factor,
             "min_max_growth_factor": min_max_growth_factor,
@@ -1854,6 +1908,20 @@ def _double_harris_convergence_case(
 
 def _save_every_for_interval(dt: float, save_interval: float) -> int:
     return max(1, int(round(save_interval / dt)))
+
+
+def _resolve_double_harris_duration_label(
+    *,
+    t_end: float,
+    duration_label: str | None,
+) -> str:
+    if duration_label is not None:
+        if not duration_label:
+            raise ValueError("duration_label must be non-empty")
+        return duration_label
+    if t_end < DOUBLE_HARRIS_README_MEDIA_MIN_T_END:
+        return "fast_validation"
+    return DOUBLE_HARRIS_README_RELEASE_DURATION_LABEL
 
 
 def _relative_spread(values: np.ndarray) -> float:
