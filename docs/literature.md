@@ -46,6 +46,10 @@ For the active tearing validation gates:
 - [Pucci & Velli (2014), reconnection of quasi-singular current sheets](https://doi.org/10.1088/2041-8205/780/2/L19)
   motivates the ideal-tearing aspect-ratio scaling used in the analytic
   validation roadmap.
+- [Orszag & Tang (1979), small-scale structure of two-dimensional MHD
+  turbulence](https://doi.org/10.1017/S002211207900210X) is the classic vortex
+  test adapted in MHX as an incompressible reduced-MHD nonlinear media and
+  cascade gate.
 
 For generalized Ohm's law and collisionless/two-fluid reconnection context:
 

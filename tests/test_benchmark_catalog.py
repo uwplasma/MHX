@@ -29,6 +29,7 @@ def test_validation_catalog_entries_cover_expected_gates() -> None:
     assert "periodic_double_harris_nonlinear_growth" in names
     assert "periodic_double_harris_convergence" in names
     assert "nonlinear_energy_budget" in names
+    assert "orszag_tang_vortex" in names
     assert "nonlinear_duration_audit" in names
     assert "seed_robust_qi" in names
     assert "seed_robust_qi_sweep" in names

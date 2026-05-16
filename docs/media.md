@@ -9,13 +9,13 @@ claims.
 ## README media scope
 
 The README should stay concise and show only landing-page media from
-`docs/_static/readme/`: two solver-generated double-Harris perturbation movies
-and one explicitly labeled turbulence schematic. Detailed benchmark command
-catalogs, validation figure galleries, artifact inventories, CI output
-checklists, production-run chunking details, neural-ODE outputs, plugin
-walkthroughs, still figures, and scaffold comparisons belong in the
-documentation pages where they can carry tolerances, commands, claim
-boundaries, and maintenance context.
+`docs/_static/readme/`: solver-generated double-Harris perturbation movies,
+solver-generated reduced-MHD Orszag--Tang nonlinear movies, and one compact
+Harris tearing layer sweep. Detailed benchmark command catalogs, validation
+figure galleries, artifact inventories, CI output checklists, production-run
+chunking details, neural-ODE outputs, plugin walkthroughs, still figures, and
+scaffold comparisons belong in the documentation pages where they can carry
+tolerances, commands, claim boundaries, and maintenance context.
 
 ## At-a-glance media table
 
@@ -23,6 +23,9 @@ boundaries, and maintenance context.
 | --- | --- | --- |
 | ![Double-Harris reconnection replay](_static/readme/double_harris_reconnection.gif) | Seeded-minus-base flux perturbation from a `128×128`, `t_end=100` periodic double-Harris replay. | Solver-generated validation media; bounded evidence, not converged Rutherford/plasmoid production. |
 | ![Double-Harris current sheet](_static/readme/double_harris_current_sheet.gif) | Seeded-minus-base out-of-plane current response from the same replay, emphasizing localized filament pairs. | Solver-generated validation media; useful for morphology QA before larger seed, duration, and resolution sweeps. |
+| ![Orszag-Tang current sheets](_static/readme/orszag_tang_current.gif) | Current-density filament formation from a `96×96`, `t_end=10` reduced-MHD Orszag--Tang replay. | Solver-generated validation media; nonlinear reduced-MHD cascade evidence, not a compressible shock-capturing full-MHD result. |
+| ![Orszag-Tang vorticity](_static/readme/orszag_tang_vorticity.gif) | Vorticity roll-up from the same Orszag--Tang replay. | Solver-generated validation media with energy, divergence, and high-wavenumber-fraction gates. |
+| ![Orszag-Tang flux](_static/readme/orszag_tang_flux.gif) | Flux-function deformation and dissipative mixing from the same Orszag--Tang replay. | Solver-generated validation media; useful as a nonlinear example for new users. |
 | ![Harris tearing layer sweep](_static/readme/harris_layer_sweep.gif) | Direct Harris-sheet eigenproblem: growth decreases with $S$ while the resonant flow/current layer narrows. | Solver-generated validation media from `mhx benchmark linear-tearing-layer`; anchored to classical tearing localization from [FKR 1963](https://doi.org/10.1063/1.1706761) and the reduced-MHD Harris eigenproblem used by [MacTaggart 2019](https://eprints.gla.ac.uk/191898/1/191898.pdf). |
 | ![Plasmoid scaling schematic](_static/readme/plasmoid_scaling_schematic.gif) | Schematic Sweet-Parker sheet fragmentation with $\gamma_{\max}\tau_A\propto S^{1/4}$ and $k_{\max}L\propto S^{3/8}$. | Theory schematic only; anchored to [Loureiro, Schekochihin & Cowley 2007](https://arxiv.org/abs/astro-ph/0703631), not a nonlinear MHX plasmoid result. |
 | ![MHD turbulence cascade schematic](_static/readme/mhd_turbulence_cascade.gif) | Synthetic magnetic-flux eddies, current filaments, and an animated cascade guide. | Theory/pedagogy schematic only; not a nonlinear MHX turbulence simulation. |
@@ -81,6 +84,60 @@ Source links:
 
 - [Current-sheet validation implementation](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/current_sheet.py)
 - [Current-sheet tests](https://github.com/uwplasma/MHX/blob/main/tests/test_current_sheet_eigenvalue_validation.py)
+- [README media generator](https://github.com/uwplasma/MHX/blob/main/examples/make_readme_media.py)
+
+## Orszag--Tang nonlinear reduced-MHD vortex
+
+The README now includes a second nonlinear solver-generated example: an
+incompressible reduced-MHD adaptation of the Orszag--Tang vortex. The classic
+test was introduced for two-dimensional MHD turbulence by
+[Orszag & Tang 1979](https://doi.org/10.1017/S002211207900210X) and is widely
+used as an MHD-code stress test; full compressible variants develop shocks,
+while MHX currently uses the reduced-MHD periodic vortex to exercise nonlinear
+advection, magnetic tension, dissipation, current-density diagnostics, and
+movie generation.
+
+MHX uses
+
+$$
+\phi(x,y,0)=\cos x+\cos y,\qquad
+\psi(x,y,0)=\cos y+\frac{1}{2}\cos 2x,
+$$
+
+so that, with the MHX convention
+$\mathbf{v}_\perp=(\partial_y\phi,-\partial_x\phi)$ and
+$\mathbf{B}_\perp=(\partial_y\psi,-\partial_x\psi)$,
+
+$$
+\mathbf{v}_\perp=(-\sin y,\sin x),\qquad
+\mathbf{B}_\perp=(-\sin y,\sin 2x).
+$$
+
+The committed README media were regenerated from a `96×96`, `t_end=10` run:
+
+```bash
+mhx benchmark orszag-tang \
+  --outdir outputs/readme_media/orszag_tang_vortex_96_t10 \
+  --nx 96 --ny 96 --t-end 10 --save-every 40 --movies
+
+python examples/make_readme_media.py
+```
+
+The validation gates check finite arrays, monotone resistive-viscous energy
+decay, nonzero net dissipation, growth of current/vorticity high-wavenumber
+fractions, and preservation of $\nabla\cdot\mathbf{B}_\perp=0$ by construction.
+The QA manifest records the peak high-wavenumber fractions and energy drop.
+
+![Orszag-Tang current snapshots](_static/readme/orszag_tang_current_snapshots.png)
+
+![Orszag-Tang vorticity snapshots](_static/readme/orszag_tang_vorticity_snapshots.png)
+
+![Orszag-Tang flux snapshots](_static/readme/orszag_tang_flux_snapshots.png)
+
+Source links:
+
+- [Orszag--Tang benchmark implementation](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/orszag_tang.py)
+- [Orszag--Tang tests](https://github.com/uwplasma/MHX/blob/main/tests/test_orszag_tang_validation.py)
 - [README media generator](https://github.com/uwplasma/MHX/blob/main/examples/make_readme_media.py)
 
 ## Harris tearing layer sweep
@@ -192,6 +249,9 @@ The generated files are intentionally compact:
 
 - `docs/_static/readme/double_harris_reconnection.gif`
 - `docs/_static/readme/double_harris_current_sheet.gif`
+- `docs/_static/readme/orszag_tang_current.gif`
+- `docs/_static/readme/orszag_tang_vorticity.gif`
+- `docs/_static/readme/orszag_tang_flux.gif`
 - `docs/_static/readme/harris_layer_sweep.gif`
 - `docs/_static/readme/plasmoid_scaling_schematic.gif`
 - `docs/_static/readme/mhd_turbulence_cascade.gif`

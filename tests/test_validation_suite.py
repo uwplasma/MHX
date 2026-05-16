@@ -29,6 +29,7 @@ def test_validation_suite_cases_are_unique() -> None:
     assert "periodic_double_harris_nonlinear_growth" in names
     assert "periodic_double_harris_convergence" in names
     assert "nonlinear_energy_budget" in names
+    assert "orszag_tang_vortex" in names
     assert "nonlinear_duration_audit" in names
     assert "seed_robust_qi" in names
     assert "seed_robust_qi_sweep" in names
@@ -132,6 +133,13 @@ def test_write_validation_suite_artifacts_and_cli(tmp_path) -> None:
         / "nonlinear_energy_budget"
         / "figures"
         / "nonlinear_energy_budget.png"
+    ).stat().st_size > 0
+    assert (
+        tmp_path
+        / "suite"
+        / "orszag_tang_vortex"
+        / "figures"
+        / "orszag_tang_summary.png"
     ).stat().st_size > 0
     assert (
         tmp_path

@@ -131,6 +131,19 @@ This writes `outputs/smoke/artifact_manifest.json` with schema
 validation cases, including the seed-QI sweep, fitted latent ODE, and
 restartable Rutherford execution chunk. Two important closed-lane schemas are:
 
+### Orszag--Tang vortex
+
+`mhx benchmark orszag-tang --outdir outputs/benchmarks/orszag_tang_vortex --movies`
+writes:
+
+| File | Schema / contents |
+| --- | --- |
+| `orszag_tang_vortex.npz` | `mhx.validation.orszag_tang_vortex.v1`; keys `time`, `psi`, `omega`, `current_density`, `magnetic_energy`, `kinetic_energy`, `total_energy`, `current_linf`, `vorticity_linf`, `current_high_k_fraction`, `vorticity_high_k_fraction`, and scalar gate summaries. |
+| `diagnostics.json` | Scalar run controls, energy/drop diagnostics, high-$k$ growth, and divergence summary. |
+| `validation.json` | `mhx.validation.orszag_tang_vortex.gates.v1`; finite-array, monotone-energy, dissipation, high-$k$, and divergence gates. |
+| `figures/orszag_tang_summary.png` | Energy, high-$k$, final-current, and final-vorticity summary. |
+| `figures/orszag_tang_*.gif` | Optional flux, current, and vorticity movies when `--movies` is set. |
+
 ### Rutherford production execution
 
 `mhx campaign rutherford-execute <run-dir>` writes:

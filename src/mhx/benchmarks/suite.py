@@ -34,6 +34,7 @@ from mhx.benchmarks.linearized import (
 )
 from mhx.benchmarks.nonlinear import write_nonlinear_energy_budget_validation
 from mhx.benchmarks.nonlinear_duration import write_nonlinear_duration_audit
+from mhx.benchmarks.orszag_tang import write_orszag_tang_vortex_validation
 from mhx.benchmarks.report import validate_run
 from mhx.benchmarks.scaling import write_reconnection_scaling_validation
 from mhx.benchmarks.seed_robust_qi import (
@@ -163,6 +164,11 @@ def validation_suite_cases() -> tuple[ValidationSuiteCase, ...]:
             name="nonlinear_energy_budget",
             command="mhx benchmark nonlinear-energy-budget",
             runner=write_nonlinear_energy_budget_validation,
+        ),
+        ValidationSuiteCase(
+            name="orszag_tang_vortex",
+            command="mhx benchmark orszag-tang",
+            runner=write_orszag_tang_vortex_validation,
         ),
         ValidationSuiteCase(
             name="nonlinear_duration_audit",

@@ -119,6 +119,13 @@ from mhx.benchmarks.nonlinear_duration import (
     run_nonlinear_duration_audit,
     write_nonlinear_duration_audit,
 )
+from mhx.benchmarks.orszag_tang import (
+    ORSZAG_TANG_VORTEX_SCHEMA,
+    OrszagTangVortexResult,
+    orszag_tang_initial_state,
+    run_orszag_tang_vortex_validation,
+    write_orszag_tang_vortex_validation,
+)
 from mhx.benchmarks.readiness import (
     PRODUCTION_PUBLICATION_GAPS,
     READINESS_REPORT_SCHEMA,
@@ -226,6 +233,7 @@ __all__ = [
     "LINEAR_TEARING_TIMEDOMAIN_SCHEMA",
     "NONLINEAR_ENERGY_BUDGET_SCHEMA",
     "NONLINEAR_DURATION_AUDIT_SCHEMA",
+    "ORSZAG_TANG_VORTEX_SCHEMA",
     "POWER_ITERATION_SCHEMA",
     "PRODUCTION_PUBLICATION_GAPS",
     "PERIODIC_CURRENT_SHEET_EIGENVALUE_SCHEMA",
@@ -243,6 +251,7 @@ __all__ = [
     "LinearTearingTimeDomainResult",
     "NonlinearEnergyBudgetResult",
     "NonlinearDurationAuditResult",
+    "OrszagTangVortexResult",
     "PlasmoidScalingEstimate",
     "PeriodicCurrentSheetEigenvalueResult",
     "PeriodicCurrentSheetNonlinearBridgeResult",
@@ -290,6 +299,7 @@ __all__ = [
     "linear_tearing_initial_state",
     "loureiro_plasmoid_estimate",
     "make_seeded_initial_state",
+    "orszag_tang_initial_state",
     "required_time_for_efolds",
     "require_duration_for_claim",
     "resistive_decay_rate",
@@ -306,6 +316,7 @@ __all__ = [
     "run_linear_tearing_timedomain_validation",
     "run_nonlinear_energy_budget_validation",
     "run_nonlinear_duration_audit",
+    "run_orszag_tang_vortex_validation",
     "run_periodic_current_sheet_eigenvalue_validation",
     "run_periodic_current_sheet_nonlinear_bridge_validation",
     "run_periodic_current_sheet_timedomain_validation",
@@ -343,6 +354,7 @@ __all__ = [
     "write_linear_tearing_timedomain_validation",
     "write_nonlinear_energy_budget_validation",
     "write_nonlinear_duration_audit",
+    "write_orszag_tang_vortex_validation",
     "write_periodic_current_sheet_eigenvalue_validation",
     "write_periodic_current_sheet_nonlinear_bridge_validation",
     "write_periodic_current_sheet_timedomain_validation",

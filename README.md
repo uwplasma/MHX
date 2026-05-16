@@ -1,6 +1,7 @@
 # MHX
 
 [![CI](https://github.com/uwplasma/MHX/actions/workflows/ci.yml/badge.svg)](https://github.com/uwplasma/MHX/actions/workflows/ci.yml)
+[![Coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/uwplasma/MHX/main/badges/coverage.json)](https://github.com/uwplasma/MHX/actions/workflows/ci.yml)
 [![Documentation Status](https://readthedocs.org/projects/mhx/badge/?version=latest)](https://mhx.readthedocs.io/)
 
 **MHX is a JAX-native, differentiable plasma and magnetohydrodynamics toolkit
@@ -13,22 +14,29 @@ API for reproducible reduced-MHD studies.
 
 ## MHD at a Glance
 
-These previews keep the README visual and short. The first two are compressed
-from a longer seeded periodic double-Harris nonlinear run; the turbulence panel
-is a labeled pedagogical schematic. See [docs/media.md](docs/media.md) for
-source commands, visual QA, and claim boundaries.
+These previews keep the README visual and short. The first row comes from a
+longer seeded periodic double-Harris nonlinear run. The second row comes from a
+reduced-MHD Orszag--Tang vortex run that develops current/vorticity filaments.
+See [docs/media.md](docs/media.md) for source commands, visual QA, and claim
+boundaries.
 
-| Seeded Harris-sheet response | Current filaments | Turbulent cascade guide |
+| Seeded Harris-sheet response | Harris current filaments | Orszag--Tang current sheets |
 | --- | --- | --- |
-| ![Double-Harris reconnection replay](docs/_static/readme/double_harris_reconnection.gif) | ![Double-Harris current sheet](docs/_static/readme/double_harris_current_sheet.gif) | ![MHD turbulence cascade schematic](docs/_static/readme/mhd_turbulence_cascade.gif) |
-| Seeded-minus-base flux perturbation over a `128×128`, `t=100` validation run. | Perturbation current filaments from the same long run. | Literature-inspired MHD cascade schematic, not solver output. |
+| ![Double-Harris reconnection replay](docs/_static/readme/double_harris_reconnection.gif) | ![Double-Harris current sheet](docs/_static/readme/double_harris_current_sheet.gif) | ![Orszag-Tang current sheets](docs/_static/readme/orszag_tang_current.gif) |
+| Seeded-minus-base flux perturbation over a `128×128`, `t=100` validation run. | Perturbation current filaments from the same long run. | Solver-generated Orszag--Tang current-density cascade over a `96×96`, `t=10` validation run. |
+
+| Orszag--Tang vorticity | Orszag--Tang flux mixing | Harris tearing layer |
+| --- | --- | --- |
+| ![Orszag-Tang vorticity roll-up](docs/_static/readme/orszag_tang_vorticity.gif) | ![Orszag-Tang flux mixing](docs/_static/readme/orszag_tang_flux.gif) | ![Harris tearing layer sweep](docs/_static/readme/harris_layer_sweep.gif) |
+| Vorticity roll-up and filamentation from the same nonlinear run. | Flux-function deformation during the dissipative nonlinear replay. | Literature-anchored Harris eigenfunction localization sweep. |
 
 ## What Works Today
 
 MHX currently supports deterministic reduced-MHD validation for spectral
 operators, resistive decay, finite-domain Harris tearing checks, nonlinear
-energy/dissipation budgets, bounded double-Harris and Rutherford execution-path
-checks, and seed-robust QI plus latent-ODE workflow tests on small datasets.
+energy/dissipation budgets, Orszag--Tang vortex media, bounded double-Harris
+and Rutherford execution-path checks, and seed-robust QI plus latent-ODE
+workflow tests on small datasets.
 
 Current results should be read at their manifest claim level. MHX does **not**
 yet claim converged Rutherford island growth, Sweet-Parker plasmoid chains,

@@ -28,6 +28,7 @@ from mhx.benchmarks import (
     write_linearized_rhs_validation,
     write_nonlinear_duration_audit,
     write_nonlinear_energy_budget_validation,
+    write_orszag_tang_vortex_validation,
     write_periodic_current_sheet_eigenvalue_validation,
     write_periodic_current_sheet_nonlinear_bridge_validation,
     write_periodic_current_sheet_timedomain_validation,
@@ -1034,6 +1035,44 @@ def benchmark_double_harris_growth(
         dt=dt,
         t_end=t_end,
         save_every=save_every,
+    )
+    typer.echo(f"wrote {manifest_path}")
+    if not validation["passed"]:
+        raise typer.Exit(code=1)
+
+
+@benchmark_app.command("orszag-tang")
+def benchmark_orszag_tang(
+    outdir: Annotated[
+        Path,
+        typer.Option(
+            "--outdir",
+            help="Output directory for reduced-MHD Orszag-Tang nonlinear artifacts.",
+        ),
+    ] = Path("outputs/benchmarks/orszag_tang_vortex"),
+    nx: Annotated[int, typer.Option("--nx", help="Grid points in x.")] = 24,
+    ny: Annotated[int, typer.Option("--ny", help="Grid points in y.")] = 24,
+    eta: Annotated[float, typer.Option("--eta", help="Resistivity.")] = 1.0e-2,
+    nu: Annotated[float, typer.Option("--nu", help="Viscosity.")] = 1.0e-2,
+    dt: Annotated[float, typer.Option("--dt", help="RK4 time step.")] = 5.0e-3,
+    t_end: Annotated[float, typer.Option("--t-end", help="Final nonlinear time.")] = 2.0,
+    save_every: Annotated[int, typer.Option("--save-every", help="Saved-step stride.")] = 20,
+    movies: Annotated[
+        bool,
+        typer.Option("--movies/--no-movies", help="Write flux/current/vorticity GIFs."),
+    ] = False,
+) -> None:
+    """Run the incompressible reduced-MHD Orszag-Tang vortex validation."""
+    _configure_validation_precision()
+    manifest_path, validation = write_orszag_tang_vortex_validation(
+        outdir,
+        shape=(nx, ny),
+        resistivity=eta,
+        viscosity=nu,
+        dt=dt,
+        t_end=t_end,
+        save_every=save_every,
+        movies=movies,
     )
     typer.echo(f"wrote {manifest_path}")
     if not validation["passed"]:

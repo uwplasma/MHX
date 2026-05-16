@@ -4,6 +4,9 @@ on:
   push:
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -32,7 +35,47 @@ jobs:
           python tools/check_legacy_imports.py
       - name: Tests
         run: |
-          python -m pytest --cov=mhx --cov-report=term-missing --cov-fail-under=95
+          python -m pytest --cov=mhx --cov-report=term-missing --cov-report=json:coverage.json --cov-fail-under=95
+      - name: Upload coverage JSON
+        if: matrix.python-version == '3.11'
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: coverage-json
+          path: coverage.json
+          if-no-files-found: error
+
+  coverage-badge:
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    timeout-minutes: 10
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - uses: actions/checkout@v6.0.2
+      - uses: actions/setup-python@v6.2.0
+        with:
+          python-version: "3.11"
+      - uses: actions/download-artifact@v7.0.1
+        with:
+          name: coverage-json
+          path: .coverage-artifacts
+      - name: Update coverage badge endpoint
+        run: |
+          python tools/write_coverage_badge.py .coverage-artifacts/coverage.json badges/coverage.json
+          git diff -- badges/coverage.json
+      - name: Commit coverage badge
+        run: |
+          if git diff --quiet -- badges/coverage.json; then
+            echo "coverage badge unchanged"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add badges/coverage.json
+          git commit -m "Update coverage badge [skip ci]"
+          git push
 
   docs:
     runs-on: ubuntu-latest
@@ -94,6 +137,7 @@ jobs:
           mhx benchmark double-harris-long-run --outdir outputs/ci/periodic_double_harris_seeded_long_run --nx 16 --ny 16 --ci-fast --movies
           mhx benchmark double-harris-convergence --outdir outputs/ci/periodic_double_harris_convergence --resolutions 16,18 --dt-values 0.02,0.01 --reference-resolution 16 --t-end 6 --fit-stop 3 --max-relative-growth-rate-spread 2.0
           mhx benchmark nonlinear-energy-budget --outdir outputs/ci/nonlinear_energy_budget
+          mhx benchmark orszag-tang --outdir outputs/ci/orszag_tang_vortex --nx 24 --ny 24 --t-end 2.0 --save-every 20 --movies
           mhx benchmark nonlinear-duration-audit --outdir outputs/ci/nonlinear_duration_audit
           mhx benchmark seed-robust-qi --outdir outputs/ci/seed_robust_qi --nx 8 --ny 8 --seeds 0,1,2,3 --t-end 0.08
           mhx benchmark seed-robust-qi-sweep --outdir outputs/ci/seed_robust_qi_sweep --nx 8 --ny 8 --seeds 0,1,2,3 --amplitudes 0,1e-9 --steps 4
@@ -174,6 +218,11 @@ jobs:
           test -f outputs/ci/periodic_double_harris_convergence/figures/periodic_double_harris_convergence.png
           test -f outputs/ci/nonlinear_energy_budget/validation.json
           test -f outputs/ci/nonlinear_energy_budget/figures/nonlinear_energy_budget.png
+          test -f outputs/ci/orszag_tang_vortex/validation.json
+          test -f outputs/ci/orszag_tang_vortex/figures/orszag_tang_summary.png
+          test -f outputs/ci/orszag_tang_vortex/figures/orszag_tang_flux.gif
+          test -f outputs/ci/orszag_tang_vortex/figures/orszag_tang_current.gif
+          test -f outputs/ci/orszag_tang_vortex/figures/orszag_tang_vorticity.gif
           test -f outputs/ci/nonlinear_duration_audit/validation.json
           test -f outputs/ci/nonlinear_duration_audit/figures/nonlinear_duration_audit.png
           test -f outputs/ci/seed_robust_qi/validation.json
@@ -237,6 +286,7 @@ jobs:
           test -f outputs/ci/validation_suite/periodic_double_harris_nonlinear_growth/figures/periodic_double_harris_nonlinear_growth.png
           test -f outputs/ci/validation_suite/periodic_double_harris_convergence/figures/periodic_double_harris_convergence.png
           test -f outputs/ci/validation_suite/nonlinear_energy_budget/figures/nonlinear_energy_budget.png
+          test -f outputs/ci/validation_suite/orszag_tang_vortex/figures/orszag_tang_summary.png
           test -f outputs/ci/validation_suite/nonlinear_duration_audit/figures/nonlinear_duration_audit.png
           test -f outputs/ci/validation_suite/seed_robust_qi/figures/qi_summary.png
           test -f outputs/ci/validation_suite/seed_robust_qi_sweep/figures/qi_sweep_cv.png
@@ -250,11 +300,17 @@ jobs:
           test -f outputs/ci/readiness/figures/readiness_matrix.png
           test -f docs/_static/readme/double_harris_reconnection.gif
           test -f docs/_static/readme/double_harris_current_sheet.gif
+          test -f docs/_static/readme/orszag_tang_current.gif
+          test -f docs/_static/readme/orszag_tang_vorticity.gif
+          test -f docs/_static/readme/orszag_tang_flux.gif
           test -f docs/_static/readme/harris_layer_sweep.gif
           test -f docs/_static/readme/plasmoid_scaling_schematic.gif
           test -f docs/_static/readme/mhd_turbulence_cascade.gif
           test "$(stat -c%s docs/_static/readme/double_harris_reconnection.gif)" -lt 250000
           test "$(stat -c%s docs/_static/readme/double_harris_current_sheet.gif)" -lt 300000
+          test "$(stat -c%s docs/_static/readme/orszag_tang_current.gif)" -lt 250000
+          test "$(stat -c%s docs/_static/readme/orszag_tang_vorticity.gif)" -lt 350000
+          test "$(stat -c%s docs/_static/readme/orszag_tang_flux.gif)" -lt 400000
           test "$(stat -c%s docs/_static/readme/harris_layer_sweep.gif)" -lt 200000
           test "$(stat -c%s docs/_static/readme/plasmoid_scaling_schematic.gif)" -lt 300000
           test "$(stat -c%s docs/_static/readme/mhd_turbulence_cascade.gif)" -lt 500000

@@ -77,6 +77,18 @@ deterministic; they are not yet the full tearing benchmark. The timing
 benchmark records wall-clock and Python-allocation summaries for comparing
 changes on the same machine or CI runner.
 
+Run a nonlinear reduced-MHD Orszag--Tang example with movies:
+
+```bash
+mhx benchmark orszag-tang --outdir outputs/examples/orszag_tang --nx 64 --ny 64 --t-end 6 --movies
+# equivalent thin Python wrapper
+python examples/run_orszag_tang.py --outdir outputs/examples/orszag_tang_script --nx 64 --ny 64 --t-end 6
+```
+
+The command writes `figures/orszag_tang_current.gif`,
+`figures/orszag_tang_vorticity.gif`, `figures/orszag_tang_flux.gif`, and a
+summary figure with energy and high-wavenumber diagnostics.
+
 Try a local extension module without editing MHX source:
 
 ```bash

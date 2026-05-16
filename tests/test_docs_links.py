@@ -33,6 +33,7 @@ REQUIRED_SOURCE_LINKS = {
         "src/mhx/benchmarks/seed_robust_qi.py",
         "src/mhx/benchmarks/eigenvalue.py",
         "src/mhx/benchmarks/suite.py",
+        "src/mhx/benchmarks/orszag_tang.py",
     },
     "docs/performance.md": {
         ".github/workflows/ci.yml",
@@ -85,8 +86,10 @@ REQUIRED_SOURCE_LINKS = {
     "docs/media.md": {
         "examples/make_readme_media.py",
         "src/mhx/benchmarks/current_sheet.py",
+        "src/mhx/benchmarks/orszag_tang.py",
         "src/mhx/campaigns/production.py",
         "tests/test_current_sheet_eigenvalue_validation.py",
+        "tests/test_orszag_tang_validation.py",
         "tests/test_production_campaign.py",
     },
     "docs/long_run_evidence.md": {

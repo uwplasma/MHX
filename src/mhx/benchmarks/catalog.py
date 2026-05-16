@@ -438,6 +438,32 @@ def validation_catalog_entries() -> tuple[BenchmarkCatalogEntry, ...]:
             ),
         ),
         BenchmarkCatalogEntry(
+            name="orszag_tang_vortex",
+            command=(
+                "mhx benchmark orszag-tang "
+                "--outdir outputs/benchmarks/orszag_tang_vortex --movies"
+            ),
+            schema="mhx.validation.orszag_tang_vortex.v1",
+            purpose=(
+                "Incompressible reduced-MHD Orszag--Tang nonlinear vortex with "
+                "energy, divergence, high-wavenumber, and movie-generation gates."
+            ),
+            expected_outputs=(
+                "diagnostics.json",
+                "validation.json",
+                "orszag_tang_vortex.npz",
+                "figures/orszag_tang_summary.png",
+                "figures/orszag_tang_flux.gif",
+                "figures/orszag_tang_current.gif",
+                "figures/orszag_tang_vorticity.gif",
+            ),
+            literature_anchor=(
+                "Orszag--Tang 1979 two-dimensional MHD vortex adapted to "
+                "incompressible reduced MHD; nonlinear media and cascade gate, "
+                "not a compressible shock-capturing benchmark."
+            ),
+        ),
+        BenchmarkCatalogEntry(
             name="nonlinear_duration_audit",
             command=(
                 "mhx benchmark nonlinear-duration-audit "

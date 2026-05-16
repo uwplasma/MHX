@@ -67,6 +67,45 @@ mhx validate all --outdir outputs/validation_suite
 The suite writes `validation_suite.json`, `validation_suite.md`,
 `artifact_manifest.json`, and one subdirectory per validation case.
 
+## Nonlinear Orszag--Tang reduced-MHD gate
+
+MHX includes a solver-generated nonlinear Orszag--Tang validation case:
+
+```bash
+mhx benchmark orszag-tang --outdir outputs/benchmarks/orszag_tang_vortex --movies
+```
+
+The initial condition adapts the classic
+[Orszag--Tang two-dimensional MHD vortex](https://doi.org/10.1017/S002211207900210X)
+to the incompressible reduced-MHD variables:
+
+$$
+\phi=\cos x+\cos y,\qquad
+\psi=\cos y+\frac{1}{2}\cos 2x,
+$$
+
+giving
+
+$$
+\mathbf{v}_\perp=(-\sin y,\sin x),\qquad
+\mathbf{B}_\perp=(-\sin y,\sin 2x).
+$$
+
+The validation checks finite fields, monotone resistive-viscous energy decay,
+net dissipation, high-wavenumber growth in current density and vorticity, and
+spectral preservation of $\nabla\cdot\mathbf{B}_\perp=0$. This is not a
+compressible full-MHD shock benchmark; it is the nonlinear reduced-MHD example
+used by the README media and extension tutorials.
+
+Expected files:
+
+- `outputs/benchmarks/orszag_tang_vortex/diagnostics.json`
+- `outputs/benchmarks/orszag_tang_vortex/validation.json`
+- `outputs/benchmarks/orszag_tang_vortex/orszag_tang_vortex.npz`
+- `outputs/benchmarks/orszag_tang_vortex/figures/orszag_tang_summary.png`
+- `outputs/benchmarks/orszag_tang_vortex/figures/orszag_tang_current.gif`
+- `outputs/benchmarks/orszag_tang_vortex/figures/orszag_tang_vorticity.gif`
+
 ## Validation figures
 
 The numerical mode amplitude is visually indistinguishable from
@@ -1162,6 +1201,8 @@ Additional source links:
 - [Reduced-MHD linear eigenmode implementation](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/linearized.py)
 - [Nonlinear energy-budget implementation](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/nonlinear.py)
 - [Nonlinear energy-budget tests](https://github.com/uwplasma/MHX/blob/main/tests/test_nonlinear_energy_budget_validation.py)
+- [Orszag--Tang implementation](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/orszag_tang.py)
+- [Orszag--Tang tests](https://github.com/uwplasma/MHX/blob/main/tests/test_orszag_tang_validation.py)
 - [Diffusion eigenvalue implementation](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/eigenvalue.py)
 - [Diffusion eigenvalue tests](https://github.com/uwplasma/MHX/blob/main/tests/test_diffusion_eigenvalue_validation.py)
 - [Power-iteration utilities](https://github.com/uwplasma/MHX/blob/main/src/mhx/numerics/linear_operator.py)

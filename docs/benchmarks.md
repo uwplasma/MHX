@@ -54,6 +54,7 @@ mhx benchmark double-harris-growth --outdir outputs/benchmarks/periodic_double_h
 mhx benchmark double-harris-long-run --outdir outputs/benchmarks/periodic_double_harris_seeded_long_run --movies
 mhx benchmark double-harris-convergence --outdir outputs/benchmarks/periodic_double_harris_convergence
 mhx benchmark nonlinear-energy-budget --outdir outputs/benchmarks/nonlinear_energy_budget
+mhx benchmark orszag-tang --outdir outputs/benchmarks/orszag_tang_vortex --movies
 mhx benchmark nonlinear-duration-audit --outdir outputs/benchmarks/nonlinear_duration_audit
 mhx benchmark duration-policy --outdir outputs/benchmarks/duration_policy
 mhx benchmark diffusion-eigenvalue --outdir outputs/benchmarks/diffusion_eigenvalue
@@ -72,6 +73,7 @@ mhx campaign rutherford-resume-plan outputs/campaigns/rutherford_production_plan
 mhx campaign rutherford-execute outputs/campaigns/rutherford_production_plan --max-steps 128
 python examples/make_rutherford_production_plan.py --outdir outputs/examples/rutherford_production_plan
 python examples/run_rutherford_production_chunk.py --outdir outputs/examples/rutherford_chunk --movies
+python examples/run_orszag_tang.py --outdir outputs/examples/orszag_tang --nx 64 --ny 64 --t-end 6
 python examples/train_latent_ode_fast.py --outdir outputs/examples/latent_ode_fast
 mhx validate all --outdir outputs/validation_suite
 mhx validate readiness --suite outputs/validation_suite --outdir outputs/validation_readiness
@@ -83,6 +85,30 @@ documented in [campaigns.md](campaigns.md) and
 [campaign_runner.md](campaign_runner.md). Neural-ODE baseline comparison and
 fitted latent-ODE outputs are documented in
 [neural_ode_reproducibility.md](neural_ode_reproducibility.md).
+
+## Orszag--Tang nonlinear vortex example
+
+```bash
+mhx benchmark orszag-tang \
+  --outdir outputs/benchmarks/orszag_tang_vortex \
+  --nx 64 --ny 64 --t-end 6 --save-every 40 --movies
+```
+
+Expected files include:
+
+- `manifest.json`
+- `diagnostics.json`
+- `validation.json`
+- `orszag_tang_vortex.npz`
+- `figures/orszag_tang_summary.png`
+- `figures/orszag_tang_flux.gif`
+- `figures/orszag_tang_current.gif`
+- `figures/orszag_tang_vorticity.gif`
+
+This is an incompressible reduced-MHD adaptation of the
+[Orszag--Tang 1979](https://doi.org/10.1017/S002211207900210X) vortex. It is
+intended as a nonlinear morphology, energy-decay, divergence, and high-$k$
+cascade gate, not as a compressible full-MHD shock benchmark.
 
 ## Exact-decay validation benchmark
 

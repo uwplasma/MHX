@@ -15,13 +15,16 @@ from mhx.benchmarks import run_linear_tearing_layer_validation
 README_GIF_DURATION_MS = 90
 DOUBLE_HARRIS_MAX_FRAMES = 30
 DOUBLE_HARRIS_LENGTHS = (2.0 * np.pi, 2.0 * np.pi)
+ORSZAG_TANG_MAX_FRAMES = 36
 
 
 def main() -> None:
     """Write small GIFs used by the README and docs landing pages."""
     output_dir = Path("docs/_static/readme")
     output_dir.mkdir(parents=True, exist_ok=True)
-    media_entries, visual_qa = _write_double_harris_readme_movies(output_dir)
+    media_entries, double_harris_qa = _write_double_harris_readme_movies(output_dir)
+    orszag_entries, orszag_qa = _write_orszag_tang_readme_movies(output_dir)
+    media_entries.extend(orszag_entries)
     _write_harris_layer_sweep(output_dir / "harris_layer_sweep.gif")
     media_entries.append(
         _gif_manifest_entry(
@@ -52,7 +55,14 @@ def main() -> None:
             notes="Engagement schematic; not solver output.",
         )
     )
-    _write_visual_qa_manifest(output_dir, media_entries, visual_qa)
+    _write_visual_qa_manifest(
+        output_dir,
+        media_entries,
+        {
+            "double_harris": double_harris_qa,
+            "orszag_tang": orszag_qa,
+        },
+    )
 
 
 def _write_double_harris_readme_movies(
@@ -196,6 +206,189 @@ def _generate_double_harris_fallback(output_dir: Path) -> dict[str, Any]:
         "source_kind": "generated README fallback artifact",
         "validation_passed": validation_passed,
     }
+
+
+def _write_orszag_tang_readme_movies(
+    output_dir: Path,
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """Write README movies from the longest available Orszag--Tang nonlinear replay."""
+    source = _select_orszag_tang_history(output_dir)
+    history = _load_orszag_tang_history(source["history_path"])
+    frame_indices = _sample_frame_indices(len(history["time"]), ORSZAG_TANG_MAX_FRAMES)
+    source_label = (
+        f"{source['source_kind']} Orszag-Tang vortex "
+        f"{history['shape'][0]}×{history['shape'][1]}, t≤{history['t_end']:.1f}"
+    )
+    current_path = output_dir / "orszag_tang_current.gif"
+    vorticity_path = output_dir / "orszag_tang_vorticity.gif"
+    flux_path = output_dir / "orszag_tang_flux.gif"
+    _write_field_movie(
+        history["current_density"][frame_indices],
+        history["time"][frame_indices],
+        path=current_path,
+        cmap="RdBu_r",
+        title_prefix="Orszag-Tang current density",
+        source_label=source_label,
+        symmetric=True,
+    )
+    _write_field_movie(
+        history["omega"][frame_indices],
+        history["time"][frame_indices],
+        path=vorticity_path,
+        cmap="RdBu_r",
+        title_prefix="Orszag-Tang vorticity",
+        source_label=source_label,
+        symmetric=True,
+    )
+    _write_field_movie(
+        history["psi"][frame_indices],
+        history["time"][frame_indices],
+        path=flux_path,
+        cmap="viridis",
+        title_prefix="Orszag-Tang flux",
+        source_label=source_label,
+        symmetric=False,
+    )
+    snapshots = _write_orszag_tang_snapshot_contact_sheets(output_dir, history, source_label)
+    qa = _orszag_tang_visual_qa(history, source, snapshots)
+    common_source = {
+        "source": str(source["history_path"]),
+        "source_kind": source["source_kind"],
+        "source_samples": int(len(history["time"])),
+        "source_shape": list(history["shape"]),
+        "t_end": history["t_end"],
+        "time_span": [float(history["time"][0]), float(history["time"][-1])],
+        "validation_passed": source.get("validation_passed"),
+    }
+    return (
+        [
+            _gif_manifest_entry(
+                current_path,
+                source=common_source,
+                t_end=history["t_end"],
+                time_span=common_source["time_span"],
+                notes=(
+                    "Solver-generated reduced-MHD Orszag-Tang current-density movie "
+                    "showing nonlinear filament formation."
+                ),
+            ),
+            _gif_manifest_entry(
+                vorticity_path,
+                source=common_source,
+                t_end=history["t_end"],
+                time_span=common_source["time_span"],
+                notes=(
+                    "Solver-generated reduced-MHD Orszag-Tang vorticity movie "
+                    "showing nonlinear vortex roll-up."
+                ),
+            ),
+            _gif_manifest_entry(
+                flux_path,
+                source=common_source,
+                t_end=history["t_end"],
+                time_span=common_source["time_span"],
+                notes="Solver-generated reduced-MHD Orszag-Tang flux-function movie.",
+            ),
+        ],
+        qa,
+    )
+
+
+def _select_orszag_tang_history(output_dir: Path) -> dict[str, Any]:
+    candidates = sorted(
+        {
+            *Path("outputs/readme_media").glob("**/orszag_tang_vortex.npz"),
+            *Path("outputs/long_runs").glob("**/orszag_tang_vortex.npz"),
+            *Path("outputs/docs_validation").glob("**/orszag_tang_vortex.npz"),
+            *(output_dir / "generated_orszag_tang_validation_t4").glob(
+                "orszag_tang_vortex.npz"
+            ),
+        }
+    )
+    ranked: list[tuple[tuple[float, int, int], dict[str, Any]]] = []
+    for path in candidates:
+        try:
+            history = _load_orszag_tang_history(path, fields_only=True)
+        except (KeyError, ValueError, OSError):
+            continue
+        validation_path = path.parent / "validation.json"
+        validation_passed = None
+        if validation_path.exists():
+            validation_passed = bool(json.loads(validation_path.read_text()).get("passed"))
+        source_kind = "precomputed nonlinear validation artifact"
+        if output_dir in path.parents:
+            source_kind = "generated README fallback artifact"
+        rank = (
+            float(history["t_end"]),
+            int(history["shape"][0] * history["shape"][1]),
+            int(validation_passed is not False),
+        )
+        ranked.append(
+            (
+                rank,
+                {
+                    "history_path": path,
+                    "source_kind": source_kind,
+                    "validation_passed": validation_passed,
+                },
+            )
+        )
+    if ranked:
+        return max(ranked, key=lambda item: item[0])[1]
+    return _generate_orszag_tang_fallback(output_dir)
+
+
+def _generate_orszag_tang_fallback(output_dir: Path) -> dict[str, Any]:
+    from mhx.benchmarks import write_orszag_tang_vortex_validation
+    from mhx.runtime import configure_jax
+
+    configure_jax(enable_x64=True)
+    fallback_dir = output_dir / "generated_orszag_tang_validation_t4"
+    history_path = fallback_dir / "orszag_tang_vortex.npz"
+    if not history_path.exists():
+        write_orszag_tang_vortex_validation(
+            fallback_dir,
+            shape=(48, 48),
+            t_end=4.0,
+            save_every=40,
+            movies=False,
+        )
+    validation_path = fallback_dir / "validation.json"
+    validation_passed = None
+    if validation_path.exists():
+        validation_passed = bool(json.loads(validation_path.read_text()).get("passed"))
+    return {
+        "history_path": history_path,
+        "source_kind": "generated README fallback artifact",
+        "validation_passed": validation_passed,
+    }
+
+
+def _load_orszag_tang_history(path: Path, *, fields_only: bool = False) -> dict[str, Any]:
+    with np.load(path) as data:
+        time = np.asarray(data["time"], dtype=float)
+        psi = np.asarray(data["psi"], dtype=float)
+        omega = np.asarray(data["omega"], dtype=float)
+        current = np.asarray(data["current_density"], dtype=float)
+        current_high_k = np.asarray(data["current_high_k_fraction"], dtype=float)
+        vorticity_high_k = np.asarray(data["vorticity_high_k_fraction"], dtype=float)
+        total_energy = np.asarray(data["total_energy"], dtype=float)
+    if time.ndim != 1 or psi.ndim != 3:
+        raise ValueError("invalid Orszag-Tang history arrays")
+    result: dict[str, Any] = {
+        "time": time,
+        "psi": psi,
+        "omega": omega,
+        "current_density": current,
+        "current_high_k_fraction": current_high_k,
+        "vorticity_high_k_fraction": vorticity_high_k,
+        "total_energy": total_energy,
+        "shape": tuple(int(value) for value in psi.shape[1:]),
+        "t_end": float(time[-1]),
+    }
+    if fields_only:
+        return result
+    return result
 
 
 def _load_double_harris_history(path: Path, *, fields_only: bool = False) -> dict[str, Any]:
@@ -426,6 +619,103 @@ def _double_harris_visual_qa(
     }
 
 
+def _write_orszag_tang_snapshot_contact_sheets(
+    output_dir: Path,
+    history: dict[str, Any],
+    source_label: str,
+) -> dict[str, str]:
+    current_path = output_dir / "orszag_tang_current_snapshots.png"
+    vorticity_path = output_dir / "orszag_tang_vorticity_snapshots.png"
+    flux_path = output_dir / "orszag_tang_flux_snapshots.png"
+    _write_snapshot_contact_sheet(
+        history["current_density"],
+        history["time"],
+        path=current_path,
+        cmap="RdBu_r",
+        title="Reduced-MHD Orszag-Tang current-density snapshots",
+        source_label=source_label,
+        symmetric=True,
+    )
+    _write_snapshot_contact_sheet(
+        history["omega"],
+        history["time"],
+        path=vorticity_path,
+        cmap="RdBu_r",
+        title="Reduced-MHD Orszag-Tang vorticity snapshots",
+        source_label=source_label,
+        symmetric=True,
+    )
+    _write_snapshot_contact_sheet(
+        history["psi"],
+        history["time"],
+        path=flux_path,
+        cmap="viridis",
+        title="Reduced-MHD Orszag-Tang flux snapshots",
+        source_label=source_label,
+        symmetric=False,
+    )
+    return {
+        "current": str(current_path),
+        "vorticity": str(vorticity_path),
+        "flux": str(flux_path),
+    }
+
+
+def _orszag_tang_visual_qa(
+    history: dict[str, Any],
+    source: dict[str, Any],
+    snapshots: dict[str, str],
+) -> dict[str, Any]:
+    time = history["time"]
+    mid_index = len(time) // 2
+    current_peaks = np.max(np.abs(history["current_density"]), axis=(1, 2))
+    vorticity_peaks = np.max(np.abs(history["omega"]), axis=(1, 2))
+    current_high_k = history["current_high_k_fraction"]
+    vorticity_high_k = history["vorticity_high_k_fraction"]
+    return {
+        "source": str(source["history_path"]),
+        "snapshot_contact_sheets": snapshots,
+        "inspected_frames": [
+            {"label": "first", "index": 0, "time": float(time[0])},
+            {"label": "mid", "index": int(mid_index), "time": float(time[mid_index])},
+            {"label": "final", "index": int(len(time) - 1), "time": float(time[-1])},
+        ],
+        "metrics": {
+            "current_linf_first": float(current_peaks[0]),
+            "current_linf_mid": float(current_peaks[mid_index]),
+            "current_linf_final": float(current_peaks[-1]),
+            "current_high_k_first": float(current_high_k[0]),
+            "current_high_k_peak": float(np.max(current_high_k)),
+            "vorticity_linf_first": float(vorticity_peaks[0]),
+            "vorticity_linf_mid": float(vorticity_peaks[mid_index]),
+            "vorticity_linf_final": float(vorticity_peaks[-1]),
+            "vorticity_high_k_first": float(vorticity_high_k[0]),
+            "vorticity_high_k_peak": float(np.max(vorticity_high_k)),
+            "relative_energy_drop": float(
+                (history["total_energy"][0] - history["total_energy"][-1])
+                / max(abs(history["total_energy"][0]), np.finfo(float).tiny)
+            ),
+        },
+        "observations": [
+            (
+                "The Orszag-Tang README movies are solver output from the "
+                "incompressible reduced-MHD initial condition, not a full "
+                "compressible shock-capturing MHD calculation."
+            ),
+            (
+                "Current-density and vorticity snapshots show nonlinear transfer "
+                "from large-scale modes into smaller filaments, as tracked by the "
+                "high-wavenumber fraction diagnostics."
+            ),
+            (
+                "The fixed-scale movie emphasizes morphology; quantitative claims "
+                "are limited to the validation manifest gates and are not turbulence "
+                "statistics."
+            ),
+        ],
+    }
+
+
 def _write_harris_layer_sweep(path: Path) -> None:
     """Animate the validated Harris eigenfunction-layer sweep over S."""
     import matplotlib.pyplot as plt
@@ -635,10 +925,11 @@ def _write_visual_qa_manifest(
         "schema": "mhx.readme_media_visual_qa.v1",
         "generated_utc": datetime.now(UTC).isoformat(),
         "source_policy": (
-            "README double-Harris movies use the longest available "
-            "periodic_double_harris_seeded_long_run.npz under outputs/readme_media, "
-            "outputs/long_runs, or outputs/docs_validation. If none exists, this "
-            "script writes a labeled 64×64, t_end=60 fallback under outputs/readme_media."
+            "README solver movies use the longest available matching nonlinear "
+            "NPZ under outputs/readme_media, outputs/long_runs, or outputs/docs_validation. "
+            "Double-Harris fallback is a labeled 64×64, t_end=60 replay; Orszag-Tang "
+            "fallback is a labeled 48×48, t_end=4 replay. Committed release media "
+            "should be regenerated from longer precomputed artifacts before publication."
         ),
         "media": media_entries,
         "visual_qa": visual_qa,

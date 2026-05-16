@@ -8,11 +8,12 @@ The active package is under `src/mhx/`.
 ## Active scope boundaries
 
 The current repository supports deterministic FAST validation, seed-robust QI
-checks, short validation-grade campaign artifacts, and production campaign
-planning with checkpoint/resume metadata. Long nonlinear Rutherford/plasmoid
-production campaigns are still gated as future `production` claims and must pass
-duration, checkpoint-restart, convergence, and artifact-hash checks before being
-used as paper evidence.
+checks, nonlinear reduced-MHD media examples such as double-Harris and
+Orszag--Tang, short validation-grade campaign artifacts, and production
+campaign planning with checkpoint/resume metadata. Long nonlinear
+Rutherford/plasmoid production campaigns are still gated as future
+`production` claims and must pass duration, checkpoint-restart, convergence,
+and artifact-hash checks before being used as paper evidence.
 
 ## Evidence guide
 
