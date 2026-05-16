@@ -306,8 +306,8 @@ jobs:
           test -f docs/_static/readme/harris_layer_sweep.gif
           test -f docs/_static/readme/plasmoid_scaling_schematic.gif
           test -f docs/_static/readme/mhd_turbulence_cascade.gif
-          test "$(stat -c%s docs/_static/readme/double_harris_reconnection.gif)" -lt 250000
-          test "$(stat -c%s docs/_static/readme/double_harris_current_sheet.gif)" -lt 300000
+          test "$(stat -c%s docs/_static/readme/double_harris_reconnection.gif)" -lt 500000
+          test "$(stat -c%s docs/_static/readme/double_harris_current_sheet.gif)" -lt 600000
           test "$(stat -c%s docs/_static/readme/orszag_tang_current.gif)" -lt 250000
           test "$(stat -c%s docs/_static/readme/orszag_tang_vorticity.gif)" -lt 350000
           test "$(stat -c%s docs/_static/readme/orszag_tang_flux.gif)" -lt 400000

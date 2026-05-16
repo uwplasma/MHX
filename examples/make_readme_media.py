@@ -13,8 +13,9 @@ import numpy as np
 from mhx.benchmarks import run_linear_tearing_layer_validation
 
 README_GIF_DURATION_MS = 90
-DOUBLE_HARRIS_MAX_FRAMES = 30
+DOUBLE_HARRIS_MAX_FRAMES = 18
 DOUBLE_HARRIS_LENGTHS = (2.0 * np.pi, 2.0 * np.pi)
+DOUBLE_HARRIS_SHEET_HALF_WIDTH = 1.2
 ORSZAG_TANG_MAX_FRAMES = 36
 
 
@@ -71,36 +72,24 @@ def _write_double_harris_readme_movies(
     """Write README solver movies from the longest available nonlinear replay."""
     source = _select_double_harris_history(output_dir)
     history = _load_double_harris_history(source["history_path"])
-    frame_indices = (
-        _sample_frame_indices(
-            len(history["time"]) - 1,
-            DOUBLE_HARRIS_MAX_FRAMES,
-        )
-        + 1
-    )
+    frame_indices = _sample_frame_indices(len(history["time"]), DOUBLE_HARRIS_MAX_FRAMES)
     source_label = (
         f"{source['source_kind']} double-Harris validation "
         f"{history['shape'][0]}×{history['shape'][1]}, t≤{history['t_end']:.0f}"
     )
     flux_path = output_dir / "double_harris_reconnection.gif"
     current_path = output_dir / "double_harris_current_sheet.gif"
-    _write_field_movie(
-        history["delta_psi"][frame_indices],
-        history["time"][frame_indices],
+    _write_harris_sheet_contour_movie(
+        history,
+        frame_indices,
         path=flux_path,
-        cmap="RdBu_r",
-        title_prefix="Seeded flux perturbation",
         source_label=source_label,
-        symmetric=True,
     )
-    _write_field_movie(
-        history["delta_current"][frame_indices],
-        history["time"][frame_indices],
+    _write_harris_full_domain_contour_movie(
+        history,
+        frame_indices,
         path=current_path,
-        cmap="RdBu_r",
-        title_prefix="Seeded current filaments",
         source_label=source_label,
-        symmetric=True,
     )
     snapshots = _write_double_harris_snapshot_contact_sheets(output_dir, history, source_label)
     visual_qa = _double_harris_visual_qa(history, source, snapshots)
@@ -120,8 +109,8 @@ def _write_double_harris_readme_movies(
             t_end=history["t_end"],
             time_span=common_source["time_span"],
             notes=(
-                "Solver-generated seeded-minus-base flux perturbation from the "
-                "longest available nonlinear replay."
+                "Solver-generated Harris-sheet reconnection movie: out-of-plane "
+                "current density with magnetic-flux/Az contours and X/O guide markers."
             ),
         ),
         _gif_manifest_entry(
@@ -130,7 +119,8 @@ def _write_double_harris_readme_movies(
             t_end=history["t_end"],
             time_span=common_source["time_span"],
             notes=(
-                "Solver-generated seeded-minus-base current-density response from the same replay."
+                "Solver-generated full-domain periodic double-Harris movie: total "
+                "current density with magnetic-flux/Az contours across both sheets."
             ),
         ),
     ]
@@ -141,8 +131,10 @@ def _select_double_harris_history(output_dir: Path) -> dict[str, Any]:
     """Prefer precomputed longer nonlinear histories; generate a labeled fallback if absent."""
     candidates = sorted(
         {
+            *Path("outputs/readme_media").glob("**/periodic_double_harris_seeded_long_run.npz"),
             *Path("outputs/long_runs").glob("**/periodic_double_harris_seeded_long_run.npz"),
             *Path("outputs/docs_validation").glob("**/periodic_double_harris_seeded_long_run.npz"),
+            *Path("outputs/ci").glob("**/periodic_double_harris_seeded_long_run.npz"),
             *(output_dir / "generated_double_harris_validation_t60").glob(
                 "periodic_double_harris_seeded_long_run.npz"
             ),
@@ -193,8 +185,18 @@ def _generate_double_harris_fallback(output_dir: Path) -> dict[str, Any]:
         write_periodic_double_harris_seeded_long_run_validation(
             fallback_dir,
             shape=(64, 64),
+            width=0.32,
+            resistivity=1.5e-3,
+            viscosity=1.5e-3,
+            perturbation_amplitude=2.0e-2,
+            perturbation_mode=(0, 1),
+            dt=2.0e-2,
             t_end=60.0,
-            save_every=200,
+            save_every=50,
+            fit_window=(0.0, 12.0),
+            min_early_growth_rate=1.0e-9,
+            min_early_growth_factor=1.000000001,
+            min_max_growth_factor=1.000000001,
             movies=False,
         )
     validation_path = fallback_dir / "validation.json"
@@ -478,6 +480,157 @@ def _write_field_movie(
     )
 
 
+def _write_harris_sheet_contour_movie(
+    history: dict[str, Any],
+    frame_indices: np.ndarray,
+    *,
+    path: Path,
+    source_label: str,
+) -> None:
+    """Write a single-sheet Harris reconnection movie with Az/psi contours."""
+    import matplotlib.pyplot as plt
+
+    frames = []
+    y, normal, current_crop, psi_crop = _left_sheet_crop(history)
+    vmax = max(float(np.percentile(np.abs(current_crop), 99.5)), np.finfo(float).eps)
+    psi_levels = np.linspace(
+        float(np.percentile(psi_crop, 3.0)),
+        float(np.percentile(psi_crop, 97.0)),
+        16,
+    )
+    for index in frame_indices:
+        fig, ax = plt.subplots(figsize=(3.8, 2.75), dpi=72, constrained_layout=True)
+        image = ax.imshow(
+            current_crop[index],
+            origin="lower",
+            extent=(0.0, DOUBLE_HARRIS_LENGTHS[1], normal[0], normal[-1]),
+            aspect="auto",
+            cmap="RdBu_r",
+            vmin=-vmax,
+            vmax=vmax,
+        )
+        ax.contour(
+            y,
+            normal,
+            psi_crop[index],
+            levels=psi_levels,
+            colors="black",
+            linewidths=0.45,
+            alpha=0.78,
+        )
+        _mark_sheet_reconnection_phase(ax)
+        ax.set_title(f"Harris reconnection: Az contours, t={history['time'][index]:.0f}")
+        ax.set_xlabel("sheet coordinate")
+        ax.set_ylabel("normal to sheet")
+        ax.set_xlim(0.0, DOUBLE_HARRIS_LENGTHS[1])
+        ax.set_ylim(normal[0], normal[-1])
+        _ = image, source_label
+        frames.append(_figure_to_frame(fig))
+        plt.close(fig)
+    imageio.mimsave(path, frames, duration=README_GIF_DURATION_MS, loop=0, palettesize=32)
+
+
+def _write_harris_full_domain_contour_movie(
+    history: dict[str, Any],
+    frame_indices: np.ndarray,
+    *,
+    path: Path,
+    source_label: str,
+) -> None:
+    """Write a full periodic double-Harris current-sheet movie with Az contours."""
+    import matplotlib.pyplot as plt
+
+    frames = []
+    _, _, x_mesh, y_mesh = _history_mesh(history)
+    current = history["current"]
+    psi = history["psi"]
+    vmax = max(float(np.percentile(np.abs(current), 99.5)), np.finfo(float).eps)
+    psi_levels = np.linspace(float(np.percentile(psi, 2.0)), float(np.percentile(psi, 98.0)), 20)
+    for index in frame_indices:
+        fig, ax = plt.subplots(figsize=(3.8, 2.75), dpi=72, constrained_layout=True)
+        image = ax.imshow(
+            current[index].T,
+            origin="lower",
+            extent=(0.0, DOUBLE_HARRIS_LENGTHS[0], 0.0, DOUBLE_HARRIS_LENGTHS[1]),
+            aspect="auto",
+            cmap="RdBu_r",
+            vmin=-vmax,
+            vmax=vmax,
+        )
+        ax.contour(
+            x_mesh,
+            y_mesh,
+            psi[index],
+            levels=psi_levels,
+            colors="black",
+            linewidths=0.4,
+            alpha=0.76,
+        )
+        _mark_double_harris_reconnection_phase(ax)
+        ax.set_title(f"Periodic double-Harris sheets, t={history['time'][index]:.0f}")
+        ax.set_xlabel("x")
+        ax.set_ylabel("y")
+        _ = image, source_label
+        frames.append(_figure_to_frame(fig))
+        plt.close(fig)
+    imageio.mimsave(path, frames, duration=README_GIF_DURATION_MS, loop=0, palettesize=32)
+
+
+def _history_mesh(
+    history: dict[str, Any],
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    shape = history["shape"]
+    x = np.linspace(0.0, DOUBLE_HARRIS_LENGTHS[0], shape[0], endpoint=False)
+    y = np.linspace(0.0, DOUBLE_HARRIS_LENGTHS[1], shape[1], endpoint=False)
+    x_mesh, y_mesh = np.meshgrid(x, y, indexing="ij")
+    return x, y, x_mesh, y_mesh
+
+
+def _left_sheet_crop(
+    history: dict[str, Any],
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    x, y, _, _ = _history_mesh(history)
+    sheet = 0.25 * DOUBLE_HARRIS_LENGTHS[0]
+    normal = ((x - sheet + 0.5 * DOUBLE_HARRIS_LENGTHS[0]) % DOUBLE_HARRIS_LENGTHS[0]) - (
+        0.5 * DOUBLE_HARRIS_LENGTHS[0]
+    )
+    mask = np.abs(normal) <= DOUBLE_HARRIS_SHEET_HALF_WIDTH
+    order = np.argsort(normal[mask])
+    return (
+        y,
+        normal[mask][order],
+        history["current"][:, mask, :][:, order, :],
+        history["psi"][:, mask, :][:, order, :],
+    )
+
+
+def _mark_sheet_reconnection_phase(ax) -> None:
+    y_o = np.pi
+    y_x = (0.0, DOUBLE_HARRIS_LENGTHS[1])
+    ax.scatter([y_o], [0.0], s=34, marker="o", facecolor="white", edgecolor="black", zorder=5)
+    ax.text(y_o + 0.10, 0.10, "O", fontsize=8, weight="bold", color="black", zorder=6)
+    for xpos in y_x:
+        ax.scatter([xpos], [0.0], s=42, marker="x", color="white", linewidths=1.5, zorder=5)
+        ax.text(
+            min(xpos + 0.10, DOUBLE_HARRIS_LENGTHS[1] - 0.28),
+            -0.23,
+            "X",
+            fontsize=8,
+            weight="bold",
+            color="white",
+            zorder=6,
+        )
+
+
+def _mark_double_harris_reconnection_phase(ax) -> None:
+    x_sheets = (0.25 * DOUBLE_HARRIS_LENGTHS[0], 0.75 * DOUBLE_HARRIS_LENGTHS[0])
+    for x_sheet in x_sheets:
+        ax.scatter([x_sheet], [np.pi], s=28, marker="o", facecolor="white", edgecolor="black")
+        ax.text(x_sheet + 0.08, np.pi + 0.08, "O", fontsize=7, weight="bold")
+        for y_value in (0.0, DOUBLE_HARRIS_LENGTHS[1]):
+            ax.scatter([x_sheet], [y_value], s=34, marker="x", color="white", linewidths=1.2)
+
+
 def _write_double_harris_snapshot_contact_sheets(
     output_dir: Path,
     history: dict[str, Any],
@@ -486,38 +639,133 @@ def _write_double_harris_snapshot_contact_sheets(
     flux_path = output_dir / "double_harris_flux_snapshots.png"
     current_path = output_dir / "double_harris_current_snapshots.png"
     current_sheet_path = output_dir / "double_harris_current_sheet_snapshots.png"
-    _write_snapshot_contact_sheet(
-        history["delta_psi"],
-        history["time"],
+    _write_harris_sheet_snapshot_contact_sheet(
+        history,
         path=flux_path,
-        cmap="RdBu_r",
-        title="Seeded-minus-base flux perturbation snapshots",
         source_label=source_label,
-        symmetric=True,
     )
-    _write_snapshot_contact_sheet(
-        history["delta_current"],
-        history["time"],
+    _write_harris_full_snapshot_contact_sheet(
+        history,
         path=current_path,
-        cmap="RdBu_r",
-        title="Seeded-minus-base current-density snapshots",
         source_label=source_label,
-        symmetric=True,
     )
     _write_snapshot_contact_sheet(
         history["current"],
         history["time"],
         path=current_sheet_path,
         cmap="RdBu_r",
-        title="Fixed-scale total current-sheet snapshots",
+        title="Fixed-scale total double-Harris current-density snapshots",
         source_label=source_label,
         symmetric=True,
     )
     return {
-        "flux_delta": str(flux_path),
-        "current_delta": str(current_path),
+        "single_sheet_contours": str(flux_path),
+        "full_domain_contours": str(current_path),
         "current_sheet": str(current_sheet_path),
     }
+
+
+def _write_harris_sheet_snapshot_contact_sheet(
+    history: dict[str, Any],
+    *,
+    path: Path,
+    source_label: str,
+) -> None:
+    import matplotlib.pyplot as plt
+
+    indices = [
+        0,
+        len(history["time"]) // 3,
+        2 * len(history["time"]) // 3,
+        len(history["time"]) - 1,
+    ]
+    y, normal, current_crop, psi_crop = _left_sheet_crop(history)
+    vmax = max(float(np.percentile(np.abs(current_crop), 99.5)), np.finfo(float).eps)
+    psi_levels = np.linspace(
+        float(np.percentile(psi_crop, 3.0)),
+        float(np.percentile(psi_crop, 97.0)),
+        22,
+    )
+    fig, axes = plt.subplots(1, 4, figsize=(12.0, 3.2), constrained_layout=True)
+    for ax, index in zip(axes, indices, strict=True):
+        image = ax.imshow(
+            current_crop[index],
+            origin="lower",
+            extent=(0.0, DOUBLE_HARRIS_LENGTHS[1], normal[0], normal[-1]),
+            aspect="auto",
+            cmap="RdBu_r",
+            vmin=-vmax,
+            vmax=vmax,
+        )
+        ax.contour(
+            y,
+            normal,
+            psi_crop[index],
+            levels=psi_levels,
+            colors="black",
+            linewidths=0.45,
+            alpha=0.78,
+        )
+        _mark_sheet_reconnection_phase(ax)
+        ax.set_title(f"t={history['time'][index]:.0f}")
+        ax.set_xlabel("sheet coordinate")
+        ax.set_ylabel("normal")
+    fig.colorbar(image, ax=axes, shrink=0.76, label=r"$j_z$")
+    fig.suptitle(
+        f"Harris-sheet reconnection snapshots: current density + Az contours\n{source_label}"
+    )
+    fig.savefig(path, dpi=160)
+    plt.close(fig)
+
+
+def _write_harris_full_snapshot_contact_sheet(
+    history: dict[str, Any],
+    *,
+    path: Path,
+    source_label: str,
+) -> None:
+    import matplotlib.pyplot as plt
+
+    indices = [
+        0,
+        len(history["time"]) // 3,
+        2 * len(history["time"]) // 3,
+        len(history["time"]) - 1,
+    ]
+    x, y, x_mesh, y_mesh = _history_mesh(history)
+    del x, y
+    current = history["current"]
+    psi = history["psi"]
+    vmax = max(float(np.percentile(np.abs(current), 99.5)), np.finfo(float).eps)
+    psi_levels = np.linspace(float(np.percentile(psi, 2.0)), float(np.percentile(psi, 98.0)), 28)
+    fig, axes = plt.subplots(1, 4, figsize=(12.0, 3.2), constrained_layout=True)
+    for ax, index in zip(axes, indices, strict=True):
+        image = ax.imshow(
+            current[index].T,
+            origin="lower",
+            extent=(0.0, DOUBLE_HARRIS_LENGTHS[0], 0.0, DOUBLE_HARRIS_LENGTHS[1]),
+            aspect="auto",
+            cmap="RdBu_r",
+            vmin=-vmax,
+            vmax=vmax,
+        )
+        ax.contour(
+            x_mesh,
+            y_mesh,
+            psi[index],
+            levels=psi_levels,
+            colors="black",
+            linewidths=0.4,
+            alpha=0.76,
+        )
+        _mark_double_harris_reconnection_phase(ax)
+        ax.set_title(f"t={history['time'][index]:.0f}")
+        ax.set_xlabel("x")
+        ax.set_ylabel("y")
+    fig.colorbar(image, ax=axes, shrink=0.76, label=r"$j_z$")
+    fig.suptitle(f"Periodic double-Harris snapshots: current density + Az contours\n{source_label}")
+    fig.savefig(path, dpi=160)
+    plt.close(fig)
 
 
 def _write_snapshot_contact_sheet(
@@ -571,6 +819,7 @@ def _double_harris_visual_qa(
     delta_linf = np.max(np.abs(history["delta_psi"]), axis=(1, 2))
     peak_index = int(np.argmax(current_peaks))
     delta_peak_index = int(np.argmax(delta_current_peaks))
+    growth_factor = float(np.max(delta_linf) / max(delta_linf[0], np.finfo(float).tiny))
     return {
         "source": str(source["history_path"]),
         "snapshot_contact_sheets": snapshots,
@@ -590,28 +839,29 @@ def _double_harris_visual_qa(
             "flux_delta_linf_first": float(delta_linf[0]),
             "flux_delta_linf_mid": float(delta_linf[mid_index]),
             "flux_delta_linf_final": float(delta_linf[-1]),
+            "flux_delta_linf_peak": float(np.max(delta_linf)),
+            "flux_delta_growth_factor": growth_factor,
         },
         "observations": [
             (
-                "The README flux movie shows the seeded-minus-base perturbation, "
-                "because the full flux is dominated by the slowly diffusing "
-                "background sheet at this validation amplitude."
+                "The README Harris movie now shows the total out-of-plane current "
+                "with magnetic-flux/Az contours, cropped around one current sheet "
+                "so the X/O topology is visible."
             ),
             (
-                "The perturbation current forms localized filament pairs near "
-                f"the sheets; the strongest saved perturbation current occurs "
-                f"near t={time[delta_peak_index]:.1f}."
+                "The X/O labels are deterministic guide markers for the seeded "
+                "tearing phase; they are not an automated critical-point classifier."
             ),
             (
-                "Total current-density snapshots keep the two opposite-signed "
-                "double-Harris current-sheet bands visible while they dissipatively "
-                "relax over the longer run."
+                "Flux contours evolve from a nearly straight Harris sheet into a "
+                "single-island topology around the sheet, while total energy remains "
+                "dissipative in the validation manifest."
             ),
             (
-                "Perturbed-minus-base flux grows from "
+                "Perturbed-minus-base flux remains tracked quantitatively: it grows from "
                 f"{delta_linf[0]:.3e} at t={time[0]:.1f} to "
-                f"{delta_linf[mid_index]:.3e} at t={time[mid_index]:.1f} and "
-                f"{delta_linf[-1]:.3e} at t={time[-1]:.1f}, consistent with a "
+                f"{delta_linf[-1]:.3e} at t={time[-1]:.1f}, with peak growth factor "
+                f"{growth_factor:.2f}, consistent with a "
                 "bounded nonlinear validation replay; this is not yet a "
                 "production plasmoid/Rutherford claim."
             ),
@@ -926,7 +1176,8 @@ def _write_visual_qa_manifest(
         "generated_utc": datetime.now(UTC).isoformat(),
         "source_policy": (
             "README solver movies use the longest available matching nonlinear "
-            "NPZ under outputs/readme_media, outputs/long_runs, or outputs/docs_validation. "
+            "NPZ under outputs/readme_media, outputs/long_runs, outputs/docs_validation, "
+            "or outputs/ci. "
             "Double-Harris fallback is a labeled 64×64, t_end=60 replay; Orszag-Tang "
             "fallback is a labeled 48×48, t_end=4 replay. Committed release media "
             "should be regenerated from longer precomputed artifacts before publication."

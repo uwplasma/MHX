@@ -14,16 +14,17 @@ API for reproducible reduced-MHD studies.
 
 ## MHD at a Glance
 
-These previews keep the README visual and short. The first row comes from a
-longer seeded periodic double-Harris nonlinear run. The second row comes from a
-reduced-MHD Orszag--Tang vortex run that develops current/vorticity filaments.
-See [docs/media.md](docs/media.md) for source commands, visual QA, and claim
-boundaries.
+These previews keep the README visual and short. The first row now shows a
+longer seeded Harris-sheet reconnection replay with magnetic-flux (`Az`/`ψ`)
+contours over the current sheet, so the X/O topology is visible. The second
+row comes from a reduced-MHD Orszag--Tang vortex run that develops
+current/vorticity filaments. See [docs/media.md](docs/media.md) for source
+commands, visual QA, and claim boundaries.
 
-| Seeded Harris-sheet response | Harris current filaments | Orszag--Tang current sheets |
+| Harris reconnection (`Az` contours) | Periodic double-Harris sheets | Orszag--Tang current sheets |
 | --- | --- | --- |
 | ![Double-Harris reconnection replay](docs/_static/readme/double_harris_reconnection.gif) | ![Double-Harris current sheet](docs/_static/readme/double_harris_current_sheet.gif) | ![Orszag-Tang current sheets](docs/_static/readme/orszag_tang_current.gif) |
-| Seeded-minus-base flux perturbation over a `128×128`, `t=100` validation run. | Perturbation current filaments from the same long run. | Solver-generated Orszag--Tang current-density cascade over a `96×96`, `t=10` validation run. |
+| Single-sheet zoom from a `96×96`, `t=120` validation run: `j_z` background plus `Az` contours and X/O guide markers. | Full periodic double-Harris view from the same run, showing both current sheets and island-forming flux contours. | Solver-generated Orszag--Tang current-density cascade over a `96×96`, `t=10` validation run. |
 
 | Orszag--Tang vorticity | Orszag--Tang flux mixing | Harris tearing layer |
 | --- | --- | --- |

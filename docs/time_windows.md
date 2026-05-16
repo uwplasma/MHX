@@ -110,7 +110,7 @@ Use these labels consistently in docs, figures, and manifests:
 | `short_validation` | Shorter than the relevant e-fold window. | Operator, IO, schema, differentiability, and energy-budget checks. |
 | `fast_validation` | A short non-CI validation run below the README media minimum. | Local smoke/plotting checks only; not README or release media. |
 | `ci_fast` | Explicitly bounded CI run, currently `t_end=10` for double-Harris media plumbing. | CI artifact generation and schema/movie checks. |
-| `readme_release_media` | Longer validation media run, currently `t_end=100` for seeded double-Harris README movies. | README/release morphology media with validation claim level, not production physics. |
+| `readme_release_media` | Longer validation media run, currently `t_end=120` for the Harris-sheet README contour movies and at least `t_end=100` for the validation preset. | README/release morphology media with validation claim level, not production physics. |
 | `linear_window` | At least $N_e/\gamma$. | Linear growth-rate measurement if the mode remains in the linear regime. |
 | `nonlinear_window` | At least $s_fN_e/\gamma$ with $s_f>1$. | Candidate island-growth or plasmoid campaign, still subject to convergence. |
 | `overresolved_window` | Longer than the nonlinear window and accompanied by convergence checks. | Preferred for production paper figures. |

@@ -9,20 +9,21 @@ claims.
 ## README media scope
 
 The README should stay concise and show only landing-page media from
-`docs/_static/readme/`: solver-generated double-Harris perturbation movies,
-solver-generated reduced-MHD Orszag--Tang nonlinear movies, and one compact
-Harris tearing layer sweep. Detailed benchmark command catalogs, validation
-figure galleries, artifact inventories, CI output checklists, production-run
-chunking details, neural-ODE outputs, plugin walkthroughs, still figures, and
-scaffold comparisons belong in the documentation pages where they can carry
-tolerances, commands, claim boundaries, and maintenance context.
+`docs/_static/readme/`: solver-generated Harris-sheet reconnection movies with
+magnetic-flux contours, solver-generated reduced-MHD Orszag--Tang nonlinear
+movies, and one compact Harris tearing layer sweep. Detailed benchmark command
+catalogs, validation figure galleries, artifact inventories, CI output
+checklists, production-run chunking details, neural-ODE outputs, plugin
+walkthroughs, still figures, and scaffold comparisons belong in the
+documentation pages where they can carry tolerances, commands, claim
+boundaries, and maintenance context.
 
 ## At-a-glance media table
 
 | Asset | What it shows | Claim boundary and anchor |
 | --- | --- | --- |
-| ![Double-Harris reconnection replay](_static/readme/double_harris_reconnection.gif) | Seeded-minus-base flux perturbation from a `128×128`, `t_end=100` periodic double-Harris replay. | Solver-generated validation media; bounded evidence, not converged Rutherford/plasmoid production. |
-| ![Double-Harris current sheet](_static/readme/double_harris_current_sheet.gif) | Seeded-minus-base out-of-plane current response from the same replay, emphasizing localized filament pairs. | Solver-generated validation media; useful for morphology QA before larger seed, duration, and resolution sweeps. |
+| ![Double-Harris reconnection replay](_static/readme/double_harris_reconnection.gif) | Single-sheet Harris reconnection zoom from a `96×96`, `t_end=120` periodic double-Harris replay: out-of-plane current density with magnetic-flux/Az contours and X/O guide markers. | Solver-generated validation media anchored to the Harris current-sheet and FKR tearing picture; bounded evidence, not converged Rutherford/plasmoid production. |
+| ![Double-Harris current sheet](_static/readme/double_harris_current_sheet.gif) | Full-domain periodic double-Harris view from the same run, showing both current sheets and island-forming flux contours. | Solver-generated validation media; useful for morphology QA before larger seed, duration, and resolution sweeps. |
 | ![Orszag-Tang current sheets](_static/readme/orszag_tang_current.gif) | Current-density filament formation from a `96×96`, `t_end=10` reduced-MHD Orszag--Tang replay. | Solver-generated validation media; nonlinear reduced-MHD cascade evidence, not a compressible shock-capturing full-MHD result. |
 | ![Orszag-Tang vorticity](_static/readme/orszag_tang_vorticity.gif) | Vorticity roll-up from the same Orszag--Tang replay. | Solver-generated validation media with energy, divergence, and high-wavenumber-fraction gates. |
 | ![Orszag-Tang flux](_static/readme/orszag_tang_flux.gif) | Flux-function deformation and dissipative mixing from the same Orszag--Tang replay. | Solver-generated validation media; useful as a nonlinear example for new users. |
@@ -40,32 +41,61 @@ Still validation figures live on the [physics validation](validation.md),
 [publication checklist](publication_checklist.md) pages where they can be
 interpreted with equations, tolerances, and source links.
 
-## README Harris-sheet previews
+## README Harris-sheet reconnection previews
 
-The README flux/current pair is regenerated from the longest available seeded
-periodic double-Harris history. The current release media were regenerated from
-a `128×128`, `t_end=100` run:
+The README Harris pair is regenerated from the longest available seeded
+periodic double-Harris history under `outputs/readme_media/`,
+`outputs/long_runs/`, `outputs/docs_validation/`, or `outputs/ci/`. The current
+release media were regenerated from a `96×96`, `t_end=120` run chosen for
+visible topology rather than production convergence:
 
 ```bash
 mhx benchmark double-harris-long-run \
-  --outdir outputs/readme_media/periodic_double_harris_seeded_128_t100 \
-  --nx 128 --ny 128 --t-end 100 --save-every 200 \
-  --fit-stop 10 --min-max-growth-factor 2.0 --movies
+  --outdir outputs/readme_media/periodic_double_harris_reconnection_96_t120 \
+  --nx 96 --ny 96 --width 0.32 --eta 1.5e-3 --nu 1.5e-3 \
+  --perturbation-amplitude 1e-2 --mode-x 0 --mode-y 1 \
+  --dt 2e-2 --t-end 120 --save-every 100 \
+  --fit-stop 20 --min-early-growth-rate 1e-9 \
+  --min-max-growth-factor 1.000000001 --movies
 
 python examples/make_readme_media.py
 ```
 
-The run advances a base periodic double-Harris sheet and a seeded copy, then
-tracks normalized perturbation growth, total energy, kinetic energy, peak
-current, and current-density frames. The README GIFs show seeded-minus-base
-fields because the full field is dominated by the slowly diffusing equilibrium
-sheet at validation perturbation amplitude. The run remains
-`claim_level = "validation"` until convergence, seed, aspect-ratio, and
-duration sweeps are attached.
+The underlying periodic double-Harris field is the spectral analogue of a
+Harris sheet:
 
-![Double-Harris reconnection replay](_static/readme/double_harris_reconnection.gif)
+$$
+B_y(x)=B_0\left[
+\tanh\left(\frac{x-L_x/4}{a}\right)
+-\tanh\left(\frac{x-3L_x/4}{a}\right)-1
+\right],
+$$
 
-![Double-Harris current sheet](_static/readme/double_harris_current_sheet.gif)
+with a tearing-like seed
+
+$$
+\delta\psi(y,0)=\epsilon \cos(2\pi y/L_y).
+$$
+
+The movie uses the total out-of-plane current density
+$j_z=-\nabla^2\psi$ as the color field and overlays magnetic-flux
+(`Az`/`ψ`) contours. The single-sheet movie rotates the view into standard
+current-sheet coordinates: horizontal is the sheet direction and vertical is
+the normal coordinate. The `X`/`O` labels are deterministic guide markers for
+the seed phase; they are not an automated critical-point classifier.
+
+This media is literature-anchored to the Harris equilibrium
+([Harris 1962](https://doi.org/10.1007/BF02733547)) and the classical tearing
+instability picture
+([Furth, Killeen & Rosenbluth 1963](https://doi.org/10.1063/1.1706761)).
+The validation manifest confirms finite histories, positive early perturbation
+growth, visible nonlinear amplification, and dissipative total energy. It
+remains `claim_level = "validation"` until convergence, seed, aspect-ratio,
+and duration sweeps are attached.
+
+![Harris reconnection replay with Az contours](_static/readme/double_harris_reconnection.gif)
+
+![Periodic double-Harris current sheets with Az contours](_static/readme/double_harris_current_sheet.gif)
 
 Visual QA artifacts are written next to the README movies:
 
@@ -74,9 +104,9 @@ Visual QA artifacts are written next to the README movies:
 - `docs/_static/readme/double_harris_current_snapshots.png`
 - `docs/_static/readme/double_harris_current_sheet_snapshots.png`
 
-![Seeded-minus-base flux contact sheet](_static/readme/double_harris_flux_snapshots.png)
+![Harris reconnection Az-contour contact sheet](_static/readme/double_harris_flux_snapshots.png)
 
-![Seeded-minus-base current contact sheet](_static/readme/double_harris_current_snapshots.png)
+![Full double-Harris Az-contour contact sheet](_static/readme/double_harris_current_snapshots.png)
 
 ![Total current-sheet contact sheet](_static/readme/double_harris_current_sheet_snapshots.png)
 

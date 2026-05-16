@@ -1,66 +1,66 @@
 {
-  "generated_utc": "2026-05-16T09:02:56.771666+00:00",
+  "generated_utc": "2026-05-16T15:37:40.923568+00:00",
   "media": [
     {
       "duration_ms": 90,
-      "frame_count": 30,
+      "frame_count": 18,
       "frame_shape": [
-        128,
-        128,
+        198,
+        273,
         3
       ],
-      "notes": "Solver-generated seeded-minus-base flux perturbation from the longest available nonlinear replay.",
+      "notes": "Solver-generated Harris-sheet reconnection movie: out-of-plane current density with magnetic-flux/Az contours and X/O guide markers.",
       "path": "docs/_static/readme/double_harris_reconnection.gif",
       "source": {
-        "source": "outputs/long_runs/periodic_double_harris_seeded_128_t100_20260512/periodic_double_harris_seeded_long_run.npz",
+        "source": "outputs/readme_media/periodic_double_harris_reconnection_96_t120/periodic_double_harris_seeded_long_run.npz",
         "source_kind": "precomputed long-run artifact",
-        "source_samples": 51,
+        "source_samples": 61,
         "source_shape": [
-          128,
-          128
+          96,
+          96
         ],
-        "t_end": 100.0,
+        "t_end": 120.0,
         "time_span": [
           0.0,
-          100.0
+          120.0
         ],
         "validation_passed": true
       },
-      "t_end": 100.0,
+      "t_end": 120.0,
       "time_span": [
         0.0,
-        100.0
+        120.0
       ]
     },
     {
       "duration_ms": 90,
-      "frame_count": 30,
+      "frame_count": 18,
       "frame_shape": [
-        128,
-        128,
+        198,
+        273,
         3
       ],
-      "notes": "Solver-generated seeded-minus-base current-density response from the same replay.",
+      "notes": "Solver-generated full-domain periodic double-Harris movie: total current density with magnetic-flux/Az contours across both sheets.",
       "path": "docs/_static/readme/double_harris_current_sheet.gif",
       "source": {
-        "source": "outputs/long_runs/periodic_double_harris_seeded_128_t100_20260512/periodic_double_harris_seeded_long_run.npz",
+        "source": "outputs/readme_media/periodic_double_harris_reconnection_96_t120/periodic_double_harris_seeded_long_run.npz",
         "source_kind": "precomputed long-run artifact",
-        "source_samples": 51,
+        "source_samples": 61,
         "source_shape": [
-          128,
-          128
+          96,
+          96
         ],
-        "t_end": 100.0,
+        "t_end": 120.0,
         "time_span": [
           0.0,
-          100.0
+          120.0
         ],
         "validation_passed": true
       },
-      "t_end": 100.0,
+      "t_end": 120.0,
       "time_span": [
         0.0,
-        100.0
+        120.0
       ]
     },
     {
@@ -200,7 +200,7 @@
     }
   ],
   "schema": "mhx.readme_media_visual_qa.v1",
-  "source_policy": "README solver movies use the longest available matching nonlinear NPZ under outputs/readme_media, outputs/long_runs, or outputs/docs_validation. Double-Harris fallback is a labeled 64\u00d764, t_end=60 replay; Orszag-Tang fallback is a labeled 48\u00d748, t_end=4 replay. Committed release media should be regenerated from longer precomputed artifacts before publication.",
+  "source_policy": "README solver movies use the longest available matching nonlinear NPZ under outputs/readme_media, outputs/long_runs, outputs/docs_validation, or outputs/ci. Double-Harris fallback is a labeled 64\u00d764, t_end=60 replay; Orszag-Tang fallback is a labeled 48\u00d748, t_end=4 replay. Committed release media should be regenerated from longer precomputed artifacts before publication.",
   "visual_qa": {
     "double_harris": {
       "inspected_frames": [
@@ -210,40 +210,42 @@
           "time": 0.0
         },
         {
-          "index": 25,
+          "index": 30,
           "label": "mid",
-          "time": 50.0
+          "time": 60.0
         },
         {
-          "index": 50,
+          "index": 60,
           "label": "final",
-          "time": 100.0
+          "time": 120.0
         }
       ],
       "metrics": {
-        "current_linf_final": 0.7342330813407898,
-        "current_linf_first": 2.4958419799804688,
-        "current_linf_mid": 1.0095150470733643,
-        "current_linf_peak": 2.4958419799804688,
-        "current_linf_peak_time": 0.0,
-        "delta_current_linf_peak": 0.021403003484010696,
-        "delta_current_linf_peak_time": 6.0,
-        "flux_delta_linf_final": 0.0028100373268089562,
-        "flux_delta_linf_first": 0.0009984946376875303,
-        "flux_delta_linf_mid": 0.0033163414104152578
+        "current_linf_final": 1.2358559370040894,
+        "current_linf_first": 3.1026158332824707,
+        "current_linf_mid": 1.9029256105422974,
+        "current_linf_peak": 3.402280807495117,
+        "current_linf_peak_time": 6.0,
+        "delta_current_linf_peak": 0.7577170729637146,
+        "delta_current_linf_peak_time": 8.0,
+        "flux_delta_growth_factor": 8.627864444391433,
+        "flux_delta_linf_final": 0.0862324497771575,
+        "flux_delta_linf_first": 0.00999464587476373,
+        "flux_delta_linf_mid": 0.07775180778852164,
+        "flux_delta_linf_peak": 0.0862324497771575
       },
       "observations": [
-        "The README flux movie shows the seeded-minus-base perturbation, because the full flux is dominated by the slowly diffusing background sheet at this validation amplitude.",
-        "The perturbation current forms localized filament pairs near the sheets; the strongest saved perturbation current occurs near t=6.0.",
-        "Total current-density snapshots keep the two opposite-signed double-Harris current-sheet bands visible while they dissipatively relax over the longer run.",
-        "Perturbed-minus-base flux grows from 9.985e-04 at t=0.0 to 3.316e-03 at t=50.0 and 2.810e-03 at t=100.0, consistent with a bounded nonlinear validation replay; this is not yet a production plasmoid/Rutherford claim."
+        "The README Harris movie now shows the total out-of-plane current with magnetic-flux/Az contours, cropped around one current sheet so the X/O topology is visible.",
+        "The X/O labels are deterministic guide markers for the seeded tearing phase; they are not an automated critical-point classifier.",
+        "Flux contours evolve from a nearly straight Harris sheet into a single-island topology around the sheet, while total energy remains dissipative in the validation manifest.",
+        "Perturbed-minus-base flux remains tracked quantitatively: it grows from 9.995e-03 at t=0.0 to 8.623e-02 at t=120.0, with peak growth factor 8.63, consistent with a bounded nonlinear validation replay; this is not yet a production plasmoid/Rutherford claim."
       ],
       "snapshot_contact_sheets": {
-        "current_delta": "docs/_static/readme/double_harris_current_snapshots.png",
         "current_sheet": "docs/_static/readme/double_harris_current_sheet_snapshots.png",
-        "flux_delta": "docs/_static/readme/double_harris_flux_snapshots.png"
+        "full_domain_contours": "docs/_static/readme/double_harris_current_snapshots.png",
+        "single_sheet_contours": "docs/_static/readme/double_harris_flux_snapshots.png"
       },
-      "source": "outputs/long_runs/periodic_double_harris_seeded_128_t100_20260512/periodic_double_harris_seeded_long_run.npz"
+      "source": "outputs/readme_media/periodic_double_harris_reconnection_96_t120/periodic_double_harris_seeded_long_run.npz"
     },
     "orszag_tang": {
       "inspected_frames": [

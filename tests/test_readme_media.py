@@ -14,8 +14,8 @@ IMAGE_LINK_RE = re.compile(r"!\[[^\]]*\]\((?P<target>[^)\s]+)(?:\s+[^)]*)?\)")
 HEADING_RE = re.compile(r"^#{1,6}\s+(?P<title>.+?)\s*#*\s*$", re.MULTILINE)
 
 README_GIF_BUDGETS = {
-    "docs/_static/readme/double_harris_reconnection.gif": 350_000,
-    "docs/_static/readme/double_harris_current_sheet.gif": 400_000,
+    "docs/_static/readme/double_harris_reconnection.gif": 500_000,
+    "docs/_static/readme/double_harris_current_sheet.gif": 600_000,
     "docs/_static/readme/orszag_tang_current.gif": 250_000,
     "docs/_static/readme/orszag_tang_vorticity.gif": 350_000,
     "docs/_static/readme/orszag_tang_flux.gif": 400_000,
@@ -131,16 +131,25 @@ def test_readme_solver_media_has_longer_validation_provenance() -> None:
         manifest_entry = manifest_by_path[readme_target]
 
         if "double_harris" in readme_target:
-            assert manifest_entry["t_end"] >= 100.0
-            assert manifest_entry["source"]["source_shape"] == [128, 128]
-            assert "seeded-minus-base" in manifest_entry["notes"]
+            assert manifest_entry["t_end"] >= 120.0
+            assert manifest_entry["source"]["source_shape"] == [96, 96]
+            assert "Az contours" in manifest_entry["notes"]
+            assert "X/O" in (
+                manifest_entry["notes"]
+                + " "
+                + " ".join(qa_manifest["visual_qa"]["double_harris"]["observations"])
+            )
         if "orszag_tang" in readme_target:
             assert manifest_entry["t_end"] >= 10.0
             assert manifest_entry["source"]["source_shape"] == [96, 96]
             assert "Orszag-Tang" in manifest_entry["notes"]
         assert manifest_entry["source"]["validation_passed"] is True
         assert readme_target.removeprefix("docs/") in media_text
-        assert len(imageio.mimread(readme_movie)) >= 20
+        assert len(imageio.mimread(readme_movie)) >= 18
+
+    dh_metrics = qa_manifest["visual_qa"]["double_harris"]["metrics"]
+    assert dh_metrics["flux_delta_growth_factor"] > 5.0
+    assert dh_metrics["flux_delta_linf_final"] > dh_metrics["flux_delta_linf_first"]
 
     ot_metrics = qa_manifest["visual_qa"]["orszag_tang"]["metrics"]
     assert ot_metrics["current_high_k_peak"] > ot_metrics["current_high_k_first"]
