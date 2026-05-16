@@ -16,10 +16,12 @@ from mhx.benchmarks import (
     write_arnoldi_validation,
     write_benchmark_catalog,
     write_cosine_equilibrium_linearization_validation,
+    write_decaying_mhd_turbulence_validation,
     write_diffusion_eigenvalue_validation,
     write_duration_policy,
     write_fkr_growth_rate_validation,
     write_fkr_window_validation,
+    write_forced_turbulent_reconnection_validation,
     write_harris_delta_prime_validation,
     write_linear_tearing_dispersion_validation,
     write_linear_tearing_eigenvalue_validation,
@@ -1072,6 +1074,116 @@ def benchmark_orszag_tang(
         dt=dt,
         t_end=t_end,
         save_every=save_every,
+        movies=movies,
+    )
+    typer.echo(f"wrote {manifest_path}")
+    if not validation["passed"]:
+        raise typer.Exit(code=1)
+
+
+@benchmark_app.command("decaying-turbulence")
+def benchmark_decaying_turbulence(
+    outdir: Annotated[
+        Path,
+        typer.Option(
+            "--outdir",
+            help="Output directory for decaying reduced-MHD turbulence artifacts.",
+        ),
+    ] = Path("outputs/benchmarks/decaying_mhd_turbulence"),
+    nx: Annotated[int, typer.Option("--nx", help="Grid points in x.")] = 32,
+    ny: Annotated[int, typer.Option("--ny", help="Grid points in y.")] = 32,
+    eta: Annotated[float, typer.Option("--eta", help="Resistivity.")] = 2.0e-2,
+    nu: Annotated[float, typer.Option("--nu", help="Viscosity.")] = 2.0e-2,
+    dt: Annotated[float, typer.Option("--dt", help="RK4 time step.")] = 1.0e-2,
+    t_end: Annotated[float, typer.Option("--t-end", help="Final nonlinear time.")] = 4.0,
+    save_every: Annotated[int, typer.Option("--save-every", help="Saved-step stride.")] = 20,
+    seed: Annotated[int, typer.Option("--seed", help="Deterministic spectral seed.")] = 7,
+    movies: Annotated[
+        bool,
+        typer.Option("--movies/--no-movies", help="Write current/flux GIFs."),
+    ] = False,
+) -> None:
+    """Run deterministic decaying 2-D reduced-MHD turbulence validation."""
+    _configure_validation_precision()
+    manifest_path, validation = write_decaying_mhd_turbulence_validation(
+        outdir,
+        shape=(nx, ny),
+        resistivity=eta,
+        viscosity=nu,
+        dt=dt,
+        t_end=t_end,
+        save_every=save_every,
+        seed=seed,
+        movies=movies,
+    )
+    typer.echo(f"wrote {manifest_path}")
+    if not validation["passed"]:
+        raise typer.Exit(code=1)
+
+
+@benchmark_app.command("forced-turbulent-reconnection")
+def benchmark_forced_turbulent_reconnection(
+    outdir: Annotated[
+        Path,
+        typer.Option(
+            "--outdir",
+            help="Output directory for forced turbulent reconnection artifacts.",
+        ),
+    ] = Path("outputs/benchmarks/forced_turbulent_reconnection"),
+    nx: Annotated[int, typer.Option("--nx", help="Grid points in x.")] = 32,
+    ny: Annotated[int, typer.Option("--ny", help="Grid points in y.")] = 32,
+    width: Annotated[float, typer.Option("--width", help="Current-sheet half-width.")] = 0.32,
+    eta: Annotated[float, typer.Option("--eta", help="Resistivity.")] = 1.5e-3,
+    nu: Annotated[float, typer.Option("--nu", help="Viscosity.")] = 1.5e-3,
+    perturbation_amplitude: Annotated[
+        float,
+        typer.Option("--perturbation-amplitude", help="Coherent tearing seed amplitude."),
+    ] = 1.0e-2,
+    turbulent_flux_amplitude: Annotated[
+        float,
+        typer.Option("--turbulent-flux-amplitude", help="Broadband flux perturbation amplitude."),
+    ] = 1.5e-2,
+    turbulent_flow_amplitude: Annotated[
+        float,
+        typer.Option("--turbulent-flow-amplitude", help="Broadband flow perturbation amplitude."),
+    ] = 1.5e-2,
+    forcing_amplitude: Annotated[
+        float,
+        typer.Option("--forcing-amplitude", help="Static large-scale vorticity forcing amplitude."),
+    ] = 2.0e-3,
+    dt: Annotated[float, typer.Option("--dt", help="RK4 time step.")] = 2.0e-2,
+    t_end: Annotated[float, typer.Option("--t-end", help="Final nonlinear time.")] = 20.0,
+    save_every: Annotated[int, typer.Option("--save-every", help="Saved-step stride.")] = 50,
+    seed: Annotated[int, typer.Option("--seed", help="Deterministic spectral seed.")] = 11,
+    max_relative_energy_growth: Annotated[
+        float,
+        typer.Option(
+            "--max-relative-energy-growth",
+            help="Allowed forced-run relative total-energy growth.",
+        ),
+    ] = 2.0,
+    movies: Annotated[
+        bool,
+        typer.Option("--movies/--no-movies", help="Write current/flux GIFs."),
+    ] = False,
+) -> None:
+    """Run a pedagogical forced-turbulence current-sheet validation replay."""
+    _configure_validation_precision()
+    manifest_path, validation = write_forced_turbulent_reconnection_validation(
+        outdir,
+        shape=(nx, ny),
+        width=width,
+        resistivity=eta,
+        viscosity=nu,
+        perturbation_amplitude=perturbation_amplitude,
+        turbulent_flux_amplitude=turbulent_flux_amplitude,
+        turbulent_flow_amplitude=turbulent_flow_amplitude,
+        forcing_amplitude=forcing_amplitude,
+        dt=dt,
+        t_end=t_end,
+        save_every=save_every,
+        seed=seed,
+        max_relative_energy_growth=max_relative_energy_growth,
         movies=movies,
     )
     typer.echo(f"wrote {manifest_path}")

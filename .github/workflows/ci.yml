@@ -138,6 +138,8 @@ jobs:
           mhx benchmark double-harris-convergence --outdir outputs/ci/periodic_double_harris_convergence --resolutions 16,18 --dt-values 0.02,0.01 --reference-resolution 16 --t-end 6 --fit-stop 3 --max-relative-growth-rate-spread 2.0
           mhx benchmark nonlinear-energy-budget --outdir outputs/ci/nonlinear_energy_budget
           mhx benchmark orszag-tang --outdir outputs/ci/orszag_tang_vortex --nx 24 --ny 24 --t-end 2.0 --save-every 20 --movies
+          mhx benchmark decaying-turbulence --outdir outputs/ci/decaying_mhd_turbulence --nx 24 --ny 24 --t-end 0.5 --save-every 10 --movies
+          mhx benchmark forced-turbulent-reconnection --outdir outputs/ci/forced_turbulent_reconnection --nx 24 --ny 24 --t-end 1.0 --save-every 10 --max-relative-energy-growth 10 --movies
           mhx benchmark nonlinear-duration-audit --outdir outputs/ci/nonlinear_duration_audit
           mhx benchmark seed-robust-qi --outdir outputs/ci/seed_robust_qi --nx 8 --ny 8 --seeds 0,1,2,3 --t-end 0.08
           mhx benchmark seed-robust-qi-sweep --outdir outputs/ci/seed_robust_qi_sweep --nx 8 --ny 8 --seeds 0,1,2,3 --amplitudes 0,1e-9 --steps 4
@@ -287,6 +289,8 @@ jobs:
           test -f outputs/ci/validation_suite/periodic_double_harris_convergence/figures/periodic_double_harris_convergence.png
           test -f outputs/ci/validation_suite/nonlinear_energy_budget/figures/nonlinear_energy_budget.png
           test -f outputs/ci/validation_suite/orszag_tang_vortex/figures/orszag_tang_summary.png
+          test -f outputs/ci/validation_suite/decaying_mhd_turbulence/figures/decaying_mhd_turbulence_summary.png
+          test -f outputs/ci/validation_suite/forced_turbulent_reconnection/figures/forced_turbulent_reconnection_summary.png
           test -f outputs/ci/validation_suite/nonlinear_duration_audit/figures/nonlinear_duration_audit.png
           test -f outputs/ci/validation_suite/seed_robust_qi/figures/qi_summary.png
           test -f outputs/ci/validation_suite/seed_robust_qi_sweep/figures/qi_sweep_cv.png
@@ -300,6 +304,8 @@ jobs:
           test -f outputs/ci/readiness/figures/readiness_matrix.png
           test -f docs/_static/readme/double_harris_reconnection.gif
           test -f docs/_static/readme/double_harris_current_sheet.gif
+          test -f docs/_static/readme/forced_turbulent_reconnection.gif
+          test -f docs/_static/readme/decaying_mhd_turbulence_current.gif
           test -f docs/_static/readme/orszag_tang_current.gif
           test -f docs/_static/readme/orszag_tang_vorticity.gif
           test -f docs/_static/readme/orszag_tang_flux.gif
@@ -308,6 +314,8 @@ jobs:
           test -f docs/_static/readme/mhd_turbulence_cascade.gif
           test "$(stat -c%s docs/_static/readme/double_harris_reconnection.gif)" -lt 500000
           test "$(stat -c%s docs/_static/readme/double_harris_current_sheet.gif)" -lt 600000
+          test "$(stat -c%s docs/_static/readme/forced_turbulent_reconnection.gif)" -lt 650000
+          test "$(stat -c%s docs/_static/readme/decaying_mhd_turbulence_current.gif)" -lt 750000
           test "$(stat -c%s docs/_static/readme/orszag_tang_current.gif)" -lt 250000
           test "$(stat -c%s docs/_static/readme/orszag_tang_vorticity.gif)" -lt 350000
           test "$(stat -c%s docs/_static/readme/orszag_tang_flux.gif)" -lt 400000

@@ -1,5 +1,10 @@
 """Standardized diagnostics shared by MHX workflows."""
 
+from mhx.diagnostics.critical_points import (
+    FluxCriticalPoint,
+    critical_points_by_kind,
+    detect_flux_critical_points,
+)
 from mhx.diagnostics.reduced_mhd import (
     DIAGNOSTICS_ENTRY_POINT_GROUP,
     DiagnosticContext,
@@ -28,8 +33,11 @@ __all__ = [
     "DIAGNOSTICS_ENTRY_POINT_GROUP",
     "DiagnosticSpec",
     "DiagnosticsRegistry",
+    "FluxCriticalPoint",
+    "critical_points_by_kind",
     "compute_reduced_mhd_diagnostics",
     "default_diagnostics_registry",
+    "detect_flux_critical_points",
     "fit_exponential_growth",
     "island_width_from_mode",
     "kinetic_energy",

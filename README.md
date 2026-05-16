@@ -14,22 +14,22 @@ API for reproducible reduced-MHD studies.
 
 ## MHD at a Glance
 
-These previews keep the README visual and short. The first row now shows a
-longer seeded Harris-sheet reconnection replay with magnetic-flux (`Az`/`ψ`)
-contours over the current sheet, so the X/O topology is visible. The second
-row comes from a reduced-MHD Orszag--Tang vortex run that develops
-current/vorticity filaments. See [docs/media.md](docs/media.md) for source
-commands, visual QA, and claim boundaries.
+These previews keep the README visual and short. The first row shows longer
+Harris-sheet and forced turbulent current-sheet replays with magnetic-flux
+(`Az`/`ψ`) contours; the second row shows nonlinear reduced-MHD turbulence,
+Orszag--Tang roll-up, and a Harris tearing layer sweep. See
+[docs/media.md](docs/media.md) for source commands, visual QA, and claim
+boundaries.
 
-| Harris reconnection (`Az` contours) | Periodic double-Harris sheets | Orszag--Tang current sheets |
+| Harris reconnection (`Az` contours) | Forced turbulent reconnection | Orszag--Tang current sheets |
 | --- | --- | --- |
-| ![Double-Harris reconnection replay](docs/_static/readme/double_harris_reconnection.gif) | ![Double-Harris current sheet](docs/_static/readme/double_harris_current_sheet.gif) | ![Orszag-Tang current sheets](docs/_static/readme/orszag_tang_current.gif) |
-| Single-sheet zoom from a `96×96`, `t=120` validation run: `j_z` background plus `Az` contours and X/O guide markers. | Full periodic double-Harris view from the same run, showing both current sheets and island-forming flux contours. | Solver-generated Orszag--Tang current-density cascade over a `96×96`, `t=10` validation run. |
+| ![Double-Harris reconnection replay](docs/_static/readme/double_harris_reconnection.gif) | ![Forced turbulent reconnection](docs/_static/readme/forced_turbulent_reconnection.gif) | ![Orszag-Tang current sheets](docs/_static/readme/orszag_tang_current.gif) |
+| Single-sheet zoom from a `96×96`, `t=120` validation run: `j_z` background plus `Az` contours and detected X/O markers. | `64×64`, `t=80` forced-turbulence current sheet with reconnection-rate proxy diagnostics. | Solver-generated Orszag--Tang current-density cascade over a `96×96`, `t=10` validation run. |
 
-| Orszag--Tang vorticity | Orszag--Tang flux mixing | Harris tearing layer |
+| Decaying MHD turbulence | Orszag--Tang vorticity | Harris tearing layer |
 | --- | --- | --- |
-| ![Orszag-Tang vorticity roll-up](docs/_static/readme/orszag_tang_vorticity.gif) | ![Orszag-Tang flux mixing](docs/_static/readme/orszag_tang_flux.gif) | ![Harris tearing layer sweep](docs/_static/readme/harris_layer_sweep.gif) |
-| Vorticity roll-up and filamentation from the same nonlinear run. | Flux-function deformation during the dissipative nonlinear replay. | Literature-anchored Harris eigenfunction localization sweep. |
+| ![Decaying MHD turbulence](docs/_static/readme/decaying_mhd_turbulence_current.gif) | ![Orszag-Tang vorticity roll-up](docs/_static/readme/orszag_tang_vorticity.gif) | ![Harris tearing layer sweep](docs/_static/readme/harris_layer_sweep.gif) |
+| Solver-generated `64×64`, `t=8` decaying reduced-MHD turbulence with current filaments. | Vorticity roll-up and filamentation from the same nonlinear Orszag--Tang run. | Literature-anchored Harris eigenfunction localization sweep. |
 
 ## What Works Today
 

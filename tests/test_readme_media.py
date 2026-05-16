@@ -16,6 +16,8 @@ HEADING_RE = re.compile(r"^#{1,6}\s+(?P<title>.+?)\s*#*\s*$", re.MULTILINE)
 README_GIF_BUDGETS = {
     "docs/_static/readme/double_harris_reconnection.gif": 500_000,
     "docs/_static/readme/double_harris_current_sheet.gif": 600_000,
+    "docs/_static/readme/forced_turbulent_reconnection.gif": 650_000,
+    "docs/_static/readme/decaying_mhd_turbulence_current.gif": 750_000,
     "docs/_static/readme/orszag_tang_current.gif": 250_000,
     "docs/_static/readme/orszag_tang_vorticity.gif": 350_000,
     "docs/_static/readme/orszag_tang_flux.gif": 400_000,
@@ -34,6 +36,8 @@ README_SOLVER_MEDIA_TARGETS = {
     "docs/_static/readme/orszag_tang_current.gif",
     "docs/_static/readme/orszag_tang_vorticity.gif",
     "docs/_static/readme/orszag_tang_flux.gif",
+    "docs/_static/readme/forced_turbulent_reconnection.gif",
+    "docs/_static/readme/decaying_mhd_turbulence_current.gif",
 }
 
 
@@ -116,7 +120,12 @@ def test_readme_solver_media_has_longer_validation_provenance() -> None:
     solver_targets = [
         target
         for target in local_targets
-        if "double_harris" in Path(target).name or "orszag_tang" in Path(target).name
+        if (
+            "double_harris" in Path(target).name
+            or "orszag_tang" in Path(target).name
+            or "turbulence" in Path(target).name
+            or "turbulent_reconnection" in Path(target).name
+        )
     ]
 
     assert solver_targets
@@ -143,6 +152,14 @@ def test_readme_solver_media_has_longer_validation_provenance() -> None:
             assert manifest_entry["t_end"] >= 10.0
             assert manifest_entry["source"]["source_shape"] == [96, 96]
             assert "Orszag-Tang" in manifest_entry["notes"]
+        if "decaying_mhd_turbulence" in readme_target:
+            assert manifest_entry["t_end"] >= 8.0
+            assert manifest_entry["source"]["source_shape"] == [64, 64]
+            assert "decaying reduced-MHD turbulence" in manifest_entry["notes"]
+        if "forced_turbulent_reconnection" in readme_target:
+            assert manifest_entry["t_end"] >= 80.0
+            assert manifest_entry["source"]["source_shape"] == [64, 64]
+            assert "reconnection-rate proxy" in manifest_entry["notes"]
         assert manifest_entry["source"]["validation_passed"] is True
         assert readme_target.removeprefix("docs/") in media_text
         assert len(imageio.mimread(readme_movie)) >= 18
@@ -155,6 +172,18 @@ def test_readme_solver_media_has_longer_validation_provenance() -> None:
     assert ot_metrics["current_high_k_peak"] > ot_metrics["current_high_k_first"]
     assert ot_metrics["vorticity_high_k_peak"] > ot_metrics["vorticity_high_k_first"]
     assert ot_metrics["relative_energy_drop"] > 0.1
+
+    turbulence_qa = qa_manifest["visual_qa"]["turbulence"]
+    assert (
+        turbulence_qa["decaying_mhd_turbulence"]["metrics"]["current_linf_peak"]
+        > turbulence_qa["decaying_mhd_turbulence"]["metrics"]["current_linf_first"]
+    )
+    assert (
+        turbulence_qa["forced_turbulent_reconnection"]["metrics"][
+            "reconnection_proxy_change"
+        ]
+        > 1.0
+    )
 
 
 def test_readme_source_media_policy_exceeds_documented_minimum() -> None:

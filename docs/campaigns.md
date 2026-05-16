@@ -99,6 +99,68 @@ schemas, resume plans, optional fixed-scale GIFs, and artifact hashes. A paper
 claim still requires enough chunks to complete the planned duration plus
 convergence, budget closure, fixed-color movies, and seed/QI evidence.
 
+## Bounded nonlinear reconnection audit
+
+For reviewer triage, MHX includes a bounded nonlinear campaign that can be run
+inside a short wall-clock budget before committing to a production Rutherford or
+plasmoid study. It combines duration-policy checks, a resolution/time-step
+convergence scaffold, a longer seeded double-Harris replay, and a forced
+turbulent current-sheet seed sweep with an absolute X/O flux-separation proxy:
+
+```bash
+ROOT="outputs/campaigns/nonlinear_reconnection_30m_$(date +%Y%m%d_%H%M%S)"
+
+mhx benchmark duration-policy --outdir "$ROOT/duration_policy"
+mhx benchmark nonlinear-duration-audit --outdir "$ROOT/nonlinear_duration_audit"
+
+mhx benchmark double-harris-convergence \
+  --outdir "$ROOT/double_harris_convergence_n16_24_32" \
+  --resolutions 16,24,32 \
+  --dt-values 0.02,0.01 \
+  --reference-resolution 24 \
+  --reference-dt 0.01 \
+  --t-end 12 \
+  --save-interval 1 \
+  --fit-stop 6 \
+  --max-relative-growth-rate-spread 3.0
+
+mhx benchmark double-harris-long-run \
+  --outdir "$ROOT/double_harris_long_n96_t180" \
+  --nx 96 --ny 96 \
+  --dt 0.01 \
+  --t-end 180 \
+  --save-every 300 \
+  --fit-stop 10 \
+  --min-max-growth-factor 2.0 \
+  --movies
+```
+
+The current release keeps this campaign at `claim_level = "validation"`.
+Passing the bounded campaign is useful evidence that the code path, diagnostics,
+and media pipeline are functioning, but it is **not** enough for a publication
+claim of Rutherford growth or plasmoid-mediated reconnection. Promotion to
+publication figures requires:
+
+- the duration policy to meet the target nonlinear window, not just the README
+  media minimum;
+- resolution and time-step spreads within the documented tolerances;
+- stable X/O-point reconnection metrics without point-selection jumps;
+- energy and magnetic-divergence gates for every seed;
+- fixed-color movies generated from the same run bundle as the plotted
+  histories.
+
+The seed-sweep rate diagnostic used in the current bounded campaign computes
+
+$$
+\psi_\mathrm{rec}(t)=|\langle\psi_O(t)\rangle-\langle\psi_X(t)\rangle|,
+\qquad
+E_\mathrm{rec}^\mathrm{proxy}(t)=\frac{d\psi_\mathrm{rec}}{dt},
+$$
+
+where X and O points are detected as local $|\nabla\psi|$ minima and classified
+by the Hessian determinant. This is intentionally labeled a proxy because the
+grid-localized detector is not yet a sub-cell Newton-refined separatrix tracker.
+
 ## Production planning, execution, and resume
 
 The production plan extends the template into an operational bundle with

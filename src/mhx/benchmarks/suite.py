@@ -48,6 +48,10 @@ from mhx.benchmarks.tearing_eigen import (
     write_linear_tearing_layer_validation,
     write_linear_tearing_timedomain_validation,
 )
+from mhx.benchmarks.turbulence import (
+    write_decaying_mhd_turbulence_validation,
+    write_forced_turbulent_reconnection_validation,
+)
 from mhx.config import load_config
 from mhx.io import (
     write_artifact_manifest,
@@ -169,6 +173,16 @@ def validation_suite_cases() -> tuple[ValidationSuiteCase, ...]:
             name="orszag_tang_vortex",
             command="mhx benchmark orszag-tang",
             runner=write_orszag_tang_vortex_validation,
+        ),
+        ValidationSuiteCase(
+            name="decaying_mhd_turbulence",
+            command="mhx benchmark decaying-turbulence",
+            runner=_write_decaying_mhd_turbulence_validation,
+        ),
+        ValidationSuiteCase(
+            name="forced_turbulent_reconnection",
+            command="mhx benchmark forced-turbulent-reconnection",
+            runner=_write_forced_turbulent_reconnection_validation,
         ),
         ValidationSuiteCase(
             name="nonlinear_duration_audit",
@@ -347,6 +361,29 @@ def _write_periodic_double_harris_convergence_validation(
         t_end=6.0,
         fit_window=(0.0, 3.0),
         max_relative_growth_rate_spread=2.0,
+    )
+
+
+def _write_decaying_mhd_turbulence_validation(outdir: Path) -> tuple[Path, dict[str, Any]]:
+    return write_decaying_mhd_turbulence_validation(
+        outdir,
+        shape=(24, 24),
+        t_end=0.5,
+        save_every=10,
+        movies=True,
+    )
+
+
+def _write_forced_turbulent_reconnection_validation(
+    outdir: Path,
+) -> tuple[Path, dict[str, Any]]:
+    return write_forced_turbulent_reconnection_validation(
+        outdir,
+        shape=(24, 24),
+        t_end=1.0,
+        save_every=10,
+        max_relative_energy_growth=10.0,
+        movies=True,
     )
 
 

@@ -464,6 +464,54 @@ def validation_catalog_entries() -> tuple[BenchmarkCatalogEntry, ...]:
             ),
         ),
         BenchmarkCatalogEntry(
+            name="decaying_mhd_turbulence",
+            command=(
+                "mhx benchmark decaying-turbulence "
+                "--outdir outputs/benchmarks/decaying_mhd_turbulence --movies"
+            ),
+            schema="mhx.validation.decaying_mhd_turbulence.v1",
+            purpose=(
+                "Deterministic decaying reduced-MHD turbulence trajectory with "
+                "current-sheet formation, energy decay, divergence, and movie gates."
+            ),
+            expected_outputs=(
+                "diagnostics.json",
+                "validation.json",
+                "decaying_mhd_turbulence.npz",
+                "figures/decaying_mhd_turbulence_summary.png",
+                "figures/decaying_mhd_turbulence_current.gif",
+                "figures/decaying_mhd_turbulence_flux.gif",
+            ),
+            literature_anchor=(
+                "Two-dimensional incompressible MHD turbulence/current-sheet "
+                "formation; Servidio et al. 2009 reconnection-in-turbulence context."
+            ),
+        ),
+        BenchmarkCatalogEntry(
+            name="forced_turbulent_reconnection",
+            command=(
+                "mhx benchmark forced-turbulent-reconnection "
+                "--outdir outputs/benchmarks/forced_turbulent_reconnection --movies"
+            ),
+            schema="mhx.validation.forced_turbulent_reconnection.v1",
+            purpose=(
+                "Periodic double-Harris sheet with deterministic broadband forcing, "
+                "automated X/O-point flux-separation proxy, and nonlinear movie gates."
+            ),
+            expected_outputs=(
+                "diagnostics.json",
+                "validation.json",
+                "forced_turbulent_reconnection.npz",
+                "figures/forced_turbulent_reconnection_summary.png",
+                "figures/forced_turbulent_reconnection_current.gif",
+                "figures/forced_turbulent_reconnection_flux.gif",
+            ),
+            literature_anchor=(
+                "Pedagogical 2-D reduced-MHD analogue of turbulence-mediated "
+                "reconnection, anchored to Matthaeus-Lamkin, Servidio, and LV99."
+            ),
+        ),
+        BenchmarkCatalogEntry(
             name="nonlinear_duration_audit",
             command=(
                 "mhx benchmark nonlinear-duration-audit "

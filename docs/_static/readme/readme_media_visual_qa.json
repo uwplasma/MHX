@@ -1,5 +1,5 @@
 {
-  "generated_utc": "2026-05-16T15:37:40.923568+00:00",
+  "generated_utc": "2026-05-16T23:05:34.581584+00:00",
   "media": [
     {
       "duration_ms": 90,
@@ -9,7 +9,7 @@
         273,
         3
       ],
-      "notes": "Solver-generated Harris-sheet reconnection movie: out-of-plane current density with magnetic-flux/Az contours and X/O guide markers.",
+      "notes": "Solver-generated Harris-sheet reconnection movie: out-of-plane current density with magnetic-flux/Az contours and detected X/O markers.",
       "path": "docs/_static/readme/double_harris_reconnection.gif",
       "source": {
         "source": "outputs/readme_media/periodic_double_harris_reconnection_96_t120/periodic_double_harris_seeded_long_run.npz",
@@ -157,6 +157,68 @@
       ]
     },
     {
+      "duration_ms": 90,
+      "frame_count": 20,
+      "frame_shape": [
+        216,
+        234,
+        3
+      ],
+      "notes": "Solver-generated decaying reduced-MHD turbulence movie: current density with magnetic-flux contours.",
+      "path": "docs/_static/readme/decaying_mhd_turbulence_current.gif",
+      "source": {
+        "source": "outputs/readme_media/decaying_mhd_turbulence_64_t8/decaying_mhd_turbulence.npz",
+        "source_kind": "precomputed nonlinear validation artifact",
+        "source_samples": 21,
+        "source_shape": [
+          64,
+          64
+        ],
+        "t_end": 8.0,
+        "time_span": [
+          0.0,
+          8.0
+        ],
+        "validation_passed": true
+      },
+      "t_end": 8.0,
+      "time_span": [
+        0.0,
+        8.0
+      ]
+    },
+    {
+      "duration_ms": 90,
+      "frame_count": 20,
+      "frame_shape": [
+        216,
+        234,
+        3
+      ],
+      "notes": "Solver-generated forced turbulent current-sheet movie with reconnection-rate proxy diagnostics.",
+      "path": "docs/_static/readme/forced_turbulent_reconnection.gif",
+      "source": {
+        "source": "outputs/readme_media/forced_turbulent_reconnection_64_t80_wide/forced_turbulent_reconnection.npz",
+        "source_kind": "precomputed nonlinear validation artifact",
+        "source_samples": 41,
+        "source_shape": [
+          64,
+          64
+        ],
+        "t_end": 80.0,
+        "time_span": [
+          0.0,
+          80.0
+        ],
+        "validation_passed": true
+      },
+      "t_end": 80.0,
+      "time_span": [
+        0.0,
+        80.0
+      ]
+    },
+    {
       "duration_ms": 850,
       "frame_count": 4,
       "frame_shape": [
@@ -200,7 +262,7 @@
     }
   ],
   "schema": "mhx.readme_media_visual_qa.v1",
-  "source_policy": "README solver movies use the longest available matching nonlinear NPZ under outputs/readme_media, outputs/long_runs, outputs/docs_validation, or outputs/ci. Double-Harris fallback is a labeled 64\u00d764, t_end=60 replay; Orszag-Tang fallback is a labeled 48\u00d748, t_end=4 replay. Committed release media should be regenerated from longer precomputed artifacts before publication.",
+  "source_policy": "README solver movies use the longest available matching nonlinear NPZ under outputs/readme_media, outputs/long_runs, outputs/docs_validation, or outputs/ci. Double-Harris fallback is a labeled 64\u00d764, t_end=60 replay; Orszag-Tang fallback is a labeled 48\u00d748, t_end=4 replay; turbulence fallbacks are labeled 32\u00d732 validation replays. Committed release media should be regenerated from longer precomputed artifacts before publication.",
   "visual_qa": {
     "double_harris": {
       "inspected_frames": [
@@ -235,8 +297,8 @@
         "flux_delta_linf_peak": 0.0862324497771575
       },
       "observations": [
-        "The README Harris movie now shows the total out-of-plane current with magnetic-flux/Az contours, cropped around one current sheet so the X/O topology is visible.",
-        "The X/O labels are deterministic guide markers for the seeded tearing phase; they are not an automated critical-point classifier.",
+        "The README Harris movie now shows the total out-of-plane current with magnetic-flux/Az contours, cropped around one current sheet so the automatically detected X/O topology is visible.",
+        "X/O markers are selected by local |grad(Az)| minima and Hessian classification; locations are grid-localized rather than sub-cell Newton-refined.",
         "Flux contours evolve from a nearly straight Harris sheet into a single-island topology around the sheet, while total energy remains dissipative in the validation manifest.",
         "Perturbed-minus-base flux remains tracked quantitatively: it grows from 9.995e-03 at t=0.0 to 8.623e-02 at t=120.0, with peak growth factor 8.63, consistent with a bounded nonlinear validation replay; this is not yet a production plasmoid/Rutherford claim."
       ],
@@ -289,6 +351,78 @@
         "vorticity": "docs/_static/readme/orszag_tang_vorticity_snapshots.png"
       },
       "source": "outputs/readme_media/orszag_tang_vortex_96_t10/orszag_tang_vortex.npz"
+    },
+    "turbulence": {
+      "decaying_mhd_turbulence": {
+        "inspected_frames": [
+          {
+            "index": 0,
+            "label": "first",
+            "time": 0.0
+          },
+          {
+            "index": 10,
+            "label": "mid",
+            "time": 4.0
+          },
+          {
+            "index": 20,
+            "label": "final",
+            "time": 8.0
+          }
+        ],
+        "metrics": {
+          "current_high_k_first": 0.7605162820188242,
+          "current_high_k_peak": 0.8014643654713696,
+          "current_linf_final": 1.0750015623948725,
+          "current_linf_first": 8.883986696849224,
+          "current_linf_mid": 2.5316669279381934,
+          "current_linf_peak": 11.515905169286965,
+          "relative_energy_drop": 0.926338668773835
+        },
+        "observations": [
+          "The turbulence README movies are solver output from deterministic 2-D reduced-MHD validation examples, not synthetic schematics.",
+          "The forced current-sheet case includes a reconnection proxy and is literature-anchored to turbulent reconnection, but remains a 2-D pedagogical validation rather than a 3-D LV99 production claim."
+        ],
+        "snapshot_contact_sheet": "docs/_static/readme/decaying_mhd_turbulence_snapshots.png",
+        "source": "outputs/readme_media/decaying_mhd_turbulence_64_t8/decaying_mhd_turbulence.npz"
+      },
+      "forced_turbulent_reconnection": {
+        "inspected_frames": [
+          {
+            "index": 0,
+            "label": "first",
+            "time": 0.0
+          },
+          {
+            "index": 20,
+            "label": "mid",
+            "time": 40.0
+          },
+          {
+            "index": 40,
+            "label": "final",
+            "time": 80.0
+          }
+        ],
+        "metrics": {
+          "current_high_k_first": 0.12113881575264926,
+          "current_high_k_peak": 0.6784633319674443,
+          "current_linf_final": 5.994311976110286,
+          "current_linf_first": 4.5452761243495505,
+          "current_linf_mid": 8.668946488452372,
+          "current_linf_peak": 18.374297310318244,
+          "max_abs_reconnection_rate_proxy": 0.34346295991354914,
+          "reconnection_proxy_change": 1.3824911570030323,
+          "relative_energy_drop": 0.04822895554526846
+        },
+        "observations": [
+          "The turbulence README movies are solver output from deterministic 2-D reduced-MHD validation examples, not synthetic schematics.",
+          "The forced current-sheet case includes a reconnection proxy and is literature-anchored to turbulent reconnection, but remains a 2-D pedagogical validation rather than a 3-D LV99 production claim."
+        ],
+        "snapshot_contact_sheet": "docs/_static/readme/forced_turbulent_reconnection_snapshots.png",
+        "source": "outputs/readme_media/forced_turbulent_reconnection_64_t80_wide/forced_turbulent_reconnection.npz"
+      }
     }
   }
 }

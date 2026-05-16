@@ -11,12 +11,14 @@ import imageio.v2 as imageio
 import numpy as np
 
 from mhx.benchmarks import run_linear_tearing_layer_validation
+from mhx.diagnostics import FluxCriticalPoint, detect_flux_critical_points
 
 README_GIF_DURATION_MS = 90
 DOUBLE_HARRIS_MAX_FRAMES = 18
 DOUBLE_HARRIS_LENGTHS = (2.0 * np.pi, 2.0 * np.pi)
 DOUBLE_HARRIS_SHEET_HALF_WIDTH = 1.2
 ORSZAG_TANG_MAX_FRAMES = 36
+TURBULENCE_MAX_FRAMES = 20
 
 
 def main() -> None:
@@ -25,7 +27,9 @@ def main() -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
     media_entries, double_harris_qa = _write_double_harris_readme_movies(output_dir)
     orszag_entries, orszag_qa = _write_orszag_tang_readme_movies(output_dir)
+    turbulence_entries, turbulence_qa = _write_turbulence_readme_movies(output_dir)
     media_entries.extend(orszag_entries)
+    media_entries.extend(turbulence_entries)
     _write_harris_layer_sweep(output_dir / "harris_layer_sweep.gif")
     media_entries.append(
         _gif_manifest_entry(
@@ -62,6 +66,7 @@ def main() -> None:
         {
             "double_harris": double_harris_qa,
             "orszag_tang": orszag_qa,
+            "turbulence": turbulence_qa,
         },
     )
 
@@ -110,7 +115,7 @@ def _write_double_harris_readme_movies(
             time_span=common_source["time_span"],
             notes=(
                 "Solver-generated Harris-sheet reconnection movie: out-of-plane "
-                "current density with magnetic-flux/Az contours and X/O guide markers."
+                "current density with magnetic-flux/Az contours and detected X/O markers."
             ),
         ),
         _gif_manifest_entry(
@@ -307,7 +312,7 @@ def _select_orszag_tang_history(output_dir: Path) -> dict[str, Any]:
             ),
         }
     )
-    ranked: list[tuple[tuple[float, int, int], dict[str, Any]]] = []
+    ranked: list[tuple[tuple[int, float, int, float], dict[str, Any]]] = []
     for path in candidates:
         try:
             history = _load_orszag_tang_history(path, fields_only=True)
@@ -320,10 +325,22 @@ def _select_orszag_tang_history(output_dir: Path) -> dict[str, Any]:
         source_kind = "precomputed nonlinear validation artifact"
         if output_dir in path.parents:
             source_kind = "generated README fallback artifact"
+        diagnostics_path = path.parent / "diagnostics.json"
+        activity_score = 0.0
+        if diagnostics_path.exists():
+            diagnostics = json.loads(diagnostics_path.read_text())
+            activity_score = max(
+                float(diagnostics.get("reconnection_proxy_change", 0.0) or 0.0),
+                float(diagnostics.get("current_linf_growth", 0.0) or 0.0),
+            )
+        validation_rank = (
+            2 if validation_passed is True else 1 if validation_passed is None else 0
+        )
         rank = (
+            validation_rank,
             float(history["t_end"]),
             int(history["shape"][0] * history["shape"][1]),
-            int(validation_passed is not False),
+            activity_score,
         )
         ranked.append(
             (
@@ -391,6 +408,232 @@ def _load_orszag_tang_history(path: Path, *, fields_only: bool = False) -> dict[
     if fields_only:
         return result
     return result
+
+
+def _write_turbulence_readme_movies(
+    output_dir: Path,
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    decaying_source = _select_turbulence_history(
+        output_dir,
+        history_name="decaying_mhd_turbulence.npz",
+        fallback_writer=_generate_decaying_turbulence_fallback,
+    )
+    forced_source = _select_turbulence_history(
+        output_dir,
+        history_name="forced_turbulent_reconnection.npz",
+        fallback_writer=_generate_forced_turbulent_reconnection_fallback,
+    )
+    decaying = _load_turbulence_history(decaying_source["history_path"])
+    forced = _load_turbulence_history(forced_source["history_path"])
+    decaying_path = output_dir / "decaying_mhd_turbulence_current.gif"
+    forced_path = output_dir / "forced_turbulent_reconnection.gif"
+    _write_turbulence_current_contour_movie(
+        decaying,
+        path=decaying_path,
+        title_prefix="Decaying MHD turbulence",
+        max_frames=TURBULENCE_MAX_FRAMES,
+    )
+    _write_turbulence_current_contour_movie(
+        forced,
+        path=forced_path,
+        title_prefix="Forced turbulent reconnection",
+        max_frames=TURBULENCE_MAX_FRAMES,
+    )
+    snapshots = _write_turbulence_snapshot_contact_sheets(output_dir, decaying, forced)
+    decaying_common = _history_source_manifest(decaying, decaying_source)
+    forced_common = _history_source_manifest(forced, forced_source)
+    qa = {
+        "decaying_mhd_turbulence": _turbulence_visual_qa(
+            decaying,
+            decaying_source,
+            snapshots["decaying_mhd_turbulence"],
+        ),
+        "forced_turbulent_reconnection": _turbulence_visual_qa(
+            forced,
+            forced_source,
+            snapshots["forced_turbulent_reconnection"],
+        ),
+    }
+    return (
+        [
+            _gif_manifest_entry(
+                decaying_path,
+                source=decaying_common,
+                t_end=decaying["t_end"],
+                time_span=decaying_common["time_span"],
+                notes=(
+                    "Solver-generated decaying reduced-MHD turbulence movie: "
+                    "current density with magnetic-flux contours."
+                ),
+            ),
+            _gif_manifest_entry(
+                forced_path,
+                source=forced_common,
+                t_end=forced["t_end"],
+                time_span=forced_common["time_span"],
+                notes=(
+                    "Solver-generated forced turbulent current-sheet movie with "
+                    "reconnection-rate proxy diagnostics."
+                ),
+            ),
+        ],
+        qa,
+    )
+
+
+def _select_turbulence_history(
+    output_dir: Path,
+    *,
+    history_name: str,
+    fallback_writer: Any,
+) -> dict[str, Any]:
+    candidates = sorted(
+        {
+            *Path("outputs/readme_media").glob(f"**/{history_name}"),
+            *Path("outputs/long_runs").glob(f"**/{history_name}"),
+            *Path("outputs/docs_validation").glob(f"**/{history_name}"),
+            *Path("outputs/ci").glob(f"**/{history_name}"),
+            *output_dir.glob(f"generated_*_validation/**/{history_name}"),
+        }
+    )
+    ranked: list[tuple[tuple[int, float, int, float], dict[str, Any]]] = []
+    for path in candidates:
+        try:
+            history = _load_turbulence_history(path, fields_only=True)
+        except (KeyError, ValueError, OSError):
+            continue
+        validation_path = path.parent / "validation.json"
+        validation_passed = None
+        if validation_path.exists():
+            validation_passed = bool(json.loads(validation_path.read_text()).get("passed"))
+        source_kind = "precomputed nonlinear validation artifact"
+        if output_dir in path.parents:
+            source_kind = "generated README fallback artifact"
+        diagnostics_path = path.parent / "diagnostics.json"
+        activity_score = 0.0
+        if diagnostics_path.exists():
+            diagnostics = json.loads(diagnostics_path.read_text())
+            activity_score = max(
+                float(diagnostics.get("reconnection_proxy_change", 0.0) or 0.0),
+                float(diagnostics.get("current_linf_growth", 0.0) or 0.0),
+            )
+        validation_rank = (
+            2 if validation_passed is True else 1 if validation_passed is None else 0
+        )
+        rank = (
+            validation_rank,
+            float(history["t_end"]),
+            int(history["shape"][0] * history["shape"][1]),
+            activity_score,
+        )
+        ranked.append(
+            (
+                rank,
+                {
+                    "history_path": path,
+                    "source_kind": source_kind,
+                    "validation_passed": validation_passed,
+                },
+            )
+        )
+    if ranked:
+        return max(ranked, key=lambda item: item[0])[1]
+    return fallback_writer(output_dir)
+
+
+def _generate_decaying_turbulence_fallback(output_dir: Path) -> dict[str, Any]:
+    from mhx.benchmarks import write_decaying_mhd_turbulence_validation
+    from mhx.runtime import configure_jax
+
+    configure_jax(enable_x64=True)
+    fallback_dir = output_dir / "generated_decaying_turbulence_validation"
+    history_path = fallback_dir / "decaying_mhd_turbulence.npz"
+    if not history_path.exists():
+        write_decaying_mhd_turbulence_validation(
+            fallback_dir,
+            shape=(32, 32),
+            t_end=4.0,
+            save_every=20,
+            movies=False,
+        )
+    return _fallback_source(history_path)
+
+
+def _generate_forced_turbulent_reconnection_fallback(output_dir: Path) -> dict[str, Any]:
+    from mhx.benchmarks import write_forced_turbulent_reconnection_validation
+    from mhx.runtime import configure_jax
+
+    configure_jax(enable_x64=True)
+    fallback_dir = output_dir / "generated_forced_turbulent_reconnection_validation"
+    history_path = fallback_dir / "forced_turbulent_reconnection.npz"
+    if not history_path.exists():
+        write_forced_turbulent_reconnection_validation(
+            fallback_dir,
+            shape=(32, 32),
+            t_end=20.0,
+            save_every=50,
+            movies=False,
+        )
+    return _fallback_source(history_path)
+
+
+def _fallback_source(history_path: Path) -> dict[str, Any]:
+    validation_path = history_path.parent / "validation.json"
+    validation_passed = None
+    if validation_path.exists():
+        validation_passed = bool(json.loads(validation_path.read_text()).get("passed"))
+    return {
+        "history_path": history_path,
+        "source_kind": "generated README fallback artifact",
+        "validation_passed": validation_passed,
+    }
+
+
+def _load_turbulence_history(path: Path, *, fields_only: bool = False) -> dict[str, Any]:
+    with np.load(path) as data:
+        time = np.asarray(data["time"], dtype=float)
+        psi = np.asarray(data["psi"], dtype=float)
+        current = np.asarray(data["current_density"], dtype=float)
+        total_energy = np.asarray(data["total_energy"], dtype=float)
+        current_high_k = np.asarray(data["current_high_k_fraction"], dtype=float)
+        reconnection_proxy = (
+            np.asarray(data["reconnection_proxy"], dtype=float)
+            if "reconnection_proxy" in data.files
+            else None
+        )
+        reconnection_rate = (
+            np.asarray(data["reconnection_rate_proxy"], dtype=float)
+            if "reconnection_rate_proxy" in data.files
+            else None
+        )
+    if time.ndim != 1 or psi.ndim != 3:
+        raise ValueError("invalid turbulence history arrays")
+    result: dict[str, Any] = {
+        "time": time,
+        "psi": psi,
+        "current_density": current,
+        "total_energy": total_energy,
+        "current_high_k_fraction": current_high_k,
+        "reconnection_proxy": reconnection_proxy,
+        "reconnection_rate_proxy": reconnection_rate,
+        "shape": tuple(int(value) for value in psi.shape[1:]),
+        "t_end": float(time[-1]),
+    }
+    if fields_only:
+        return result
+    return result
+
+
+def _history_source_manifest(history: dict[str, Any], source: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "source": str(source["history_path"]),
+        "source_kind": source["source_kind"],
+        "source_samples": int(len(history["time"])),
+        "source_shape": list(history["shape"]),
+        "t_end": history["t_end"],
+        "time_span": [float(history["time"][0]), float(history["time"][-1])],
+        "validation_passed": source.get("validation_passed"),
+    }
 
 
 def _load_double_harris_history(path: Path, *, fields_only: bool = False) -> dict[str, Any]:
@@ -480,6 +723,49 @@ def _write_field_movie(
     )
 
 
+def _write_turbulence_current_contour_movie(
+    history: dict[str, Any],
+    *,
+    path: Path,
+    title_prefix: str,
+    max_frames: int,
+) -> None:
+    import matplotlib.pyplot as plt
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    frame_indices = _sample_frame_indices(len(history["time"]), max_frames)
+    current = np.asarray(history["current_density"])
+    psi = np.asarray(history["psi"])
+    x = np.linspace(0.0, DOUBLE_HARRIS_LENGTHS[0], history["shape"][0], endpoint=False)
+    y = np.linspace(0.0, DOUBLE_HARRIS_LENGTHS[1], history["shape"][1], endpoint=False)
+    x_mesh, y_mesh = np.meshgrid(x, y, indexing="ij")
+    vmax = max(float(np.percentile(np.abs(current[frame_indices]), 99.2)), np.finfo(float).eps)
+    frames = []
+    for index in frame_indices:
+        fig, ax = plt.subplots(figsize=(3.25, 3.0), dpi=72, constrained_layout=True)
+        ax.imshow(
+            current[index].T,
+            origin="lower",
+            extent=(0.0, DOUBLE_HARRIS_LENGTHS[0], 0.0, DOUBLE_HARRIS_LENGTHS[1]),
+            aspect="equal",
+            cmap="RdBu_r",
+            vmin=-vmax,
+            vmax=vmax,
+        )
+        levels = np.linspace(
+            float(np.percentile(psi[index], 5.0)),
+            float(np.percentile(psi[index], 95.0)),
+            18,
+        )
+        ax.contour(x_mesh, y_mesh, psi[index], levels=levels, colors="black", linewidths=0.35)
+        ax.set_title(f"{title_prefix}, t={history['time'][index]:.1f}", fontsize=9)
+        ax.set_xlabel("x")
+        ax.set_ylabel("y")
+        frames.append(_figure_to_frame(fig))
+        plt.close(fig)
+    imageio.mimsave(path, frames, duration=README_GIF_DURATION_MS, loop=0, palettesize=48)
+
+
 def _write_harris_sheet_contour_movie(
     history: dict[str, Any],
     frame_indices: np.ndarray,
@@ -518,7 +804,10 @@ def _write_harris_sheet_contour_movie(
             linewidths=0.45,
             alpha=0.78,
         )
-        _mark_sheet_reconnection_phase(ax)
+        _mark_sheet_critical_points(
+            ax,
+            _detect_critical_points_for_frame(history, index),
+        )
         ax.set_title(f"Harris reconnection: Az contours, t={history['time'][index]:.0f}")
         ax.set_xlabel("sheet coordinate")
         ax.set_ylabel("normal to sheet")
@@ -566,7 +855,10 @@ def _write_harris_full_domain_contour_movie(
             linewidths=0.4,
             alpha=0.76,
         )
-        _mark_double_harris_reconnection_phase(ax)
+        _mark_domain_critical_points(
+            ax,
+            _detect_critical_points_for_frame(history, index),
+        )
         ax.set_title(f"Periodic double-Harris sheets, t={history['time'][index]:.0f}")
         ax.set_xlabel("x")
         ax.set_ylabel("y")
@@ -604,31 +896,83 @@ def _left_sheet_crop(
     )
 
 
-def _mark_sheet_reconnection_phase(ax) -> None:
-    y_o = np.pi
-    y_x = (0.0, DOUBLE_HARRIS_LENGTHS[1])
-    ax.scatter([y_o], [0.0], s=34, marker="o", facecolor="white", edgecolor="black", zorder=5)
-    ax.text(y_o + 0.10, 0.10, "O", fontsize=8, weight="bold", color="black", zorder=6)
-    for xpos in y_x:
-        ax.scatter([xpos], [0.0], s=42, marker="x", color="white", linewidths=1.5, zorder=5)
-        ax.text(
-            min(xpos + 0.10, DOUBLE_HARRIS_LENGTHS[1] - 0.28),
-            -0.23,
-            "X",
-            fontsize=8,
-            weight="bold",
-            color="white",
-            zorder=6,
+def _detect_critical_points_for_frame(
+    history: dict[str, Any],
+    index: int,
+) -> tuple[FluxCriticalPoint, ...]:
+    return detect_flux_critical_points(
+        np.asarray(history["psi"][index]),
+        lengths=DOUBLE_HARRIS_LENGTHS,
+        periodic=(True, True),
+        max_points=12,
+        min_separation=0.35,
+    )
+
+
+def _mark_sheet_critical_points(
+    ax,
+    points: tuple[FluxCriticalPoint, ...],
+) -> None:
+    sheet = 0.25 * DOUBLE_HARRIS_LENGTHS[0]
+    for point in points:
+        x_position, y_position = point.position
+        normal = (
+            (x_position - sheet + 0.5 * DOUBLE_HARRIS_LENGTHS[0])
+            % DOUBLE_HARRIS_LENGTHS[0]
+        ) - 0.5 * DOUBLE_HARRIS_LENGTHS[0]
+        if abs(normal) > DOUBLE_HARRIS_SHEET_HALF_WIDTH:
+            continue
+        _draw_critical_point_marker(
+            ax,
+            x=y_position,
+            y=normal,
+            kind=point.kind,
+            label_offset=(0.10, 0.10 if point.kind == "O" else -0.24),
         )
 
 
-def _mark_double_harris_reconnection_phase(ax) -> None:
-    x_sheets = (0.25 * DOUBLE_HARRIS_LENGTHS[0], 0.75 * DOUBLE_HARRIS_LENGTHS[0])
-    for x_sheet in x_sheets:
-        ax.scatter([x_sheet], [np.pi], s=28, marker="o", facecolor="white", edgecolor="black")
-        ax.text(x_sheet + 0.08, np.pi + 0.08, "O", fontsize=7, weight="bold")
-        for y_value in (0.0, DOUBLE_HARRIS_LENGTHS[1]):
-            ax.scatter([x_sheet], [y_value], s=34, marker="x", color="white", linewidths=1.2)
+def _mark_domain_critical_points(
+    ax,
+    points: tuple[FluxCriticalPoint, ...],
+) -> None:
+    for point in points:
+        _draw_critical_point_marker(
+            ax,
+            x=point.position[0],
+            y=point.position[1],
+            kind=point.kind,
+            label_offset=(0.08, 0.08),
+            label=False,
+        )
+
+
+def _draw_critical_point_marker(
+    ax,
+    *,
+    x: float,
+    y: float,
+    kind: str,
+    label_offset: tuple[float, float],
+    label: bool = True,
+) -> None:
+    if kind == "O":
+        ax.scatter([x], [y], s=34, marker="o", facecolor="white", edgecolor="black", zorder=5)
+        text_color = "black"
+    elif kind == "X":
+        ax.scatter([x], [y], s=42, marker="x", color="white", linewidths=1.5, zorder=5)
+        text_color = "white"
+    else:
+        return
+    if label:
+        ax.text(
+            x + label_offset[0],
+            y + label_offset[1],
+            kind,
+            fontsize=8,
+            weight="bold",
+            color=text_color,
+            zorder=6,
+        )
 
 
 def _write_double_harris_snapshot_contact_sheets(
@@ -706,7 +1050,10 @@ def _write_harris_sheet_snapshot_contact_sheet(
             linewidths=0.45,
             alpha=0.78,
         )
-        _mark_sheet_reconnection_phase(ax)
+        _mark_sheet_critical_points(
+            ax,
+            _detect_critical_points_for_frame(history, index),
+        )
         ax.set_title(f"t={history['time'][index]:.0f}")
         ax.set_xlabel("sheet coordinate")
         ax.set_ylabel("normal")
@@ -758,12 +1105,17 @@ def _write_harris_full_snapshot_contact_sheet(
             linewidths=0.4,
             alpha=0.76,
         )
-        _mark_double_harris_reconnection_phase(ax)
+        _mark_domain_critical_points(
+            ax,
+            _detect_critical_points_for_frame(history, index),
+        )
         ax.set_title(f"t={history['time'][index]:.0f}")
         ax.set_xlabel("x")
         ax.set_ylabel("y")
     fig.colorbar(image, ax=axes, shrink=0.76, label=r"$j_z$")
-    fig.suptitle(f"Periodic double-Harris snapshots: current density + Az contours\n{source_label}")
+    fig.suptitle(
+        f"Periodic double-Harris snapshots: current density + Az contours\n{source_label}"
+    )
     fig.savefig(path, dpi=160)
     plt.close(fig)
 
@@ -846,11 +1198,12 @@ def _double_harris_visual_qa(
             (
                 "The README Harris movie now shows the total out-of-plane current "
                 "with magnetic-flux/Az contours, cropped around one current sheet "
-                "so the X/O topology is visible."
+                "so the automatically detected X/O topology is visible."
             ),
             (
-                "The X/O labels are deterministic guide markers for the seeded "
-                "tearing phase; they are not an automated critical-point classifier."
+                "X/O markers are selected by local |grad(Az)| minima and Hessian "
+                "classification; locations are grid-localized rather than "
+                "sub-cell Newton-refined."
             ),
             (
                 "Flux contours evolve from a nearly straight Harris sheet into a "
@@ -911,6 +1264,37 @@ def _write_orszag_tang_snapshot_contact_sheets(
     }
 
 
+def _write_turbulence_snapshot_contact_sheets(
+    output_dir: Path,
+    decaying: dict[str, Any],
+    forced: dict[str, Any],
+) -> dict[str, str]:
+    decaying_path = output_dir / "decaying_mhd_turbulence_snapshots.png"
+    forced_path = output_dir / "forced_turbulent_reconnection_snapshots.png"
+    _write_snapshot_contact_sheet(
+        decaying["current_density"],
+        decaying["time"],
+        path=decaying_path,
+        cmap="RdBu_r",
+        title="Decaying reduced-MHD turbulence current-density snapshots",
+        source_label=f"{decaying['shape'][0]}×{decaying['shape'][1]}, t≤{decaying['t_end']:.0f}",
+        symmetric=True,
+    )
+    _write_snapshot_contact_sheet(
+        forced["current_density"],
+        forced["time"],
+        path=forced_path,
+        cmap="RdBu_r",
+        title="Forced turbulent reconnection current-density snapshots",
+        source_label=f"{forced['shape'][0]}×{forced['shape'][1]}, t≤{forced['t_end']:.0f}",
+        symmetric=True,
+    )
+    return {
+        "decaying_mhd_turbulence": str(decaying_path),
+        "forced_turbulent_reconnection": str(forced_path),
+    }
+
+
 def _orszag_tang_visual_qa(
     history: dict[str, Any],
     source: dict[str, Any],
@@ -961,6 +1345,57 @@ def _orszag_tang_visual_qa(
                 "The fixed-scale movie emphasizes morphology; quantitative claims "
                 "are limited to the validation manifest gates and are not turbulence "
                 "statistics."
+            ),
+        ],
+    }
+
+
+def _turbulence_visual_qa(
+    history: dict[str, Any],
+    source: dict[str, Any],
+    snapshot_contact_sheet: str,
+) -> dict[str, Any]:
+    time = history["time"]
+    mid_index = len(time) // 2
+    current_peaks = np.max(np.abs(history["current_density"]), axis=(1, 2))
+    energy = history["total_energy"]
+    metrics = {
+        "current_linf_first": float(current_peaks[0]),
+        "current_linf_mid": float(current_peaks[mid_index]),
+        "current_linf_final": float(current_peaks[-1]),
+        "current_linf_peak": float(np.max(current_peaks)),
+        "current_high_k_first": float(history["current_high_k_fraction"][0]),
+        "current_high_k_peak": float(np.max(history["current_high_k_fraction"])),
+        "relative_energy_drop": float(
+            (energy[0] - energy[-1]) / max(abs(energy[0]), np.finfo(float).tiny)
+        ),
+    }
+    if history["reconnection_proxy"] is not None:
+        metrics["reconnection_proxy_change"] = float(
+            np.max(history["reconnection_proxy"]) - np.min(history["reconnection_proxy"])
+        )
+    if history["reconnection_rate_proxy"] is not None:
+        metrics["max_abs_reconnection_rate_proxy"] = float(
+            np.max(np.abs(history["reconnection_rate_proxy"]))
+        )
+    return {
+        "source": str(source["history_path"]),
+        "snapshot_contact_sheet": snapshot_contact_sheet,
+        "inspected_frames": [
+            {"label": "first", "index": 0, "time": float(time[0])},
+            {"label": "mid", "index": int(mid_index), "time": float(time[mid_index])},
+            {"label": "final", "index": int(len(time) - 1), "time": float(time[-1])},
+        ],
+        "metrics": metrics,
+        "observations": [
+            (
+                "The turbulence README movies are solver output from deterministic "
+                "2-D reduced-MHD validation examples, not synthetic schematics."
+            ),
+            (
+                "The forced current-sheet case includes a reconnection proxy and "
+                "is literature-anchored to turbulent reconnection, but remains a "
+                "2-D pedagogical validation rather than a 3-D LV99 production claim."
             ),
         ],
     }
@@ -1179,7 +1614,8 @@ def _write_visual_qa_manifest(
             "NPZ under outputs/readme_media, outputs/long_runs, outputs/docs_validation, "
             "or outputs/ci. "
             "Double-Harris fallback is a labeled 64×64, t_end=60 replay; Orszag-Tang "
-            "fallback is a labeled 48×48, t_end=4 replay. Committed release media "
+            "fallback is a labeled 48×48, t_end=4 replay; turbulence fallbacks are "
+            "labeled 32×32 validation replays. Committed release media "
             "should be regenerated from longer precomputed artifacts before publication."
         ),
         "media": media_entries,
