@@ -23,11 +23,19 @@ jobs:
           python -m pip install --upgrade build twine
           python -m build
           python -m twine check dist/*
+      - name: Smoke install built wheel
+        run: |
+          python -m venv /tmp/mhx-wheel-smoke
+          /tmp/mhx-wheel-smoke/bin/python -m pip install --upgrade pip
+          /tmp/mhx-wheel-smoke/bin/python -m pip install dist/*.whl
+          /tmp/mhx-wheel-smoke/bin/python -c "import mhx; print(mhx.__version__)"
+          /tmp/mhx-wheel-smoke/bin/mhx --help
       - name: Upload distributions
         uses: actions/upload-artifact@v4
         with:
           name: mhx-dist
           path: dist/*
+          if-no-files-found: error
 
   publish-pypi:
     name: Publish to PyPI

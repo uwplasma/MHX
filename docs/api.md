@@ -33,6 +33,7 @@ reviewers checking source-linked symbols.
 
 .. automodule:: mhx.equations.reduced_mhd
    :members:
+   :exclude-members: Array
 
 .. automodule:: mhx.diagnostics
    :members:
@@ -45,6 +46,7 @@ reviewers checking source-linked symbols.
 
 .. automodule:: mhx.benchmarks.decay
    :members:
+   :exclude-members: Array
 
 .. automodule:: mhx.benchmarks.scaling
    :members:

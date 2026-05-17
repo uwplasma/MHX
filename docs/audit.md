@@ -70,10 +70,11 @@ high-wavenumber transfer, bounded energy behavior, and a reconnection proxy
 where appropriate. They are not calibrated compressible-MHD, 3-D turbulence,
 or production reconnection-rate results.
 The nonlinear duration-audit plot is deliberately skeptical. It shows that the
-current nonlinear budget run reaches only $t=0.8$, whereas ten e-folds of the
-direct Harris-sheet benchmark with $\gamma\simeq0.0131$ require
-$t\simeq763.4$. This prevents using the short CI gates as evidence for
-nonlinear island growth or plasmoid chains.
+default FAST nonlinear budget gate reaches only $t=0.8$, whereas ten e-folds of
+the direct Harris-sheet benchmark with $\gamma\simeq0.0131$ require
+$t\simeq763.4$. Longer validation runs exercise the executor and diagnostics,
+but this boundary prevents using short CI gates as evidence for nonlinear
+island growth or plasmoid chains.
 The broader scaling plots remain analytic reference plots; they
 should not be cited as solver recovery of FKR, plasmoid, or ideal-tearing
 regimes.

@@ -83,6 +83,29 @@ path = "src/mhx/_version.py"
 [tool.hatch.build.targets.wheel]
 packages = ["src/mhx"]
 
+[tool.hatch.build.targets.sdist]
+exclude = [
+  "/.github",
+  "/.github/**",
+  "/.pytest_cache",
+  "/.pytest_cache/**",
+  "/.ruff_cache",
+  "/.ruff_cache/**",
+  "/.venv",
+  "/.venv/**",
+  "/docs/_build",
+  "/docs/_build/**",
+  "docs/_build/**",
+  "/legacy",
+  "/legacy/**",
+  "legacy/**",
+  "/outputs",
+  "/outputs/**",
+  "outputs/**",
+  "/**/__pycache__",
+  "/**/__pycache__/**",
+]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-ra"

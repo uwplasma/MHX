@@ -60,14 +60,15 @@ is long enough for a ten-e-fold linear phase plus nonlinear island tracking.
 | --- | ---: | --- | --- |
 | `linear_tearing_fast` | $t=0.1$ | smoke/IO/plotting | not a nonlinear claim |
 | `linear_tearing_timedomain` | $t=80$ | exact eigenmode replay and growth-fit plumbing | not a nonlinear claim |
-| `nonlinear_energy_budget` | $t=0.8$ | nonlinear conservation/dissipation identity | not a nonlinear island/plasmoid claim |
+| `nonlinear_energy_budget` | default FAST $t=0.8$ | nonlinear conservation/dissipation identity | not a nonlinear island/plasmoid claim |
 | `future_harris_linear_growth_campaign` | $t\approx763.4$ | production linear growth | long enough for 10 e-folds |
-| `future_rutherford_island_campaign` | $t\approx2290.1$ | production island tracking | long enough with safety factor 3 |
+| `rutherford_current_schema_validation` | $t\approx2290.1$ | duration-complete executor validation | not production until promotion passes |
+| `future_rutherford_island_campaign` | $t\approx2290.1$ plus convergence/seed-QI | production island tracking | long enough with safety factor 3 |
 
 The direct Harris benchmark anchor is $\gamma\simeq0.0131$, so ten e-folds
-require $10/0.0131\approx763.4$. This is why the current nonlinear budget run
-is explicitly labeled a code-validity gate rather than a Rutherford or plasmoid
-simulation.
+require $10/0.0131\approx763.4$. This is why the default FAST nonlinear budget
+run is explicitly labeled a code-validity gate rather than a Rutherford or
+plasmoid simulation.
 
 ## Python guard for future workflows
 

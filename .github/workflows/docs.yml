@@ -41,3 +41,4 @@ jobs:
         with:
           name: mhx-docs-html
           path: docs/_build/html
+          if-no-files-found: error

@@ -148,7 +148,8 @@ def test_remaining_long_run_gap_is_explicitly_tracked() -> None:
         )
     )
     assert "campaign_runner.md" in combined_text
-    assert "completed long-run artifact bundle" in combined_text
+    assert "duration-complete validation bundle" in combined_text
+    assert "convergence and seed-QI evidence" in combined_text
     assert "production nonlinear result" in combined_text
 
 

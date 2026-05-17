@@ -44,3 +44,4 @@ jobs:
         with:
           name: mhx-benchmark-smoke
           path: outputs/benchmark_smoke
+          if-no-files-found: error

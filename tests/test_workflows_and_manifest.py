@@ -46,6 +46,20 @@ def test_required_workflows_exist() -> None:
     ci_workflow = (workflow_dir / "ci.yml").read_text(encoding="utf-8")
     assert "mhx campaign rutherford-promotion-check" in ci_workflow
     assert "assert_validation_passed" in ci_workflow
+    assert "if-no-files-found: error" in ci_workflow
+    publish_workflow = (workflow_dir / "publish.yml").read_text(encoding="utf-8")
+    assert "Smoke install built wheel" in publish_workflow
+    assert "python -m pip install dist/*.whl" in publish_workflow
+    assert "if-no-files-found: error" in publish_workflow
+
+
+def test_sdist_excludes_repo_only_artifacts() -> None:
+    pyproject = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+    excludes = set(pyproject["tool"]["hatch"]["build"]["targets"]["sdist"]["exclude"])
+
+    assert "/legacy" in excludes
+    assert "/outputs" in excludes
+    assert "/docs/_build" in excludes
 
 
 def test_docs_figure_manifest_is_parseable_and_complete() -> None:

@@ -21,10 +21,10 @@ Orszag--Tang roll-up, and a Harris tearing layer sweep. See
 [docs/media.md](docs/media.md) for source commands, visual QA, and claim
 boundaries.
 
-| Harris reconnection (`Az` contours) | Forced turbulent reconnection | Orszag--Tang current sheets |
+| Harris-sheet validation (`Az` contours) | Forced turbulent-reconnection proxy | Orszag--Tang current sheets |
 | --- | --- | --- |
 | ![Double-Harris reconnection replay](docs/_static/readme/double_harris_reconnection.gif) | ![Forced turbulent reconnection](docs/_static/readme/forced_turbulent_reconnection.gif) | ![Orszag-Tang current sheets](docs/_static/readme/orszag_tang_current.gif) |
-| Single-sheet zoom from a `96×96`, `t=120` validation run: `j_z` background plus `Az` contours and refined diagnostic X/O annotations, not separatrix-event labels. | `64×64`, `t=80` forced-turbulence current sheet with reconnection-rate proxy diagnostics. | Solver-generated Orszag--Tang current-density cascade over a `96×96`, `t=10` validation run. |
+| Single-sheet zoom from a `96×96`, `t=120` validation run: `j_z` background plus `Az` contours and refined diagnostic X/O annotations, not separatrix-event labels. | `64×64`, `t=80` forced-turbulence current sheet with reconnection-rate proxy diagnostics. | Solver-generated Orszag--Tang current-density morphology and high-$k$ transfer over a `96×96`, `t=10` validation run. |
 
 | Decaying MHD turbulence | Orszag--Tang vorticity | Harris tearing layer |
 | --- | --- | --- |

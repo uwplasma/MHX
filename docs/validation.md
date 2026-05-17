@@ -1059,9 +1059,11 @@ $$
 
 Using the direct Harris benchmark anchor $\gamma\simeq0.0131$ for
 $S=1000$, $ka=0.5$, ten e-folds require $t_\mathrm{end}\approx763.4$.
-The current nonlinear budget run reaches $t=0.8$, so it is a code-validity
-gate, not a nonlinear island or plasmoid physics result. The audit also records
-Loureiro-type Sweet--Parker plasmoid one-e-fold estimates
+The default FAST nonlinear budget run reaches $t=0.8$, so it is a
+code-validity gate, not a nonlinear island or plasmoid physics result. Longer
+validation runs are documented separately and still require convergence and
+seed-QI promotion evidence before supporting production physics claims. The
+audit also records Loureiro-type Sweet--Parker plasmoid one-e-fold estimates
 $1/\gamma_{\max}\sim S^{-1/4}$ as a separate linear-timescale reference.
 
 ```bash

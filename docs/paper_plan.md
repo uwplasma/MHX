@@ -57,9 +57,10 @@ Both lanes are exposed through the CLI in
 The production operations guide now exists as [campaign_runner.md](campaign_runner.md).
 It documents the FAST runner, production plan, duration gate, checkpoint/resume
 metadata, required production artifacts, restartable executor chunks, and review
-questions. Paper text should still say "FAST campaign validation" or
-"production executor chunk" rather than "production campaign result" until a
-completed long-run artifact bundle exists.
+questions. Paper text should still say "FAST campaign validation",
+"duration-complete validation bundle", or "production executor chunk" rather
+than "production campaign result" until the long-run bundle also has passing
+convergence, seed-QI, geometry, X/O, and promotion evidence.
 
 ## Nonlinear duration requirement
 
@@ -77,9 +78,10 @@ $$
 t_\mathrm{end} \simeq \frac{10}{0.0131} \approx 763.4.
 $$
 
-The current nonlinear energy-budget gate runs to $t=0.8$, which is only about
-$1.0\times 10^{-3}$ of this ten-e-fold window. It is a nonlinear code-validity
-gate, not an island-growth or plasmoid result.
+The default FAST nonlinear energy-budget gate runs to $t=0.8$, which is only
+about $1.0\times 10^{-3}$ of this ten-e-fold window. Longer validation runs now
+exercise the same gates, but they remain code-validity evidence until paired
+with convergence and seed-QI promotion bundles.
 
 ```bash
 mhx benchmark nonlinear-duration-audit \
@@ -104,7 +106,7 @@ mhx campaign rutherford-template \
 | 6 | Time-domain eigenmode replay and growth-fit recovery. | CI artifact exists. |
 | 7 | Nonlinear differentiability and energy-budget gates. | CI artifact exists. |
 | 8 | Nonlinear duration audit and production-run requirements. | CI artifact exists. |
-| 9 | Rutherford island growth campaign. | Duration-guarded template exists; production run still planned. |
+| 9 | Rutherford island growth campaign. | Duration-complete validation run exists; production promotion remains blocked pending convergence and seed-QI evidence. |
 | 10 | Sweet-Parker/plasmoid nonlinear campaign. | Planned. |
 | 11 | Neural-ODE dataset/baselines/calibration/failure cases. | Implemented as a deterministic no-training reproducibility lane in [neural_ode_reproducibility.md](neural_ode_reproducibility.md). |
 

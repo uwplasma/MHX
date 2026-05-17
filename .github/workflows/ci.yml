@@ -404,3 +404,4 @@ jobs:
         with:
           name: mhx-fast-artifacts
           path: outputs/ci
+          if-no-files-found: error
