@@ -27,10 +27,11 @@ solver.
 | Nonlinear reduced-MHD energy budget | A multi-mode nonlinear periodic state is advanced and checked against $dE/dt=-\eta\langle j^2\rangle-\nu\langle\omega^2\rangle$. | Yes for this nonlinear conservation/dissipation identity; not an island-growth or plasmoid result. |
 | Nonlinear duration audit | Current nonlinear FAST durations are compared with Harris linear e-fold and Rutherford/plasmoid target windows. | Yes as a claim-boundary gate; it proves the current nonlinear runs are too short for nonlinear-island/plasmoid claims. |
 | Duration policy | Current short runs and future production templates are checked against explicit e-fold requirements. | Yes as an enforceable guard; production physics still needs long actual runs and convergence. |
+| Orszag--Tang and turbulence media | Reduced-MHD Orszag--Tang, decaying turbulence, and forced turbulent-reconnection examples run with finite-field, energy, high-$k$, and reconnection-proxy gates. | Yes as validation media; not as compressible MHD, 3-D turbulence, or production reconnection statistics. |
 | FAST reduced-MHD run | Produces stable outputs, diagnostics, figures, and GIFs. Kinetic energy remains tiny and mode amplitudes change weakly. | Smoke test only. |
 | Two-fluid and plugin examples | Exercise extension paths and output schemas. | API examples only; not validated extended-MHD physics. |
 | Nonlinear tearing/plasmoid dynamics | Not demonstrated by the current FAST runs. | No. |
-| Neural ODE / inverse design | Roadmap item after validation base stabilizes. | No. |
+| Neural ODE / inverse design | Deterministic dataset, baselines, calibration, and fitted latent-ODE FAST workflow exist. | Validation protocol only; not production surrogate or inverse-design evidence. |
 
 ## Plot audit notes
 
@@ -63,6 +64,11 @@ the full nonlinear trajectory dissipates total energy at the rate predicted by
 the reduced-MHD theorem, with the integrated residual below the documented gate.
 It tests bracket cancellation and dissipative signs, but it does not prove
 tearing-island growth, Rutherford saturation, or plasmoid onset.
+The Orszag--Tang, decaying-turbulence, and forced-turbulent-reconnection media
+are useful nonlinear reduced-MHD exercises: they show current filamentation,
+high-wavenumber transfer, bounded energy behavior, and a reconnection proxy
+where appropriate. They are not calibrated compressible-MHD, 3-D turbulence,
+or production reconnection-rate results.
 The nonlinear duration-audit plot is deliberately skeptical. It shows that the
 current nonlinear budget run reaches only $t=0.8$, whereas ten e-folds of the
 direct Harris-sheet benchmark with $\gamma\simeq0.0131$ require
@@ -108,8 +114,12 @@ The repository is currently defensible as a validation-first rebuild with:
 - tiny nonzero-equilibrium dense-spectrum gate;
 - periodic current-sheet linear time-domain replay;
 - nonlinear current-sheet trajectory-map differentiability bridge;
+- Orszag--Tang, decaying turbulence, and forced turbulent-reconnection
+  validation media with explicit claim boundaries;
 - nonlinear duration audit that flags short CI nonlinear runs against
   literature-scale target windows;
+- FAST neural-ODE dataset/baseline/calibration and latent-ODE training
+  protocol;
 - plugin and diagnostics extension examples;
 - CI-checked docs, tests, figures, GIFs, reports, and artifact manifests.
 
@@ -121,7 +131,7 @@ The following items should not be overclaimed:
 - nonlinear magnetic-island growth;
 - Sweet-Parker plasmoid instability from the PDE solver;
 - production performance on large grids;
-- neural-ODE surrogate accuracy;
+- neural-ODE production surrogate accuracy/generalization;
 - inverse-design superiority or Pareto-front claims.
 
 The next scientific milestone should extend the single direct tearing

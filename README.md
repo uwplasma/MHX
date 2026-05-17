@@ -49,6 +49,9 @@ results.
 ```bash
 git clone https://github.com/uwplasma/MHX.git
 cd MHX
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
 python -m pip install -e ".[dev,docs]"
 mhx version
 ```
@@ -61,6 +64,7 @@ official JAX instructions first, then install MHX.
 Run a deterministic reduced-MHD smoke workflow:
 
 ```bash
+mhx init outputs/tutorial/linear_tearing.toml
 mhx run examples/linear_tearing.toml --outdir outputs/smoke
 mhx figures outputs/smoke --gif
 mhx report outputs/smoke
@@ -77,12 +81,11 @@ MHX_API_VERSION=v1 mhx api status --json
 Use MHX from Python:
 
 ```python
-from mhx.benchmarks import run_linear_tearing_smoke
-from mhx.config import load_config
+import mhx
 
-cfg = load_config("examples/linear_tearing.toml")
-trajectory, diagnostics = run_linear_tearing_smoke(cfg)
-print(diagnostics["final_total_energy"])
+manifest = mhx.run("examples/linear_tearing.toml", outdir="outputs/python_api")
+cfg = mhx.load_config("examples/linear_tearing.toml")
+print(manifest, cfg.physics.model)
 ```
 
 ## Documentation
@@ -90,9 +93,14 @@ print(diagnostics["final_total_energy"])
 | Need | Start here |
 | --- | --- |
 | First run and plugin demo | [docs/quickstart.md](docs/quickstart.md) |
+| Installation and environments | [docs/install.md](docs/install.md) |
+| Guided tutorial | [docs/tutorial.md](docs/tutorial.md) |
 | Media sources and claim boundaries | [docs/media.md](docs/media.md) |
 | Physics validation details | [docs/validation.md](docs/validation.md) |
 | Benchmark commands and expected artifacts | [docs/benchmarks.md](docs/benchmarks.md) |
+| Diagnostics and output schemas | [docs/diagnostics.md](docs/diagnostics.md), [docs/output_schema.md](docs/output_schema.md) |
+| Neural-ODE reproducibility | [docs/neural_ode_reproducibility.md](docs/neural_ode_reproducibility.md) |
+| Performance and timing | [docs/performance.md](docs/performance.md) |
 | Long-run duration evidence | [docs/long_run_evidence.md](docs/long_run_evidence.md) |
 | Campaign planning and execution | [docs/campaign_runner.md](docs/campaign_runner.md) |
 | API compatibility policy | [docs/api_policy.md](docs/api_policy.md) |
@@ -103,6 +111,8 @@ Common entry points:
 mhx validate all --outdir outputs/validation_suite
 mhx benchmark catalog --outdir outputs/benchmarks/catalog
 mhx campaign rutherford-plan-production --outdir outputs/campaigns/rutherford_production_plan
+mhx validate readiness --suite outputs/validation_suite --outdir outputs/validation_readiness
+mhx api deprecations
 mhx physics list
 mhx diagnostics list
 ```

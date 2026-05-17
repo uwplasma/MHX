@@ -47,6 +47,10 @@ The following names are part of the rebuilt v1 public surface:
   `production_template`, and `production`.
 - `mhx validate all`, `mhx benchmark ...`, `mhx figures`, `mhx report`, and
   `mhx artifact-manifest` command families.
+- Public CLI families documented for v1: `mhx api`, `mhx campaign`,
+  `mhx neural-ode`, `mhx physics`, `mhx diagnostics`, and
+  `mhx validate readiness`. New subcommands may be added in minor pre-releases;
+  removed or renamed commands require a migration note.
 
 ## Compatibility rules
 

@@ -58,6 +58,9 @@ The documentation/CI checks are intentionally cheap enough to run on every push:
 - `python -m pytest tests/test_docs_links.py` checks that required docs pages are
   in the Sphinx toctree and that reviewer-facing source links still point at
   repository paths.
+- `python -m pytest tests/test_readme_media.py` checks README GIF links,
+  compactness, visual-QA metadata, and minimum simulation durations for landing
+  page media.
 - `sphinx-build -W -b html docs docs/_build/html` builds docs with warnings as
   failures.
 

@@ -16,12 +16,19 @@ contract selected by `MHX_API_VERSION`.
 
 ## Manifest claim levels
 
-Every v1 manifest contains:
+Every v1 `manifest.json` contains:
 
 | Key | Meaning |
 | --- | --- |
+| `schema` | Manifest schema, currently `mhx.manifest.v1`. |
+| `api_version` | Public API version selected by `MHX_API_VERSION`, currently `v1`. |
+| `created_utc` | ISO-8601 creation timestamp in UTC. |
+| `mhx_version` | Package version that wrote the manifest. |
 | `claim_level` | One of `unspecified`, `smoke`, `validation`, `production_template`, or `production`. |
 | `claim_scope` | Human-readable boundary explaining what the artifact can and cannot support. |
+| `config` | JSON-serializable run or benchmark configuration. |
+| `outputs` | Mapping from stable output names to run-directory-relative file paths. |
+| `hashes` | SHA-256 hashes for output files that existed when the manifest was written. |
 
 `mhx artifact-manifest` also collects nested `manifest.json` claim levels in a
 top-level `claim_levels` mapping. This lets CI and reviewers check whether a
@@ -128,8 +135,9 @@ This writes `outputs/smoke/artifact_manifest.json` with schema
 ## Validation-suite outputs
 
 `mhx validate all --outdir outputs/validation_suite` executes the active FAST
-validation cases, including the seed-QI sweep, fitted latent ODE, and
-restartable Rutherford execution chunk. Two important closed-lane schemas are:
+validation cases, including double-Harris, turbulence, seed-QI, fitted latent
+ODE, and restartable Rutherford execution chunks. Important closed-lane schemas
+include:
 
 ### Orszag--Tang vortex
 
@@ -144,6 +152,22 @@ writes:
 | `figures/orszag_tang_summary.png` | Energy, high-$k$, final-current, and final-vorticity summary. |
 | `figures/orszag_tang_*.gif` | Optional flux, current, and vorticity movies when `--movies` is set. |
 
+### Decaying turbulence and forced turbulent reconnection
+
+`mhx benchmark decaying-turbulence --outdir outputs/benchmarks/decaying_mhd_turbulence --movies`
+and
+`mhx benchmark forced-turbulent-reconnection --outdir outputs/benchmarks/forced_turbulent_reconnection --movies`
+write:
+
+| File | Schema / contents |
+| --- | --- |
+| `decaying_mhd_turbulence.npz` | `mhx.validation.decaying_mhd_turbulence.v1`; keys `time`, `psi`, `omega`, `current_density`, `magnetic_energy`, `kinetic_energy`, `total_energy`, `current_linf`, `vorticity_linf`, `current_high_k_fraction`, and `magnetic_divergence_linf`. |
+| `forced_turbulent_reconnection.npz` | `mhx.validation.forced_turbulent_reconnection.v1`; same core keys plus `reconnection_proxy` and `reconnection_rate_proxy`. |
+| `diagnostics.json` | Scalar controls, energy/current diagnostics, high-$k$ summaries, and reconnection-proxy statistics. |
+| `validation.json` | Finite-array, energy, current, high-$k$, and reconnection-proxy gates. |
+| `figures/*_summary.png` | Energy, current/reconnection, final current, and final flux summary. |
+| `figures/*_flux.gif`, `figures/*_current.gif` | Optional fixed-scale movies when `--movies` is set. |
+
 ### Rutherford production execution
 
 `mhx campaign rutherford-execute <run-dir>` writes:
@@ -152,8 +176,14 @@ writes:
 | --- | --- |
 | `production_history.npz` | `mhx.campaign.rutherford_history.v1`; keys `step`, `time`, `reconnected_flux`, `rutherford_island_width`, `reconnection_rate_proxy`, `magnetic_energy`, `kinetic_energy`, `total_energy`, `dissipation_budget_residual`, `magnetic_divergence_linf`, `current_density_linf`. |
 | `checkpoints/state_step_*.npz` | `mhx.campaign.rutherford_state.v1`; keys `step`, `time`, `psi`, `omega`. |
+| `checkpoints/checkpoint_index.json` | Ordered checkpoint metadata for resume and audit. |
+| `resume_plan.json` | Next-step metadata for chunked continuation. |
 | `diagnostics.json` | `mhx.campaign.rutherford_execution.v1`; start/end step, target step, run controls, divergence and energy-growth summaries. |
 | `validation.json` | `mhx.campaign.rutherford_execution.gates.v1`; finite-history, checkpoint, energy, divergence, and movie gates. |
+| `figures/*.png` | Island-width, reconnected-flux, energy-budget, and current-sheet quick-look figures. |
+| `figures/*.gif` | Optional fixed-scale flux and current movies. |
+| `artifact_manifest.json` | Recursive hashes for chunk outputs before `manifest.json` is written. |
+| `manifest.json` | Top-level claim metadata and output hashes. |
 
 ### Fitted neural ODE
 
@@ -164,7 +194,13 @@ writes:
 | `latent_ode_model.json` | `mhx.neural_ode.latent_model.v1`; random-feature weights, ridge coefficient matrix, target names, and training controls. |
 | `latent_ode_metrics.json` | `mhx.neural_ode.latent_metrics.v1`; train/validation/test MAE/RMSE and ratio to the best baseline. |
 | `latent_ode_predictions.npz` | Prediction tensor, target tensor, times, seeds, and target names. |
+| `dataset.npz` | Frozen deterministic FAST dataset when the train command generated it locally. |
+| `splits.json` | Train/validation/test seed split metadata. |
+| `baseline_metrics.json` | Persistence/linear baseline metrics used in comparisons. |
+| `calibration.json` | Calibration and coverage diagnostics for the deterministic fit. |
+| `experiment_spec.json` | Reproducible experiment controls. |
 | `validation.json` | `mhx.neural_ode.training.gates.v1`; finite-model, finite-prediction, split, and held-out forecast gates. |
+| `manifest.json` | Top-level validation manifest. |
 
 The suite also writes:
 
@@ -185,9 +221,21 @@ The suite also writes:
   `periodic_current_sheet_eigenvalue/`,
   `periodic_current_sheet_timedomain/`,
   `periodic_current_sheet_nonlinear_bridge/`,
+  `periodic_double_harris_nonlinear_growth/`,
+  `periodic_double_harris_convergence/`,
   `nonlinear_energy_budget/`,
+  `orszag_tang_vortex/`,
+  `decaying_mhd_turbulence/`,
+  `forced_turbulent_reconnection/`,
   `nonlinear_duration_audit/`,
-  `duration_policy/`, and `arnoldi/`.
+  `seed_robust_qi/`,
+  `seed_robust_qi_sweep/`,
+  `neural_ode_reproducibility/`,
+  `neural_ode_latent_fit/`,
+  `rutherford_production_execution/`,
+  `duration_policy/`,
+  `diffusion_eigenvalue/`,
+  `power_iteration/`, and `arnoldi/`.
 
 Each validation-suite case includes a `claim_level` copied from its nested
 manifest. Most cases are `validation`; the short linear-tearing smoke run is
@@ -215,7 +263,7 @@ writes:
 writes validation-grade campaign artifacts:
 
 - `rutherford_fast_histories.npz`: schema
-  `mhx.campaign.rutherford_fast.histories.v1`, with `time`, `seed`,
+  `mhx.validation.rutherford_campaign_run.v1`, with `time`, `seed`,
   `reconnected_flux`, `rutherford_island_width`, `reconnection_rate_proxy`,
   `magnetic_energy`, `kinetic_energy`, `total_energy`,
   `magnetic_divergence_linf`, and `current_density_linf`.

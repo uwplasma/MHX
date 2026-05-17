@@ -68,6 +68,10 @@ manifest writer paths:
 | Seeded double-Harris long run | Scalable base-vs-seeded nonlinear replay with early growth, dissipative energy, current-density histories, and optional movies. | Bounded nonlinear validation, not convergence-backed Rutherford/plasmoid production. | [current_sheet.py](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/current_sheet.py), [test_current_sheet_eigenvalue_validation.py](https://github.com/uwplasma/MHX/blob/main/tests/test_current_sheet_eigenvalue_validation.py) |
 | Seeded double-Harris convergence | Same replay swept over tiny resolution and time-step cases with spread gates. | FAST convergence scaffold; production claims still require larger sweeps. | [current_sheet.py](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/current_sheet.py), [test_current_sheet_eigenvalue_validation.py](https://github.com/uwplasma/MHX/blob/main/tests/test_current_sheet_eigenvalue_validation.py) |
 | Nonlinear energy budget | Reduced-MHD identity $dE/dt=-\eta\langle j^2\rangle-\nu\langle\omega^2\rangle$. | Nonlinear conservation/dissipation validation. | [nonlinear.py](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/nonlinear.py), [test_nonlinear_energy_budget_validation.py](https://github.com/uwplasma/MHX/blob/main/tests/test_nonlinear_energy_budget_validation.py) |
+| Orszag--Tang vortex | Reduced-MHD nonlinear roll-up, high-$k$ transfer, energy decay, and divergence preservation. | Nonlinear morphology validation, not compressible shock validation. | [orszag_tang.py](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/orszag_tang.py), [test_orszag_tang_validation.py](https://github.com/uwplasma/MHX/blob/main/tests/test_orszag_tang_validation.py) |
+| Decaying turbulence | Deterministic broadband reduced-MHD current filamentation and high-$k$ transfer. | Turbulence media validation, not converged statistics. | [turbulence.py](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/turbulence.py), [test_turbulence_validation.py](https://github.com/uwplasma/MHX/blob/main/tests/test_turbulence_validation.py) |
+| Forced turbulent reconnection | Periodic current sheet with deterministic broadband perturbations, forcing, critical-point-aware reconnection proxy, and fallback counter. | Pedagogical 2-D proxy validation, not 3-D fast-reconnection evidence. | [turbulence.py](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/turbulence.py), [critical_points.py](https://github.com/uwplasma/MHX/blob/main/src/mhx/diagnostics/critical_points.py), [test_turbulence_validation.py](https://github.com/uwplasma/MHX/blob/main/tests/test_turbulence_validation.py) |
+| X/O critical points | Grid-localized $|\nabla\psi|$ minima classified by Hessian determinant. | Visualization and proxy diagnostic validation; not production point tracking. | [critical_points.py](https://github.com/uwplasma/MHX/blob/main/src/mhx/diagnostics/critical_points.py), [test_critical_points.py](https://github.com/uwplasma/MHX/blob/main/tests/test_critical_points.py) |
 | Nonlinear duration policy | $t_\mathrm{end}\ge s_fN_e/\gamma$ before linear-growth or island claims. | Claim-boundary validation. | [duration_policy.py](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/duration_policy.py), [test_duration_policy.py](https://github.com/uwplasma/MHX/blob/main/tests/test_duration_policy.py) |
 | Seed-robust QI | Metric stability under deterministic tiny seed perturbations. | FAST sensitivity validation, not production UQ. | [seed_robust_qi.py](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/seed_robust_qi.py), [test_seed_robust_qi.py](https://github.com/uwplasma/MHX/blob/main/tests/test_seed_robust_qi.py) |
 | Seed-robust QI sweep | Common-seed perturbation-amplitude sweep with seed-spread and mean-drift gates. | FAST sensitivity validation, not production UQ. | [seed_robust_qi.py](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/seed_robust_qi.py), [test_seed_robust_qi.py](https://github.com/uwplasma/MHX/blob/main/tests/test_seed_robust_qi.py) |
@@ -89,6 +93,10 @@ mhx benchmark timing --outdir outputs/reviewer/timing --repeats 3 --warmups 1
 mhx benchmark seed-robust-qi --outdir outputs/reviewer/seed_robust_qi
 mhx benchmark seed-robust-qi-sweep --outdir outputs/reviewer/seed_robust_qi_sweep
 mhx benchmark double-harris-growth --outdir outputs/reviewer/double_harris_growth
+mhx benchmark orszag-tang --outdir outputs/reviewer/orszag_tang --movies
+mhx benchmark decaying-turbulence --outdir outputs/reviewer/decaying_turbulence --movies
+mhx benchmark forced-turbulent-reconnection --outdir outputs/reviewer/forced_reconnection --movies
+mhx neural-ode train --outdir outputs/reviewer/neural_ode_latent_fit
 mhx campaign rutherford-template --outdir outputs/reviewer/rutherford_template
 mhx campaign rutherford-run-fast --outdir outputs/reviewer/rutherford_fast
 mhx validate readiness --suite outputs/reviewer/validation_suite --outdir outputs/reviewer/readiness
@@ -120,11 +128,15 @@ The current repository can defend:
 - time-domain replay of known linear eigenmodes;
 - small-grid nonlinear growth of an unstable periodic double-Harris sheet;
 - nonlinear reduced-MHD energy-budget consistency;
+- nonlinear Orszag--Tang and turbulence media with finite-field, high-$k$, and
+  energy/proxy gates;
 - explicit duration gates that prevent short nonlinear CI runs from being
   overclaimed;
 - deterministic seed-robust QI for short FAST metrics;
 - common-seed amplitude-sweep QI with drift and spread gates;
 - schema-valid campaign artifacts and publication-pipeline scaffolding.
+- FAST latent-ODE dataset/baseline/calibration and fitted-model workflow
+  validation.
 
 ## What is not yet strong
 

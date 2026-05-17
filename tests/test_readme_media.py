@@ -16,7 +16,7 @@ HEADING_RE = re.compile(r"^#{1,6}\s+(?P<title>.+?)\s*#*\s*$", re.MULTILINE)
 README_GIF_BUDGETS = {
     "docs/_static/readme/double_harris_reconnection.gif": 500_000,
     "docs/_static/readme/double_harris_current_sheet.gif": 600_000,
-    "docs/_static/readme/forced_turbulent_reconnection.gif": 650_000,
+    "docs/_static/readme/forced_turbulent_reconnection.gif": 700_000,
     "docs/_static/readme/decaying_mhd_turbulence_current.gif": 750_000,
     "docs/_static/readme/orszag_tang_current.gif": 250_000,
     "docs/_static/readme/orszag_tang_vorticity.gif": 350_000,

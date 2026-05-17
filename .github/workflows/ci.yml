@@ -14,7 +14,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.10", "3.11"]
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
     env:
       JAX_PLATFORM_NAME: cpu
       JAX_ENABLE_X64: "1"
@@ -314,7 +314,7 @@ jobs:
           test -f docs/_static/readme/mhd_turbulence_cascade.gif
           test "$(stat -c%s docs/_static/readme/double_harris_reconnection.gif)" -lt 500000
           test "$(stat -c%s docs/_static/readme/double_harris_current_sheet.gif)" -lt 600000
-          test "$(stat -c%s docs/_static/readme/forced_turbulent_reconnection.gif)" -lt 650000
+          test "$(stat -c%s docs/_static/readme/forced_turbulent_reconnection.gif)" -lt 700000
           test "$(stat -c%s docs/_static/readme/decaying_mhd_turbulence_current.gif)" -lt 750000
           test "$(stat -c%s docs/_static/readme/orszag_tang_current.gif)" -lt 250000
           test "$(stat -c%s docs/_static/readme/orszag_tang_vorticity.gif)" -lt 350000

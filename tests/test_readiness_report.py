@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 
+import pytest
 from typer.testing import CliRunner
 
 from mhx.benchmarks import (
@@ -84,3 +85,13 @@ def test_write_readiness_report_and_cli(tmp_path) -> None:
     )
     assert result.exit_code == 0, result.stdout
     assert (outdir / "readiness.json").exists()
+
+
+def test_readiness_loader_rejects_missing_or_invalid_json(tmp_path) -> None:
+    with pytest.raises(FileNotFoundError):
+        run_readiness_assessment(tmp_path / "missing")
+
+    invalid_path = tmp_path / "invalid.json"
+    invalid_path.write_text("[]", encoding="utf-8")
+    with pytest.raises(ValueError, match="object"):
+        run_readiness_assessment(invalid_path)

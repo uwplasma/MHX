@@ -1,9 +1,10 @@
 # Benchmarks
 
-MHX benchmark workflows are intentionally command-line reproducible. The current
-active benchmark is a FAST reduced-MHD spectral smoke run. It verifies
-configuration loading, spectral operators, RK4 time integration, diagnostics,
-output schema, figures, GIF generation, reports, and validation checks.
+MHX benchmark workflows are intentionally command-line reproducible. The active
+catalog now includes a FAST reduced-MHD smoke run, exact linear physics gates,
+Harris tearing eigenvalue checks, nonlinear energy-budget and duration gates,
+Orszag--Tang and turbulence media, seed-QI, neural-ODE reproducibility, and
+restartable Rutherford-executor artifacts.
 
 ```bash
 mhx benchmark run \
@@ -29,8 +30,9 @@ Expected files include:
 ## Detailed command index
 
 Use this section as the detailed command catalog that the README intentionally
-does not carry. Each command writes `claim_level = "validation"` unless the
-linked campaign documentation states that it is a `production_template`.
+does not carry. Most benchmark commands write `claim_level = "validation"`;
+`mhx benchmark run` writes `smoke`, and campaign planning commands can write
+`production_template`.
 
 ```bash
 mhx benchmark run --config examples/linear_tearing.toml --outdir outputs/benchmarks/linear_tearing_fast --gif
@@ -55,6 +57,8 @@ mhx benchmark double-harris-long-run --outdir outputs/benchmarks/periodic_double
 mhx benchmark double-harris-convergence --outdir outputs/benchmarks/periodic_double_harris_convergence
 mhx benchmark nonlinear-energy-budget --outdir outputs/benchmarks/nonlinear_energy_budget
 mhx benchmark orszag-tang --outdir outputs/benchmarks/orszag_tang_vortex --movies
+mhx benchmark decaying-turbulence --outdir outputs/benchmarks/decaying_mhd_turbulence --movies
+mhx benchmark forced-turbulent-reconnection --outdir outputs/benchmarks/forced_turbulent_reconnection --movies
 mhx benchmark nonlinear-duration-audit --outdir outputs/benchmarks/nonlinear_duration_audit
 mhx benchmark duration-policy --outdir outputs/benchmarks/duration_policy
 mhx benchmark diffusion-eigenvalue --outdir outputs/benchmarks/diffusion_eigenvalue
@@ -109,6 +113,39 @@ This is an incompressible reduced-MHD adaptation of the
 [Orszag--Tang 1979](https://doi.org/10.1017/S002211207900210X) vortex. It is
 intended as a nonlinear morphology, energy-decay, divergence, and high-$k$
 cascade gate, not as a compressible full-MHD shock benchmark.
+
+## Decaying turbulence and forced turbulent reconnection
+
+```bash
+mhx benchmark decaying-turbulence \
+  --outdir outputs/benchmarks/decaying_mhd_turbulence \
+  --nx 64 --ny 64 --t-end 8 --save-every 20 --movies
+
+mhx benchmark forced-turbulent-reconnection \
+  --outdir outputs/benchmarks/forced_turbulent_reconnection \
+  --nx 64 --ny 64 --t-end 80 --save-every 100 --movies
+```
+
+The decaying case starts from a deterministic band-limited reduced-MHD state
+and gates finite fields, dissipative total energy, current-density growth, and
+high-wavenumber transfer. The forced case adds a periodic current sheet,
+broadband perturbations, weak large-scale vorticity forcing, an X/O-aware
+reconnection proxy when critical points are found, and a conservative fallback
+proxy when they are not.
+
+Expected files include:
+
+- `diagnostics.json`
+- `validation.json`
+- `decaying_mhd_turbulence.npz` or `forced_turbulent_reconnection.npz`
+- `figures/decaying_mhd_turbulence_summary.png` or
+  `figures/forced_turbulent_reconnection_summary.png`
+- optional `figures/*_flux.gif` and `figures/*_current.gif` with `--movies`
+
+These examples are anchored to 2-D MHD turbulence/current-sheet studies and
+turbulent reconnection ideas, but they remain validation media. They do not
+claim 3-D Lazarian--Vishniac fast reconnection or converged turbulence
+statistics.
 
 ## Exact-decay validation benchmark
 
@@ -360,7 +397,12 @@ mhx benchmark cosine-equilibrium-linearization --outdir outputs/ci/cosine_equili
 mhx benchmark current-sheet-eigenvalue --outdir outputs/ci/periodic_current_sheet_eigenvalue
 mhx benchmark current-sheet-timedomain --outdir outputs/ci/periodic_current_sheet_timedomain
 mhx benchmark current-sheet-nonlinear-bridge --outdir outputs/ci/periodic_current_sheet_nonlinear_bridge
+mhx benchmark double-harris-growth --outdir outputs/ci/periodic_double_harris_nonlinear_growth
+mhx benchmark double-harris-convergence --outdir outputs/ci/periodic_double_harris_convergence
 mhx benchmark nonlinear-energy-budget --outdir outputs/ci/nonlinear_energy_budget
+mhx benchmark orszag-tang --outdir outputs/ci/orszag_tang_vortex
+mhx benchmark decaying-turbulence --outdir outputs/ci/decaying_mhd_turbulence
+mhx benchmark forced-turbulent-reconnection --outdir outputs/ci/forced_turbulent_reconnection
 mhx benchmark nonlinear-duration-audit --outdir outputs/ci/nonlinear_duration_audit
 mhx benchmark duration-policy --outdir outputs/ci/duration_policy
 mhx benchmark diffusion-eigenvalue --outdir outputs/ci/diffusion_eigenvalue
@@ -368,7 +410,15 @@ mhx benchmark power-iteration --outdir outputs/ci/power_iteration
 mhx benchmark arnoldi --outdir outputs/ci/arnoldi
 mhx benchmark timing --outdir outputs/ci/timing --repeats 1 --warmups 0
 mhx benchmark catalog --outdir outputs/ci/catalog
+mhx benchmark seed-robust-qi --outdir outputs/ci/seed_robust_qi
+mhx benchmark seed-robust-qi-sweep --outdir outputs/ci/seed_robust_qi_sweep
+mhx neural-ode dataset --outdir outputs/ci/neural_ode_dataset
+mhx neural-ode train --outdir outputs/ci/neural_ode_latent_fit
+mhx campaign rutherford-plan-production --outdir outputs/ci/rutherford_plan
+mhx campaign rutherford-execute outputs/ci/rutherford_plan --max-steps 4
 mhx validate all --outdir outputs/ci/validation_suite
+mhx validate readiness --suite outputs/ci/validation_suite --outdir outputs/ci/readiness
+python examples/make_readme_media.py
 mhx run examples/linear_tearing_twofluid_toy.toml --outdir outputs/ci/twofluid_toy
 mhx figures outputs/ci/twofluid_toy --gif
 mhx report outputs/ci/twofluid_toy

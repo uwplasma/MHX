@@ -1,10 +1,11 @@
 # Physics validation
 
-MHX validation tests should have explicit physics gates, not just smoke-run
-assertions. The first active gate is exact resistive diffusion of a single
-periodic Fourier mode. This is the linear induction-equation limit of
-resistive reduced MHD and is a prerequisite for credible tearing-mode,
-plasmoid, and extended-MHD studies.
+MHX validation tests have explicit physics gates, not just smoke-run
+assertions. The suite starts from exact resistive diffusion of a single Fourier
+mode and now includes Harris tearing eigenvalue checks, nonlinear
+energy-budget identities, duration guards, Orszag--Tang morphology, decaying
+turbulence, forced turbulent-reconnection media, seed-QI, neural-ODE
+reproducibility, and restartable campaign-executor artifacts.
 
 ## Exact resistive decay
 
@@ -105,6 +106,54 @@ Expected files:
 - `outputs/benchmarks/orszag_tang_vortex/figures/orszag_tang_summary.png`
 - `outputs/benchmarks/orszag_tang_vortex/figures/orszag_tang_current.gif`
 - `outputs/benchmarks/orszag_tang_vortex/figures/orszag_tang_vorticity.gif`
+
+## Decaying turbulence and forced turbulent reconnection
+
+The turbulence validations exercise nonlinear advection, current-sheet
+formation, and reconnection-proxy diagnostics without claiming converged
+turbulent reconnection rates. The reduced-MHD equations remain
+
+$$
+\partial_t\psi + [\phi,\psi] = \eta\nabla^2\psi,
+\qquad
+\partial_t\omega + [\phi,\omega] = [\psi,\nabla^2\psi]
+  + \nu\nabla^2\omega + F_\omega ,
+$$
+
+where the decaying case sets $F_\omega=0$ and the forced current-sheet case
+uses a weak deterministic large-scale vorticity forcing. The decaying gate
+checks finite arrays, total-energy decay, current amplification, and high-$k$
+transfer. The forced gate checks finite arrays, bounded injected energy,
+current amplification, and a reconnection proxy built from X/O critical-point
+flux separation when available, with a documented max-min flux fallback.
+
+Run the validations:
+
+```bash
+mhx benchmark decaying-turbulence --outdir outputs/benchmarks/decaying_mhd_turbulence --movies
+mhx benchmark forced-turbulent-reconnection --outdir outputs/benchmarks/forced_turbulent_reconnection --movies
+```
+
+Expected files:
+
+- `outputs/benchmarks/decaying_mhd_turbulence/decaying_mhd_turbulence.npz`
+- `outputs/benchmarks/decaying_mhd_turbulence/figures/decaying_mhd_turbulence_summary.png`
+- `outputs/benchmarks/forced_turbulent_reconnection/forced_turbulent_reconnection.npz`
+- `outputs/benchmarks/forced_turbulent_reconnection/figures/forced_turbulent_reconnection_summary.png`
+- optional flux/current GIFs under each `figures/` directory
+
+These examples are literature-anchored to 2-D MHD turbulence and
+turbulent-reconnection studies, including the current-sheet/turbulence
+diagnostic tradition used by Servidio and collaborators and the broader
+Lazarian--Vishniac picture of turbulence-assisted reconnection. The current
+MHX examples are pedagogical 2-D reduced-MHD validation artifacts, not 3-D
+fast-reconnection production evidence.
+
+Source links:
+
+- [Turbulence implementation](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/turbulence.py)
+- [Critical-point diagnostics](https://github.com/uwplasma/MHX/blob/main/src/mhx/diagnostics/critical_points.py)
+- [Turbulence tests](https://github.com/uwplasma/MHX/blob/main/tests/test_turbulence_validation.py)
 
 ## Validation figures
 

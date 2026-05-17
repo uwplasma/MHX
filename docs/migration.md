@@ -13,7 +13,7 @@ Use the active CLI instead:
 | `mhd_linear_benchmarks.py` | `mhx benchmark decay`, `mhx benchmark linearized-rhs`, `mhx benchmark reduced-mhd-eigenmode` |
 | `mhd_tearing_scan.py` | Roadmap: TOML-driven scan command after the v1 validation core is complete. |
 | `mhd_tearing_inverse_design.py` | Roadmap: differentiable inverse-design command after calibrated tearing eigenvalue validation. |
-| `mhd_tearing_ml.py` and `mhd_tearing_ml_v2.py` | Roadmap: deterministic latent/neural-ODE experiments with train/validation/test splits. |
+| `mhd_tearing_ml.py` and `mhd_tearing_ml_v2.py` | `mhx neural-ode dataset --outdir outputs/neural_ode/seed_qi_fast` and `mhx neural-ode train --outdir outputs/neural_ode/latent_ode_fast` |
 
 ## Why the old scripts are archived
 

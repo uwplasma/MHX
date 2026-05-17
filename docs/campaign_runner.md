@@ -75,7 +75,7 @@ The FAST runner writes:
 - `campaign_template.json`
 - `manifest.json`
 - `figures/rutherford_fast_histories.png`
-- optionally `figures/rutherford_fast_flux.gif`
+- optionally `figures/flux_movie.gif`
 
 The NPZ history keys are:
 

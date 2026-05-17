@@ -81,3 +81,20 @@ def test_duration_policy_artifacts_and_cli(tmp_path) -> None:
     result = CliRunner().invoke(app, ["benchmark", "duration-policy", "--outdir", str(outdir)])
     assert result.exit_code == 0, result.stdout
     assert (outdir / "duration_policy.json").exists()
+
+
+def test_duration_policy_rejects_invalid_inputs() -> None:
+    with pytest.raises(ValueError, match="name"):
+        assess_duration(name="", purpose="test", t_end=1.0)
+    with pytest.raises(ValueError, match="purpose"):
+        assess_duration(name="case", purpose="", t_end=1.0)
+    with pytest.raises(ValueError, match="scope"):
+        assess_duration(name="case", purpose="test", scope="", t_end=1.0)
+    with pytest.raises(ValueError, match="t_end"):
+        assess_duration(name="case", purpose="test", t_end=0.0)
+    with pytest.raises(ValueError, match="growth_rate"):
+        assess_duration(name="case", purpose="test", t_end=1.0, growth_rate=0.0)
+    with pytest.raises(ValueError, match="required_efolds"):
+        assess_duration(name="case", purpose="test", t_end=1.0, required_efolds=0.0)
+    with pytest.raises(ValueError, match="safety_factor"):
+        assess_duration(name="case", purpose="test", t_end=1.0, safety_factor=0.0)

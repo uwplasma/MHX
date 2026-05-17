@@ -62,9 +62,10 @@ $$
        {\sum_i (t_i-\bar t)^2}.
 $$
 
-This scalar is a reproducibility diagnostic for the FAST smoke run. It is not
-yet a calibrated FKR eigenmode growth-rate claim; that validation layer remains
-on the roadmap.
+This scalar is a reproducibility diagnostic for individual saved trajectories.
+It is not, by itself, a calibrated FKR eigenmode claim. Calibrated tearing
+checks live in the separate Harris eigenvalue, dispersion, layer, and
+time-domain replay gates documented on [validation.md](validation.md).
 
 ## Reconnected flux and island-width proxies
 
@@ -110,6 +111,28 @@ $$
 
 For smooth periodic fields this should be near roundoff. The unit tests include
 a spectral-zero gate for this diagnostic.
+
+## Flux critical points
+
+README media and turbulent-reconnection diagnostics use grid-localized magnetic
+flux critical points from
+`mhx.diagnostics.detect_flux_critical_points` and
+`mhx.diagnostics.critical_points_by_kind`. The detector finds local minima of
+$|\nabla\psi|$ and classifies them with the Hessian determinant:
+
+$$
+D = \psi_{xx}\psi_{yy} - \psi_{xy}^2 .
+$$
+
+Points with $D<0$ are marked as X-points; points with $D>0$ are marked as
+O-points. This is a validation and visualization diagnostic, not a production
+topology tracker: it is grid-localized, has no sub-cell Newton refinement, and
+does not yet maintain temporal point identities through mergers.
+
+Source links:
+
+- [Critical-point implementation](https://github.com/uwplasma/MHX/blob/main/src/mhx/diagnostics/critical_points.py)
+- [Critical-point tests](https://github.com/uwplasma/MHX/blob/main/tests/test_critical_points.py)
 
 ## Python extension API
 

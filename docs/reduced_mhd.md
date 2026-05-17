@@ -47,9 +47,11 @@ $$
 \psi_0 = \cos(y) + \epsilon \cos(x)\cos(y), \qquad \omega_0 = 0.
 $$
 
-It is chosen because it is periodic, deterministic, smooth, and inexpensive. A
-future benchmark will replace this with a documented tearing eigenfunction and
-growth-rate comparison.
+It is chosen because it is periodic, deterministic, smooth, and inexpensive.
+Dedicated tearing validation now lives in `mhx benchmark fkr-growth`,
+`mhx benchmark linear-tearing-eigenvalue`, and
+`mhx benchmark linear-tearing-timedomain`; the smoke initial condition remains
+an IO and differentiability fixture.
 
 ## Diagnostics
 

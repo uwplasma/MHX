@@ -133,6 +133,17 @@ mhx benchmark double-harris-long-run \
   --fit-stop 10 \
   --min-max-growth-factor 2.0 \
   --movies
+
+for SEED in 3 7 11; do
+  mhx benchmark forced-turbulent-reconnection \
+    --outdir "$ROOT/forced_turbulent_reconnection_seed_${SEED}" \
+    --nx 64 --ny 64 \
+    --dt 0.02 \
+    --t-end 80 \
+    --save-every 100 \
+    --seed "$SEED" \
+    --movies
+done
 ```
 
 The current release keeps this campaign at `claim_level = "validation"`.

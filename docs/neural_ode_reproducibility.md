@@ -97,13 +97,16 @@ $$
 W=\arg\min_W \|XW-\dot Z\|_2^2+\lambda\|W\|_2^2.
 $$
 
-Expected additional files:
+Standalone `mhx neural-ode train` first writes the dataset bundle when it is
+not provided, then writes the fitted-model artifacts. Expected files therefore
+include the dataset contract plus:
 
 - `latent_ode_model.json`
 - `latent_ode_metrics.json`
 - `latent_ode_predictions.npz`
 - `figures/latent_ode_predictions.png`
 - `figures/latent_ode_rmse_comparison.png`
+- `manifest.json`
 
 The metric file reports train/validation/test MAE, RMSE, target-wise errors,
 the best baseline test RMSE, and the latent-ODE test-RMSE ratio to that

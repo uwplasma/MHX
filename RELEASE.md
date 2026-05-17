@@ -28,9 +28,13 @@ the validation suite, documentation build, and artifact pipeline are green.
 python -m ruff check src tests examples tools
 python tools/check_legacy_imports.py
 python -m pytest --cov=mhx --cov-report=term-missing --cov-fail-under=95
-sphinx-build -b html docs docs/_build/html
+sphinx-build -W -b html docs docs/_build/html
 mhx validate all --outdir outputs/release/validation_suite
+mhx benchmark catalog --outdir outputs/release/catalog
 mhx artifact-manifest outputs/release
+python -m pip install --upgrade build twine
+python -m build
+python -m twine check dist/*
 ```
 
 Before tagging:

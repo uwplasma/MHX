@@ -5296,3 +5296,71 @@ Every agent must append an entry here. Do not delete previous entries.
   convergence, seed-robustness, and artifact-hash gates pass.
 - Extend latent-ODE experiments from FAST seed-QI data to medium nonlinear
   trajectories before making publication-grade surrogate claims.
+
+### 2026-05-16 — Agent: Codex, full-lane plan/docs/CI audit pass
+
+**Summary**
+
+- Spawned six read-only lane reviewers for plan compliance, docs staleness,
+  CI/release readiness, physics extensibility/reconnection validation,
+  neural-ODE/performance/pipeline readiness, and README/examples.
+- Closed the highest-impact audit gaps by adding separate Docs,
+  Benchmark Smoke, and Publish workflows; a reviewer-facing
+  `docs/figures/manifest.toml`; new install/tutorial/example docs; and
+  synchronized validation, benchmark, diagnostics, output-schema, media,
+  publication-checklist, migration, API, release, and README pages.
+- Promoted the top-level Python surface to include `mhx.load_config` and
+  `mhx.run`, and expanded release readiness so every current
+  `mhx validate all` case is required for public-release readiness.
+- Hardened tests around workflow presence, figure-manifest integrity,
+  top-level API execution, X/O critical-point branches, turbulence helper and
+  invalid-input branches, duration-policy invalid inputs, readiness-loader
+  failures, and README media size budget.
+
+**Tests run**
+
+- `python -m ruff check src tests examples tools` passed.
+- `python tools/check_legacy_imports.py` passed.
+- `python -m pytest -q tests/test_workflows_and_manifest.py
+  tests/test_docs_links.py tests/test_readme_media.py tests/test_readiness_report.py`
+  passed: 20 tests.
+- `sphinx-build -W -b html docs /tmp/mhx-sphinx-html` passed.
+- `PYTHONDONTWRITEBYTECODE=1 JAX_PLATFORM_NAME=cpu JAX_ENABLE_X64=1
+  COVERAGE_FILE=/tmp/mhx.coverage python -m pytest -q --cov=mhx
+  --cov-report=term-missing --cov-report=json:/tmp/mhx-coverage.json
+  --cov-fail-under=95` passed: 222 tests, 95.84% coverage.
+- The new benchmark-smoke workflow command sequence passed locally under
+  `/tmp/mhx-benchmark-smoke`.
+- `python -m build --outdir /tmp/mhx-dist` and
+  `python -m twine check /tmp/mhx-dist/*` passed.
+
+**Decisions made**
+
+- Kept nonlinear Rutherford/plasmoid and production neural-ODE claims blocked;
+  the added docs distinguish validation media/workflow evidence from
+  production physics claims.
+- Expanded CI's Python matrix to 3.10, 3.11, 3.12, and 3.13 to match the
+  package metadata and observed local compatibility.
+- Relaxed the forced-turbulent-reconnection README GIF byte cap from 650 kB to
+  700 kB because the current validated asset is just below 650 kB and the old
+  margin was too brittle.
+
+**Problems / blockers**
+
+- Remaining publication blockers are scientific rather than packaging:
+  completed medium/production nonlinear reconnection campaigns, convergence
+  and seed/QI promotion gates, and production-quality neural-ODE datasets are
+  still required before paper-level nonlinear claims.
+
+**Progress**
+
+- Estimated plan completion: 99%.
+
+**Next steps**
+
+- Let GitHub Actions verify the expanded workflow matrix after push.
+- Run and archive medium/production nonlinear reconnection campaign bundles
+  before upgrading any validation media to production figures.
+- Add model-registry/generalized-state design work before representing Hall,
+  electron pressure tensor, or two-fluid terms as more than reduced-state toy
+  plugins.

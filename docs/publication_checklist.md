@@ -32,6 +32,9 @@ Every figure included in the paper-style documentation should have:
 | Seeded double-Harris long run | `periodic_double_harris_seeded_long_run.png`, optional flux/current GIFs | `validation` | Ready as bounded nonlinear evidence with early growth and dissipative energy; still needs convergence and seed/aspect-ratio sweeps. |
 | Seeded double-Harris convergence | `periodic_double_harris_convergence.png` | `validation` | Ready as a FAST resolution/time-step scaffold; still not production plasmoid/Rutherford evidence. |
 | Nonlinear energy budget | `nonlinear_energy_budget.png` | `validation` | Ready as nonlinear conservation/dissipation evidence. |
+| Orszag--Tang vortex media | `orszag_tang_summary.png`, optional flux/current/vorticity GIFs | `validation` | Ready as nonlinear reduced-MHD morphology and high-$k$ transfer evidence, not full-MHD shock validation. |
+| Decaying turbulence media | `decaying_mhd_turbulence_summary.png`, optional flux/current GIFs | `validation` | Ready as deterministic reduced-MHD turbulence morphology and current-filament evidence; not turbulence-statistics evidence. |
+| Forced turbulent reconnection media | `forced_turbulent_reconnection_summary.png`, optional flux/current GIFs | `validation` | Ready as a pedagogical forced current-sheet/reconnection-proxy example; not 3-D fast-reconnection evidence. |
 | Nonlinear duration audit | `nonlinear_duration_audit.png` | `validation` | Ready as an overclaim-prevention figure. |
 | Seed-robust QI | `qi_summary.png` | `validation` | Ready as FAST seed-sensitivity evidence after generation in the evidence bundle. |
 | Seed-robust QI sweep | `qi_sweep_cv.png`, `qi_sweep_mean_drift.png` | `validation` | Ready as FAST perturbation-amplitude sensitivity evidence. |
@@ -122,8 +125,11 @@ has:
 - failure-case examples where the surrogate extrapolates poorly;
 - source-linked training and evaluation code.
 
-Until those gates exist, neural-ODE material belongs in the roadmap, not the
-validated paper results.
+The current FAST latent-ODE artifacts satisfy these gates as a validation
+workflow and belong in the methods/reproducibility section. They should not be
+used as novelty claims about production reconnection surrogates until the same
+protocol is run on production-quality nonlinear trajectories and remains
+superior to baselines on held-out regimes.
 
 ## Movie rules
 
@@ -145,6 +151,7 @@ The README currently ships validation/theory movies only:
 
 - [Validation media generator](https://github.com/uwplasma/MHX/blob/main/examples/make_validation_media.py)
 - [README media generator](https://github.com/uwplasma/MHX/blob/main/examples/make_readme_media.py)
+- [Figure manifest](figures/manifest.toml)
 - [Reduced-MHD plotting helpers](https://github.com/uwplasma/MHX/blob/main/src/mhx/plotting/reduced_mhd.py)
 - [Artifact manifests](https://github.com/uwplasma/MHX/blob/main/src/mhx/io/manifest.py)
 - [Docs-link tests](https://github.com/uwplasma/MHX/blob/main/tests/test_docs_links.py)

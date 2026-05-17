@@ -21,6 +21,7 @@ classifiers = [
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
   "Topic :: Scientific/Engineering :: Physics",
 ]
 dependencies = [
@@ -52,6 +53,7 @@ docs = [
 ]
 test = [
   "imageio>=2",
+  "matplotlib>=3.8",
   "pytest>=8",
   "pytest-cov>=5",
 ]

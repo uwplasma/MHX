@@ -89,6 +89,22 @@ The command writes `figures/orszag_tang_current.gif`,
 `figures/orszag_tang_vorticity.gif`, `figures/orszag_tang_flux.gif`, and a
 summary figure with energy and high-wavenumber diagnostics.
 
+Run the turbulence and forced-reconnection validation media used by the README:
+
+```bash
+mhx benchmark decaying-turbulence \
+  --outdir outputs/examples/decaying_mhd_turbulence \
+  --nx 64 --ny 64 --t-end 8 --save-every 20 --movies
+
+mhx benchmark forced-turbulent-reconnection \
+  --outdir outputs/examples/forced_turbulent_reconnection \
+  --nx 64 --ny 64 --t-end 80 --save-every 100 --movies
+```
+
+These commands write `diagnostics.json`, `validation.json`, an NPZ history,
+summary PNGs, optional GIFs, and a `manifest.json` with
+`claim_level = "validation"`.
+
 Try a local extension module without editing MHX source:
 
 ```bash
