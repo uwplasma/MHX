@@ -4,6 +4,7 @@ from mhx.diagnostics.critical_points import (
     FluxCriticalPoint,
     critical_points_by_kind,
     detect_flux_critical_points,
+    track_critical_points,
 )
 from mhx.diagnostics.reduced_mhd import (
     DIAGNOSTICS_ENTRY_POINT_GROUP,
@@ -52,4 +53,5 @@ __all__ = [
     "total_energy",
     "trajectory_energies",
     "trajectory_mode_amplitude",
+    "track_critical_points",
 ]

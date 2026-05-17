@@ -1424,6 +1424,7 @@ def _flux_critical_point_counts(
             np.asarray(state.psi, dtype=np.float64),
             lengths=lengths,
             max_points=32,
+            refine=True,
         )
     except ValueError:
         return {"x_point_count": 0, "o_point_count": 0}

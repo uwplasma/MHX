@@ -21,6 +21,8 @@ MHX uses semantic-versioned pre-releases while the rebuilt solver API matures.
 - Added Rutherford production-promotion gates, current-sheet geometry and X/O
   histories, and a CLI promotion report that blocks production claims until
   convergence, seed-QI, fixed-scale media, and tolerance evidence are attached.
+- Added optional sub-cell Newton refinement and deterministic frame-to-frame
+  association for magnetic-flux X/O critical points.
 
 ## 0.1.0a0
 

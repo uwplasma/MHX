@@ -168,9 +168,10 @@ $$
 E_\mathrm{rec}^\mathrm{proxy}(t)=\frac{d\psi_\mathrm{rec}}{dt},
 $$
 
-where X and O points are detected as local $|\nabla\psi|$ minima and classified
-by the Hessian determinant. This is intentionally labeled a proxy because the
-grid-localized detector is not yet a sub-cell Newton-refined separatrix tracker.
+where X and O points are detected as local $|\nabla\psi|$ minima, refined by a
+local quadratic Newton correction when requested, and classified by the Hessian
+determinant. This is intentionally labeled a proxy because it is not yet a
+full separatrix event tracker.
 
 ## Production planning, execution, and resume
 

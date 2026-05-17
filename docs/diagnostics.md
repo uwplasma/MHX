@@ -114,8 +114,8 @@ a spectral-zero gate for this diagnostic.
 
 ## Flux critical points
 
-README media and turbulent-reconnection diagnostics use grid-localized magnetic
-flux critical points from
+README media and turbulent-reconnection diagnostics use magnetic-flux critical
+points from
 `mhx.diagnostics.detect_flux_critical_points` and
 `mhx.diagnostics.critical_points_by_kind`. The detector finds local minima of
 $|\nabla\psi|$ and classifies them with the Hessian determinant:
@@ -125,9 +125,18 @@ D = \psi_{xx}\psi_{yy} - \psi_{xy}^2 .
 $$
 
 Points with $D<0$ are marked as X-points; points with $D>0$ are marked as
-O-points. This is a validation and visualization diagnostic, not a production
-topology tracker: it is grid-localized, has no sub-cell Newton refinement, and
-does not yet maintain temporal point identities through mergers.
+O-points. Passing `refine=True` applies one local quadratic Newton correction,
+which reduces grid-locking for smooth fields:
+
+$$
+\delta x = -H(\psi)^{-1}\nabla\psi,\qquad
+x_\mathrm{refined}=x_\mathrm{grid}+\delta x .
+$$
+
+`mhx.diagnostics.track_critical_points` then greedily links detected points
+across frames by nearest neighbor and point kind. This is still a validation and
+visualization diagnostic rather than a full topological event solver: it does
+not model separatrix reconnection events, mergers, or bifurcations.
 
 Source links:
 

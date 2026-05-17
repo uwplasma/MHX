@@ -5414,3 +5414,47 @@ Every agent must append an entry here. Do not delete previous entries.
   before making plasmoid-count claims.
 - Attach production-scale neural-ODE datasets only after the nonlinear campaign
   evidence is promoted.
+
+### 2026-05-17 03:21 CDT — Agent: Codex, critical-point refinement closure
+
+**Steps taken**
+
+- Upgraded the magnetic-flux critical-point detector with optional sub-cell
+  quadratic Newton refinement.
+- Added deterministic nearest-neighbor track association across frames.
+- Wired Rutherford production critical-point counts to use refined detections.
+- Added tests for refinement accuracy, stable frame-to-frame track IDs, and
+  invalid controls.
+- Updated diagnostics, media, and campaign documentation to remove the stale
+  "grid-localized only" limitation.
+
+**Results obtained**
+
+- Refined X-point locations on a shifted analytic cosine field improve by more
+  than a factor of four and pass an absolute error gate.
+- Production promotion still correctly blocks paper-level nonlinear claims
+  without convergence and seed-QI evidence, but the topology diagnostic no
+  longer depends only on guide markers or raw grid locations.
+
+**Design decisions**
+
+- Kept refinement local and deterministic: one Newton correction from the
+  finite-difference Hessian is auditable and stable in CI.
+- Kept track association simple and explicit rather than introducing a
+  topological-event model before production separatrix validation exists.
+
+**Problems / blockers**
+
+- Publication-level plasmoid claims still require long production runs with
+  convergence, seed-QI, current-sheet segmentation, and promoted artifacts.
+
+**Progress**
+
+- Estimated plan completion: 99.5%.
+
+**Next steps**
+
+- Run the long Rutherford campaign and attach convergence/seed-QI bundles to
+  exercise the promotion gate on real production artifacts.
+- Add separatrix-event segmentation only after the promoted long-run artifacts
+  exist, so thresholds are tuned against real data rather than demos.
