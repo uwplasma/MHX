@@ -34,6 +34,8 @@ def test_validation_suite_cases_are_unique() -> None:
     assert "seed_robust_qi" in names
     assert "seed_robust_qi_sweep" in names
     assert "neural_ode_reproducibility" in names
+    assert "neural_ode_latent_fit" in names
+    assert "rutherford_production_execution" in names
     assert "duration_policy" in names
 
 
@@ -163,6 +165,19 @@ def test_write_validation_suite_artifacts_and_cli(tmp_path) -> None:
     ).stat().st_size > 0
     assert (
         tmp_path / "suite" / "neural_ode_reproducibility" / "validation.json"
+    ).exists()
+    assert (
+        tmp_path / "suite" / "neural_ode_latent_fit" / "failure_modes.json"
+    ).exists()
+    assert (
+        tmp_path
+        / "suite"
+        / "neural_ode_latent_fit"
+        / "figures"
+        / "latent_ode_failure_modes.png"
+    ).stat().st_size > 0
+    assert (
+        tmp_path / "suite" / "rutherford_production_execution" / "production_history.npz"
     ).exists()
     assert (tmp_path / "suite" / "duration_policy" / "duration_policy.json").exists()
     persisted = json.loads((tmp_path / "suite" / "validation_suite.json").read_text())

@@ -178,11 +178,11 @@ write:
 | `checkpoints/state_step_*.npz` | `mhx.campaign.rutherford_state.v1`; keys `step`, `time`, `psi`, `omega`. |
 | `checkpoints/checkpoint_index.json` | Ordered checkpoint metadata for resume and audit. |
 | `resume_plan.json` | Next-step metadata for chunked continuation. |
-| `diagnostics.json` | `mhx.campaign.rutherford_execution.v1`; start/end step, target step, run controls, divergence and energy-growth summaries. |
+| `diagnostics.json` | `mhx.campaign.rutherford_execution.v1`; start/end step, target step, run controls, `allow_production_claim`, `production_promotion_report_ready`, divergence and energy-growth summaries. |
 | `validation.json` | `mhx.campaign.rutherford_execution.gates.v1`; finite-history, checkpoint, energy, divergence, and movie gates. |
 | `figures/*.png` | Island-width, reconnected-flux, energy-budget, and `current_sheet_aspect_ratio.png` quick-look figures. |
 | `figures/*.gif` | Optional fixed-scale flux and current movies. |
-| `artifact_manifest.json` | Recursive hashes for chunk outputs before `manifest.json` is written. |
+| `artifact_manifest.json` | Recursive hashes for chunk outputs, including the final `manifest.json`. The top-level `manifest.json` records this file as an output but does not rely on mutually recursive hashes. |
 | `manifest.json` | Top-level claim metadata and output hashes. |
 
 `mhx campaign rutherford-promotion-check <run-dir>` writes a separate promotion
@@ -205,12 +205,13 @@ bundle under `<run-dir>/promotion/` by default:
 | `latent_ode_model.json` | `mhx.neural_ode.latent_model.v1`; random-feature weights, ridge coefficient matrix, target names, and training controls. |
 | `latent_ode_metrics.json` | `mhx.neural_ode.latent_metrics.v1`; train/validation/test MAE/RMSE and ratio to the best baseline. |
 | `latent_ode_predictions.npz` | Prediction tensor, target tensor, times, seeds, and target names. |
+| `failure_modes.json` | `mhx.neural_ode.failure_modes.v1`; seed-extrapolation and late-vs-early forecast-drift probes. |
 | `dataset.npz` | Frozen deterministic FAST dataset when the train command generated it locally. |
 | `splits.json` | Train/validation/test seed split metadata. |
 | `baseline_metrics.json` | Persistence/linear baseline metrics used in comparisons. |
 | `calibration.json` | Calibration and coverage diagnostics for the deterministic fit. |
 | `experiment_spec.json` | Reproducible experiment controls. |
-| `validation.json` | `mhx.neural_ode.training.gates.v1`; finite-model, finite-prediction, split, and held-out forecast gates. |
+| `validation.json` | `mhx.neural_ode.training.gates.v1`; finite-model, finite-prediction, split, held-out forecast, and failure-mode reporting gates. |
 | `manifest.json` | Top-level validation manifest. |
 
 The suite also writes:

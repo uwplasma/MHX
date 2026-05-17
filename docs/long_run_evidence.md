@@ -59,7 +59,9 @@ mhx benchmark double-harris-long-run \
 ## Rutherford-duration executor run
 
 The `96×96` Rutherford-duration executor run completed the configured duration
-target:
+target under the executor schema available when it was generated. It remains a
+validation-level bundle unless rerun or upgraded with current history keys and a
+passing promotion-readiness report.
 
 | Quantity | Value |
 | --- | ---: |
@@ -68,7 +70,7 @@ target:
 | saved samples | 202 |
 | policy e-folds | 30 |
 | elapsed walltime | 888.6 s |
-| executor gates | passed |
+| executor gates | passed; promotion gates not claimed |
 | final/initial reconnecting-flux proxy | `2.73e-6` |
 | final/initial island-width proxy | `1.65e-3` |
 | final/initial total energy | `1.03e-2` |
@@ -85,17 +87,70 @@ field diffuses away rather than forming growing islands.
 
 ### Skeptical interpretation
 
-This is strong evidence for the production-executor path:
+This is strong evidence for the restartable production-executor path, not for a
+promotion-ready production physics claim:
 
 - the full target step count is completed in one restartable bundle;
 - checkpoint state, checkpoint metadata, resume plan, manifest hashes, fixed-scale
   movies, and history schema are written;
-- finite-history, energy, divergence, checkpoint, and movie gates all pass.
+- finite-history, energy, divergence, checkpoint, and movie gates all pass for
+  that execution bundle.
+- the archived history predates the newer current-sheet geometry and refined
+  X/O-count promotion keys, so it is not sufficient for today’s promotion gate.
 
 It is **not** evidence for Rutherford growth. The reconnecting-flux proxy,
 island-width proxy, current, and total energy all decay, and the kinetic energy
 stays nearly zero. The current periodic cosine initial condition is therefore a
 long dissipative integration test, not a tearing-growth experiment.
+
+## Current-schema Rutherford executor rerun
+
+A current-schema `96×96`, `dt=0.05` rerun was executed with the same duration
+target so the long-run bundle includes the newer current-sheet geometry and
+refined critical-point count histories:
+
+```bash
+mhx campaign rutherford-plan-production \
+  --outdir outputs/campaigns/rutherford_current_schema_96_dt005_20260517_161235 \
+  --nx 96 --ny 96 --dt 0.05 --target-saved-frames 200 \
+  --max-walltime-hours 0.5 \
+  --seconds-per-step-estimate 0.04 \
+  --checkpoint-interval-minutes 5 \
+  --preemption-margin-minutes 2
+
+mhx campaign rutherford-execute \
+  outputs/campaigns/rutherford_current_schema_96_dt005_20260517_161235 \
+  --max-steps 45802 --movies \
+  --max-relative-energy-growth 1e-6 \
+  --max-divergence-linf 1e-8
+
+mhx campaign rutherford-promotion-check \
+  outputs/campaigns/rutherford_current_schema_96_dt005_20260517_161235 || true
+```
+
+| Quantity | Value |
+| --- | ---: |
+| RK4 steps | 45,802 |
+| final time | 2290.1 |
+| saved samples | 202 |
+| execution gates | passed |
+| promotion gates | failed: missing convergence and seed-QI evidence |
+| max X/O counts | `2 / 1` |
+| current-sheet aspect proxy | `0.667` |
+| final/initial total energy | `1.03e-2` |
+| max energy-budget residual | `0` |
+
+![Current-schema Rutherford histories](_static/validation/long_runs/current_schema_rutherford/production_histories.png)
+
+![Current-schema current-sheet aspect ratio](_static/validation/long_runs/current_schema_rutherford/current_sheet_aspect_ratio.png)
+
+![Current-schema promotion matrix](_static/validation/long_runs/current_schema_rutherford/promotion_matrix.png)
+
+The important result is negative but useful: the executor now writes every
+history key required by the current promotion gate, and the promotion gate fails
+for the right remaining reasons. This closes the schema/executor lane while
+keeping the nonlinear physics claim blocked until real convergence and seed-QI
+evidence are attached.
 
 ## Active nonlinear energy-budget run
 
@@ -170,6 +225,8 @@ These runs support:
 - production-executor artifact correctness under a completed duration target;
 - nonlinear energy/dissipation-budget correctness for an active nonlinear state.
 - early seeded-growth response for a periodic double-Harris current-sheet replay.
+- explicit evidence that execution-level validation and production promotion are
+  separate gates.
 
 These runs do not yet support:
 

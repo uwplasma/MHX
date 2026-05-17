@@ -38,6 +38,7 @@ NEURAL_ODE_EXPERIMENT_SCHEMA = "mhx.neural_ode.experiment_spec.v1"
 NEURAL_ODE_REPRODUCIBILITY_GATES_SCHEMA = "mhx.neural_ode.reproducibility.gates.v1"
 NEURAL_ODE_LATENT_MODEL_SCHEMA = "mhx.neural_ode.latent_model.v1"
 NEURAL_ODE_LATENT_METRICS_SCHEMA = "mhx.neural_ode.latent_metrics.v1"
+NEURAL_ODE_FAILURE_MODES_SCHEMA = "mhx.neural_ode.failure_modes.v1"
 NEURAL_ODE_TRAINING_GATES_SCHEMA = "mhx.neural_ode.training.gates.v1"
 
 DEFAULT_FEATURE_NAMES = (
@@ -443,6 +444,103 @@ def fit_latent_ode(
     )
 
 
+def evaluate_latent_ode_failure_modes(
+    dataset: NeuralODEDataset,
+    split: SplitManifest,
+    baseline: BaselineEvaluation,
+    latent: LatentODEFit,
+    *,
+    observation_count: int = 2,
+) -> dict[str, Any]:
+    """Return deterministic failure-mode diagnostics for the fitted latent ODE."""
+    if observation_count < 1:
+        raise ValueError("observation_count must be >= 1")
+    if observation_count >= dataset.times.size:
+        raise ValueError("observation_count must leave forecast targets")
+    forecast_indices = np.arange(observation_count, dataset.times.size)
+    midpoint = max(1, forecast_indices.size // 2)
+    early_indices = forecast_indices[:midpoint]
+    late_indices = (
+        forecast_indices[midpoint:]
+        if midpoint < forecast_indices.size
+        else forecast_indices
+    )
+    split_indices = {
+        "train": _indices_for_ids(dataset.seeds, split.train),
+        "validation": _indices_for_ids(dataset.seeds, split.validation),
+        "test": _indices_for_ids(dataset.seeds, split.test),
+    }
+    residual = np.asarray(dataset.targets - latent.predictions, dtype=np.float64)
+    train_rmse = _rmse_for_indices(residual, split_indices["train"], forecast_indices)
+    test_rmse = _rmse_for_indices(residual, split_indices["test"], forecast_indices)
+    early_test_rmse = _rmse_for_indices(residual, split_indices["test"], early_indices)
+    late_test_rmse = _rmse_for_indices(residual, split_indices["test"], late_indices)
+    best_baseline_test_rmse = min(
+        float(metrics["test"]["rmse"])
+        for metrics in baseline.metrics["baselines"].values()
+    )
+    ratios = {
+        "test_to_train_rmse": test_rmse / max(train_rmse, np.finfo(np.float64).eps),
+        "late_to_early_test_rmse": late_test_rmse
+        / max(early_test_rmse, np.finfo(np.float64).eps),
+        "latent_to_best_baseline_test_rmse": test_rmse
+        / max(best_baseline_test_rmse, np.finfo(np.float64).eps),
+    }
+    metrics = {
+        "train_rmse": train_rmse,
+        "test_rmse": test_rmse,
+        "early_test_rmse": early_test_rmse,
+        "late_test_rmse": late_test_rmse,
+        "best_baseline_test_rmse": best_baseline_test_rmse,
+        "ratios": {key: float(value) for key, value in ratios.items()},
+    }
+    warnings = [
+        name
+        for name, value in ratios.items()
+        if value > 2.0
+    ]
+    checks = {
+        "finite_metrics": bool(
+            np.isfinite(
+                [
+                    train_rmse,
+                    test_rmse,
+                    early_test_rmse,
+                    late_test_rmse,
+                    best_baseline_test_rmse,
+                    *ratios.values(),
+                ]
+            ).all()
+        ),
+        "has_test_samples": bool(split_indices["test"].size >= 1),
+        "has_long_horizon_window": bool(late_indices.size >= 1),
+        "split_manifest_passed": bool(split.diagnostics["passed"]),
+    }
+    return {
+        "schema": NEURAL_ODE_FAILURE_MODES_SCHEMA,
+        "claim_level": "validation",
+        "claim_boundary": (
+            "FAST failure-mode diagnostics for seed extrapolation and "
+            "long-horizon drift; warnings are reported rather than hidden."
+        ),
+        "observation_count": int(observation_count),
+        "target_names": list(dataset.target_names),
+        "forecast_time_start": float(dataset.times[observation_count]),
+        "early_window": [
+            float(dataset.times[int(early_indices[0])]),
+            float(dataset.times[int(early_indices[-1])]),
+        ],
+        "late_window": [
+            float(dataset.times[int(late_indices[0])]),
+            float(dataset.times[int(late_indices[-1])]),
+        ],
+        "metrics": metrics,
+        "warnings": warnings,
+        "checks": checks,
+        "passed": all(checks.values()),
+    }
+
+
 def write_neural_ode_training_bundle(
     outdir: str | Path,
     *,
@@ -491,6 +589,13 @@ def write_neural_ode_training_bundle(
         ridge=ridge,
         random_seed=model_seed,
     )
+    failure_modes = evaluate_latent_ode_failure_modes(
+        dataset,
+        split,
+        baseline,
+        latent,
+        observation_count=observation_count,
+    )
     experiment = _experiment_spec(dataset, split, baseline)
     experiment["protocol"]["trainable_latent_ode"] = {
         "model_schema": NEURAL_ODE_LATENT_MODEL_SCHEMA,
@@ -499,7 +604,14 @@ def write_neural_ode_training_bundle(
         "ridge": float(ridge),
         "model_seed": int(model_seed),
     }
-    validation = _training_validation_report(dataset, split, baseline, latent, experiment)
+    validation = _training_validation_report(
+        dataset,
+        split,
+        baseline,
+        latent,
+        failure_modes,
+        experiment,
+    )
 
     dataset_path = output_dir / "dataset.npz"
     splits_path = output_dir / "splits.json"
@@ -508,6 +620,7 @@ def write_neural_ode_training_bundle(
     model_path = output_dir / "latent_ode_model.json"
     latent_metrics_path = output_dir / "latent_ode_metrics.json"
     predictions_path = output_dir / "latent_ode_predictions.npz"
+    failure_modes_path = output_dir / "failure_modes.json"
     experiment_path = output_dir / "experiment_spec.json"
     validation_path = output_dir / "validation.json"
     manifest_path = output_dir / "manifest.json"
@@ -530,6 +643,10 @@ def write_neural_ode_training_bundle(
         json.dumps(latent.metrics, indent=2, sort_keys=True),
         encoding="utf-8",
     )
+    failure_modes_path.write_text(
+        json.dumps(failure_modes, indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
     np.savez_compressed(
         predictions_path,
         schema=np.asarray(NEURAL_ODE_LATENT_METRICS_SCHEMA),
@@ -549,6 +666,7 @@ def write_neural_ode_training_bundle(
         "latent_ode_model": model_path.name,
         "latent_ode_metrics": latent_metrics_path.name,
         "latent_ode_predictions": predictions_path.name,
+        "failure_modes": failure_modes_path.name,
         "experiment_spec": experiment_path.name,
         "validation": validation_path.name,
     }
@@ -557,6 +675,7 @@ def write_neural_ode_training_bundle(
             dataset,
             baseline,
             latent,
+            failure_modes,
             output_dir / "figures",
         )
         outputs.update(
@@ -780,6 +899,7 @@ def _training_validation_report(
     split: SplitManifest,
     baseline: BaselineEvaluation,
     latent: LatentODEFit,
+    failure_modes: Mapping[str, Any],
     experiment: Mapping[str, Any],
 ) -> dict[str, Any]:
     checks = {
@@ -789,6 +909,10 @@ def _training_validation_report(
         "latent_training_passed": bool(latent.validation["passed"]),
         "latent_metrics_passed": bool(latent.metrics["passed"]),
         "predictions_match_target_shape": bool(latent.predictions.shape == dataset.targets.shape),
+        "failure_modes_reported": bool(
+            failure_modes.get("schema") == NEURAL_ODE_FAILURE_MODES_SCHEMA
+            and failure_modes.get("passed")
+        ),
     }
     return {
         "schema": NEURAL_ODE_TRAINING_GATES_SCHEMA,
@@ -802,6 +926,8 @@ def _training_validation_report(
                 "test_rmse_ratio_to_best_baseline": latent.metrics[
                     "test_rmse_ratio_to_best_baseline"
                 ],
+                "failure_mode_schema": NEURAL_ODE_FAILURE_MODES_SCHEMA,
+                "failure_warnings": list(failure_modes.get("warnings", [])),
             },
         },
     }
@@ -811,6 +937,7 @@ def _write_neural_ode_training_figures(
     dataset: NeuralODEDataset,
     baseline: BaselineEvaluation,
     latent: LatentODEFit,
+    failure_modes: Mapping[str, Any],
     figure_dir: Path,
 ) -> dict[str, Path]:
     import matplotlib.pyplot as plt
@@ -818,6 +945,7 @@ def _write_neural_ode_training_figures(
     figure_dir.mkdir(parents=True, exist_ok=True)
     prediction_path = figure_dir / "latent_ode_predictions.png"
     rmse_path = figure_dir / "latent_ode_rmse_comparison.png"
+    failure_path = figure_dir / "latent_ode_failure_modes.png"
     target_index = 0
     fig, ax = plt.subplots(figsize=(7.2, 4.2), constrained_layout=True)
     for seed_index, seed in enumerate(dataset.seeds):
@@ -856,9 +984,22 @@ def _write_neural_ode_training_figures(
     ax.tick_params(axis="x", rotation=20)
     fig.savefig(rmse_path, dpi=180)
     plt.close(fig)
+    ratio_items = dict(failure_modes["metrics"]["ratios"])
+    fig, ax = plt.subplots(figsize=(7.4, 3.8), constrained_layout=True)
+    ax.bar(
+        [label.replace("_", "\n") for label in ratio_items],
+        list(ratio_items.values()),
+        color="#fdae6b",
+    )
+    ax.axhline(1.0, color="0.25", linewidth=1.0, linestyle="--")
+    ax.set_ylabel("RMSE ratio")
+    ax.set_title("Latent ODE failure-mode probes")
+    fig.savefig(failure_path, dpi=180)
+    plt.close(fig)
     return {
         "latent_ode_prediction_figure": prediction_path,
         "latent_ode_rmse_comparison": rmse_path,
+        "latent_ode_failure_modes": failure_path,
     }
 
 
@@ -950,6 +1091,15 @@ def _forecast_scores(
             name: float(value) for name, value in zip(target_names, rmse_by_target, strict=True)
         },
     }
+
+
+def _rmse_for_indices(
+    residual: np.ndarray,
+    sample_indices: np.ndarray,
+    time_indices: np.ndarray,
+) -> float:
+    selected = residual[np.ix_(sample_indices, time_indices, np.arange(residual.shape[-1]))]
+    return float(np.sqrt(np.mean(selected**2)))
 
 
 def _target_sigma(train_residual: np.ndarray) -> np.ndarray:

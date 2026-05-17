@@ -12,6 +12,7 @@ from mhx.neural_ode import (
     NEURAL_ODE_CALIBRATION_SCHEMA,
     NEURAL_ODE_DATASET_SCHEMA,
     NEURAL_ODE_EXPERIMENT_SCHEMA,
+    NEURAL_ODE_FAILURE_MODES_SCHEMA,
     NEURAL_ODE_LATENT_METRICS_SCHEMA,
     NEURAL_ODE_LATENT_MODEL_SCHEMA,
     NEURAL_ODE_REPRODUCIBILITY_GATES_SCHEMA,
@@ -19,6 +20,7 @@ from mhx.neural_ode import (
     NEURAL_ODE_TRAINING_GATES_SCHEMA,
     build_seed_qi_trajectory_dataset,
     evaluate_baselines,
+    evaluate_latent_ode_failure_modes,
     fit_latent_ode,
     make_train_val_test_split,
     write_neural_ode_reproducibility_bundle,
@@ -130,6 +132,16 @@ def test_latent_ode_fit_is_deterministic_and_schema_valid() -> None:
     np.testing.assert_allclose(fit.predictions, repeated.predictions)
     assert fit.metrics["latent_ode_test_rmse"] >= 0.0
     assert np.isfinite(fit.metrics["test_rmse_ratio_to_best_baseline"])
+    failure_modes = evaluate_latent_ode_failure_modes(
+        dataset,
+        split,
+        baseline,
+        fit,
+        observation_count=2,
+    )
+    assert failure_modes["schema"] == NEURAL_ODE_FAILURE_MODES_SCHEMA
+    assert failure_modes["passed"] is True
+    assert failure_modes["metrics"]["ratios"]["late_to_early_test_rmse"] >= 0.0
 
 
 def test_write_neural_ode_bundle_artifacts_and_npz_schema(tmp_path) -> None:
@@ -198,7 +210,13 @@ def test_write_neural_ode_training_bundle_and_cli(tmp_path) -> None:
     manifest = json.loads(manifest_path.read_text())
     assert manifest["outputs"]["latent_ode_model"] == "latent_ode_model.json"
     assert manifest["outputs"]["latent_ode_predictions"] == "latent_ode_predictions.npz"
+    assert manifest["outputs"]["failure_modes"] == "failure_modes.json"
     assert (tmp_path / "fit" / "figures" / "latent_ode_predictions.png").stat().st_size > 0
+    assert (tmp_path / "fit" / "figures" / "latent_ode_failure_modes.png").stat().st_size > 0
+    failure_modes = json.loads((tmp_path / "fit" / "failure_modes.json").read_text())
+    assert failure_modes["schema"] == NEURAL_ODE_FAILURE_MODES_SCHEMA
+    assert failure_modes["passed"] is True
+    assert "failure_modes_reported" in validation["checks"]
     with np.load(tmp_path / "fit" / "latent_ode_predictions.npz") as data:
         assert str(data["schema"]) == NEURAL_ODE_LATENT_METRICS_SCHEMA
         assert data["predictions"].shape == data["targets"].shape

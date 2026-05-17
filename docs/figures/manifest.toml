@@ -68,10 +68,19 @@ tests = ["tests/test_current_sheet_eigenvalue_validation.py"]
 [[figures]]
 id = "validation_latent_ode_fit"
 path = "docs/_static/validation/neural_ode_latent_fit/latent_ode_predictions.png"
-command = "python examples/make_neural_ode_reproducibility.py"
+command = "python examples/train_latent_ode_fast.py --outdir outputs/examples/latent_ode_fast"
 claim_level = "validation"
 claim_scope = "Deterministic FAST latent-ODE train/test workflow; not production surrogate evidence."
-sources = ["src/mhx/neural_ode/reproducibility.py", "examples/make_neural_ode_reproducibility.py"]
+sources = ["src/mhx/neural_ode/reproducibility.py", "examples/train_latent_ode_fast.py"]
+tests = ["tests/test_neural_ode_reproducibility.py"]
+
+[[figures]]
+id = "validation_latent_ode_failure_modes"
+path = "docs/_static/validation/neural_ode_latent_fit/latent_ode_failure_modes.png"
+command = "python examples/train_latent_ode_fast.py --outdir outputs/examples/latent_ode_fast"
+claim_level = "validation"
+claim_scope = "FAST latent-ODE seed-extrapolation and long-horizon drift probes; not production surrogate evidence."
+sources = ["src/mhx/neural_ode/reproducibility.py", "examples/train_latent_ode_fast.py"]
 tests = ["tests/test_neural_ode_reproducibility.py"]
 
 [[figures]]

@@ -203,10 +203,14 @@ mhx campaign rutherford-execute \
 ```
 
 This writes `production_history.npz`, `diagnostics.json`, `validation.json`,
-`checkpoints/state_step_*.npz`, `resume_plan.json`, and
-`figures/production_histories.png`. The command
+`checkpoints/state_step_*.npz`, `resume_plan.json`,
+`artifact_manifest.json`, `manifest.json`, and quick-look figures including
+`figures/production_histories.png` and `figures/current_sheet_aspect_ratio.png`.
+With `--movies`, it also writes fixed-scale flux/current GIFs. The command
 `mhx campaign rutherford-resume-plan <run-dir>` chooses the latest valid
-checkpoint by verifying artifact hashes.
+checkpoint by verifying artifact hashes. `mhx campaign
+rutherford-promotion-check <run-dir>` is the separate production-claim boundary:
+it must pass before a completed execution bundle can be promoted.
 
 A laptop-safe example that writes the same planning bundle is available at
 `examples/make_rutherford_production_plan.py`; an executable chunk example is

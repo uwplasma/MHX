@@ -5458,3 +5458,42 @@ Every agent must append an entry here. Do not delete previous entries.
   exercise the promotion gate on real production artifacts.
 - Add separatrix-event segmentation only after the promoted long-run artifacts
   exist, so thresholds are tuned against real data rather than demos.
+
+### 2026-05-17 16:35 CDT — Agent: Codex, promotion-boundary and neural-ODE failure-mode closure
+
+**Steps taken**
+
+- Ran a current-schema `96x96`, `dt=0.05`, 45,802-step Rutherford executor campaign with fixed-scale movies.
+- Ran `mhx campaign rutherford-promotion-check` on that bundle and archived the negative promotion matrix in docs.
+- Added neural-ODE failure-mode reporting for seed extrapolation and long-horizon drift, including JSON and figure outputs.
+- Hardened promotion evidence checks so convergence evidence requires real validation, manifest, and artifact-manifest structure.
+- Strengthened CI with docs-link/media tests, promotion-check smoke artifacts, and JSON gate/claim-boundary assertions.
+- Updated README/docs to distinguish execution validation, refined X/O diagnostic annotations, and true production promotion.
+
+**Results obtained**
+
+- The current-schema Rutherford run completes the duration target and writes geometry plus refined X/O-count histories.
+- Execution gates pass, while promotion correctly fails only on missing convergence and seed-QI evidence.
+- Neural-ODE training bundles now include `failure_modes.json` and `latent_ode_failure_modes.png`.
+- Local full validation passes: 226 tests, 95.59% coverage, ruff, diff check, and Sphinx warnings-as-errors.
+
+**Design decisions**
+
+- Treated the long Rutherford rerun as executor/schema evidence, not production physics evidence, because it remains a dissipative non-growing trajectory.
+- Kept failure-mode neural-ODE diagnostics as reported probes rather than hiding poor extrapolation behind a single pass/fail metric.
+- Kept CI artifacts bounded: promotion smoke writes a report but must remain non-production.
+
+**Problems / blockers**
+
+- Publication-grade nonlinear reconnection still requires real convergence and seed-QI bundles attached to a physically growing long-run campaign.
+- The current Rutherford initial condition is useful for duration and schema testing but not for Rutherford/plasmoid physics claims.
+
+**Progress**
+
+- Estimated plan completion: 99.7% for repository/release engineering, 91% for publication-grade nonlinear physics evidence, 95% combined.
+
+**Next steps**
+
+- Run a physically growing long double-Harris/Rutherford campaign with resolution, time-step, seed, aspect-ratio, and Lundquist-number sweeps.
+- Attach those sweeps to `rutherford-promotion-check` only after they are matched to the production diagnostic family.
+- Add separatrix-event segmentation and calibrated reconnection-rate diagnostics before upgrading plasmoid figures to production.

@@ -104,8 +104,10 @@ include the dataset contract plus:
 - `latent_ode_model.json`
 - `latent_ode_metrics.json`
 - `latent_ode_predictions.npz`
+- `failure_modes.json`
 - `figures/latent_ode_predictions.png`
 - `figures/latent_ode_rmse_comparison.png`
+- `figures/latent_ode_failure_modes.png`
 - `manifest.json`
 
 The metric file reports train/validation/test MAE, RMSE, target-wise errors,
@@ -116,6 +118,24 @@ model honest and makes future neural-ODE improvements directly comparable.
 ![Latent-ODE predictions](_static/validation/neural_ode_latent_fit/latent_ode_predictions.png)
 
 ![Latent-ODE RMSE comparison](_static/validation/neural_ode_latent_fit/latent_ode_rmse_comparison.png)
+
+The failure-mode report is a deliberately skeptical artifact, not a pass/fail
+claim that the latent ODE is production-ready. It records train-vs-test RMSE,
+late-vs-early forecast drift, and latent-vs-best-baseline ratios:
+
+$$
+R_\mathrm{drift}
+=
+\frac{\mathrm{RMSE}_\mathrm{late,test}}
+{\max(\mathrm{RMSE}_\mathrm{early,test},\epsilon)} ,
+\qquad
+R_\mathrm{seed}
+=
+\frac{\mathrm{RMSE}_\mathrm{test}}
+{\max(\mathrm{RMSE}_\mathrm{train},\epsilon)} .
+$$
+
+![Latent-ODE failure-mode probes](_static/validation/neural_ode_latent_fit/latent_ode_failure_modes.png)
 
 ## Claim boundary
 

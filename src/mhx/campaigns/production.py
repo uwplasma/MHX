@@ -44,7 +44,7 @@ from mhx.io import write_artifact_manifest, write_manifest
 from mhx.plotting import plot_current_density_gif, plot_flux_gif
 from mhx.state import ReducedMHDParams, ReducedMHDState, ReducedMHDTrajectory
 from mhx.time_integrators import rk4_step
-from mhx.versioning import require_supported_api_version
+from mhx.versioning import ARTIFACT_MANIFEST_SCHEMA, require_supported_api_version
 
 PRODUCTION_RUTHERFORD_PLAN_SCHEMA = "mhx.campaign.rutherford_production_plan.v1"
 PRODUCTION_RUTHERFORD_RUNBOOK_SCHEMA = "mhx.campaign.rutherford_runbook.v1"
@@ -799,7 +799,6 @@ def write_rutherford_production_promotion_report(
         json.dumps(assessment.validation, indent=2, sort_keys=True),
         encoding="utf-8",
     )
-    write_artifact_manifest(report_dir)
     outputs = {
         "promotion_readiness": readiness_path.name,
         "validation": validation_path.name,
@@ -814,6 +813,7 @@ def write_rutherford_production_promotion_report(
         claim_level="production" if assessment.promotion_ready else "validation",
         claim_scope=assessment.diagnostics["claim_boundary"],
     )
+    write_artifact_manifest(report_dir)
     return manifest_path, assessment.validation
 
 
@@ -1023,9 +1023,6 @@ def execute_rutherford_production_campaign(
     )
     write_rutherford_resume_plan(root, target_step=target_step)
     manifest_path = root / "manifest.json"
-    if manifest_path.exists():
-        manifest_path.unlink()
-    write_artifact_manifest(root)
     outputs = {
         "diagnostics": diagnostics_path.name,
         "validation": validation_path.name,
@@ -1037,6 +1034,8 @@ def execute_rutherford_production_campaign(
         "artifact_manifest": "artifact_manifest.json",
         **figure_outputs,
     }
+    if manifest_path.exists():
+        manifest_path.unlink()
     write_manifest(
         manifest_path,
         config=diagnostics,
@@ -1044,6 +1043,7 @@ def execute_rutherford_production_campaign(
         claim_level=claim_level,
         claim_scope=diagnostics["claim_boundary"],
     )
+    write_artifact_manifest(root)
     return ProductionExecutionResult(
         run_dir=root,
         start_step=start_step,
@@ -1468,13 +1468,34 @@ def _promotion_evidence_dir_status(
     validation = _read_json_if_exists(path / "validation.json")
     manifest = _read_json_if_exists(path / "manifest.json")
     artifact_manifest = _read_json_if_exists(path / "artifact_manifest.json")
+    artifact_files = (
+        {
+            str(file_record.get("path"))
+            for file_record in artifact_manifest.get("files", [])
+            if isinstance(file_record, dict)
+        }
+        if artifact_manifest is not None
+        else set()
+    )
     checks = {
         "directory_exists": path.is_dir(),
         "validation_json_present": validation is not None,
         "validation_passed": bool(validation and validation.get("passed")),
         "manifest_present": manifest is not None,
+        "manifest_claim_level_valid": bool(
+            manifest and manifest.get("claim_level") in {"validation", "production"}
+        ),
         "artifact_manifest_present": (not require_artifact_manifest)
         or artifact_manifest is not None,
+        "artifact_manifest_schema_supported": (not require_artifact_manifest)
+        or bool(
+            artifact_manifest
+            and artifact_manifest.get("schema") == ARTIFACT_MANIFEST_SCHEMA
+        ),
+        "artifact_manifest_hashes_validation": (not require_artifact_manifest)
+        or "validation.json" in artifact_files,
+        "artifact_manifest_hashes_manifest": (not require_artifact_manifest)
+        or "manifest.json" in artifact_files,
     }
     return {
         "path": str(path),

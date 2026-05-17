@@ -214,25 +214,26 @@ A production Rutherford or plasmoid campaign should pass all of the following:
 ```text
 outputs/campaigns/rutherford_production/
   campaign_config.toml
-  config_effective.json
+  campaign_plan.json
+  runbook.md
+  job_array.json
   diagnostics.json
   validation.json
-  trajectory.npz
-  histories.npz
-  energy_budget.json
+  production_history.npz
+  resume_plan.json
+  checkpoints/
+    checkpoint_index.json
+    state_step_*.npz
+    step_*.json
   convergence/
-    nx064_dt0.10/
-    nx128_dt0.10/
-    nx128_dt0.05/
+    resolution_sweep/
+    timestep_sweep/
   seed_qi/
   figures/
-    island_width.png
-    reconnected_flux.png
-    reconnection_rate.png
-    energy_budget.png
-    current_sheet_geometry.png
-    flux_movie.gif
-    current_movie.gif
+    production_histories.png
+    current_sheet_aspect_ratio.png
+    fixed_scale_flux_movie.gif
+    fixed_scale_current_density_movie.gif
   promotion/
     promotion_readiness.json
     validation.json

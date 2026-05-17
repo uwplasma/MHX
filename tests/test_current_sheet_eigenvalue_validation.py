@@ -253,6 +253,27 @@ def test_periodic_double_harris_convergence_gate() -> None:
     assert set(result.case_kind.tolist()) == {"resolution", "timestep"}
     assert np.all(result.fitted_early_growth_rate > 0.0)
     assert np.all(result.max_growth_factor > 1.0)
+    diagnostics = result.validation["diagnostics"]
+    thresholds = result.validation["thresholds"]
+    assert diagnostics["case_count"] == 4
+    assert sum(result.case_kind == "resolution") == 2
+    assert sum(result.case_kind == "timestep") == 2
+    assert (
+        diagnostics["resolution_growth_rate_spread"]
+        <= thresholds["max_relative_growth_rate_spread"]
+    )
+    assert (
+        diagnostics["timestep_growth_rate_spread"]
+        <= thresholds["max_relative_growth_rate_spread"]
+    )
+    assert (
+        diagnostics["resolution_max_growth_spread"]
+        <= thresholds["max_relative_max_growth_spread"]
+    )
+    assert (
+        diagnostics["timestep_max_growth_spread"]
+        <= thresholds["max_relative_max_growth_spread"]
+    )
 
 
 def test_periodic_double_harris_convergence_rejects_invalid_inputs() -> None:
@@ -496,6 +517,12 @@ def test_write_periodic_double_harris_convergence_artifacts_and_cli(tmp_path) ->
     assert history["case_kind"].shape == (4,)
     assert history["resolution"].shape == history["dt"].shape
     assert history["fitted_early_growth_rate"].shape == history["dt"].shape
+    manifest = json.loads(manifest_path.read_text())
+    assert manifest["claim_level"] == "validation"
+    assert "production claims require" in manifest["claim_scope"]
+    assert validation["diagnostics"]["resolution_growth_rate_spread"] <= validation[
+        "thresholds"
+    ]["max_relative_growth_rate_spread"]
     assert (
         tmp_path / "figures" / "periodic_double_harris_convergence.png"
     ).stat().st_size > 0

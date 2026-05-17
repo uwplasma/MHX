@@ -22,7 +22,7 @@ boundaries, and maintenance context.
 
 | Asset | What it shows | Claim boundary and anchor |
 | --- | --- | --- |
-| ![Double-Harris reconnection replay](_static/readme/double_harris_reconnection.gif) | Single-sheet Harris reconnection zoom from a `96×96`, `t_end=120` periodic double-Harris replay: out-of-plane current density with magnetic-flux/Az contours and detected X/O markers. | Solver-generated validation media anchored to the Harris current-sheet and FKR tearing picture; bounded evidence, not converged Rutherford/plasmoid production. |
+| ![Double-Harris reconnection replay](_static/readme/double_harris_reconnection.gif) | Single-sheet Harris reconnection zoom from a `96×96`, `t_end=120` periodic double-Harris replay: out-of-plane current density with magnetic-flux/Az contours and refined diagnostic X/O annotations. | Solver-generated validation media anchored to the Harris current-sheet and FKR tearing picture; the markers are diagnostic annotations, not separatrix-event labels or converged Rutherford/plasmoid evidence. |
 | ![Double-Harris current sheet](_static/readme/double_harris_current_sheet.gif) | Full-domain periodic double-Harris view from the same run, showing both current sheets and island-forming flux contours. | Solver-generated validation media; useful for morphology QA before larger seed, duration, and resolution sweeps. |
 | ![Forced turbulent reconnection](_static/readme/forced_turbulent_reconnection.gif) | `64×64`, `t_end=80` forced-turbulence current-sheet replay: current density with magnetic-flux contours and reconnection-rate proxy diagnostics. | Pedagogical 2-D reduced-MHD validation media anchored to turbulent-reconnection literature; not a 3-D LV99 fast-reconnection production test. |
 | ![Decaying MHD turbulence](_static/readme/decaying_mhd_turbulence_current.gif) | `64×64`, `t_end=8` decaying reduced-MHD turbulence replay with current filaments and flux contours. | Solver-generated nonlinear validation media; useful for turbulence morphology and current-sheet diagnostics, not converged turbulence statistics. |
@@ -320,9 +320,12 @@ mhx campaign rutherford-execute \
 ```
 
 It validates fixed-scale flux/current movie writing, checkpoint metadata, and
-manifested artifacts for a production executor chunk. A partial chunk is still
-validation-level unless the planned duration is completed and production
-convergence evidence is attached.
+manifested artifacts for a production executor chunk. A chunk or completed
+duration run remains validation-level unless `--allow-production-claim` is used
+after the planned duration completes, execution checks pass, and
+`mhx campaign rutherford-promotion-check` writes a passing promotion-readiness
+report with convergence, seed-QI, movie, geometry, energy-budget, divergence,
+and X/O-count evidence.
 
 ![Fixed-scale Rutherford flux movie](_static/validation/rutherford_production_execution/fixed_scale_flux_movie.gif)
 

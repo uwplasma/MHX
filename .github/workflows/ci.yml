@@ -156,6 +156,7 @@ jobs:
           mhx campaign rutherford-plan-production --outdir outputs/ci/rutherford_production_plan --nx 96 --ny 96 --dt 0.2 --target-saved-frames 120 --max-walltime-hours 1.0 --seconds-per-step-estimate 2.0 --checkpoint-interval-minutes 10.0 --preemption-margin-minutes 5.0
           mhx campaign rutherford-resume-plan outputs/ci/rutherford_production_plan --target-step 10
           mhx campaign rutherford-execute outputs/ci/rutherford_production_plan --max-steps 4
+          mhx campaign rutherford-promotion-check outputs/ci/rutherford_production_plan --no-require-movies --min-history-samples 2 --min-convergence-dirs 0 || true
           mhx validate all --outdir outputs/ci/validation_suite
           mhx validate readiness --suite outputs/ci/validation_suite --outdir outputs/ci/readiness
           python examples/make_readme_media.py
@@ -273,6 +274,9 @@ jobs:
           test -f outputs/ci/rutherford_production_plan/resume_plan.json
           test -f outputs/ci/rutherford_production_plan/production_history.npz
           test -f outputs/ci/rutherford_production_plan/figures/production_histories.png
+          test -f outputs/ci/rutherford_production_plan/promotion/promotion_readiness.json
+          test -f outputs/ci/rutherford_production_plan/promotion/validation.json
+          test -f outputs/ci/rutherford_production_plan/promotion/figures/promotion_matrix.png
           test -f outputs/ci/validation_suite/validation_suite.json
           test -f outputs/ci/validation_suite/validation_suite.md
           test -f outputs/ci/validation_suite/fkr_growth_rate/figures/fkr_growth_rate.png
@@ -331,6 +335,55 @@ jobs:
           test -f outputs/ci/plugin_demo/figures/flux_final.png
           test -f outputs/ci/plugin_demo/figures/flux_movie.gif
           test -f outputs/ci/plugin_demo/figures/diagnostics/final_flux_l2_history.png
+      - name: Validate JSON gates and claim boundaries
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          def read_json(path: str) -> dict:
+              return json.loads(Path(path).read_text(encoding="utf-8"))
+
+          def assert_validation_passed(path: str) -> None:
+              payload = read_json(path)
+              if not payload.get("passed"):
+                  raise SystemExit(f"validation did not pass: {path}")
+
+          for validation_path in [
+              "outputs/ci/linear_tearing_fast/validation.json",
+              "outputs/ci/periodic_double_harris_convergence/validation.json",
+              "outputs/ci/seed_robust_qi/validation.json",
+              "outputs/ci/neural_ode_latent_fit/validation.json",
+              "outputs/ci/validation_suite/validation_suite.json",
+              "outputs/ci/readiness/validation.json",
+          ]:
+              assert_validation_passed(validation_path)
+
+          promotion = read_json(
+              "outputs/ci/rutherford_production_plan/promotion/validation.json"
+          )
+          if promotion.get("passed"):
+              raise SystemExit("CI promotion smoke should not claim production")
+          readiness = read_json(
+              "outputs/ci/rutherford_production_plan/promotion/promotion_readiness.json"
+          )
+          if readiness.get("promotion_ready"):
+              raise SystemExit("CI promotion readiness unexpectedly passed")
+          manifest = read_json("outputs/ci/rutherford_production_plan/manifest.json")
+          if manifest.get("claim_level") != "validation":
+              raise SystemExit("partial Rutherford CI chunk must remain validation")
+          artifact_paths = {
+              item["path"] for item in read_json("outputs/ci/artifact_manifest.json")["files"]
+          }
+          expected = {
+              "rutherford_production_plan/manifest.json",
+              "rutherford_production_plan/promotion/manifest.json",
+              "neural_ode_latent_fit/failure_modes.json",
+          }
+          missing = expected - artifact_paths
+          if missing:
+              raise SystemExit(f"artifact manifest missing expected files: {missing}")
+          PY
       - name: Enforce CI claim labels
         run: |
           python - <<'PY'

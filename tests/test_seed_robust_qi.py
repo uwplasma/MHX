@@ -161,6 +161,10 @@ def test_write_seed_robust_qi_validation_artifacts(tmp_path) -> None:
     diagnostics = json.loads((tmp_path / "diagnostics.json").read_text())
     assert diagnostics["schema"] == SEED_ROBUST_QI_SCHEMA
     assert diagnostics["seed_count"] == 4
+    manifest = json.loads((tmp_path / "manifest.json").read_text())
+    assert manifest["claim_level"] == "validation"
+    assert manifest["hashes"]["ensemble"]
+    assert manifest["hashes"]["validation"]
     assert (tmp_path / "validation.json").exists()
     assert (tmp_path / "ensemble.npz").exists()
     assert (tmp_path / "manifest.json").exists()
@@ -168,6 +172,13 @@ def test_write_seed_robust_qi_validation_artifacts(tmp_path) -> None:
     with np.load(tmp_path / "ensemble.npz") as data:
         assert str(data["schema"]) == SEED_ROBUST_QI_SCHEMA
         assert data["metric_values"].shape == (4, len(DEFAULT_QI_METRICS))
+        assert len(set(int(seed) for seed in data["seeds"])) == 4
+    validation_payload = json.loads((tmp_path / "validation.json").read_text())
+    assert all(validation_payload["checks"].values())
+    assert all(
+        summary["passed"]
+        for summary in validation_payload["diagnostics"]["summaries"].values()
+    )
 
 
 def test_write_seed_robust_qi_low_level_artifacts(tmp_path) -> None:
@@ -247,9 +258,15 @@ def test_write_seed_robust_qi_sweep_artifacts(tmp_path) -> None:
     assert (tmp_path / "sweep.npz").exists()
     assert (tmp_path / "figures" / "qi_sweep_cv.png").stat().st_size > 0
     assert (tmp_path / "figures" / "qi_sweep_mean_drift.png").stat().st_size > 0
+    manifest = json.loads((tmp_path / "manifest.json").read_text())
+    assert manifest["hashes"]["sweep"]
+    diagnostics = json.loads((tmp_path / "diagnostics.json").read_text())
+    assert set(diagnostics["metric_cv_max"]) == set(DEFAULT_QI_METRICS)
+    assert set(diagnostics["metric_relative_mean_drift_max"]) == set(DEFAULT_QI_METRICS)
     with np.load(tmp_path / "sweep.npz") as data:
         assert str(data["schema"]) == SEED_ROBUST_QI_SWEEP_SCHEMA
         assert data["metric_values"].shape == (2, 3, len(DEFAULT_QI_METRICS))
+        assert len(set(int(seed) for seed in data["seeds"])) == 3
 
 
 def test_seed_robust_qi_sweep_rejects_invalid_inputs() -> None:

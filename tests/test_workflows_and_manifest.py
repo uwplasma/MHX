@@ -41,6 +41,11 @@ def test_required_workflows_exist() -> None:
     }
 
     assert {path.name for path in workflow_dir.glob("*.yml")} >= required
+    docs_workflow = (workflow_dir / "docs.yml").read_text(encoding="utf-8")
+    assert "tests/test_docs_links.py tests/test_readme_media.py" in docs_workflow
+    ci_workflow = (workflow_dir / "ci.yml").read_text(encoding="utf-8")
+    assert "mhx campaign rutherford-promotion-check" in ci_workflow
+    assert "assert_validation_passed" in ci_workflow
 
 
 def test_docs_figure_manifest_is_parseable_and_complete() -> None:

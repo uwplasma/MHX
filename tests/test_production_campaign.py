@@ -28,6 +28,7 @@ from mhx.campaigns import (
     write_rutherford_resume_plan,
 )
 from mhx.cli.main import _exit_if_validation_failed, app
+from mhx.io import write_artifact_manifest
 
 
 def test_production_campaign_plan_writes_runbook_and_checkpoint_contract(tmp_path) -> None:
@@ -232,6 +233,10 @@ def test_production_execution_runs_real_chunk_and_resumes(tmp_path) -> None:
     assert result.end_step == 4
     assert (tmp_path / "production_history.npz").exists()
     assert (tmp_path / "figures" / "production_histories.png").stat().st_size > 0
+    artifact_manifest = json.loads((tmp_path / "artifact_manifest.json").read_text())
+    artifact_paths = {record["path"] for record in artifact_manifest["files"]}
+    assert "manifest.json" in artifact_paths
+    assert "validation.json" in artifact_paths
     assert (tmp_path / "checkpoints" / "state_step_000000000004.npz").exists()
     assert (tmp_path / "resume_plan.json").exists()
     with np.load(tmp_path / "production_history.npz") as data:
@@ -370,7 +375,7 @@ def test_production_promotion_report_enables_explicit_production_claim(tmp_path)
             json.dumps({"claim_level": "validation"}),
             encoding="utf-8",
         )
-        (evidence_dir / "artifact_manifest.json").write_text("{}", encoding="utf-8")
+        write_artifact_manifest(evidence_dir)
         convergence_dirs.append(evidence_dir)
     seed_qi_dir = tmp_path / "evidence" / "seed_qi"
     seed_qi_dir.mkdir(parents=True)
@@ -394,6 +399,12 @@ def test_production_promotion_report_enables_explicit_production_claim(tmp_path)
 
     assert validation["passed"] is True
     assert json.loads(manifest_path.read_text())["claim_level"] == "production"
+    promotion_artifacts = json.loads(
+        (tmp_path / "promotion" / "artifact_manifest.json").read_text()
+    )
+    promotion_paths = {record["path"] for record in promotion_artifacts["files"]}
+    assert "manifest.json" in promotion_paths
+    assert "validation.json" in promotion_paths
 
     promoted = execute_rutherford_production_campaign(
         tmp_path,

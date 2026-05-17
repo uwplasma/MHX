@@ -24,7 +24,7 @@ boundaries.
 | Harris reconnection (`Az` contours) | Forced turbulent reconnection | Orszag--Tang current sheets |
 | --- | --- | --- |
 | ![Double-Harris reconnection replay](docs/_static/readme/double_harris_reconnection.gif) | ![Forced turbulent reconnection](docs/_static/readme/forced_turbulent_reconnection.gif) | ![Orszag-Tang current sheets](docs/_static/readme/orszag_tang_current.gif) |
-| Single-sheet zoom from a `96×96`, `t=120` validation run: `j_z` background plus `Az` contours and detected X/O markers. | `64×64`, `t=80` forced-turbulence current sheet with reconnection-rate proxy diagnostics. | Solver-generated Orszag--Tang current-density cascade over a `96×96`, `t=10` validation run. |
+| Single-sheet zoom from a `96×96`, `t=120` validation run: `j_z` background plus `Az` contours and refined diagnostic X/O annotations, not separatrix-event labels. | `64×64`, `t=80` forced-turbulence current sheet with reconnection-rate proxy diagnostics. | Solver-generated Orszag--Tang current-density cascade over a `96×96`, `t=10` validation run. |
 
 | Decaying MHD turbulence | Orszag--Tang vorticity | Harris tearing layer |
 | --- | --- | --- |
@@ -111,7 +111,8 @@ Common entry points:
 mhx validate all --outdir outputs/validation_suite
 mhx benchmark catalog --outdir outputs/benchmarks/catalog
 mhx campaign rutherford-plan-production --outdir outputs/campaigns/rutherford_production_plan
-# After target completion plus convergence/seed-QI evidence:
+# Run restartable chunks until the target completes; then attach convergence and seed-QI evidence:
+mhx campaign rutherford-execute outputs/campaigns/rutherford_production_plan --movies
 mhx campaign rutherford-promotion-check outputs/campaigns/rutherford_production_plan
 mhx validate readiness --suite outputs/validation_suite --outdir outputs/validation_readiness
 mhx api deprecations
