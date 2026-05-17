@@ -42,7 +42,7 @@ Every figure included in the paper-style documentation should have:
 | Readiness report | `readiness_matrix.png` | `validation` | Ready as a release-vs-paper claim boundary figure. |
 | Rutherford production executor | `production_histories.png`, `current_sheet_aspect_ratio.png`, optional fixed-scale GIFs | `validation` for partial chunks | Ready as restart/resume execution evidence; not yet a converged nonlinear physics claim. |
 | Rutherford promotion gate | `promotion_matrix.png`, `promotion_readiness.json` | `production` only if every gate passes | Ready as the machine-readable boundary between validation chunks and reviewer-facing production claims. |
-| Rutherford production physics | long-run histories, convergence figures, seed-QI evidence, fixed-scale movies, and promotion report | `production` only after full target completion and a passing `rutherford-promotion-check` report | Not ready. Requires long run plus convergence, seed-QI, geometry/X-O counts, and explicit production-claim promotion. |
+| Rutherford production physics | long-run histories, convergence figures, seed-QI evidence, fixed-scale movies, response diagnostics, and promotion report | `production` only after full target completion and a passing `rutherford-promotion-check` report | Not ready. Requires long run plus convergence, seed-QI, geometry/X-O counts, positive reconnecting-flux/island-width response, and explicit production-claim promotion. |
 | Plasmoid production | not generated | none | Not ready. Requires long thin sheet, secondary islands, and convergence. |
 | Neural ODE dataset/baselines | `dataset_targets.png`, `baseline_rmse.png`, `calibration_coverage.png` | `validation` | Ready as reproducibility protocol. |
 | Fitted latent ODE | `latent_ode_predictions.png`, `latent_ode_rmse_comparison.png` | `validation` | Ready as FAST train/test evidence; not yet production surrogate evidence. |
@@ -114,6 +114,9 @@ Before adding a nonlinear island or plasmoid plot to the paper set, require:
 6. Movies show flux and current with fixed color limits and a clear timestamp.
 7. `mhx campaign rutherford-promotion-check` passes with the convergence and
    seed-QI bundle paths used for the paper artifact.
+8. The promotion report shows peak/initial reconnecting-flux and island-width
+   amplification above the declared thresholds; purely dissipative duration
+   tests remain validation artifacts.
 
 ## Neural-ODE figure acceptance gates
 

@@ -586,6 +586,8 @@ def assess_rutherford_production_promotion(
     min_convergence_dirs: int = 2,
     max_energy_budget_residual: float = 1.0e-9,
     max_divergence_linf: float = 1.0e-9,
+    min_reconnected_flux_amplification: float = 1.05,
+    min_island_width_amplification: float = 1.05,
 ) -> ProductionPromotionAssessment:
     """Assess whether a Rutherford execution bundle is ready for production claims.
 
@@ -604,6 +606,10 @@ def assess_rutherford_production_promotion(
         raise ValueError("max_energy_budget_residual must be non-negative")
     if max_divergence_linf < 0.0:
         raise ValueError("max_divergence_linf must be non-negative")
+    if min_reconnected_flux_amplification < 0.0:
+        raise ValueError("min_reconnected_flux_amplification must be non-negative")
+    if min_island_width_amplification < 0.0:
+        raise ValueError("min_island_width_amplification must be non-negative")
 
     plan = _read_json_if_exists(root / "campaign_plan.json")
     diagnostics_json = _read_json_if_exists(root / "diagnostics.json")
@@ -631,6 +637,12 @@ def assess_rutherford_production_promotion(
         float(np.max(np.asarray(history["magnetic_divergence_linf"])))
         if history and "magnetic_divergence_linf" in history
         else float("inf")
+    )
+    reconnected_flux_amplification = _history_amplification(
+        history.get("reconnected_flux") if history else None
+    )
+    island_width_amplification = _history_amplification(
+        history.get("rutherford_island_width") if history else None
     )
     geometry_present = bool(
         history
@@ -700,6 +712,10 @@ def assess_rutherford_production_promotion(
         "energy_budget_residual_within_tolerance": max_energy_residual
         <= max_energy_budget_residual,
         "magnetic_divergence_within_tolerance": max_divergence <= max_divergence_linf,
+        "reconnected_flux_amplifies": reconnected_flux_amplification
+        >= min_reconnected_flux_amplification,
+        "island_width_amplifies": island_width_amplification
+        >= min_island_width_amplification,
         "current_sheet_geometry_present": geometry_present,
         "current_sheet_geometry_positive": geometry_positive,
         "critical_point_counts_present": critical_points_present,
@@ -717,6 +733,8 @@ def assess_rutherford_production_promotion(
         "min_convergence_dirs": int(min_convergence_dirs),
         "max_energy_budget_residual": float(max_energy_budget_residual),
         "max_divergence_linf": float(max_divergence_linf),
+        "min_reconnected_flux_amplification": float(min_reconnected_flux_amplification),
+        "min_island_width_amplification": float(min_island_width_amplification),
         "require_movies": bool(require_movies),
     }
     diagnostics = {
@@ -736,6 +754,8 @@ def assess_rutherford_production_promotion(
         "terminal_step": terminal_step,
         "max_energy_budget_residual": max_energy_residual,
         "max_magnetic_divergence_linf": max_divergence,
+        "reconnected_flux_amplification": reconnected_flux_amplification,
+        "island_width_amplification": island_width_amplification,
         "max_x_point_count": max_x_point_count,
         "max_o_point_count": max_o_point_count,
         "convergence_dirs": [str(Path(path)) for path in convergence_dirs],
@@ -770,6 +790,8 @@ def write_rutherford_production_promotion_report(
     min_convergence_dirs: int = 2,
     max_energy_budget_residual: float = 1.0e-9,
     max_divergence_linf: float = 1.0e-9,
+    min_reconnected_flux_amplification: float = 1.05,
+    min_island_width_amplification: float = 1.05,
 ) -> tuple[Path, dict[str, Any]]:
     """Write a promotion-readiness report and manifest for a campaign bundle."""
     assessment = assess_rutherford_production_promotion(
@@ -781,6 +803,8 @@ def write_rutherford_production_promotion_report(
         min_convergence_dirs=min_convergence_dirs,
         max_energy_budget_residual=max_energy_budget_residual,
         max_divergence_linf=max_divergence_linf,
+        min_reconnected_flux_amplification=min_reconnected_flux_amplification,
+        min_island_width_amplification=min_island_width_amplification,
     )
     report_dir = Path(outdir) if outdir is not None else assessment.run_dir / "promotion"
     figures_dir = report_dir / "figures"
@@ -1458,6 +1482,18 @@ def _load_history_for_promotion(path: Path) -> tuple[dict[str, np.ndarray], str 
     except (OSError, ValueError, KeyError):
         return {}, None
     return history, schema
+
+
+def _history_amplification(values: Any) -> float:
+    if values is None:
+        return 0.0
+    array = np.abs(np.asarray(values, dtype=np.float64))
+    if array.size == 0 or not np.isfinite(array).all():
+        return 0.0
+    initial = float(array[0])
+    peak = float(np.max(array))
+    denominator = max(initial, np.finfo(np.float64).tiny)
+    return peak / denominator
 
 
 def _promotion_evidence_dir_status(

@@ -1,5 +1,5 @@
 schema = "mhx.docs.figures_manifest.v1"
-updated_utc = "2026-05-16T00:00:00Z"
+updated_utc = "2026-05-17T22:30:00Z"
 description = "Reviewer-facing map from documentation figures and movies to commands, claim levels, sources, and tests."
 
 [[figures]]
@@ -91,3 +91,30 @@ claim_level = "validation"
 claim_scope = "Restartable production-executor path on a short chunk; not a completed production nonlinear result."
 sources = ["src/mhx/campaigns/production.py", "examples/run_rutherford_production_chunk.py"]
 tests = ["tests/test_production_campaign.py"]
+
+[[figures]]
+id = "validation_rutherford_response_gate"
+path = "docs/_static/validation/long_runs/current_schema_rutherford/promotion_matrix.png"
+command = "mhx campaign rutherford-promotion-check outputs/campaigns/rutherford_current_schema_96_dt005_20260517_161235 --convergence-dir <bundle-a> --convergence-dir <bundle-b> --seed-qi-dir <seed-qi>"
+claim_level = "validation"
+claim_scope = "Duration-complete Rutherford executor bundle with convergence/QI evidence attached; promotion remains blocked because reconnecting-flux and island-width response do not amplify."
+sources = ["src/mhx/campaigns/production.py", "docs/long_run_evidence.md"]
+tests = ["tests/test_production_campaign.py", "tests/test_docs_links.py"]
+
+[[figures]]
+id = "validation_rutherford_attached_convergence"
+path = "docs/_static/validation/long_runs/current_schema_rutherford/evidence/convergence_n16_24.png"
+command = "mhx benchmark double-harris-convergence --resolutions 16,24 --dt-values 0.02,0.01 --reference-resolution 16 --t-end 6 --fit-stop 3"
+claim_level = "validation"
+claim_scope = "Small checksummed convergence evidence attached to the response-gated Rutherford promotion report."
+sources = ["src/mhx/benchmarks/current_sheet.py", "src/mhx/campaigns/production.py"]
+tests = ["tests/test_current_sheet_eigenvalue_validation.py", "tests/test_production_campaign.py"]
+
+[[figures]]
+id = "validation_rutherford_attached_seed_qi"
+path = "docs/_static/validation/long_runs/current_schema_rutherford/evidence/seed_qi_summary.png"
+command = "mhx benchmark seed-robust-qi --nx 16 --ny 16 --seeds 0,1,2,3 --t-end 0.12 --dt 0.01"
+claim_level = "validation"
+claim_scope = "Small seed-QI evidence attached to the response-gated Rutherford promotion report."
+sources = ["src/mhx/benchmarks/seed_robust_qi.py", "src/mhx/campaigns/production.py"]
+tests = ["tests/test_seed_robust_qi.py", "tests/test_production_campaign.py"]

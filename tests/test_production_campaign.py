@@ -317,6 +317,8 @@ def test_production_promotion_report_blocks_incomplete_bundle(tmp_path) -> None:
     assert assessment.validation["checks"]["completed_target"] is False
     assert assessment.validation["checks"]["convergence_bundles_passed"] is False
     assert assessment.validation["checks"]["seed_qi_bundle_present"] is False
+    assert assessment.validation["checks"]["reconnected_flux_amplifies"] is False
+    assert assessment.validation["checks"]["island_width_amplifies"] is False
 
     manifest_path, validation = write_rutherford_production_promotion_report(
         tmp_path,
@@ -395,6 +397,8 @@ def test_production_promotion_report_enables_explicit_production_claim(tmp_path)
         require_movies=False,
         min_history_samples=2,
         max_energy_budget_residual=1.0,
+        min_reconnected_flux_amplification=1.0,
+        min_island_width_amplification=1.0,
     )
 
     assert validation["passed"] is True
@@ -416,6 +420,66 @@ def test_production_promotion_report_enables_explicit_production_claim(tmp_path)
     )
     assert promoted.validation["passed"] is True
     assert promoted.diagnostics["claim_level"] == "production"
+
+
+def test_production_promotion_requires_nonlinear_response(tmp_path) -> None:
+    write_rutherford_production_plan(
+        tmp_path,
+        shape=(8, 8),
+        dt=0.1,
+        target_saved_frames=10,
+        harris_growth_rate=10.0,
+        production_efolds=0.1,
+        safety_factor=1.0,
+        min_production_resolution=8,
+    )
+    execution = execute_rutherford_production_campaign(
+        tmp_path,
+        seed=0,
+        write_movies=False,
+        max_relative_energy_growth=1.0,
+    )
+    assert execution.completed_target is True
+
+    convergence_dirs = []
+    for name in ("resolution_sweep", "time_step_sweep"):
+        evidence_dir = tmp_path / "evidence" / name
+        evidence_dir.mkdir(parents=True)
+        (evidence_dir / "validation.json").write_text(
+            json.dumps({"schema": f"mhx.test.{name}.gates.v1", "passed": True}),
+            encoding="utf-8",
+        )
+        (evidence_dir / "manifest.json").write_text(
+            json.dumps({"claim_level": "validation"}),
+            encoding="utf-8",
+        )
+        write_artifact_manifest(evidence_dir)
+        convergence_dirs.append(evidence_dir)
+    seed_qi_dir = tmp_path / "evidence" / "seed_qi"
+    seed_qi_dir.mkdir(parents=True)
+    (seed_qi_dir / "validation.json").write_text(
+        json.dumps({"schema": "mhx.test.seed_qi.gates.v1", "passed": True}),
+        encoding="utf-8",
+    )
+    (seed_qi_dir / "manifest.json").write_text(
+        json.dumps({"claim_level": "validation"}),
+        encoding="utf-8",
+    )
+
+    assessment = assess_rutherford_production_promotion(
+        tmp_path,
+        convergence_dirs=tuple(convergence_dirs),
+        seed_qi_dir=seed_qi_dir,
+        require_movies=False,
+        min_history_samples=2,
+        max_energy_budget_residual=1.0,
+    )
+
+    assert assessment.promotion_ready is False
+    assert assessment.diagnostics["reconnected_flux_amplification"] == pytest.approx(1.0)
+    assert assessment.diagnostics["island_width_amplification"] == pytest.approx(1.0)
+    assert assessment.validation["checks"]["reconnected_flux_amplifies"] is False
+    assert assessment.validation["checks"]["island_width_amplifies"] is False
 
 
 def test_cli_validation_failure_reports_failed_checks(capsys) -> None:

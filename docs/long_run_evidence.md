@@ -125,7 +125,10 @@ mhx campaign rutherford-execute \
   --max-divergence-linf 1e-8
 
 mhx campaign rutherford-promotion-check \
-  outputs/campaigns/rutherford_current_schema_96_dt005_20260517_161235 || true
+  outputs/campaigns/rutherford_current_schema_96_dt005_20260517_161235 \
+  --convergence-dir outputs/campaigns/rutherford_current_schema_96_dt005_20260517_161235/evidence_20260517_response_gate/convergence_n16_24 \
+  --convergence-dir outputs/campaigns/rutherford_current_schema_96_dt005_20260517_161235/evidence_20260517_response_gate/convergence_n18_26 \
+  --seed-qi-dir outputs/campaigns/rutherford_current_schema_96_dt005_20260517_161235/evidence_20260517_response_gate/seed_robust_qi_n16 || true
 ```
 
 | Quantity | Value |
@@ -134,7 +137,11 @@ mhx campaign rutherford-promotion-check \
 | final time | 2290.1 |
 | saved samples | 202 |
 | execution gates | passed |
-| promotion gates | failed: missing convergence and seed-QI evidence |
+| promotion gates | failed: no positive reconnecting-flux/island-width response |
+| convergence evidence | two small validation bundles passed and were checksummed |
+| seed-QI evidence | one small validation bundle passed |
+| reconnecting-flux amplification | `1.00` versus required `1.05` |
+| island-width amplification | `1.00` versus required `1.05` |
 | max X/O counts | `2 / 1` |
 | current-sheet aspect proxy | `0.667` |
 | final/initial total energy | `1.03e-2` |
@@ -146,11 +153,17 @@ mhx campaign rutherford-promotion-check \
 
 ![Current-schema promotion matrix](_static/validation/long_runs/current_schema_rutherford/promotion_matrix.png)
 
+![Current-schema convergence evidence, n16/n24](_static/validation/long_runs/current_schema_rutherford/evidence/convergence_n16_24.png)
+
+![Current-schema convergence evidence, n18/n26](_static/validation/long_runs/current_schema_rutherford/evidence/convergence_n18_26.png)
+
+![Current-schema seed-QI evidence](_static/validation/long_runs/current_schema_rutherford/evidence/seed_qi_summary.png)
+
 The important result is negative but useful: the executor now writes every
-history key required by the current promotion gate, and the promotion gate fails
-for the right remaining reasons. This closes the schema/executor lane while
-keeping the nonlinear physics claim blocked until real convergence and seed-QI
-evidence are attached.
+history key required by the current promotion gate. The promotion gate also
+requires positive reconnecting-flux and island-width amplification, so this
+purely dissipative duration-complete run remains validation evidence even after
+convergence and seed-QI bundles are attached.
 
 ## Active nonlinear energy-budget run
 

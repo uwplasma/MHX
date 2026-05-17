@@ -5497,3 +5497,54 @@ Every agent must append an entry here. Do not delete previous entries.
 - Run a physically growing long double-Harris/Rutherford campaign with resolution, time-step, seed, aspect-ratio, and Lundquist-number sweeps.
 - Attach those sweeps to `rutherford-promotion-check` only after they are matched to the production diagnostic family.
 - Add separatrix-event segmentation and calibrated reconnection-rate diagnostics before upgrading plasmoid figures to production.
+
+### 2026-05-17 17:15 CDT — Agent: Codex, Rutherford promotion response gate
+
+**Steps taken**
+
+- Added explicit promotion gates for peak/initial reconnecting-flux and
+  Rutherford island-width amplification.
+- Exposed the response thresholds through `mhx campaign
+  rutherford-promotion-check`.
+- Generated two small checksummed convergence bundles and one seed-robust QI
+  bundle for the current-schema duration-complete Rutherford run.
+- Re-ran the promotion checker with those evidence bundles attached.
+- Archived the updated negative promotion matrix, convergence figures, and
+  seed-QI figure in the documentation.
+
+**Results obtained**
+
+- Convergence evidence passes for the two small validation bundles.
+- Seed-QI evidence passes for the small validation bundle.
+- The current duration-complete Rutherford run still fails promotion, now for
+  the correct physics reason: reconnecting-flux amplification is `1.00` and
+  island-width amplification is `1.00`, both below the default `1.05` threshold.
+- Focused tests, ruff, and Sphinx warnings-as-errors pass locally.
+
+**Design decisions**
+
+- Did not promote the existing long run by attaching unrelated evidence. A
+  purely dissipative trajectory must stay validation-level even if its IO,
+  convergence, and seed-QI metadata are complete.
+- Kept response thresholds configurable but positive by default, so reviewers
+  can see the declared nonlinear-response criterion in the promotion report.
+
+**Problems / blockers**
+
+- The remaining scientific blocker is a physically growing long-run campaign,
+  not repository infrastructure.
+- The current Rutherford initial condition remains useful as duration/executor
+  validation but is not a Rutherford-growth or plasmoid-production result.
+
+**Progress**
+
+- Estimated plan completion: 99.8% for repository/release engineering, 92% for
+  publication-grade nonlinear physics evidence, 96% combined.
+
+**Next steps**
+
+- Configure and run a growing double-Harris/Rutherford campaign whose
+  reconnected flux and island width amplify above threshold.
+- Repeat that campaign over at least two resolutions, two time steps, and a
+  seed ensemble, then attach those matched evidence bundles to the promotion
+  checker.

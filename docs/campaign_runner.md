@@ -205,7 +205,7 @@ A production Rutherford or plasmoid campaign should pass all of the following:
 | Energy-budget residual remains below the documented tolerance. | Checks bracket cancellation and dissipation signs during the long run. |
 | Magnetic divergence remains near spectral roundoff or a documented tolerance. | Catches projection/derivative mistakes. |
 | Seed-robust QI is run on the production diagnostic family. | Checks that the reported metrics are not seed accidents. |
-| `mhx campaign rutherford-promotion-check` passes. | Blocks production claims until convergence, seed-QI, current-sheet geometry, X/O point counts, fixed-scale media, and tolerances are present. |
+| `mhx campaign rutherford-promotion-check` passes. | Blocks production claims until convergence, seed-QI, current-sheet geometry, X/O point counts, fixed-scale media, tolerances, and positive reconnecting-flux/island-width response are present. |
 | Flux/current movies use fixed color limits and include timestamps. | Makes visual comparisons honest across resolutions and seeds. |
 | Artifact manifests include hashes, config, git commit, API version, and dependencies. | Makes reviewer reruns and diffs possible. |
 

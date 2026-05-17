@@ -190,7 +190,7 @@ bundle under `<run-dir>/promotion/` by default:
 
 | File | Schema / contents |
 | --- | --- |
-| `promotion_readiness.json` | `mhx.campaign.rutherford_promotion.v1`; target-completion, convergence, seed-QI, movie, geometry, energy, and divergence promotion diagnostics. |
+| `promotion_readiness.json` | `mhx.campaign.rutherford_promotion.v1`; target-completion, convergence, seed-QI, movie, geometry, X/O count, reconnecting-flux/island-width response, energy, and divergence promotion diagnostics. |
 | `validation.json` | `mhx.campaign.rutherford_promotion.gates.v1`; pass/fail checks for every promotion gate. |
 | `figures/promotion_matrix.png` | Reviewer-readable pass/fail matrix. |
 | `artifact_manifest.json` | Recursive hashes for the promotion bundle. |

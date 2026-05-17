@@ -531,6 +531,20 @@ def campaign_rutherford_promotion_check(
         float,
         typer.Option("--max-divergence-linf", help="Maximum magnetic-divergence error."),
     ] = 1.0e-9,
+    min_reconnected_flux_amplification: Annotated[
+        float,
+        typer.Option(
+            "--min-reconnected-flux-amplification",
+            help="Minimum peak/initial reconnecting-flux response required.",
+        ),
+    ] = 1.05,
+    min_island_width_amplification: Annotated[
+        float,
+        typer.Option(
+            "--min-island-width-amplification",
+            help="Minimum peak/initial Rutherford island-width response required.",
+        ),
+    ] = 1.05,
 ) -> None:
     """Write and validate a reviewer-facing Rutherford promotion report."""
     manifest_path, validation = write_rutherford_production_promotion_report(
@@ -543,6 +557,8 @@ def campaign_rutherford_promotion_check(
         min_convergence_dirs=min_convergence_dirs,
         max_energy_budget_residual=max_energy_budget_residual,
         max_divergence_linf=max_divergence_linf,
+        min_reconnected_flux_amplification=min_reconnected_flux_amplification,
+        min_island_width_amplification=min_island_width_amplification,
     )
     typer.echo(f"wrote {manifest_path}")
     _exit_if_validation_failed(validation, context="rutherford-promotion-check")
