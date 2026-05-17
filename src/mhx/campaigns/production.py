@@ -31,6 +31,8 @@ from mhx.benchmarks.duration_policy import (
 from mhx.benchmarks.seed_robust_qi import seeded_tearing_initial_state
 from mhx.config import RunConfig
 from mhx.diagnostics import (
+    critical_points_by_kind,
+    detect_flux_critical_points,
     island_width_from_mode,
     magnetic_divergence_linf,
     reconnected_flux_amplitude,
@@ -52,6 +54,7 @@ PRODUCTION_RUTHERFORD_RESUME_SCHEMA = "mhx.campaign.rutherford_resume_plan.v1"
 PRODUCTION_RUTHERFORD_EXECUTION_SCHEMA = "mhx.campaign.rutherford_execution.v1"
 PRODUCTION_RUTHERFORD_HISTORY_SCHEMA = "mhx.campaign.rutherford_history.v1"
 PRODUCTION_RUTHERFORD_STATE_SCHEMA = "mhx.campaign.rutherford_state.v1"
+PRODUCTION_RUTHERFORD_PROMOTION_SCHEMA = "mhx.campaign.rutherford_promotion.v1"
 
 
 @dataclass(frozen=True)
@@ -168,6 +171,16 @@ class ProductionExecutionResult:
     end_step: int
     target_step: int
     completed_target: bool
+    diagnostics: dict[str, Any]
+    validation: dict[str, Any]
+
+
+@dataclass(frozen=True)
+class ProductionPromotionAssessment:
+    """Reviewer-facing readiness assessment for promoting a run to production."""
+
+    run_dir: Path
+    promotion_ready: bool
     diagnostics: dict[str, Any]
     validation: dict[str, Any]
 
@@ -563,6 +576,247 @@ def write_rutherford_production_execution(
     return result.run_dir / "manifest.json", result.validation
 
 
+def assess_rutherford_production_promotion(
+    run_dir: str | Path,
+    *,
+    convergence_dirs: tuple[str | Path, ...] = (),
+    seed_qi_dir: str | Path | None = None,
+    require_movies: bool = True,
+    min_history_samples: int = 100,
+    min_convergence_dirs: int = 2,
+    max_energy_budget_residual: float = 1.0e-9,
+    max_divergence_linf: float = 1.0e-9,
+) -> ProductionPromotionAssessment:
+    """Assess whether a Rutherford execution bundle is ready for production claims.
+
+    This is intentionally stricter than the chunk executor.  The executor proves
+    that a restartable path can advance and resume; this promotion gate requires
+    completed target time, fixed-scale media, convergence artifacts, seed-QI
+    evidence, current-sheet geometry, finite histories, and tolerances before a
+    reviewer-facing nonlinear claim can be made.
+    """
+    root = Path(run_dir)
+    if min_history_samples < 1:
+        raise ValueError("min_history_samples must be >= 1")
+    if min_convergence_dirs < 0:
+        raise ValueError("min_convergence_dirs must be non-negative")
+    if max_energy_budget_residual < 0.0:
+        raise ValueError("max_energy_budget_residual must be non-negative")
+    if max_divergence_linf < 0.0:
+        raise ValueError("max_divergence_linf must be non-negative")
+
+    plan = _read_json_if_exists(root / "campaign_plan.json")
+    diagnostics_json = _read_json_if_exists(root / "diagnostics.json")
+    execution_validation = _read_json_if_exists(root / "validation.json")
+    run_manifest = _read_json_if_exists(root / "manifest.json")
+    artifact_manifest = _read_json_if_exists(root / "artifact_manifest.json")
+    history_path = root / "production_history.npz"
+    history, history_schema = _load_history_for_promotion(history_path)
+    required_histories = _required_production_outputs()["histories"]
+
+    history_keys_present = bool(history) and all(key in history for key in required_histories)
+    history_arrays = [np.asarray(history[key]) for key in required_histories if key in history]
+    finite_histories = bool(history_arrays) and all(
+        np.isfinite(value).all() for value in history_arrays
+    )
+    history_sample_count = int(np.asarray(history.get("time", [])).size) if history else 0
+    target_step = int(plan.get("estimated_steps", -1)) if plan is not None else -1
+    terminal_step = int(np.asarray(history.get("step", [-1]))[-1]) if history else -1
+    max_energy_residual = (
+        float(np.max(np.asarray(history["dissipation_budget_residual"])))
+        if history and "dissipation_budget_residual" in history
+        else float("inf")
+    )
+    max_divergence = (
+        float(np.max(np.asarray(history["magnetic_divergence_linf"])))
+        if history and "magnetic_divergence_linf" in history
+        else float("inf")
+    )
+    geometry_present = bool(
+        history
+        and all(
+            key in history
+            for key in (
+                "current_sheet_length",
+                "current_sheet_thickness",
+                "current_sheet_aspect_ratio",
+            )
+        )
+    )
+    critical_points_present = bool(
+        history and all(key in history for key in ("x_point_count", "o_point_count"))
+    )
+    max_x_point_count = 0
+    max_o_point_count = 0
+    x_points_detected = False
+    if critical_points_present:
+        x_count = np.asarray(history["x_point_count"], dtype=np.int64)
+        o_count = np.asarray(history["o_point_count"], dtype=np.int64)
+        max_x_point_count = int(np.max(x_count))
+        max_o_point_count = int(np.max(o_count))
+        x_points_detected = max_x_point_count > 0
+    geometry_positive = False
+    if geometry_present:
+        length = np.asarray(history["current_sheet_length"], dtype=np.float64)
+        thickness = np.asarray(history["current_sheet_thickness"], dtype=np.float64)
+        aspect = np.asarray(history["current_sheet_aspect_ratio"], dtype=np.float64)
+        geometry_positive = bool(
+            np.all(np.isfinite(length))
+            and np.all(np.isfinite(thickness))
+            and np.all(np.isfinite(aspect))
+            and np.nanmax(length) > 0.0
+            and np.nanmax(thickness) > 0.0
+            and np.nanmax(aspect) > 0.0
+        )
+
+    movie_paths = (
+        root / "figures" / "fixed_scale_flux_movie.gif",
+        root / "figures" / "fixed_scale_current_density_movie.gif",
+    )
+    convergence_reports = tuple(
+        _promotion_evidence_dir_status(Path(path), require_artifact_manifest=True)
+        for path in convergence_dirs
+    )
+    seed_report = (
+        _promotion_evidence_dir_status(Path(seed_qi_dir), require_artifact_manifest=False)
+        if seed_qi_dir is not None
+        else None
+    )
+    checks = {
+        "campaign_plan_present": plan is not None,
+        "execution_diagnostics_present": diagnostics_json is not None,
+        "execution_validation_present": execution_validation is not None,
+        "run_manifest_present": run_manifest is not None,
+        "artifact_manifest_present": artifact_manifest is not None,
+        "execution_validation_passed": bool(
+            execution_validation and execution_validation.get("passed")
+        ),
+        "completed_target": bool(diagnostics_json and diagnostics_json.get("completed_target")),
+        "history_schema_supported": history_schema == PRODUCTION_RUTHERFORD_HISTORY_SCHEMA,
+        "required_history_keys_present": history_keys_present,
+        "finite_history_arrays": finite_histories,
+        "minimum_history_samples": history_sample_count >= min_history_samples,
+        "terminal_step_reaches_target": target_step >= 0 and terminal_step >= target_step,
+        "energy_budget_residual_within_tolerance": max_energy_residual
+        <= max_energy_budget_residual,
+        "magnetic_divergence_within_tolerance": max_divergence <= max_divergence_linf,
+        "current_sheet_geometry_present": geometry_present,
+        "current_sheet_geometry_positive": geometry_positive,
+        "critical_point_counts_present": critical_points_present,
+        "x_critical_points_detected": x_points_detected,
+        "fixed_scale_movies_present": (not require_movies)
+        or all(path.exists() and path.stat().st_size > 0 for path in movie_paths),
+        "convergence_bundle_count": len(convergence_reports) >= min_convergence_dirs,
+        "convergence_bundles_passed": len(convergence_reports) >= min_convergence_dirs
+        and all(report["passed"] for report in convergence_reports),
+        "seed_qi_bundle_present": seed_report is not None,
+        "seed_qi_bundle_passed": bool(seed_report and seed_report["passed"]),
+    }
+    thresholds = {
+        "min_history_samples": int(min_history_samples),
+        "min_convergence_dirs": int(min_convergence_dirs),
+        "max_energy_budget_residual": float(max_energy_budget_residual),
+        "max_divergence_linf": float(max_divergence_linf),
+        "require_movies": bool(require_movies),
+    }
+    diagnostics = {
+        "schema": PRODUCTION_RUTHERFORD_PROMOTION_SCHEMA,
+        "api_version": require_supported_api_version(context="rutherford promotion"),
+        "run_dir": str(root),
+        "claim_level_if_passed": "production",
+        "claim_boundary": (
+            "Promotion evidence for a completed Rutherford campaign. Passing this "
+            "gate means the execution bundle has the minimum reviewer-facing "
+            "evidence for a production nonlinear claim; failing checks leave the "
+            "bundle at validation level."
+        ),
+        "history_schema": history_schema,
+        "history_sample_count": history_sample_count,
+        "target_step": target_step,
+        "terminal_step": terminal_step,
+        "max_energy_budget_residual": max_energy_residual,
+        "max_magnetic_divergence_linf": max_divergence,
+        "max_x_point_count": max_x_point_count,
+        "max_o_point_count": max_o_point_count,
+        "convergence_dirs": [str(Path(path)) for path in convergence_dirs],
+        "convergence_reports": list(convergence_reports),
+        "seed_qi_dir": None if seed_qi_dir is None else str(Path(seed_qi_dir)),
+        "seed_qi_report": seed_report,
+        "thresholds": thresholds,
+    }
+    validation = {
+        "schema": "mhx.campaign.rutherford_promotion.gates.v1",
+        "passed": all(checks.values()),
+        "checks": checks,
+        "thresholds": thresholds,
+        "diagnostics": diagnostics,
+    }
+    return ProductionPromotionAssessment(
+        run_dir=root,
+        promotion_ready=bool(validation["passed"]),
+        diagnostics=diagnostics,
+        validation=validation,
+    )
+
+
+def write_rutherford_production_promotion_report(
+    run_dir: str | Path,
+    *,
+    outdir: str | Path | None = None,
+    convergence_dirs: tuple[str | Path, ...] = (),
+    seed_qi_dir: str | Path | None = None,
+    require_movies: bool = True,
+    min_history_samples: int = 100,
+    min_convergence_dirs: int = 2,
+    max_energy_budget_residual: float = 1.0e-9,
+    max_divergence_linf: float = 1.0e-9,
+) -> tuple[Path, dict[str, Any]]:
+    """Write a promotion-readiness report and manifest for a campaign bundle."""
+    assessment = assess_rutherford_production_promotion(
+        run_dir,
+        convergence_dirs=convergence_dirs,
+        seed_qi_dir=seed_qi_dir,
+        require_movies=require_movies,
+        min_history_samples=min_history_samples,
+        min_convergence_dirs=min_convergence_dirs,
+        max_energy_budget_residual=max_energy_budget_residual,
+        max_divergence_linf=max_divergence_linf,
+    )
+    report_dir = Path(outdir) if outdir is not None else assessment.run_dir / "promotion"
+    figures_dir = report_dir / "figures"
+    report_dir.mkdir(parents=True, exist_ok=True)
+    readiness_path = report_dir / "promotion_readiness.json"
+    validation_path = report_dir / "validation.json"
+    matrix_path = _write_promotion_matrix(figures_dir, validation=assessment.validation)
+    readiness = {
+        **assessment.diagnostics,
+        "promotion_ready": assessment.promotion_ready,
+        "validation_schema": assessment.validation["schema"],
+        "checks": assessment.validation["checks"],
+    }
+    readiness_path.write_text(json.dumps(readiness, indent=2, sort_keys=True), encoding="utf-8")
+    validation_path.write_text(
+        json.dumps(assessment.validation, indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+    write_artifact_manifest(report_dir)
+    outputs = {
+        "promotion_readiness": readiness_path.name,
+        "validation": validation_path.name,
+        "promotion_matrix": matrix_path.relative_to(report_dir).as_posix(),
+        "artifact_manifest": "artifact_manifest.json",
+    }
+    manifest_path = report_dir / "manifest.json"
+    write_manifest(
+        manifest_path,
+        config=readiness,
+        outputs=outputs,
+        claim_level="production" if assessment.promotion_ready else "validation",
+        claim_scope=assessment.diagnostics["claim_boundary"],
+    )
+    return manifest_path, assessment.validation
+
+
 def execute_rutherford_production_campaign(
     run_dir: str | Path,
     *,
@@ -680,6 +934,7 @@ def execute_rutherford_production_campaign(
         if history["magnetic_divergence_linf"].size
         else float(magnetic_divergence_linf(final_state, lengths=grid.lengths))
     )
+    promotion_report_ready = _promotion_report_allows_production(root)
     checks = {
         "campaign_plan_loaded": True,
         "checkpoint_resume_contract_used": True,
@@ -694,6 +949,8 @@ def execute_rutherford_production_campaign(
             for key, relative_path in figure_outputs.items()
             if key.endswith("_movie")
         ),
+        "production_claim_has_promotion_report": (not allow_production_claim)
+        or promotion_report_ready,
     }
     claim_level = (
         "production"
@@ -711,8 +968,9 @@ def execute_rutherford_production_campaign(
         "claim_boundary": (
             "Restartable Rutherford campaign execution using the production "
             "checkpoint/history schema. Partial chunks are validation artifacts; "
-            "production claims require completing the target and enabling the "
-            "explicit production-claim gate."
+            "production claims require completing the target, enabling the "
+            "explicit production-claim gate, and attaching a passing promotion "
+            "readiness report."
         ),
         "start_step": start_step,
         "end_step": end_step,
@@ -732,6 +990,7 @@ def execute_rutherford_production_campaign(
         "history_samples": int(history["time"].size),
         "resume_start_checkpoint": resume_plan.command_contract["resume_from_checkpoint"],
         "allow_production_claim": bool(allow_production_claim),
+        "production_promotion_report_ready": bool(promotion_report_ready),
     }
     validation = {
         "schema": "mhx.campaign.rutherford_execution.gates.v1",
@@ -758,6 +1017,7 @@ def execute_rutherford_production_campaign(
             "magnetic_divergence_linf": divergence,
             "rutherford_island_width": float(history["rutherford_island_width"][-1]),
             "reconnected_flux": float(history["reconnected_flux"][-1]),
+            "current_sheet_aspect_ratio": float(history["current_sheet_aspect_ratio"][-1]),
         },
         completed=completed_target,
     )
@@ -808,6 +1068,11 @@ def _required_production_outputs() -> dict[str, tuple[str, ...]]:
             "dissipation_budget_residual",
             "magnetic_divergence_linf",
             "current_density_linf",
+            "current_sheet_length",
+            "current_sheet_thickness",
+            "current_sheet_aspect_ratio",
+            "x_point_count",
+            "o_point_count",
         ),
         "figures": (
             "island_width_history.png",
@@ -933,6 +1198,32 @@ def _history_from_saved_states(
         ],
         dtype=np.float64,
     )
+    sheet_geometry = tuple(
+        _current_sheet_geometry(state, lengths=lengths) for state in saved_states
+    )
+    current_sheet_length = np.asarray(
+        [geometry["length"] for geometry in sheet_geometry],
+        dtype=np.float64,
+    )
+    current_sheet_thickness = np.asarray(
+        [geometry["thickness"] for geometry in sheet_geometry],
+        dtype=np.float64,
+    )
+    current_sheet_aspect_ratio = np.asarray(
+        [geometry["aspect_ratio"] for geometry in sheet_geometry],
+        dtype=np.float64,
+    )
+    critical_points = tuple(
+        _flux_critical_point_counts(state, lengths=lengths) for state in saved_states
+    )
+    x_point_count = np.asarray(
+        [summary["x_point_count"] for summary in critical_points],
+        dtype=np.int64,
+    )
+    o_point_count = np.asarray(
+        [summary["o_point_count"] for summary in critical_points],
+        dtype=np.int64,
+    )
     divergence = np.asarray(
         [float(magnetic_divergence_linf(state, lengths=lengths)) for state in saved_states],
         dtype=np.float64,
@@ -953,6 +1244,11 @@ def _history_from_saved_states(
         "dissipation_budget_residual": dissipation_budget_residual,
         "magnetic_divergence_linf": divergence,
         "current_density_linf": current_linf,
+        "current_sheet_length": current_sheet_length,
+        "current_sheet_thickness": current_sheet_thickness,
+        "current_sheet_aspect_ratio": current_sheet_aspect_ratio,
+        "x_point_count": x_point_count,
+        "o_point_count": o_point_count,
     }
 
 
@@ -1036,7 +1332,31 @@ def _write_execution_figures(
         axis.grid(True, alpha=0.25)
     fig.savefig(history_path, dpi=180)
     plt.close(fig)
-    outputs = {"production_histories": history_path.relative_to(figure_dir.parent).as_posix()}
+    geometry_path = figure_dir / "current_sheet_aspect_ratio.png"
+    fig, axis = plt.subplots(figsize=(7.2, 4.2), constrained_layout=True)
+    axis.plot(
+        history["time"],
+        history["current_sheet_aspect_ratio"],
+        label="aspect ratio",
+        color="tab:purple",
+    )
+    axis.set_xlabel("time")
+    axis.set_ylabel("aspect ratio")
+    axis.grid(True, alpha=0.25)
+    twin = axis.twinx()
+    twin.plot(history["time"], history["current_sheet_length"], "--", label="length")
+    twin.plot(history["time"], history["current_sheet_thickness"], ":", label="thickness")
+    twin.set_ylabel("length scale")
+    handles, labels = axis.get_legend_handles_labels()
+    twin_handles, twin_labels = twin.get_legend_handles_labels()
+    axis.legend(handles + twin_handles, labels + twin_labels, frameon=False, fontsize="small")
+    axis.set_title("Current-sheet geometry proxy")
+    fig.savefig(geometry_path, dpi=180)
+    plt.close(fig)
+    outputs = {
+        "production_histories": history_path.relative_to(figure_dir.parent).as_posix(),
+        "current_sheet_aspect_ratio": geometry_path.relative_to(figure_dir.parent).as_posix(),
+    }
     if write_movies:
         flux_path = plot_flux_gif(
             trajectory,
@@ -1054,6 +1374,164 @@ def _write_execution_figures(
             figure_dir.parent
         ).as_posix()
     return outputs
+
+
+def _current_sheet_geometry(
+    state: ReducedMHDState,
+    *,
+    lengths: tuple[float, float],
+    relative_threshold: float = 0.5,
+) -> dict[str, float]:
+    """Return a half-maximum current-sheet length/thickness/aspect proxy."""
+    if not (0.0 < relative_threshold <= 1.0):
+        raise ValueError("relative_threshold must be in (0, 1]")
+    current = np.asarray(
+        np.abs(current_density(state.psi, lengths=lengths)),
+        dtype=np.float64,
+    )
+    if current.size == 0 or not np.isfinite(current).all():
+        return {"length": float("nan"), "thickness": float("nan"), "aspect_ratio": float("nan")}
+    peak = float(np.max(current))
+    if peak <= np.finfo(np.float64).tiny:
+        return {"length": 0.0, "thickness": 0.0, "aspect_ratio": 0.0}
+    threshold = relative_threshold * peak
+    dx = float(lengths[0]) / current.shape[0]
+    dy = float(lengths[1]) / current.shape[1]
+    x_active = np.max(current, axis=1) >= threshold
+    y_active = np.max(current, axis=0) >= threshold
+    thickness = float(np.count_nonzero(x_active) * dx) if np.any(x_active) else 0.0
+    length = float(np.count_nonzero(y_active) * dy) if np.any(y_active) else 0.0
+    if thickness > 0.0:
+        thickness = max(thickness, dx)
+    if length > 0.0:
+        length = max(length, dy)
+    aspect_ratio = length / thickness if thickness > 0.0 else 0.0
+    return {
+        "length": length,
+        "thickness": thickness,
+        "aspect_ratio": float(aspect_ratio),
+    }
+
+
+def _flux_critical_point_counts(
+    state: ReducedMHDState,
+    *,
+    lengths: tuple[float, float],
+) -> dict[str, int]:
+    """Return grid-localized X/O point counts from the standard detector."""
+    try:
+        points = detect_flux_critical_points(
+            np.asarray(state.psi, dtype=np.float64),
+            lengths=lengths,
+            max_points=32,
+        )
+    except ValueError:
+        return {"x_point_count": 0, "o_point_count": 0}
+    return {
+        "x_point_count": len(critical_points_by_kind(points, "X")),
+        "o_point_count": len(critical_points_by_kind(points, "O")),
+    }
+
+
+def _read_json_if_exists(path: Path) -> dict[str, Any] | None:
+    if not path.exists():
+        return None
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError, UnicodeDecodeError):
+        return None
+    return data if isinstance(data, dict) else None
+
+
+def _load_history_for_promotion(path: Path) -> tuple[dict[str, np.ndarray], str | None]:
+    if not path.exists():
+        return {}, None
+    try:
+        with np.load(path, allow_pickle=False) as data:
+            schema = str(data["schema"]) if "schema" in data else None
+            history = {
+                key: np.asarray(data[key])
+                for key in data.files
+                if key != "schema"
+            }
+    except (OSError, ValueError, KeyError):
+        return {}, None
+    return history, schema
+
+
+def _promotion_evidence_dir_status(
+    path: Path,
+    *,
+    require_artifact_manifest: bool,
+) -> dict[str, Any]:
+    validation = _read_json_if_exists(path / "validation.json")
+    manifest = _read_json_if_exists(path / "manifest.json")
+    artifact_manifest = _read_json_if_exists(path / "artifact_manifest.json")
+    checks = {
+        "directory_exists": path.is_dir(),
+        "validation_json_present": validation is not None,
+        "validation_passed": bool(validation and validation.get("passed")),
+        "manifest_present": manifest is not None,
+        "artifact_manifest_present": (not require_artifact_manifest)
+        or artifact_manifest is not None,
+    }
+    return {
+        "path": str(path),
+        "passed": all(checks.values()),
+        "checks": checks,
+        "validation_schema": None if validation is None else validation.get("schema"),
+        "claim_level": None if manifest is None else manifest.get("claim_level"),
+    }
+
+
+def _promotion_report_allows_production(run_dir: Path) -> bool:
+    readiness = _read_json_if_exists(run_dir / "promotion" / "promotion_readiness.json")
+    validation = _read_json_if_exists(run_dir / "promotion" / "validation.json")
+    return bool(
+        readiness
+        and validation
+        and readiness.get("schema") == PRODUCTION_RUTHERFORD_PROMOTION_SCHEMA
+        and readiness.get("promotion_ready")
+        and validation.get("passed")
+    )
+
+
+def _write_promotion_matrix(figure_dir: Path, *, validation: dict[str, Any]) -> Path:
+    import matplotlib.pyplot as plt
+
+    figure_dir.mkdir(parents=True, exist_ok=True)
+    checks = validation.get("checks", {})
+    if not isinstance(checks, dict):
+        checks = {}
+    labels = list(checks)
+    values = np.asarray([[1.0 if bool(checks[label]) else 0.0] for label in labels])
+    path = figure_dir / "promotion_matrix.png"
+    fig_height = max(4.0, 0.28 * max(1, len(labels)))
+    fig, axis = plt.subplots(figsize=(8.8, fig_height), constrained_layout=True)
+    if labels:
+        axis.imshow(values, cmap="RdYlGn", vmin=0.0, vmax=1.0, aspect="auto")
+        axis.set_yticks(np.arange(len(labels)))
+        axis.set_yticklabels([label.replace("_", " ") for label in labels])
+        axis.set_xticks([0])
+        axis.set_xticklabels(["pass"])
+        for row, label in enumerate(labels):
+            axis.text(
+                0,
+                row,
+                "PASS" if bool(checks[label]) else "FAIL",
+                ha="center",
+                va="center",
+                color="black",
+                fontsize="small",
+                fontweight="bold",
+            )
+    else:
+        axis.text(0.5, 0.5, "no checks", ha="center", va="center")
+        axis.set_axis_off()
+    axis.set_title("Rutherford production-promotion gates")
+    fig.savefig(path, dpi=180)
+    plt.close(fig)
+    return path
 
 
 def _trajectory_from_saved_states(

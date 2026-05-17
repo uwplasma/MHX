@@ -111,6 +111,8 @@ Common entry points:
 mhx validate all --outdir outputs/validation_suite
 mhx benchmark catalog --outdir outputs/benchmarks/catalog
 mhx campaign rutherford-plan-production --outdir outputs/campaigns/rutherford_production_plan
+# After target completion plus convergence/seed-QI evidence:
+mhx campaign rutherford-promotion-check outputs/campaigns/rutherford_production_plan
 mhx validate readiness --suite outputs/validation_suite --outdir outputs/validation_readiness
 mhx api deprecations
 mhx physics list

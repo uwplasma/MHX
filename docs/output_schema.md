@@ -174,16 +174,27 @@ write:
 
 | File | Schema / contents |
 | --- | --- |
-| `production_history.npz` | `mhx.campaign.rutherford_history.v1`; keys `step`, `time`, `reconnected_flux`, `rutherford_island_width`, `reconnection_rate_proxy`, `magnetic_energy`, `kinetic_energy`, `total_energy`, `dissipation_budget_residual`, `magnetic_divergence_linf`, `current_density_linf`. |
+| `production_history.npz` | `mhx.campaign.rutherford_history.v1`; keys `step`, `time`, `reconnected_flux`, `rutherford_island_width`, `reconnection_rate_proxy`, `magnetic_energy`, `kinetic_energy`, `total_energy`, `dissipation_budget_residual`, `magnetic_divergence_linf`, `current_density_linf`, `current_sheet_length`, `current_sheet_thickness`, `current_sheet_aspect_ratio`, `x_point_count`, and `o_point_count`. |
 | `checkpoints/state_step_*.npz` | `mhx.campaign.rutherford_state.v1`; keys `step`, `time`, `psi`, `omega`. |
 | `checkpoints/checkpoint_index.json` | Ordered checkpoint metadata for resume and audit. |
 | `resume_plan.json` | Next-step metadata for chunked continuation. |
 | `diagnostics.json` | `mhx.campaign.rutherford_execution.v1`; start/end step, target step, run controls, divergence and energy-growth summaries. |
 | `validation.json` | `mhx.campaign.rutherford_execution.gates.v1`; finite-history, checkpoint, energy, divergence, and movie gates. |
-| `figures/*.png` | Island-width, reconnected-flux, energy-budget, and current-sheet quick-look figures. |
+| `figures/*.png` | Island-width, reconnected-flux, energy-budget, and `current_sheet_aspect_ratio.png` quick-look figures. |
 | `figures/*.gif` | Optional fixed-scale flux and current movies. |
 | `artifact_manifest.json` | Recursive hashes for chunk outputs before `manifest.json` is written. |
 | `manifest.json` | Top-level claim metadata and output hashes. |
+
+`mhx campaign rutherford-promotion-check <run-dir>` writes a separate promotion
+bundle under `<run-dir>/promotion/` by default:
+
+| File | Schema / contents |
+| --- | --- |
+| `promotion_readiness.json` | `mhx.campaign.rutherford_promotion.v1`; target-completion, convergence, seed-QI, movie, geometry, energy, and divergence promotion diagnostics. |
+| `validation.json` | `mhx.campaign.rutherford_promotion.gates.v1`; pass/fail checks for every promotion gate. |
+| `figures/promotion_matrix.png` | Reviewer-readable pass/fail matrix. |
+| `artifact_manifest.json` | Recursive hashes for the promotion bundle. |
+| `manifest.json` | `claim_level = production` only when all promotion checks pass; otherwise `claim_level = validation`. |
 
 ### Fitted neural ODE
 

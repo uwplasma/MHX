@@ -18,6 +18,9 @@ MHX uses semantic-versioned pre-releases while the rebuilt solver API matures.
   output-schema, benchmark, validation, and publication-checklist pages.
 - Hardened docs/tests around X/O critical points, turbulence helper branches,
   duration-policy failures, readiness-loader failures, and workflow presence.
+- Added Rutherford production-promotion gates, current-sheet geometry and X/O
+  histories, and a CLI promotion report that blocks production claims until
+  convergence, seed-QI, fixed-scale media, and tolerance evidence are attached.
 
 ## 0.1.0a0
 

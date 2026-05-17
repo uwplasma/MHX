@@ -5364,3 +5364,53 @@ Every agent must append an entry here. Do not delete previous entries.
 - Add model-registry/generalized-state design work before representing Hall,
   electron pressure tensor, or two-fluid terms as more than reduced-state toy
   plugins.
+
+### 2026-05-16 23:39 CDT — Agent: Codex, production-promotion gates
+
+**Steps taken**
+
+- Audited the Rutherford production executor against the publication-readiness
+  checklist.
+- Added a schema-versioned promotion assessment/report for completed Rutherford
+  campaigns.
+- Added current-sheet half-maximum geometry proxies and X/O critical-point
+  counts to production histories, checkpoint metrics, and quick-look figures.
+- Added a native `mhx campaign rutherford-promotion-check` command.
+- Expanded tests and docs so production claims require the promotion report
+  rather than only target completion.
+
+**Results obtained**
+
+- The executor still supports small restartable chunks for CI.
+- `claim_level = "production"` is now blocked unless a passing
+  `<run-dir>/promotion/promotion_readiness.json` exists.
+- Promotion checks require target completion, finite history arrays, energy and
+  divergence tolerances, current-sheet geometry, X/O critical-point counts,
+  convergence bundles, seed-QI evidence, and fixed-scale movies unless
+  explicitly disabled.
+
+**Design decisions**
+
+- Kept chunk execution and scientific promotion separate: running the PDE
+  produces validation artifacts; the promotion checker decides when enough
+  independent evidence exists for a production claim.
+- Used simple half-maximum current-density geometry as an auditable proxy,
+  not as a final Sweet--Parker/plasmoid morphology classifier.
+
+**Problems / blockers**
+
+- The promotion gate can now prevent overclaiming, but production remains
+  blocked until real long-run convergence and seed-QI bundles are generated.
+
+**Progress**
+
+- Estimated plan completion: 99%.
+
+**Next steps**
+
+- Run medium/production Rutherford campaigns long enough to satisfy the
+  promotion gate.
+- Replace geometry proxies with automated X/O plus current-sheet segmentation
+  before making plasmoid-count claims.
+- Attach production-scale neural-ODE datasets only after the nonlinear campaign
+  evidence is promoted.

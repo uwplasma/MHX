@@ -54,6 +54,7 @@ from mhx.campaigns import (
     WalltimePolicy,
     write_rutherford_production_execution,
     write_rutherford_production_plan,
+    write_rutherford_production_promotion_report,
     write_rutherford_resume_plan,
 )
 from mhx.config import RunConfig, load_config
@@ -478,6 +479,73 @@ def campaign_rutherford_execute(
     )
     typer.echo(f"wrote {manifest_path}")
     _exit_if_validation_failed(validation, context="rutherford-execute")
+
+
+@campaign_app.command("rutherford-promotion-check")
+def campaign_rutherford_promotion_check(
+    run_dir: Annotated[
+        Path,
+        typer.Argument(help="Completed Rutherford campaign run directory."),
+    ],
+    outdir: Annotated[
+        Path | None,
+        typer.Option(
+            "--outdir",
+            help="Promotion-report directory; defaults to <run-dir>/promotion.",
+        ),
+    ] = None,
+    convergence_dirs: Annotated[
+        list[Path] | None,
+        typer.Option(
+            "--convergence-dir",
+            help="Validation/convergence bundle directory. Repeat for each sweep.",
+        ),
+    ] = None,
+    seed_qi_dir: Annotated[
+        Path | None,
+        typer.Option("--seed-qi-dir", help="Seed-robust QI evidence directory."),
+    ] = None,
+    require_movies: Annotated[
+        bool,
+        typer.Option(
+            "--require-movies/--no-require-movies",
+            help="Require fixed-scale flux/current GIFs in the run bundle.",
+        ),
+    ] = True,
+    min_history_samples: Annotated[
+        int,
+        typer.Option("--min-history-samples", help="Minimum saved history samples."),
+    ] = 100,
+    min_convergence_dirs: Annotated[
+        int,
+        typer.Option("--min-convergence-dirs", help="Minimum convergence bundles."),
+    ] = 2,
+    max_energy_budget_residual: Annotated[
+        float,
+        typer.Option(
+            "--max-energy-budget-residual",
+            help="Maximum positive total-energy residual allowed.",
+        ),
+    ] = 1.0e-9,
+    max_divergence_linf: Annotated[
+        float,
+        typer.Option("--max-divergence-linf", help="Maximum magnetic-divergence error."),
+    ] = 1.0e-9,
+) -> None:
+    """Write and validate a reviewer-facing Rutherford promotion report."""
+    manifest_path, validation = write_rutherford_production_promotion_report(
+        run_dir,
+        outdir=outdir,
+        convergence_dirs=tuple(convergence_dirs or ()),
+        seed_qi_dir=seed_qi_dir,
+        require_movies=require_movies,
+        min_history_samples=min_history_samples,
+        min_convergence_dirs=min_convergence_dirs,
+        max_energy_budget_residual=max_energy_budget_residual,
+        max_divergence_linf=max_divergence_linf,
+    )
+    typer.echo(f"wrote {manifest_path}")
+    _exit_if_validation_failed(validation, context="rutherford-promotion-check")
 
 
 @app.command()

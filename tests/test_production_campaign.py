@@ -12,9 +12,11 @@ from mhx.campaigns import (
     PRODUCTION_RUTHERFORD_EXECUTION_SCHEMA,
     PRODUCTION_RUTHERFORD_HISTORY_SCHEMA,
     PRODUCTION_RUTHERFORD_PLAN_SCHEMA,
+    PRODUCTION_RUTHERFORD_PROMOTION_SCHEMA,
     PRODUCTION_RUTHERFORD_RESUME_SCHEMA,
     PRODUCTION_RUTHERFORD_STATE_SCHEMA,
     WalltimePolicy,
+    assess_rutherford_production_promotion,
     execute_rutherford_production_campaign,
     load_checkpoint_index,
     plan_rutherford_production_campaign,
@@ -22,6 +24,7 @@ from mhx.campaigns import (
     write_checkpoint_metadata,
     write_rutherford_production_execution,
     write_rutherford_production_plan,
+    write_rutherford_production_promotion_report,
     write_rutherford_resume_plan,
 )
 from mhx.cli.main import _exit_if_validation_failed, app
@@ -56,6 +59,7 @@ def test_production_campaign_plan_writes_runbook_and_checkpoint_contract(tmp_pat
     assert plan["estimated_walltime_jobs"] >= 1
     assert plan["checkpoint_every_steps"] >= 1
     assert "dissipation_budget_residual" in plan["required_outputs"]["histories"]
+    assert "current_sheet_aspect_ratio" in plan["required_outputs"]["histories"]
 
     checkpoint_index = json.loads(
         (tmp_path / "checkpoints" / "checkpoint_index.json").read_text()
@@ -234,9 +238,15 @@ def test_production_execution_runs_real_chunk_and_resumes(tmp_path) -> None:
         assert str(data["schema"]) == PRODUCTION_RUTHERFORD_HISTORY_SCHEMA
         assert data["time"].shape[0] >= 2
         assert np.isfinite(data["total_energy"]).all()
+        assert np.isfinite(data["current_sheet_length"]).all()
+        assert np.isfinite(data["current_sheet_thickness"]).all()
+        assert np.isfinite(data["current_sheet_aspect_ratio"]).all()
+        assert data["x_point_count"].dtype.kind in {"i", "u"}
+        assert data["o_point_count"].dtype.kind in {"i", "u"}
     with np.load(tmp_path / "checkpoints" / "state_step_000000000004.npz") as data:
         assert str(data["schema"]) == PRODUCTION_RUTHERFORD_STATE_SCHEMA
         assert int(data["step"]) == 4
+    assert (tmp_path / "figures" / "current_sheet_aspect_ratio.png").stat().st_size > 0
 
     second = execute_rutherford_production_campaign(
         tmp_path,
@@ -274,6 +284,127 @@ def test_production_execution_cli_writes_movies_for_tiny_chunk(tmp_path) -> None
     assert (tmp_path / "manifest.json").exists()
     assert (tmp_path / "figures" / "fixed_scale_flux_movie.gif").stat().st_size > 0
     assert (tmp_path / "figures" / "fixed_scale_current_density_movie.gif").stat().st_size > 0
+
+
+def test_production_promotion_report_blocks_incomplete_bundle(tmp_path) -> None:
+    write_rutherford_production_plan(
+        tmp_path,
+        shape=(8, 8),
+        dt=1.0e-2,
+        target_saved_frames=10,
+        min_production_resolution=8,
+    )
+    execute_rutherford_production_campaign(
+        tmp_path,
+        max_steps=4,
+        seed=0,
+        write_movies=False,
+    )
+
+    assessment = assess_rutherford_production_promotion(
+        tmp_path,
+        require_movies=False,
+        min_history_samples=2,
+    )
+
+    assert assessment.promotion_ready is False
+    assert assessment.diagnostics["schema"] == PRODUCTION_RUTHERFORD_PROMOTION_SCHEMA
+    assert assessment.validation["checks"]["completed_target"] is False
+    assert assessment.validation["checks"]["convergence_bundles_passed"] is False
+    assert assessment.validation["checks"]["seed_qi_bundle_present"] is False
+
+    manifest_path, validation = write_rutherford_production_promotion_report(
+        tmp_path,
+        require_movies=False,
+        min_history_samples=2,
+    )
+    assert validation["passed"] is False
+    assert manifest_path == tmp_path / "promotion" / "manifest.json"
+    assert (tmp_path / "promotion" / "promotion_readiness.json").exists()
+    assert (tmp_path / "promotion" / "figures" / "promotion_matrix.png").stat().st_size > 0
+
+    cli_result = CliRunner().invoke(
+        app,
+        [
+            "campaign",
+            "rutherford-promotion-check",
+            str(tmp_path),
+            "--no-require-movies",
+            "--min-history-samples",
+            "2",
+        ],
+    )
+    assert cli_result.exit_code == 1
+    assert "rutherford-promotion-check failed validation checks" in cli_result.output
+
+
+def test_production_promotion_report_enables_explicit_production_claim(tmp_path) -> None:
+    write_rutherford_production_plan(
+        tmp_path,
+        shape=(8, 8),
+        dt=0.1,
+        target_saved_frames=10,
+        harris_growth_rate=10.0,
+        production_efolds=0.1,
+        safety_factor=1.0,
+        min_production_resolution=8,
+    )
+    execution = execute_rutherford_production_campaign(
+        tmp_path,
+        seed=0,
+        write_movies=False,
+        max_relative_energy_growth=1.0,
+    )
+    assert execution.completed_target is True
+    assert execution.diagnostics["claim_level"] == "validation"
+
+    convergence_dirs = []
+    for name in ("resolution_sweep", "time_step_sweep"):
+        evidence_dir = tmp_path / "evidence" / name
+        evidence_dir.mkdir(parents=True)
+        (evidence_dir / "validation.json").write_text(
+            json.dumps({"schema": f"mhx.test.{name}.gates.v1", "passed": True}),
+            encoding="utf-8",
+        )
+        (evidence_dir / "manifest.json").write_text(
+            json.dumps({"claim_level": "validation"}),
+            encoding="utf-8",
+        )
+        (evidence_dir / "artifact_manifest.json").write_text("{}", encoding="utf-8")
+        convergence_dirs.append(evidence_dir)
+    seed_qi_dir = tmp_path / "evidence" / "seed_qi"
+    seed_qi_dir.mkdir(parents=True)
+    (seed_qi_dir / "validation.json").write_text(
+        json.dumps({"schema": "mhx.test.seed_qi.gates.v1", "passed": True}),
+        encoding="utf-8",
+    )
+    (seed_qi_dir / "manifest.json").write_text(
+        json.dumps({"claim_level": "validation"}),
+        encoding="utf-8",
+    )
+
+    manifest_path, validation = write_rutherford_production_promotion_report(
+        tmp_path,
+        convergence_dirs=tuple(convergence_dirs),
+        seed_qi_dir=seed_qi_dir,
+        require_movies=False,
+        min_history_samples=2,
+        max_energy_budget_residual=1.0,
+    )
+
+    assert validation["passed"] is True
+    assert json.loads(manifest_path.read_text())["claim_level"] == "production"
+
+    promoted = execute_rutherford_production_campaign(
+        tmp_path,
+        max_steps=0,
+        seed=0,
+        write_movies=False,
+        allow_production_claim=True,
+        max_relative_energy_growth=1.0,
+    )
+    assert promoted.validation["passed"] is True
+    assert promoted.diagnostics["claim_level"] == "production"
 
 
 def test_cli_validation_failure_reports_failed_checks(capsys) -> None:
