@@ -43,12 +43,12 @@ reconnection, physics plugins, and neural surrogate experiments**
 
 ## New large-push lanes
 
-Two validation lanes have been added with explicit claim boundaries:
+Three validation lanes have been added with explicit claim boundaries:
 
 | Lane | Current status | Source-code boundary |
 | --- | --- | --- |
 | `seed_robust_qi.md` | Implemented as FAST seed-ensemble validation for smooth perturbation sensitivity. It is not production UQ. | QI implementation lives in [seed_robust_qi.py](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/seed_robust_qi.py); deterministic initial conditions remain in [equilibria.py](https://github.com/uwplasma/MHX/blob/main/src/mhx/physics/equilibria.py#L35). |
-| FAST Rutherford campaign runner | Implemented for validation-grade histories and schema checks. It is not a long production campaign. | Template writing lives in [campaigns.py](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/campaigns.py#L42); FAST runner lives in [campaign_runner.py](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/campaign_runner.py). |
+| FAST Rutherford campaign runner and restartable executor | Implemented for validation-grade histories, schema checks, production-template writing, restartable chunks, and a promotion checker. Existing duration-complete runs are not promoted unless the response, convergence, seed-QI, geometry, movie, energy, and divergence gates all pass. | Template writing lives in [campaigns.py](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/campaigns.py#L42); FAST runner lives in [campaign_runner.py](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/campaign_runner.py); production execution and promotion live in [production.py](https://github.com/uwplasma/MHX/blob/main/src/mhx/campaigns/production.py). |
 | `neural_ode_reproducibility.md` | Implemented as deterministic FAST dataset, train/validation/test splits, no-training baselines, residual calibration, and a latent-ODE fit. It is not yet a production surrogate claim. | Dataset, baseline, and latent-ODE implementation lives in [reproducibility.py](https://github.com/uwplasma/MHX/blob/main/src/mhx/neural_ode/reproducibility.py). |
 
 Both lanes are exposed through the CLI in
@@ -106,7 +106,7 @@ mhx campaign rutherford-template \
 | 6 | Time-domain eigenmode replay and growth-fit recovery. | CI artifact exists. |
 | 7 | Nonlinear differentiability and energy-budget gates. | CI artifact exists. |
 | 8 | Nonlinear duration audit and production-run requirements. | CI artifact exists. |
-| 9 | Rutherford island growth campaign. | Duration-complete validation run exists; production promotion remains blocked pending convergence and seed-QI evidence. |
+| 9 | Rutherford island growth campaign. | Duration-complete validation run with attached convergence and seed-QI evidence exists; production promotion remains blocked by the positive reconnecting-flux/island-width response gate. |
 | 10 | Sweet-Parker/plasmoid nonlinear campaign. | Planned. |
 | 11 | Neural-ODE dataset/baselines/calibration/failure cases. | Implemented as a deterministic no-training reproducibility lane in [neural_ode_reproducibility.md](neural_ode_reproducibility.md). |
 
@@ -125,6 +125,8 @@ Every nonlinear island/plasmoid result should archive:
 - grid, timestep, CFL or fixed-step stability rationale, and tolerances;
 - reconnected flux $\psi_1(t)$ and island width
   $W=4\sqrt{|\psi_1|/|B_y'(0)|}$;
+- peak/initial amplification of reconnecting flux and island width above the
+  declared promotion thresholds;
 - reconnection proxy $E_\mathrm{rec}$, current-sheet length/thickness, and aspect ratio;
 - magnetic, kinetic, total energy, resistive dissipation, viscous dissipation, and budget residual;
 - at least one resolution/time-step comparison;

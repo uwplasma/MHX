@@ -94,9 +94,10 @@ The most important claim-boundary figure is the nonlinear duration audit:
 :width: 760px
 ```
 
-These four figures should be shown together in reviewer discussions: one
-tearing benchmark, one nonlinear growth-path gate, one nonlinear identity, and
-one explicit warning that short nonlinear runs are not island/plasmoid evidence.
+These claim-boundary figures should be shown together in reviewer discussions:
+one tearing benchmark, one nonlinear growth-path gate, one seeded long-run
+response plot, one convergence scaffold, one nonlinear identity, and one
+explicit warning that short nonlinear runs are not island/plasmoid evidence.
 
 ## Nonlinear plot acceptance gates
 

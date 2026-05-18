@@ -138,7 +138,12 @@ The promotion gate is deliberately stricter than the executor. It requires a
 completed target, finite histories, current-sheet geometry, detected X/O
 critical-point counts, fixed-scale movies unless explicitly disabled,
 convergence evidence, seed-QI evidence, and tolerances on energy-budget
-residuals and magnetic-divergence error.
+residuals and magnetic-divergence error. It also requires positive nonlinear
+response: by default, both the peak/initial reconnecting-flux amplification and
+the peak/initial Rutherford-width amplification must exceed `1.05`. These
+thresholds are configurable with
+`--min-reconnected-flux-amplification` and
+`--min-island-width-amplification` on `mhx campaign rutherford-promotion-check`.
 
 For a laptop-safe closed-lane example:
 

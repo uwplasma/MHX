@@ -230,6 +230,45 @@ chosen resistivity/viscosity, and the run has no resolution, time-step, seed,
 or aspect-ratio sweep. The correct conclusion is that MHX now has a scalable
 nonlinear current-sheet validation lane suitable for those sweeps.
 
+## GPU-assisted double-Harris response rerun
+
+After adding explicit response diagnostics, the double-Harris lane was rerun on
+`office` with the system CUDA JAX backend (`NVIDIA RTX A4000`) to verify that a
+longer validation run records more than a norm-only perturbation history. The
+archived command was:
+
+```bash
+mhx benchmark double-harris-long-run \
+  --outdir outputs/campaigns/growing_double_harris_gpu_96_t120_20260518_044120 \
+  --nx 96 --ny 96 --t-end 120 --dt 0.01 --save-every 300 \
+  --fit-stop 10 --min-max-growth-factor 2 --movies
+```
+
+| Quantity | Value |
+| --- | ---: |
+| grid | `96×96` |
+| final time | 120.0 |
+| saved samples | 41 |
+| early fitted growth rate | `0.1869` |
+| early amplification | `5.72×` |
+| maximum perturbation amplification | `7.35×` |
+| dominant reconnecting-flux amplification | `6.47×` |
+| Rutherford-width proxy amplification | `2.54×` |
+| max detected X/O counts | `4 / 2` |
+| relative total-energy increase | `0.0` |
+| gates | passed |
+
+![GPU-assisted double-Harris response](_static/validation/long_runs/growing_double_harris_96_t120/periodic_double_harris_seeded_long_run.png)
+
+![GPU-assisted double-Harris flux movie](_static/validation/long_runs/growing_double_harris_96_t120/periodic_double_harris_flux.gif)
+
+![GPU-assisted double-Harris current movie](_static/validation/long_runs/growing_double_harris_96_t120/periodic_double_harris_current.gif)
+
+The skeptical read is unchanged: this is now stronger validation evidence
+because the response gate is explicit and positive, but it remains below
+production claim level until larger convergence, seed, aspect-ratio, and
+Lundquist-number sweeps close.
+
 ## Current claim boundary
 
 These runs support:

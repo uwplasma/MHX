@@ -49,7 +49,9 @@ REQUIRED_PUBLIC_RELEASE_CASES = (
 )
 
 PRODUCTION_PUBLICATION_GAPS = (
-    "long Rutherford/island campaign with checkpoint/resume and duration gates",
+    "physically growing Rutherford/island campaign passing response, convergence, "
+    "seed-QI, geometry, movie, energy-budget, divergence, checkpoint/resume, and "
+    "duration gates",
     "long plasmoid-chain campaign with Lundquist/aspect-ratio convergence",
     "medium/production resolution sweeps with documented tolerance budgets",
     "neural-ODE train/validation/test experiment linked to production-quality data",

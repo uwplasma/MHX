@@ -1,5 +1,5 @@
 schema = "mhx.docs.figures_manifest.v1"
-updated_utc = "2026-05-17T22:30:00Z"
+updated_utc = "2026-05-18T04:45:00Z"
 description = "Reviewer-facing map from documentation figures and movies to commands, claim levels, sources, and tests."
 
 [[figures]]
@@ -63,6 +63,24 @@ command = "python examples/make_validation_media.py"
 claim_level = "validation"
 claim_scope = "FAST resolution/time-step convergence scaffold for seeded periodic double-Harris replay."
 sources = ["src/mhx/benchmarks/current_sheet.py"]
+tests = ["tests/test_current_sheet_eigenvalue_validation.py"]
+
+[[figures]]
+id = "validation_double_harris_seeded_long_run_response"
+path = "docs/_static/validation/periodic_double_harris_seeded_long_run/figures/periodic_double_harris_seeded_long_run.png"
+command = "mhx benchmark double-harris-long-run --nx 64 --ny 64 --t-end 30 --save-every 100 --fit-stop 10 --movies"
+claim_level = "validation"
+claim_scope = "Seeded periodic double-Harris response history with dominant reconnecting-flux and Rutherford-width proxies; not a production Rutherford/plasmoid claim."
+sources = ["src/mhx/benchmarks/current_sheet.py", "src/mhx/diagnostics/reduced_mhd.py", "src/mhx/diagnostics/critical_points.py"]
+tests = ["tests/test_current_sheet_eigenvalue_validation.py", "tests/test_critical_points.py"]
+
+[[figures]]
+id = "validation_double_harris_gpu_96_t120"
+path = "docs/_static/validation/long_runs/growing_double_harris_96_t120/periodic_double_harris_seeded_long_run.png"
+command = "ssh office 'mhx benchmark double-harris-long-run --nx 96 --ny 96 --t-end 120 --dt 0.01 --save-every 300 --fit-stop 10 --movies'"
+claim_level = "validation"
+claim_scope = "Longer GPU-assisted double-Harris response run with positive flux/width amplification and dissipative energy; still not convergence-promoted production physics."
+sources = ["src/mhx/benchmarks/current_sheet.py", "docs/long_run_evidence.md"]
 tests = ["tests/test_current_sheet_eigenvalue_validation.py"]
 
 [[figures]]
