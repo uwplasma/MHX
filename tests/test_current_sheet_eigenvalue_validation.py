@@ -179,12 +179,23 @@ def test_periodic_double_harris_seeded_long_run_gate() -> None:
     assert result.validation["passed"] is True
     assert all(result.validation["checks"].values())
     assert result.time.shape == result.perturbation_norm.shape
+    assert result.reconnected_flux.shape == result.time.shape
+    assert result.seed_mode_reconnected_flux.shape == result.time.shape
+    assert result.rutherford_island_width.shape == result.time.shape
+    assert result.dominant_flux_mode_x.shape == result.time.shape
+    assert result.dominant_flux_mode_y.shape == result.time.shape
     assert result.magnetic_energy.shape == result.time.shape
     assert result.kinetic_energy.shape == result.time.shape
     assert result.total_energy.shape == result.time.shape
     assert result.current_density_linf.shape == result.time.shape
+    assert result.x_point_count.shape == result.time.shape
+    assert result.o_point_count.shape == result.time.shape
     assert result.fitted_early_growth_rate > 0.0
     assert result.early_growth_factor > 1.0
+    assert result.reconnected_flux_amplification > 1.0
+    assert result.island_width_amplification > 1.0
+    assert result.validation["checks"]["reconnected_flux_amplifies"] is True
+    assert result.validation["checks"]["island_width_amplifies"] is True
     assert np.max(result.total_energy) <= result.total_energy[0] * (1.0 + 1.0e-8)
 
 
@@ -227,6 +238,14 @@ def test_periodic_double_harris_seeded_long_run_rejects_invalid_inputs() -> None
         run_periodic_double_harris_seeded_long_run_validation(min_early_growth_factor=1.0)
     with pytest.raises(ValueError, match="min_max_growth_factor"):
         run_periodic_double_harris_seeded_long_run_validation(min_max_growth_factor=1.0)
+    with pytest.raises(ValueError, match="min_reconnected_flux_amplification"):
+        run_periodic_double_harris_seeded_long_run_validation(
+            min_reconnected_flux_amplification=1.0
+        )
+    with pytest.raises(ValueError, match="min_island_width_amplification"):
+        run_periodic_double_harris_seeded_long_run_validation(
+            min_island_width_amplification=1.0
+        )
     with pytest.raises(ValueError, match="max_relative_energy_increase"):
         run_periodic_double_harris_seeded_long_run_validation(
             max_relative_energy_increase=-1.0
@@ -248,7 +267,11 @@ def test_periodic_double_harris_convergence_gate() -> None:
     assert result.case_kind.shape == (4,)
     assert result.resolution.shape == result.dt.shape
     assert result.fitted_early_growth_rate.shape == result.dt.shape
+    assert result.reconnected_flux_amplification.shape == result.dt.shape
+    assert result.island_width_amplification.shape == result.dt.shape
     assert np.isfinite(result.fitted_early_growth_rate).all()
+    assert np.isfinite(result.reconnected_flux_amplification).all()
+    assert np.isfinite(result.island_width_amplification).all()
     assert np.isfinite(result.max_growth_factor).all()
     assert set(result.case_kind.tolist()) == {"resolution", "timestep"}
     assert np.all(result.fitted_early_growth_rate > 0.0)
@@ -450,8 +473,17 @@ def test_write_periodic_double_harris_seeded_long_run_artifacts_and_cli(tmp_path
     history = np.load(tmp_path / "periodic_double_harris_seeded_long_run.npz")
     assert history["schema"] == PERIODIC_DOUBLE_HARRIS_SEEDED_LONG_RUN_SCHEMA
     assert history["time"].shape == history["perturbation_norm"].shape
+    assert history["reconnected_flux"].shape == history["time"].shape
+    assert history["seed_mode_reconnected_flux"].shape == history["time"].shape
+    assert history["rutherford_island_width"].shape == history["time"].shape
+    assert history["dominant_flux_mode_x"].shape == history["time"].shape
+    assert history["dominant_flux_mode_y"].shape == history["time"].shape
     assert history["total_energy"].shape == history["time"].shape
     assert history["current_density_linf"].shape == history["time"].shape
+    assert history["x_point_count"].shape == history["time"].shape
+    assert history["o_point_count"].shape == history["time"].shape
+    assert history["reconnected_flux_amplification"] > 1.0
+    assert history["island_width_amplification"] > 1.0
     assert history["perturbed_psi"].shape[1:] == (16, 16)
     assert (
         tmp_path / "figures" / "periodic_double_harris_seeded_long_run.png"
@@ -517,6 +549,8 @@ def test_write_periodic_double_harris_convergence_artifacts_and_cli(tmp_path) ->
     assert history["case_kind"].shape == (4,)
     assert history["resolution"].shape == history["dt"].shape
     assert history["fitted_early_growth_rate"].shape == history["dt"].shape
+    assert history["reconnected_flux_amplification"].shape == history["dt"].shape
+    assert history["island_width_amplification"].shape == history["dt"].shape
     manifest = json.loads(manifest_path.read_text())
     assert manifest["claim_level"] == "validation"
     assert "production claims require" in manifest["claim_scope"]

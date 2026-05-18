@@ -907,11 +907,16 @@ q_b(t)=\Phi_t(q_0),\qquad
 q_s(t)=\Phi_t(q_0+\epsilon\cos(2x)\cos y),
 $$
 
-and tracks the normalized difference, total energy, kinetic energy, and peak
-current density:
+and tracks the normalized difference, dominant reconnecting-flux proxy, local
+Rutherford-width proxy, total energy, kinetic energy, peak current density, and
+X/O critical-point counts:
 
 $$
 A_s(t)=\frac{\|q_s(t)-q_b(t)\|_2}{\epsilon},\qquad
+\psi_\mathrm{rec}(t)=2\max_{0<|k_i|\le N_i/4}|\widehat{\delta\psi}_k(t)|,
+\qquad
+W_m(t)=4\sqrt{\frac{|\psi_\mathrm{rec}(t)|}{|A|/a}},
+\qquad
 E(t)=\frac{1}{2}\langle |\nabla\psi|^2+|\nabla\phi|^2\rangle,\qquad
 \|j_z\|_\infty=\|-\nabla^2\psi\|_\infty .
 $$
@@ -920,7 +925,11 @@ This command is meant for bounded nonlinear evidence runs under laptop/CI
 budgets and for producing reviewer-visible movies before a full production
 campaign. It gates finite histories, full-duration completion, an early-time
 growth fit, visible maximum amplification, and dissipative total-energy
-behavior. The committed `64×64`, `t_end=30` evidence bundle gives
+behavior. The reconnection proxy is deliberately stated as a **dominant
+low-mode perturbation-flux diagnostic** for periodic double-Harris validation:
+the configured seed-mode amplitude is archived separately as
+`seed_mode_reconnected_flux`, so mode transfer is visible rather than hidden.
+The committed `64×64`, `t_end=30` evidence bundle gives
 `gamma_early = 0.118`, early amplification `5.27×`, maximum amplification
 `7.89×`, and zero measured total-energy increase. The result is stronger than
 a smoke test, but it remains a validation artifact rather than a converged

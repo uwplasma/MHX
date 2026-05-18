@@ -1168,6 +1168,8 @@ def plot_double_harris_seeded_long_run(
     *,
     fitted_early_growth_rate: float,
     fit_window: tuple[float, float],
+    reconnected_flux=None,
+    rutherford_island_width=None,
     path: str | Path,
 ) -> Path:
     """Plot seeded double-Harris long-run histories and flux morphology."""
@@ -1181,6 +1183,10 @@ def plot_double_harris_seeded_long_run(
     kinetic = np.asarray(kinetic_energy)
     total = np.asarray(total_energy_values)
     current_linf = np.asarray(current_density_linf)
+    flux_values = None if reconnected_flux is None else np.asarray(reconnected_flux)
+    island_values = (
+        None if rutherford_island_width is None else np.asarray(rutherford_island_width)
+    )
     fit_mask = (time_values >= fit_window[0]) & (time_values <= fit_window[1])
     reference = (
         norm_values[fit_mask][0]
@@ -1214,10 +1220,31 @@ def plot_double_harris_seeded_long_run(
     kinetic_axis.set_ylabel("kinetic energy")
     kinetic_axis.legend(frameon=False, fontsize=8, loc="lower right")
 
-    axes[0, 2].plot(time_values, current_linf, color="#8c4fb4")
+    axes[0, 2].plot(time_values, current_linf, color="#8c4fb4", label=r"$\|j_z\|_\infty$")
     axes[0, 2].set_xlabel("time")
     axes[0, 2].set_ylabel(r"$\|j_z\|_\infty$")
-    axes[0, 2].set_title("Peak current density")
+    axes[0, 2].set_title("Current and reconnection proxies")
+    axes[0, 2].legend(frameon=False, fontsize=8, loc="upper left")
+    if flux_values is not None:
+        proxy_axis = axes[0, 2].twinx()
+        tiny = np.finfo(float).tiny
+        proxy_axis.semilogy(
+            time_values,
+            np.maximum(np.abs(flux_values), tiny),
+            color="#d96c2c",
+            linewidth=1.2,
+            label=r"$2|\hat{\delta\psi}_{mn}|$",
+        )
+        if island_values is not None:
+            proxy_axis.semilogy(
+                time_values,
+                np.maximum(np.abs(island_values), tiny),
+                color="#2a9d8f",
+                linewidth=1.2,
+                label=r"$W_m$",
+            )
+        proxy_axis.set_ylabel("mode proxy")
+        proxy_axis.legend(frameon=False, fontsize=8, loc="lower right")
 
     axes[1, 0].imshow(np.asarray(initial_psi).T, origin="lower", cmap="viridis")
     axes[1, 0].set_title("Initial seeded flux")

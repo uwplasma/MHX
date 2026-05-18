@@ -12,7 +12,13 @@ import jax.numpy as jnp
 import numpy as np
 
 from mhx.config import MeshConfig
-from mhx.diagnostics import kinetic_energy, magnetic_energy
+from mhx.diagnostics import (
+    detect_flux_critical_points,
+    kinetic_energy,
+    magnetic_energy,
+    reconnected_flux_amplitude,
+    rutherford_island_full_width,
+)
 from mhx.equations.reduced_mhd import (
     current_density,
     linearized_reduced_mhd_operator,
@@ -148,13 +154,22 @@ class PeriodicDoubleHarrisSeededLongRunResult:
 
     time: np.ndarray
     perturbation_norm: np.ndarray
+    reconnected_flux: np.ndarray
+    seed_mode_reconnected_flux: np.ndarray
+    rutherford_island_width: np.ndarray
+    dominant_flux_mode_x: np.ndarray
+    dominant_flux_mode_y: np.ndarray
     magnetic_energy: np.ndarray
     kinetic_energy: np.ndarray
     total_energy: np.ndarray
     current_density_linf: np.ndarray
+    x_point_count: np.ndarray
+    o_point_count: np.ndarray
     fitted_early_growth_rate: float
     early_growth_factor: float
     max_growth_factor: float
+    reconnected_flux_amplification: float
+    island_width_amplification: float
     base_trajectory: ReducedMHDTrajectory
     perturbed_trajectory: ReducedMHDTrajectory
     base_initial_state: ReducedMHDState
@@ -174,6 +189,8 @@ class PeriodicDoubleHarrisConvergenceResult:
     fitted_early_growth_rate: np.ndarray
     early_growth_factor: np.ndarray
     max_growth_factor: np.ndarray
+    reconnected_flux_amplification: np.ndarray
+    island_width_amplification: np.ndarray
     relative_energy_increase: np.ndarray
     max_current_density_linf: np.ndarray
     max_kinetic_energy: np.ndarray
@@ -851,6 +868,8 @@ def run_periodic_double_harris_seeded_long_run_validation(
     min_early_growth_rate: float = 5.0e-2,
     min_early_growth_factor: float = 1.5,
     min_max_growth_factor: float = 2.0,
+    min_reconnected_flux_amplification: float = 1.05,
+    min_island_width_amplification: float = 1.05,
     max_relative_energy_increase: float = 1.0e-8,
 ) -> PeriodicDoubleHarrisSeededLongRunResult:
     r"""Run a longer seeded periodic double-Harris nonlinear replay.
@@ -879,6 +898,8 @@ def run_periodic_double_harris_seeded_long_run_validation(
         min_early_growth_rate=min_early_growth_rate,
         min_early_growth_factor=min_early_growth_factor,
         min_max_growth_factor=min_max_growth_factor,
+        min_reconnected_flux_amplification=min_reconnected_flux_amplification,
+        min_island_width_amplification=min_island_width_amplification,
         max_relative_energy_increase=max_relative_energy_increase,
     )
     grid = CartesianGrid.from_mesh_config(MeshConfig(shape=shape))
@@ -929,12 +950,28 @@ def run_periodic_double_harris_seeded_long_run_validation(
         perturbed_trajectory.states,
         lengths=grid.lengths,
     )
+    magnetic_shear = abs(amplitude) / width
+    reconnection = _trajectory_reconnection_histories(
+        base_initial,
+        base_trajectory.states,
+        perturbed_initial,
+        perturbed_trajectory.states,
+        lengths=grid.lengths,
+        mode=perturbation_mode,
+        magnetic_shear=magnetic_shear,
+    )
     fit_mask = (time >= fit_window[0]) & (time <= fit_window[1])
     fit_time = time[fit_mask]
     fit_norm = perturbation_norm[fit_mask]
     fitted_early_growth_rate = float(np.polyfit(fit_time, np.log(fit_norm), 1)[0])
     early_growth_factor = float(fit_norm[-1] / fit_norm[0])
     max_growth_factor = float(np.max(perturbation_norm) / perturbation_norm[0])
+    reconnected_flux_amplification = _history_amplification(
+        reconnection["reconnected_flux"]
+    )
+    island_width_amplification = _history_amplification(
+        reconnection["rutherford_island_width"]
+    )
     initial_energy = float(energies["total"][0])
     relative_energy_increase = float(
         max(0.0, np.max(energies["total"]) - initial_energy) / max(initial_energy, 1.0e-300)
@@ -946,12 +983,14 @@ def run_periodic_double_harris_seeded_long_run_validation(
             and np.isfinite(energies["kinetic"]).all()
             and np.isfinite(energies["total"]).all()
             and np.isfinite(energies["current_density_linf"]).all()
+            and np.isfinite(reconnection["reconnected_flux"]).all()
+            and np.isfinite(reconnection["rutherford_island_width"]).all()
         ),
         "full_duration_reached": bool(time[-1] >= t_end - 0.5 * dt),
         "enough_saved_samples": bool(time.size >= min_saved_samples),
         "readme_release_media_duration_exceeds_documented_minimum": bool(
             resolved_duration_label != DOUBLE_HARRIS_README_RELEASE_DURATION_LABEL
-            or t_end > DOUBLE_HARRIS_README_MEDIA_MIN_T_END
+            or t_end >= DOUBLE_HARRIS_README_MEDIA_MIN_T_END
         ),
         "short_duration_is_labeled_fast": bool(
             t_end >= DOUBLE_HARRIS_README_MEDIA_MIN_T_END
@@ -961,6 +1000,12 @@ def run_periodic_double_harris_seeded_long_run_validation(
         "early_growth_positive": fitted_early_growth_rate >= min_early_growth_rate,
         "early_difference_grows": early_growth_factor >= min_early_growth_factor,
         "nonlinear_difference_reaches_visible_growth": max_growth_factor >= min_max_growth_factor,
+        "reconnected_flux_amplifies": (
+            reconnected_flux_amplification >= min_reconnected_flux_amplification
+        ),
+        "island_width_amplifies": (
+            island_width_amplification >= min_island_width_amplification
+        ),
         "total_energy_is_dissipative": relative_energy_increase <= max_relative_energy_increase,
     }
     diagnostics = {
@@ -990,6 +1035,33 @@ def run_periodic_double_harris_seeded_long_run_validation(
         "fitted_early_growth_rate": fitted_early_growth_rate,
         "early_growth_factor": early_growth_factor,
         "max_growth_factor": max_growth_factor,
+        "magnetic_shear_proxy": magnetic_shear,
+        "reconnected_flux_proxy": (
+            "2 max|FFT(delta psi)_(m,n)| over low nonzero modes, where "
+            "delta psi is seeded minus base flux"
+        ),
+        "seed_mode_reconnected_flux_proxy": (
+            "2|FFT(delta psi)_(m,n)| at the configured perturbation mode"
+        ),
+        "rutherford_island_width_proxy": (
+            "W=4 sqrt(|psi_1|/|B_y'|) with |B_y'| approximated by |A|/a "
+            "for the periodic double-Harris sheet"
+        ),
+        "initial_reconnected_flux": float(reconnection["reconnected_flux"][0]),
+        "max_reconnected_flux": float(np.max(reconnection["reconnected_flux"])),
+        "reconnected_flux_amplification": reconnected_flux_amplification,
+        "seed_mode_reconnected_flux_amplification": _history_amplification(
+            reconnection["seed_mode_reconnected_flux"]
+        ),
+        "initial_rutherford_island_width": float(
+            reconnection["rutherford_island_width"][0]
+        ),
+        "max_rutherford_island_width": float(
+            np.max(reconnection["rutherford_island_width"])
+        ),
+        "island_width_amplification": island_width_amplification,
+        "max_x_point_count": int(np.max(reconnection["x_point_count"])),
+        "max_o_point_count": int(np.max(reconnection["o_point_count"])),
         "initial_total_energy": initial_energy,
         "final_total_energy": float(energies["total"][-1]),
         "relative_energy_increase": relative_energy_increase,
@@ -1019,6 +1091,8 @@ def run_periodic_double_harris_seeded_long_run_validation(
             "min_early_growth_rate": min_early_growth_rate,
             "min_early_growth_factor": min_early_growth_factor,
             "min_max_growth_factor": min_max_growth_factor,
+            "min_reconnected_flux_amplification": min_reconnected_flux_amplification,
+            "min_island_width_amplification": min_island_width_amplification,
             "max_relative_energy_increase": max_relative_energy_increase,
         },
         "diagnostics": diagnostics,
@@ -1026,13 +1100,22 @@ def run_periodic_double_harris_seeded_long_run_validation(
     return PeriodicDoubleHarrisSeededLongRunResult(
         time=time,
         perturbation_norm=perturbation_norm,
+        reconnected_flux=reconnection["reconnected_flux"],
+        seed_mode_reconnected_flux=reconnection["seed_mode_reconnected_flux"],
+        rutherford_island_width=reconnection["rutherford_island_width"],
+        dominant_flux_mode_x=reconnection["dominant_flux_mode_x"],
+        dominant_flux_mode_y=reconnection["dominant_flux_mode_y"],
         magnetic_energy=energies["magnetic"],
         kinetic_energy=energies["kinetic"],
         total_energy=energies["total"],
         current_density_linf=energies["current_density_linf"],
+        x_point_count=reconnection["x_point_count"],
+        o_point_count=reconnection["o_point_count"],
         fitted_early_growth_rate=fitted_early_growth_rate,
         early_growth_factor=early_growth_factor,
         max_growth_factor=max_growth_factor,
+        reconnected_flux_amplification=reconnected_flux_amplification,
+        island_width_amplification=island_width_amplification,
         base_trajectory=base_trajectory,
         perturbed_trajectory=perturbed_trajectory,
         base_initial_state=base_initial,
@@ -1158,6 +1241,14 @@ def run_periodic_double_harris_convergence_validation(
         [case["max_growth_factor"] for case in cases],
         dtype=np.float64,
     )
+    flux_amplification = np.asarray(
+        [case["reconnected_flux_amplification"] for case in cases],
+        dtype=np.float64,
+    )
+    width_amplification = np.asarray(
+        [case["island_width_amplification"] for case in cases],
+        dtype=np.float64,
+    )
     energy_increase = np.asarray(
         [case["relative_energy_increase"] for case in cases],
         dtype=np.float64,
@@ -1181,6 +1272,8 @@ def run_periodic_double_harris_convergence_validation(
             np.isfinite(growth_rate).all()
             and np.isfinite(early_growth).all()
             and np.isfinite(max_growth).all()
+            and np.isfinite(flux_amplification).all()
+            and np.isfinite(width_amplification).all()
             and np.isfinite(energy_increase).all()
             and np.isfinite(max_current).all()
             and np.isfinite(max_kinetic).all()
@@ -1260,6 +1353,8 @@ def run_periodic_double_harris_convergence_validation(
         fitted_early_growth_rate=growth_rate,
         early_growth_factor=early_growth,
         max_growth_factor=max_growth,
+        reconnected_flux_amplification=flux_amplification,
+        island_width_amplification=width_amplification,
         relative_energy_increase=energy_increase,
         max_current_density_linf=max_current,
         max_kinetic_energy=max_kinetic,
@@ -1562,13 +1657,22 @@ def write_periodic_double_harris_seeded_long_run_validation(
         schema=PERIODIC_DOUBLE_HARRIS_SEEDED_LONG_RUN_SCHEMA,
         time=result.time,
         perturbation_norm=result.perturbation_norm,
+        reconnected_flux=result.reconnected_flux,
+        seed_mode_reconnected_flux=result.seed_mode_reconnected_flux,
+        rutherford_island_width=result.rutherford_island_width,
+        dominant_flux_mode_x=result.dominant_flux_mode_x,
+        dominant_flux_mode_y=result.dominant_flux_mode_y,
         magnetic_energy=result.magnetic_energy,
         kinetic_energy=result.kinetic_energy,
         total_energy=result.total_energy,
         current_density_linf=result.current_density_linf,
+        x_point_count=result.x_point_count,
+        o_point_count=result.o_point_count,
         fitted_early_growth_rate=result.fitted_early_growth_rate,
         early_growth_factor=result.early_growth_factor,
         max_growth_factor=result.max_growth_factor,
+        reconnected_flux_amplification=result.reconnected_flux_amplification,
+        island_width_amplification=result.island_width_amplification,
         base_time=np.asarray(result.base_trajectory.times),
         perturbed_time=np.asarray(result.perturbed_trajectory.times),
         base_psi=np.asarray(result.base_trajectory.states.psi),
@@ -1593,6 +1697,8 @@ def write_periodic_double_harris_seeded_long_run_validation(
         result.base_trajectory.states.psi[-1],
         fitted_early_growth_rate=result.fitted_early_growth_rate,
         fit_window=tuple(result.diagnostics["fit_window"]),
+        reconnected_flux=result.reconnected_flux,
+        rutherford_island_width=result.rutherford_island_width,
         path=output_dir / "figures" / "periodic_double_harris_seeded_long_run.png",
     )
     outputs: dict[str, str] = {
@@ -1666,6 +1772,8 @@ def write_periodic_double_harris_convergence_validation(
         fitted_early_growth_rate=result.fitted_early_growth_rate,
         early_growth_factor=result.early_growth_factor,
         max_growth_factor=result.max_growth_factor,
+        reconnected_flux_amplification=result.reconnected_flux_amplification,
+        island_width_amplification=result.island_width_amplification,
         relative_energy_increase=result.relative_energy_increase,
         max_current_density_linf=result.max_current_density_linf,
         max_kinetic_energy=result.max_kinetic_energy,
@@ -1876,6 +1984,105 @@ def _trajectory_energy_and_current_histories(
     }
 
 
+def _trajectory_reconnection_histories(
+    base_initial_state: ReducedMHDState,
+    base_saved_states: ReducedMHDState,
+    perturbed_initial_state: ReducedMHDState,
+    perturbed_saved_states: ReducedMHDState,
+    *,
+    lengths: tuple[float, float],
+    mode: tuple[int, int],
+    magnetic_shear: float,
+) -> dict[str, np.ndarray]:
+    base_states = (base_initial_state,) + tuple(
+        ReducedMHDState(
+            psi=base_saved_states.psi[index],
+            omega=base_saved_states.omega[index],
+        )
+        for index in range(base_saved_states.psi.shape[0])
+    )
+    perturbed_states = (perturbed_initial_state,) + tuple(
+        ReducedMHDState(
+            psi=perturbed_saved_states.psi[index],
+            omega=perturbed_saved_states.omega[index],
+        )
+        for index in range(perturbed_saved_states.psi.shape[0])
+    )
+    reconnected_flux = []
+    seed_mode_reconnected_flux = []
+    island_width = []
+    dominant_flux_mode_x = []
+    dominant_flux_mode_y = []
+    x_point_count = []
+    o_point_count = []
+    for base_state, perturbed_state in zip(base_states, perturbed_states, strict=True):
+        delta_state = ReducedMHDState(
+            psi=perturbed_state.psi - base_state.psi,
+            omega=perturbed_state.omega - base_state.omega,
+        )
+        flux_value, dominant_mode = _dominant_low_mode_flux_amplitude(delta_state.psi)
+        seed_flux_value = float(reconnected_flux_amplitude(delta_state, mode=mode))
+        reconnected_flux.append(flux_value)
+        seed_mode_reconnected_flux.append(seed_flux_value)
+        island_width.append(
+            float(
+                rutherford_island_full_width(
+                    flux_value,
+                    magnetic_shear=magnetic_shear,
+                )
+            )
+        )
+        dominant_flux_mode_x.append(dominant_mode[0])
+        dominant_flux_mode_y.append(dominant_mode[1])
+        points = detect_flux_critical_points(
+            np.asarray(perturbed_state.psi),
+            lengths=lengths,
+            max_points=32,
+            refine=False,
+        )
+        x_point_count.append(sum(point.kind == "X" for point in points))
+        o_point_count.append(sum(point.kind == "O" for point in points))
+    return {
+        "reconnected_flux": np.asarray(reconnected_flux, dtype=np.float64),
+        "seed_mode_reconnected_flux": np.asarray(
+            seed_mode_reconnected_flux,
+            dtype=np.float64,
+        ),
+        "rutherford_island_width": np.asarray(island_width, dtype=np.float64),
+        "dominant_flux_mode_x": np.asarray(dominant_flux_mode_x, dtype=np.int64),
+        "dominant_flux_mode_y": np.asarray(dominant_flux_mode_y, dtype=np.int64),
+        "x_point_count": np.asarray(x_point_count, dtype=np.int64),
+        "o_point_count": np.asarray(o_point_count, dtype=np.int64),
+    }
+
+
+def _dominant_low_mode_flux_amplitude(psi: np.ndarray) -> tuple[float, tuple[int, int]]:
+    values = np.asarray(psi, dtype=np.float64)
+    coefficients = np.abs(np.fft.fftn(values) / values.size)
+    mode_x = np.fft.fftfreq(values.shape[0]) * values.shape[0]
+    mode_y = np.fft.fftfreq(values.shape[1]) * values.shape[1]
+    cutoff_x = max(1, values.shape[0] // 4)
+    cutoff_y = max(1, values.shape[1] // 4)
+    low_mode_mask = (
+        (np.abs(mode_x).reshape((-1, 1)) <= cutoff_x)
+        & (np.abs(mode_y).reshape((1, -1)) <= cutoff_y)
+    )
+    low_mode_mask[0, 0] = False
+    low_coefficients = np.where(low_mode_mask, coefficients, 0.0)
+    flat_index = int(np.argmax(low_coefficients))
+    index = np.unravel_index(flat_index, values.shape)
+    return (
+        float(2.0 * low_coefficients[index]),
+        (int(mode_x[index[0]]), int(mode_y[index[1]])),
+    )
+
+
+def _history_amplification(values: np.ndarray) -> float:
+    values_array = np.asarray(values, dtype=np.float64)
+    initial = max(float(abs(values_array[0])), np.finfo(np.float64).tiny)
+    return float(np.max(np.abs(values_array)) / initial)
+
+
 def _double_harris_convergence_case(
     case_kind: str,
     *,
@@ -1894,6 +2101,8 @@ def _double_harris_convergence_case(
         "fitted_early_growth_rate": float(result.fitted_early_growth_rate),
         "early_growth_factor": float(result.early_growth_factor),
         "max_growth_factor": float(result.max_growth_factor),
+        "reconnected_flux_amplification": float(result.reconnected_flux_amplification),
+        "island_width_amplification": float(result.island_width_amplification),
         "relative_energy_increase": float(diagnostics["relative_energy_increase"]),
         "max_current_density_linf": float(diagnostics["max_current_density_linf"]),
         "max_kinetic_energy": float(diagnostics["max_kinetic_energy"]),
@@ -2086,6 +2295,8 @@ def _validate_double_harris_seeded_long_run_inputs(
     min_early_growth_rate: float,
     min_early_growth_factor: float,
     min_max_growth_factor: float,
+    min_reconnected_flux_amplification: float,
+    min_island_width_amplification: float,
     max_relative_energy_increase: float,
 ) -> None:
     if len(shape) != 2 or shape[0] < 8 or shape[1] < 8:
@@ -2130,6 +2341,10 @@ def _validate_double_harris_seeded_long_run_inputs(
         raise ValueError("min_early_growth_factor must exceed one")
     if min_max_growth_factor <= 1.0:
         raise ValueError("min_max_growth_factor must exceed one")
+    if min_reconnected_flux_amplification <= 1.0:
+        raise ValueError("min_reconnected_flux_amplification must exceed one")
+    if min_island_width_amplification <= 1.0:
+        raise ValueError("min_island_width_amplification must exceed one")
     if max_relative_energy_increase < 0.0:
         raise ValueError("max_relative_energy_increase must be non-negative")
 

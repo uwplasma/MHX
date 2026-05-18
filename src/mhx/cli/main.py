@@ -1308,6 +1308,20 @@ def benchmark_double_harris_long_run(
         float,
         typer.Option("--min-max-growth-factor", help="Minimum maximum normalized growth."),
     ] = 2.0,
+    min_reconnected_flux_amplification: Annotated[
+        float,
+        typer.Option(
+            "--min-reconnected-flux-amplification",
+            help="Minimum dominant reconnecting-flux proxy amplification.",
+        ),
+    ] = 1.05,
+    min_island_width_amplification: Annotated[
+        float,
+        typer.Option(
+            "--min-island-width-amplification",
+            help="Minimum Rutherford island-width proxy amplification.",
+        ),
+    ] = 1.05,
     movies: Annotated[
         bool,
         typer.Option("--movies/--no-movies", help="Write fixed-scale flux/current GIFs."),
@@ -1345,6 +1359,8 @@ def benchmark_double_harris_long_run(
         duration_label=duration_label,
         min_early_growth_rate=min_early_growth_rate,
         min_max_growth_factor=min_max_growth_factor,
+        min_reconnected_flux_amplification=min_reconnected_flux_amplification,
+        min_island_width_amplification=min_island_width_amplification,
         movies=movies,
     )
     typer.echo(f"wrote {manifest_path}")

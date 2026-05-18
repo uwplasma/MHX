@@ -314,7 +314,10 @@ The periodic double-Harris seeded long-run command writes:
 
 - `diagnostics.json`
 - `validation.json`
-- `periodic_double_harris_seeded_long_run.npz`
+- `periodic_double_harris_seeded_long_run.npz`, including
+  `reconnected_flux`, `seed_mode_reconnected_flux`,
+  `rutherford_island_width`, dominant low-mode indices, X/O counts, energies,
+  and saved base/seeded fields
 - `figures/periodic_double_harris_seeded_long_run.png`
 - optional `figures/periodic_double_harris_flux.gif` and
   `figures/periodic_double_harris_current.gif` with `--movies`
