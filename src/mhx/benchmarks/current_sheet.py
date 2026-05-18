@@ -25,7 +25,7 @@ from mhx.equations.reduced_mhd import (
     reduced_mhd_rhs,
 )
 from mhx.grids import CartesianGrid
-from mhx.io import write_manifest
+from mhx.io import write_artifact_manifest, write_manifest
 from mhx.physics import CosineTearingEquilibrium, PeriodicDoubleHarrisEquilibrium
 from mhx.plotting import (
     plot_current_density_gif,
@@ -63,6 +63,9 @@ PERIODIC_DOUBLE_HARRIS_SEEDED_LONG_RUN_SCHEMA = (
 )
 PERIODIC_DOUBLE_HARRIS_CONVERGENCE_SCHEMA = (
     "mhx.validation.periodic_double_harris_convergence.v1"
+)
+PERIODIC_DOUBLE_HARRIS_PROMOTION_SCHEMA = (
+    "mhx.validation.periodic_double_harris_promotion.v1"
 )
 DOUBLE_HARRIS_README_MEDIA_MIN_T_END = 30.0
 DOUBLE_HARRIS_README_RELEASE_T_END = 100.0
@@ -194,6 +197,16 @@ class PeriodicDoubleHarrisConvergenceResult:
     relative_energy_increase: np.ndarray
     max_current_density_linf: np.ndarray
     max_kinetic_energy: np.ndarray
+    diagnostics: dict[str, Any]
+    validation: dict[str, Any]
+
+
+@dataclass(frozen=True)
+class PeriodicDoubleHarrisPromotionAssessment:
+    """Promotion-boundary assessment for seeded periodic double-Harris evidence."""
+
+    run_dir: Path
+    promotion_ready: bool
     diagnostics: dict[str, Any]
     validation: dict[str, Any]
 
@@ -1147,6 +1160,8 @@ def run_periodic_double_harris_convergence_validation(
     max_relative_energy_increase: float = 1.0e-8,
     max_relative_growth_rate_spread: float = 1.5,
     max_relative_max_growth_spread: float = 3.0,
+    max_relative_flux_amplification_spread: float = 3.0,
+    max_relative_width_amplification_spread: float = 3.0,
 ) -> PeriodicDoubleHarrisConvergenceResult:
     """Run a deterministic tiny convergence sweep for seeded double-Harris replay."""
     _validate_double_harris_convergence_inputs(
@@ -1164,6 +1179,8 @@ def run_periodic_double_harris_convergence_validation(
         max_relative_energy_increase=max_relative_energy_increase,
         max_relative_growth_rate_spread=max_relative_growth_rate_spread,
         max_relative_max_growth_spread=max_relative_max_growth_spread,
+        max_relative_flux_amplification_spread=max_relative_flux_amplification_spread,
+        max_relative_width_amplification_spread=max_relative_width_amplification_spread,
     )
     cases: list[dict[str, Any]] = []
     for resolution in resolutions:
@@ -1267,6 +1284,18 @@ def run_periodic_double_harris_convergence_validation(
     timestep_growth_rate_spread = _relative_spread(growth_rate[timestep_mask])
     resolution_max_growth_spread = _relative_spread(max_growth[resolution_mask])
     timestep_max_growth_spread = _relative_spread(max_growth[timestep_mask])
+    resolution_flux_amplification_spread = _relative_spread(
+        flux_amplification[resolution_mask]
+    )
+    timestep_flux_amplification_spread = _relative_spread(
+        flux_amplification[timestep_mask]
+    )
+    resolution_width_amplification_spread = _relative_spread(
+        width_amplification[resolution_mask]
+    )
+    timestep_width_amplification_spread = _relative_spread(
+        width_amplification[timestep_mask]
+    )
     checks = {
         "finite_case_metrics": bool(
             np.isfinite(growth_rate).all()
@@ -1293,6 +1322,20 @@ def run_periodic_double_harris_convergence_validation(
         "timestep_max_growth_spread_bounded": (
             timestep_max_growth_spread <= max_relative_max_growth_spread
         ),
+        "resolution_flux_amplification_spread_bounded": (
+            resolution_flux_amplification_spread
+            <= max_relative_flux_amplification_spread
+        ),
+        "timestep_flux_amplification_spread_bounded": (
+            timestep_flux_amplification_spread <= max_relative_flux_amplification_spread
+        ),
+        "resolution_width_amplification_spread_bounded": (
+            resolution_width_amplification_spread
+            <= max_relative_width_amplification_spread
+        ),
+        "timestep_width_amplification_spread_bounded": (
+            timestep_width_amplification_spread <= max_relative_width_amplification_spread
+        ),
     }
     diagnostics = {
         "schema": PERIODIC_DOUBLE_HARRIS_CONVERGENCE_SCHEMA,
@@ -1315,6 +1358,10 @@ def run_periodic_double_harris_convergence_validation(
         "timestep_growth_rate_spread": timestep_growth_rate_spread,
         "resolution_max_growth_spread": resolution_max_growth_spread,
         "timestep_max_growth_spread": timestep_max_growth_spread,
+        "resolution_flux_amplification_spread": resolution_flux_amplification_spread,
+        "timestep_flux_amplification_spread": timestep_flux_amplification_spread,
+        "resolution_width_amplification_spread": resolution_width_amplification_spread,
+        "timestep_width_amplification_spread": timestep_width_amplification_spread,
         "cases": cases,
         "references": {
             "scope": (
@@ -1342,6 +1389,12 @@ def run_periodic_double_harris_convergence_validation(
             "max_relative_energy_increase": max_relative_energy_increase,
             "max_relative_growth_rate_spread": max_relative_growth_rate_spread,
             "max_relative_max_growth_spread": max_relative_max_growth_spread,
+            "max_relative_flux_amplification_spread": (
+                max_relative_flux_amplification_spread
+            ),
+            "max_relative_width_amplification_spread": (
+                max_relative_width_amplification_spread
+            ),
         },
         "diagnostics": diagnostics,
     }
@@ -1361,6 +1414,241 @@ def run_periodic_double_harris_convergence_validation(
         diagnostics=diagnostics,
         validation=validation,
     )
+
+
+def assess_periodic_double_harris_promotion(
+    run_dir: str | Path,
+    *,
+    convergence_dirs: tuple[str | Path, ...] = (),
+    require_movies: bool = True,
+    min_history_samples: int = 30,
+    min_convergence_dirs: int = 1,
+    min_t_end: float = DOUBLE_HARRIS_README_MEDIA_MIN_T_END,
+    min_reconnected_flux_amplification: float = 1.05,
+    min_island_width_amplification: float = 1.05,
+    max_relative_energy_increase: float = 1.0e-8,
+) -> PeriodicDoubleHarrisPromotionAssessment:
+    """Assess whether a seeded double-Harris bundle can be promoted in docs.
+
+    Passing this gate promotes a run to convergence-backed validation evidence,
+    not to a production Rutherford/plasmoid claim. Production claims still need
+    larger aspect-ratio, Lundquist-number, seed, and duration campaigns.
+    """
+    root = Path(run_dir)
+    if min_history_samples < 1:
+        raise ValueError("min_history_samples must be >= 1")
+    if min_convergence_dirs < 0:
+        raise ValueError("min_convergence_dirs must be non-negative")
+    if min_t_end <= 0.0:
+        raise ValueError("min_t_end must be positive")
+    if min_reconnected_flux_amplification < 0.0:
+        raise ValueError("min_reconnected_flux_amplification must be non-negative")
+    if min_island_width_amplification < 0.0:
+        raise ValueError("min_island_width_amplification must be non-negative")
+    if max_relative_energy_increase < 0.0:
+        raise ValueError("max_relative_energy_increase must be non-negative")
+
+    diagnostics_json = _read_json_if_exists(root / "diagnostics.json")
+    run_validation = _read_json_if_exists(root / "validation.json")
+    run_manifest = _read_json_if_exists(root / "manifest.json")
+    history_path = root / "periodic_double_harris_seeded_long_run.npz"
+    history, history_schema = _load_npz_for_promotion(history_path)
+    required_history_keys = (
+        "time",
+        "perturbation_norm",
+        "reconnected_flux",
+        "seed_mode_reconnected_flux",
+        "rutherford_island_width",
+        "dominant_flux_mode_x",
+        "dominant_flux_mode_y",
+        "magnetic_energy",
+        "kinetic_energy",
+        "total_energy",
+        "current_density_linf",
+        "x_point_count",
+        "o_point_count",
+    )
+    history_keys_present = bool(history) and all(key in history for key in required_history_keys)
+    finite_histories = history_keys_present and all(
+        np.isfinite(np.asarray(history[key], dtype=np.float64)).all()
+        for key in required_history_keys
+        if key
+        not in {
+            "dominant_flux_mode_x",
+            "dominant_flux_mode_y",
+            "x_point_count",
+            "o_point_count",
+        }
+    )
+    time_values = (
+        np.asarray(history.get("time", []), dtype=np.float64)
+        if history
+        else np.asarray([], dtype=np.float64)
+    )
+    history_sample_count = int(time_values.size)
+    terminal_time = float(time_values[-1]) if time_values.size else float("nan")
+    relative_energy_increase = (
+        _relative_energy_increase(np.asarray(history["total_energy"], dtype=np.float64))
+        if history and "total_energy" in history
+        else float("inf")
+    )
+    reconnected_flux_amplification = _history_amplification(
+        history.get("reconnected_flux") if history else None
+    )
+    island_width_amplification = _history_amplification(
+        history.get("rutherford_island_width") if history else None
+    )
+    max_x_point_count = (
+        int(np.max(np.asarray(history["x_point_count"], dtype=np.int64)))
+        if history and "x_point_count" in history
+        else 0
+    )
+    max_o_point_count = (
+        int(np.max(np.asarray(history["o_point_count"], dtype=np.int64)))
+        if history and "o_point_count" in history
+        else 0
+    )
+    movie_paths = (
+        root / "figures" / "periodic_double_harris_flux.gif",
+        root / "figures" / "periodic_double_harris_current.gif",
+    )
+    convergence_reports = tuple(
+        _double_harris_evidence_dir_status(Path(path)) for path in convergence_dirs
+    )
+    checks = {
+        "execution_diagnostics_present": diagnostics_json is not None,
+        "execution_validation_present": run_validation is not None,
+        "run_manifest_present": run_manifest is not None,
+        "execution_validation_passed": bool(run_validation and run_validation.get("passed")),
+        "history_schema_supported": history_schema
+        == PERIODIC_DOUBLE_HARRIS_SEEDED_LONG_RUN_SCHEMA,
+        "required_history_keys_present": history_keys_present,
+        "finite_history_arrays": finite_histories,
+        "minimum_history_samples": history_sample_count >= min_history_samples,
+        "minimum_duration_reached": bool(np.isfinite(terminal_time) and terminal_time >= min_t_end),
+        "energy_increase_within_tolerance": relative_energy_increase
+        <= max_relative_energy_increase,
+        "reconnected_flux_amplifies": reconnected_flux_amplification
+        >= min_reconnected_flux_amplification,
+        "island_width_amplifies": island_width_amplification
+        >= min_island_width_amplification,
+        "critical_point_counts_present": bool(
+            history and "x_point_count" in history and "o_point_count" in history
+        ),
+        "x_critical_points_detected": max_x_point_count > 0,
+        "o_critical_points_detected": max_o_point_count > 0,
+        "fixed_scale_movies_present": (not require_movies)
+        or all(path.exists() and path.stat().st_size > 0 for path in movie_paths),
+        "convergence_bundle_count": len(convergence_reports) >= min_convergence_dirs,
+        "convergence_bundles_passed": len(convergence_reports) >= min_convergence_dirs
+        and all(report["passed"] for report in convergence_reports),
+    }
+    thresholds = {
+        "min_history_samples": int(min_history_samples),
+        "min_convergence_dirs": int(min_convergence_dirs),
+        "min_t_end": float(min_t_end),
+        "min_reconnected_flux_amplification": float(min_reconnected_flux_amplification),
+        "min_island_width_amplification": float(min_island_width_amplification),
+        "max_relative_energy_increase": float(max_relative_energy_increase),
+        "require_movies": bool(require_movies),
+    }
+    diagnostics = {
+        "schema": PERIODIC_DOUBLE_HARRIS_PROMOTION_SCHEMA,
+        "run_dir": str(root),
+        "claim_level_if_passed": "validation",
+        "claim_boundary": (
+            "Promotion evidence for seeded periodic double-Harris validation. "
+            "Passing promotes the bundle to convergence-backed validation media; "
+            "it does not authorize production Rutherford, Sweet-Parker, or "
+            "plasmoid-chain claims."
+        ),
+        "history_schema": history_schema,
+        "history_sample_count": history_sample_count,
+        "terminal_time": terminal_time,
+        "relative_energy_increase": relative_energy_increase,
+        "reconnected_flux_amplification": reconnected_flux_amplification,
+        "island_width_amplification": island_width_amplification,
+        "max_x_point_count": max_x_point_count,
+        "max_o_point_count": max_o_point_count,
+        "convergence_dirs": [str(Path(path)) for path in convergence_dirs],
+        "convergence_reports": list(convergence_reports),
+        "thresholds": thresholds,
+    }
+    validation = {
+        "schema": "mhx.validation.periodic_double_harris_promotion.gates.v1",
+        "passed": all(checks.values()),
+        "checks": checks,
+        "thresholds": thresholds,
+        "diagnostics": diagnostics,
+    }
+    return PeriodicDoubleHarrisPromotionAssessment(
+        run_dir=root,
+        promotion_ready=bool(validation["passed"]),
+        diagnostics=diagnostics,
+        validation=validation,
+    )
+
+
+def write_periodic_double_harris_promotion_report(
+    run_dir: str | Path,
+    *,
+    outdir: str | Path | None = None,
+    convergence_dirs: tuple[str | Path, ...] = (),
+    require_movies: bool = True,
+    min_history_samples: int = 30,
+    min_convergence_dirs: int = 1,
+    min_t_end: float = DOUBLE_HARRIS_README_MEDIA_MIN_T_END,
+    min_reconnected_flux_amplification: float = 1.05,
+    min_island_width_amplification: float = 1.05,
+    max_relative_energy_increase: float = 1.0e-8,
+) -> tuple[Path, dict[str, Any]]:
+    """Write a promotion-boundary report for seeded double-Harris validation."""
+    assessment = assess_periodic_double_harris_promotion(
+        run_dir,
+        convergence_dirs=convergence_dirs,
+        require_movies=require_movies,
+        min_history_samples=min_history_samples,
+        min_convergence_dirs=min_convergence_dirs,
+        min_t_end=min_t_end,
+        min_reconnected_flux_amplification=min_reconnected_flux_amplification,
+        min_island_width_amplification=min_island_width_amplification,
+        max_relative_energy_increase=max_relative_energy_increase,
+    )
+    report_dir = Path(outdir) if outdir is not None else assessment.run_dir / "promotion"
+    figures_dir = report_dir / "figures"
+    report_dir.mkdir(parents=True, exist_ok=True)
+    readiness_path = report_dir / "promotion_readiness.json"
+    validation_path = report_dir / "validation.json"
+    matrix_path = _write_double_harris_promotion_matrix(
+        figures_dir,
+        validation=assessment.validation,
+    )
+    readiness = {
+        **assessment.diagnostics,
+        "promotion_ready": assessment.promotion_ready,
+        "validation_schema": assessment.validation["schema"],
+        "checks": assessment.validation["checks"],
+    }
+    readiness_path.write_text(json.dumps(readiness, indent=2, sort_keys=True), encoding="utf-8")
+    validation_path.write_text(
+        json.dumps(assessment.validation, indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+    manifest_path = report_dir / "manifest.json"
+    write_manifest(
+        manifest_path,
+        config=readiness,
+        outputs={
+            "promotion_readiness": readiness_path.name,
+            "validation": validation_path.name,
+            "promotion_matrix": matrix_path.relative_to(report_dir).as_posix(),
+            "artifact_manifest": "artifact_manifest.json",
+        },
+        claim_level="validation",
+        claim_scope=assessment.diagnostics["claim_boundary"],
+    )
+    write_artifact_manifest(report_dir)
+    return manifest_path, assessment.validation
 
 
 def write_periodic_current_sheet_eigenvalue_validation(
@@ -2077,10 +2365,109 @@ def _dominant_low_mode_flux_amplitude(psi: np.ndarray) -> tuple[float, tuple[int
     )
 
 
-def _history_amplification(values: np.ndarray) -> float:
+def _history_amplification(values: np.ndarray | None) -> float:
+    if values is None:
+        return 0.0
     values_array = np.asarray(values, dtype=np.float64)
+    if values_array.size == 0 or not np.isfinite(values_array).all():
+        return 0.0
     initial = max(float(abs(values_array[0])), np.finfo(np.float64).tiny)
     return float(np.max(np.abs(values_array)) / initial)
+
+
+def _relative_energy_increase(total_energy_values: np.ndarray) -> float:
+    values = np.asarray(total_energy_values, dtype=np.float64)
+    if values.size == 0 or not np.isfinite(values).all():
+        return float("inf")
+    initial = max(float(values[0]), np.finfo(np.float64).tiny)
+    return float(max(0.0, np.max(values) - values[0]) / initial)
+
+
+def _read_json_if_exists(path: Path) -> dict[str, Any] | None:
+    if not path.exists():
+        return None
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return None
+    return data if isinstance(data, dict) else None
+
+
+def _load_npz_for_promotion(path: Path) -> tuple[dict[str, np.ndarray], str | None]:
+    if not path.exists():
+        return {}, None
+    with np.load(path, allow_pickle=False) as data:
+        schema = str(np.asarray(data["schema"]).item()) if "schema" in data else None
+        return {key: np.asarray(data[key]) for key in data.files}, schema
+
+
+def _double_harris_evidence_dir_status(path: Path) -> dict[str, Any]:
+    validation = _read_json_if_exists(path / "validation.json")
+    manifest = _read_json_if_exists(path / "manifest.json")
+    diagnostics = _read_json_if_exists(path / "diagnostics.json")
+    expected_history = path / "periodic_double_harris_convergence.npz"
+    validation_passed = bool(validation and validation.get("passed"))
+    schema_supported = bool(
+        diagnostics
+        and diagnostics.get("schema") == PERIODIC_DOUBLE_HARRIS_CONVERGENCE_SCHEMA
+    )
+    return {
+        "path": str(path),
+        "exists": path.exists(),
+        "validation_present": validation is not None,
+        "manifest_present": manifest is not None,
+        "diagnostics_schema_supported": schema_supported,
+        "history_present": expected_history.exists(),
+        "passed": bool(
+            path.exists()
+            and validation_passed
+            and manifest is not None
+            and schema_supported
+            and expected_history.exists()
+        ),
+    }
+
+
+def _write_double_harris_promotion_matrix(
+    figure_dir: Path,
+    *,
+    validation: dict[str, Any],
+) -> Path:
+    import matplotlib.pyplot as plt
+
+    figure_dir.mkdir(parents=True, exist_ok=True)
+    checks = validation.get("checks", {})
+    if not isinstance(checks, dict):
+        checks = {}
+    labels = list(checks)
+    values = np.asarray([[1.0 if bool(checks[label]) else 0.0] for label in labels])
+    path = figure_dir / "promotion_matrix.png"
+    fig_height = max(4.0, 0.28 * max(1, len(labels)))
+    fig, axis = plt.subplots(figsize=(8.8, fig_height), constrained_layout=True)
+    if labels:
+        axis.imshow(values, cmap="RdYlGn", vmin=0.0, vmax=1.0, aspect="auto")
+        axis.set_yticks(np.arange(len(labels)))
+        axis.set_yticklabels([label.replace("_", " ") for label in labels])
+        axis.set_xticks([0])
+        axis.set_xticklabels(["pass"])
+        for row, label in enumerate(labels):
+            axis.text(
+                0,
+                row,
+                "PASS" if bool(checks[label]) else "FAIL",
+                ha="center",
+                va="center",
+                color="black",
+                fontsize="small",
+                fontweight="bold",
+            )
+    else:
+        axis.text(0.5, 0.5, "no checks", ha="center", va="center")
+        axis.set_axis_off()
+    axis.set_title("Periodic double-Harris promotion checks")
+    fig.savefig(path, dpi=180)
+    plt.close(fig)
+    return path
 
 
 def _double_harris_convergence_case(
@@ -2365,6 +2752,8 @@ def _validate_double_harris_convergence_inputs(
     max_relative_energy_increase: float,
     max_relative_growth_rate_spread: float,
     max_relative_max_growth_spread: float,
+    max_relative_flux_amplification_spread: float,
+    max_relative_width_amplification_spread: float,
 ) -> None:
     if len(resolutions) < 2:
         raise ValueError("resolutions must contain at least two entries")
@@ -2420,3 +2809,7 @@ def _validate_double_harris_convergence_inputs(
         raise ValueError("max_relative_growth_rate_spread must be positive")
     if max_relative_max_growth_spread <= 0.0:
         raise ValueError("max_relative_max_growth_spread must be positive")
+    if max_relative_flux_amplification_spread <= 0.0:
+        raise ValueError("max_relative_flux_amplification_spread must be positive")
+    if max_relative_width_amplification_spread <= 0.0:
+        raise ValueError("max_relative_width_amplification_spread must be positive")

@@ -31,6 +31,7 @@ Every figure included in the paper-style documentation should have:
 | Periodic double-Harris growth | `periodic_double_harris_nonlinear_growth.png` | `validation` | Ready as small-grid instability-path evidence; not a Rutherford/plasmoid production claim. |
 | Seeded double-Harris long run | `periodic_double_harris_seeded_long_run.png`, optional flux/current GIFs | `validation` | Ready as bounded nonlinear evidence with early growth and dissipative energy; still needs convergence and seed/aspect-ratio sweeps. |
 | Seeded double-Harris convergence | `periodic_double_harris_convergence.png` | `validation` | Ready as a FAST resolution/time-step scaffold; still not production plasmoid/Rutherford evidence. |
+| Seeded double-Harris promotion report | `promotion_matrix.png`, `promotion_readiness.json` | `validation` only | Ready as the boundary between single-run media and convergence-backed validation evidence; not a production physics gate. |
 | Nonlinear energy budget | `nonlinear_energy_budget.png` | `validation` | Ready as nonlinear conservation/dissipation evidence. |
 | Orszag--Tang vortex media | `orszag_tang_summary.png`, optional flux/current/vorticity GIFs | `validation` | Ready as nonlinear reduced-MHD morphology and high-$k$ transfer evidence, not full-MHD shock validation. |
 | Decaying turbulence media | `decaying_mhd_turbulence_summary.png`, optional flux/current GIFs | `validation` | Ready as deterministic reduced-MHD turbulence morphology and current-filament evidence; not turbulence-statistics evidence. |

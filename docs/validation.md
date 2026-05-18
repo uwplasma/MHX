@@ -951,6 +951,19 @@ Expected files:
 - `outputs/benchmarks/periodic_double_harris_seeded_long_run/figures/periodic_double_harris_flux.gif`
 - `outputs/benchmarks/periodic_double_harris_seeded_long_run/figures/periodic_double_harris_current.gif`
 
+Once a convergence bundle exists, the promotion-boundary report is:
+
+```bash
+mhx benchmark double-harris-promotion-check \
+  outputs/benchmarks/periodic_double_harris_seeded_long_run \
+  --convergence-dir outputs/benchmarks/periodic_double_harris_convergence
+```
+
+This writes `promotion/promotion_readiness.json`,
+`promotion/validation.json`, and `promotion/figures/promotion_matrix.png`.
+Passing means the run is convergence-backed validation evidence; it still does
+not authorize Rutherford, Sweet--Parker, or plasmoid production claims.
+
 ![Seeded periodic double-Harris nonlinear long run](_static/validation/periodic_double_harris_seeded_long_run/figures/periodic_double_harris_seeded_long_run.png)
 
 ![Seeded double-Harris magnetic flux movie](_static/validation/periodic_double_harris_seeded_long_run/figures/periodic_double_harris_flux.gif)

@@ -269,6 +269,22 @@ because the response gate is explicit and positive, but it remains below
 production claim level until larger convergence, seed, aspect-ratio, and
 Lundquist-number sweeps close.
 
+The new machine-readable promotion boundary for this lane is:
+
+```bash
+mhx benchmark double-harris-promotion-check \
+  outputs/campaigns/growing_double_harris_gpu_96_t120_20260518_044120 \
+  --convergence-dir outputs/benchmarks/periodic_double_harris_convergence
+```
+
+It writes `promotion/promotion_readiness.json`,
+`promotion/validation.json`, `promotion/figures/promotion_matrix.png`, and an
+artifact manifest. The report can promote a run to convergence-backed
+validation media only; it deliberately cannot promote a run to production
+Rutherford/plasmoid evidence.
+
+![GPU-assisted double-Harris promotion matrix](_static/validation/long_runs/growing_double_harris_96_t120/promotion_matrix.png)
+
 ## Current claim boundary
 
 These runs support:

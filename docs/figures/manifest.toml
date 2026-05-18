@@ -84,6 +84,15 @@ sources = ["src/mhx/benchmarks/current_sheet.py", "docs/long_run_evidence.md"]
 tests = ["tests/test_current_sheet_eigenvalue_validation.py"]
 
 [[figures]]
+id = "validation_double_harris_gpu_96_t120_promotion"
+path = "docs/_static/validation/long_runs/growing_double_harris_96_t120/promotion_matrix.png"
+command = "mhx benchmark double-harris-promotion-check outputs/campaigns/growing_double_harris_gpu_96_t120_20260518_044120 --convergence-dir outputs/docs_refresh/periodic_double_harris_convergence"
+claim_level = "validation"
+claim_scope = "Promotion-to-validation matrix for the GPU-assisted double-Harris response run; not a production Rutherford/plasmoid claim."
+sources = ["src/mhx/benchmarks/current_sheet.py", "docs/long_run_evidence.md"]
+tests = ["tests/test_current_sheet_eigenvalue_validation.py"]
+
+[[figures]]
 id = "validation_latent_ode_fit"
 path = "docs/_static/validation/neural_ode_latent_fit/latent_ode_predictions.png"
 command = "python examples/train_latent_ode_fast.py --outdir outputs/examples/latent_ode_fast"

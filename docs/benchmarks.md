@@ -329,6 +329,13 @@ The periodic double-Harris convergence command writes:
 - `periodic_double_harris_convergence.npz`
 - `figures/periodic_double_harris_convergence.png`
 
+The periodic double-Harris promotion checker writes:
+
+- `promotion_readiness.json`
+- `validation.json`
+- `figures/promotion_matrix.png`
+- `manifest.json` and `artifact_manifest.json`
+
 The nonlinear energy-budget command writes:
 
 - `diagnostics.json`

@@ -576,13 +576,32 @@ writes:
   statistics.
 - `validation.json`: pass/fail gates for finite case metrics, successful
   subcases, positive early growth, dissipative energy, and bounded
-  resolution/time-step spread.
+  resolution/time-step spread in growth rate, maximum amplification,
+  reconnecting-flux amplification, and Rutherford-width amplification.
 - `periodic_double_harris_convergence.npz`: stable keys `schema`, `case_kind`,
   `resolution`, `dt`, `samples`, `fitted_early_growth_rate`,
-  `early_growth_factor`, `max_growth_factor`, `relative_energy_increase`,
-  `max_current_density_linf`, and `max_kinetic_energy`.
+  `early_growth_factor`, `max_growth_factor`,
+  `reconnected_flux_amplification`, `island_width_amplification`,
+  `relative_energy_increase`, `max_current_density_linf`, and
+  `max_kinetic_energy`.
 - `figures/periodic_double_harris_convergence.png`: resolution/time-step
   `gamma_fit`, nonlinear amplification, energy, and peak-current panels.
+
+## Periodic double-Harris promotion report
+
+`mhx benchmark double-harris-promotion-check <run-dir> --convergence-dir <dir>`
+writes `<run-dir>/promotion/` by default:
+
+- `promotion_readiness.json`: schema
+  `mhx.validation.periodic_double_harris_promotion.v1`; includes the long-run
+  history schema, terminal time, response amplifications, X/O counts,
+  convergence-evidence status, thresholds, and pass/fail checks.
+- `validation.json`: schema
+  `mhx.validation.periodic_double_harris_promotion.gates.v1`; this is a
+  promotion-to-validation gate, not a production Rutherford/plasmoid gate.
+- `figures/promotion_matrix.png`: reviewer-readable matrix of every promotion
+  check.
+- `manifest.json` and `artifact_manifest.json`: checksummed report metadata.
 
 ## Nonlinear energy-budget outputs
 

@@ -36,6 +36,7 @@ from mhx.benchmarks import (
     write_periodic_current_sheet_timedomain_validation,
     write_periodic_double_harris_convergence_validation,
     write_periodic_double_harris_nonlinear_growth_validation,
+    write_periodic_double_harris_promotion_report,
     write_periodic_double_harris_seeded_long_run_validation,
     write_power_iteration_validation,
     write_readiness_report,
@@ -1431,6 +1432,20 @@ def benchmark_double_harris_convergence(
             help="Maximum relative spread allowed in maximum amplification.",
         ),
     ] = 3.0,
+    max_relative_flux_amplification_spread: Annotated[
+        float,
+        typer.Option(
+            "--max-relative-flux-amplification-spread",
+            help="Maximum relative spread allowed in reconnecting-flux amplification.",
+        ),
+    ] = 3.0,
+    max_relative_width_amplification_spread: Annotated[
+        float,
+        typer.Option(
+            "--max-relative-width-amplification-spread",
+            help="Maximum relative spread allowed in Rutherford-width amplification.",
+        ),
+    ] = 3.0,
 ) -> None:
     """Run seeded double-Harris resolution/time-step convergence scaffold."""
     _configure_validation_precision()
@@ -1452,10 +1467,90 @@ def benchmark_double_harris_convergence(
         min_max_growth_factor=min_max_growth_factor,
         max_relative_growth_rate_spread=max_relative_growth_rate_spread,
         max_relative_max_growth_spread=max_relative_max_growth_spread,
+        max_relative_flux_amplification_spread=max_relative_flux_amplification_spread,
+        max_relative_width_amplification_spread=max_relative_width_amplification_spread,
     )
     typer.echo(f"wrote {manifest_path}")
     if not validation["passed"]:
         raise typer.Exit(code=1)
+
+
+@benchmark_app.command("double-harris-promotion-check")
+def benchmark_double_harris_promotion_check(
+    run_dir: Annotated[
+        Path,
+        typer.Argument(help="Seeded double-Harris long-run directory."),
+    ],
+    outdir: Annotated[
+        Path | None,
+        typer.Option(
+            "--outdir",
+            help="Promotion-report directory; defaults to <run-dir>/promotion.",
+        ),
+    ] = None,
+    convergence_dirs: Annotated[
+        list[Path] | None,
+        typer.Option(
+            "--convergence-dir",
+            help="Double-Harris convergence evidence directory. Repeat for each sweep.",
+        ),
+    ] = None,
+    require_movies: Annotated[
+        bool,
+        typer.Option(
+            "--require-movies/--no-require-movies",
+            help="Require flux/current GIFs in the run bundle.",
+        ),
+    ] = True,
+    min_history_samples: Annotated[
+        int,
+        typer.Option("--min-history-samples", help="Minimum saved history samples."),
+    ] = 30,
+    min_convergence_dirs: Annotated[
+        int,
+        typer.Option("--min-convergence-dirs", help="Minimum convergence bundles."),
+    ] = 1,
+    min_t_end: Annotated[
+        float,
+        typer.Option("--min-t-end", help="Minimum terminal time for promotion."),
+    ] = 30.0,
+    min_reconnected_flux_amplification: Annotated[
+        float,
+        typer.Option(
+            "--min-reconnected-flux-amplification",
+            help="Minimum peak/initial reconnecting-flux response required.",
+        ),
+    ] = 1.05,
+    min_island_width_amplification: Annotated[
+        float,
+        typer.Option(
+            "--min-island-width-amplification",
+            help="Minimum peak/initial Rutherford island-width response required.",
+        ),
+    ] = 1.05,
+    max_relative_energy_increase: Annotated[
+        float,
+        typer.Option(
+            "--max-relative-energy-increase",
+            help="Maximum relative total-energy increase allowed.",
+        ),
+    ] = 1.0e-8,
+) -> None:
+    """Write a promotion-boundary report for seeded double-Harris evidence."""
+    manifest_path, validation = write_periodic_double_harris_promotion_report(
+        run_dir,
+        outdir=outdir,
+        convergence_dirs=tuple(convergence_dirs or ()),
+        require_movies=require_movies,
+        min_history_samples=min_history_samples,
+        min_convergence_dirs=min_convergence_dirs,
+        min_t_end=min_t_end,
+        min_reconnected_flux_amplification=min_reconnected_flux_amplification,
+        min_island_width_amplification=min_island_width_amplification,
+        max_relative_energy_increase=max_relative_energy_increase,
+    )
+    typer.echo(f"wrote {manifest_path}")
+    _exit_if_validation_failed(validation, context="double-harris-promotion-check")
 
 
 @benchmark_app.command("nonlinear-energy-budget")

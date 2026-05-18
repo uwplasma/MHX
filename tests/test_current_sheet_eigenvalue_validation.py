@@ -12,7 +12,9 @@ from mhx.benchmarks import (
     PERIODIC_CURRENT_SHEET_TIMEDOMAIN_SCHEMA,
     PERIODIC_DOUBLE_HARRIS_CONVERGENCE_SCHEMA,
     PERIODIC_DOUBLE_HARRIS_NONLINEAR_GROWTH_SCHEMA,
+    PERIODIC_DOUBLE_HARRIS_PROMOTION_SCHEMA,
     PERIODIC_DOUBLE_HARRIS_SEEDED_LONG_RUN_SCHEMA,
+    assess_periodic_double_harris_promotion,
     double_harris_seeded_long_run_presets,
     run_periodic_current_sheet_eigenvalue_validation,
     run_periodic_current_sheet_nonlinear_bridge_validation,
@@ -25,6 +27,7 @@ from mhx.benchmarks import (
     write_periodic_current_sheet_timedomain_validation,
     write_periodic_double_harris_convergence_validation,
     write_periodic_double_harris_nonlinear_growth_validation,
+    write_periodic_double_harris_promotion_report,
     write_periodic_double_harris_seeded_long_run_validation,
 )
 from mhx.cli.main import app
@@ -294,6 +297,22 @@ def test_periodic_double_harris_convergence_gate() -> None:
         <= thresholds["max_relative_max_growth_spread"]
     )
     assert (
+        diagnostics["resolution_flux_amplification_spread"]
+        <= thresholds["max_relative_flux_amplification_spread"]
+    )
+    assert (
+        diagnostics["timestep_flux_amplification_spread"]
+        <= thresholds["max_relative_flux_amplification_spread"]
+    )
+    assert (
+        diagnostics["resolution_width_amplification_spread"]
+        <= thresholds["max_relative_width_amplification_spread"]
+    )
+    assert (
+        diagnostics["timestep_width_amplification_spread"]
+        <= thresholds["max_relative_width_amplification_spread"]
+    )
+    assert (
         diagnostics["timestep_max_growth_spread"]
         <= thresholds["max_relative_max_growth_spread"]
     )
@@ -351,6 +370,14 @@ def test_periodic_double_harris_convergence_rejects_invalid_inputs() -> None:
     with pytest.raises(ValueError, match="max_relative_max_growth_spread"):
         run_periodic_double_harris_convergence_validation(
             max_relative_max_growth_spread=0.0
+        )
+    with pytest.raises(ValueError, match="max_relative_flux_amplification_spread"):
+        run_periodic_double_harris_convergence_validation(
+            max_relative_flux_amplification_spread=0.0
+        )
+    with pytest.raises(ValueError, match="max_relative_width_amplification_spread"):
+        run_periodic_double_harris_convergence_validation(
+            max_relative_width_amplification_spread=0.0
         )
 
 
@@ -581,6 +608,87 @@ def test_write_periodic_double_harris_convergence_artifacts_and_cli(tmp_path) ->
             "3",
             "--max-relative-growth-rate-spread",
             "2.0",
+        ],
+    )
+    assert cli_result.exit_code == 0, cli_result.stdout
+    assert (outdir / "validation.json").exists()
+
+
+def test_write_periodic_double_harris_promotion_report_and_cli(tmp_path) -> None:
+    run_dir = tmp_path / "long-run"
+    convergence_dir = tmp_path / "convergence"
+    write_periodic_double_harris_seeded_long_run_validation(
+        run_dir,
+        shape=(16, 16),
+        t_end=10.0,
+        save_every=100,
+        fit_window=(0.0, 6.0),
+        min_max_growth_factor=1.2,
+    )
+    write_periodic_double_harris_convergence_validation(
+        convergence_dir,
+        resolutions=(16, 18),
+        dt_values=(0.02, 0.01),
+        reference_resolution=16,
+        t_end=6.0,
+        fit_window=(0.0, 3.0),
+        max_relative_growth_rate_spread=2.0,
+    )
+
+    assessment = assess_periodic_double_harris_promotion(
+        run_dir,
+        convergence_dirs=(convergence_dir,),
+        require_movies=False,
+        min_history_samples=3,
+        min_t_end=10.0,
+    )
+    assert assessment.diagnostics["schema"] == PERIODIC_DOUBLE_HARRIS_PROMOTION_SCHEMA
+    assert assessment.validation["passed"] is True
+    assert assessment.validation["checks"]["convergence_bundles_passed"] is True
+    assert assessment.diagnostics["reconnected_flux_amplification"] > 1.0
+    assert assessment.diagnostics["island_width_amplification"] > 1.0
+
+    manifest_path, validation = write_periodic_double_harris_promotion_report(
+        run_dir,
+        convergence_dirs=(convergence_dir,),
+        require_movies=False,
+        min_history_samples=3,
+        min_t_end=10.0,
+    )
+    assert manifest_path == run_dir / "promotion" / "manifest.json"
+    assert validation["passed"] is True
+    assert (run_dir / "promotion" / "promotion_readiness.json").exists()
+    assert (run_dir / "promotion" / "figures" / "promotion_matrix.png").stat().st_size > 0
+    readiness = json.loads((run_dir / "promotion" / "promotion_readiness.json").read_text())
+    assert readiness["promotion_ready"] is True
+    assert readiness["claim_level_if_passed"] == "validation"
+
+    failing = assess_periodic_double_harris_promotion(
+        run_dir,
+        require_movies=False,
+        min_history_samples=3,
+        min_t_end=10.0,
+        min_convergence_dirs=1,
+    )
+    assert failing.validation["passed"] is False
+    assert failing.validation["checks"]["convergence_bundle_count"] is False
+
+    outdir = tmp_path / "cli-promotion"
+    cli_result = CliRunner().invoke(
+        app,
+        [
+            "benchmark",
+            "double-harris-promotion-check",
+            str(run_dir),
+            "--outdir",
+            str(outdir),
+            "--convergence-dir",
+            str(convergence_dir),
+            "--no-require-movies",
+            "--min-history-samples",
+            "3",
+            "--min-t-end",
+            "10",
         ],
     )
     assert cli_result.exit_code == 0, cli_result.stdout
