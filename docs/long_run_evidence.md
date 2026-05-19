@@ -1,10 +1,11 @@
 # Long-run evidence
 
-This page records the first real nonlinear runs executed under a 30-minute
-single-run budget. The evidence is useful, but the interpretation is deliberately
-skeptical: these runs validate long integration, checkpointing, media, and
-nonlinear budget gates; they do **not** yet demonstrate Rutherford growth or
-plasmoid onset.
+This page records nonlinear evidence available at commit `3f99c08`, including
+30-minute-budget long runs, double-Harris validation promotion/convergence
+bundles, and deliberately skeptical interpretation. These runs validate long
+integration, checkpointing, media, nonlinear budget gates, and bounded
+current-sheet response diagnostics; they do **not** yet demonstrate Rutherford
+growth or plasmoid onset.
 
 ## Reproducible command sequence
 
@@ -289,8 +290,9 @@ The same convergence code path was also run on a bounded GPU-assisted medium
 sweep (`32/48/64`, `t_end=16`, `dt=0.02/0.01`). It passed with fitted growth
 rates `0.1970–0.1978`, maximum amplification `7.886–7.899`, zero measured
 relative energy increase, `0.41%` resolution growth-rate spread, and
-effectively zero time-step spread. This strengthens validation evidence while
-remaining below production claim level.
+effectively zero time-step spread. This is no longer just a placeholder for a
+future script: it is convergence-backed validation evidence while remaining
+below production claim level.
 
 ![Medium GPU-assisted double-Harris convergence sweep](_static/validation/long_runs/double_harris_convergence_gpu_n32_48_64_t16/periodic_double_harris_convergence.png)
 
@@ -300,8 +302,12 @@ These runs support:
 
 - long-run stability of the current reduced-MHD code path;
 - production-executor artifact correctness under a completed duration target;
-- nonlinear energy/dissipation-budget correctness for an active nonlinear state.
-- early seeded-growth response for a periodic double-Harris current-sheet replay.
+- nonlinear energy/dissipation-budget correctness for an active nonlinear state;
+- early seeded-growth response for a periodic double-Harris current-sheet replay;
+- double-Harris promotion and convergence reports as validation-only claim
+  boundaries.
+- forced turbulent-reconnection readiness reports as validation-only proxy
+  boundaries.
 - explicit evidence that execution-level validation and production promotion are
   separate gates.
 
@@ -312,9 +318,16 @@ These runs do not yet support:
 - Sweet-Parker reconnection-rate scaling;
 - publication-grade reconnection claims.
 
-The next required physics step is no longer a single missing script: MHX now
-ships a FAST double-Harris convergence scaffold that sweeps tiny resolution and
-time-step cases and gates spread in early growth/amplification. To promote the
-result to production physics, extend that scaffold to larger resolution, seed
-amplitude/mode, sheet width/aspect ratio, Lundquist number, and duration sweeps,
-then promote only the figures whose scalings survive the full campaign.
+The next required physics step is no longer scaffolding. MHX now has
+double-Harris promotion/convergence validation evidence and a forced
+turbulent-reconnection readiness gate. To promote either family to production
+physics, extend the existing gates to larger resolution, seed amplitude/mode,
+sheet width/aspect ratio, Lundquist number, and duration sweeps, then promote
+only the figures whose scalings survive the full campaign.
+
+Source anchors:
+
+- [double-Harris and current-sheet validation](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/current_sheet.py)
+- [forced turbulent-reconnection readiness](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/turbulence.py)
+- [critical-point diagnostics](https://github.com/uwplasma/MHX/blob/main/src/mhx/diagnostics/critical_points.py)
+- [promotion CLI wiring](https://github.com/uwplasma/MHX/blob/main/src/mhx/cli/main.py)

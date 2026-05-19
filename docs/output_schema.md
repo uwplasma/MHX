@@ -179,6 +179,10 @@ write:
 | `artifact_manifest.json` | Recursive hashes for the readiness bundle. |
 | `manifest.json` | `claim_level = validation`; this command deliberately cannot promote the artifact to 3-D LV99 or production turbulent-reconnection evidence. |
 
+The validation suite records this readiness check as its own required
+public-release case (`forced_turbulent_reconnection_readiness`) so release
+readiness cannot pass on the trajectory artifact alone.
+
 ### Rutherford production execution
 
 `mhx campaign rutherford-execute <run-dir>` writes:
@@ -597,6 +601,31 @@ writes:
   `max_kinetic_energy`.
 - `figures/periodic_double_harris_convergence.png`: resolution/time-step
   `gamma_fit`, nonlinear amplification, energy, and peak-current panels.
+
+## Periodic double-Harris parameter-sweep outputs
+
+`mhx benchmark double-harris-parameter-sweep --outdir outputs/benchmarks/periodic_double_harris_parameter_sweep`
+writes:
+
+- `diagnostics.json`: parameter-sweep diagnostics with schema
+  `mhx.validation.periodic_double_harris_parameter_sweep.v1`, including
+  `sweep_axis`, case labels, fixed baseline parameters, per-case response
+  metrics, and anomaly-scale spread statistics.
+- `validation.json`: pass/fail gates for finite case metrics, at least three
+  cases, successful subcase gates, positive early growth, visible nonlinear
+  response, reconnecting-flux amplification, island-width amplification,
+  dissipative energy, and bounded anomaly spreads.
+- `periodic_double_harris_parameter_sweep.npz`: stable keys `schema`,
+  `sweep_axis`, `case_index`, `case_label`, `mode_x`, `mode_y`, `width`,
+  `resistivity`, `viscosity`, `dt`, `t_end`, `save_every`, `samples`,
+  `passed`, `fitted_early_growth_rate`, `early_growth_factor`,
+  `max_growth_factor`, `reconnected_flux_amplification`,
+  `seed_mode_reconnected_flux_amplification`,
+  `island_width_amplification`, `relative_energy_increase`,
+  `max_current_density_linf`, `max_kinetic_energy`, `max_x_point_count`,
+  `max_o_point_count`, `growth_rate_spread`, and `max_growth_spread`.
+- `figures/periodic_double_harris_parameter_sweep.png`: fitted-growth,
+  amplification, energy, current-density, and X/O-count panels.
 
 ## Periodic double-Harris promotion report
 

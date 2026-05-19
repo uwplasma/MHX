@@ -35,9 +35,10 @@ boundaries.
 
 MHX currently supports deterministic reduced-MHD validation for spectral
 operators, resistive decay, finite-domain Harris tearing checks, nonlinear
-energy/dissipation budgets, Orszag--Tang vortex media, bounded double-Harris
-and Rutherford execution-path checks, and seed-robust QI plus latent-ODE
-workflow tests on small datasets.
+energy/dissipation budgets, Orszag--Tang vortex media, forced
+turbulent-reconnection readiness checks, bounded double-Harris promotion and
+convergence evidence, Rutherford execution-path checks, and seed-robust QI plus
+latent-ODE workflow tests on small datasets.
 
 Current results should be read at their manifest claim level. MHX does **not**
 yet claim converged Rutherford island growth, Sweet-Parker plasmoid chains,
@@ -97,6 +98,7 @@ print(manifest, cfg.physics.model)
 | Guided tutorial | [docs/tutorial.md](docs/tutorial.md) |
 | Media sources and claim boundaries | [docs/media.md](docs/media.md) |
 | Physics validation details | [docs/validation.md](docs/validation.md) |
+| Reviewer evidence and claim boundaries | [docs/reviewer_evidence.md](docs/reviewer_evidence.md), [docs/publication_checklist.md](docs/publication_checklist.md) |
 | Benchmark commands and expected artifacts | [docs/benchmarks.md](docs/benchmarks.md) |
 | Diagnostics and output schemas | [docs/diagnostics.md](docs/diagnostics.md), [docs/output_schema.md](docs/output_schema.md) |
 | Neural-ODE reproducibility | [docs/neural_ode_reproducibility.md](docs/neural_ode_reproducibility.md) |

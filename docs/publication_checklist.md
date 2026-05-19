@@ -30,7 +30,8 @@ Every figure included in the paper-style documentation should have:
 | Periodic current sheet | `periodic_current_sheet_spectrum.png`, `periodic_current_sheet_timedomain.png`, `periodic_current_sheet_nonlinear_bridge.png` | `validation` | Ready as operator and differentiability gates. |
 | Periodic double-Harris growth | `periodic_double_harris_nonlinear_growth.png` | `validation` | Ready as small-grid instability-path evidence; not a Rutherford/plasmoid production claim. |
 | Seeded double-Harris long run | `periodic_double_harris_seeded_long_run.png`, optional flux/current GIFs | `validation` | Ready as bounded nonlinear evidence with early growth, response amplification, X/O counts, and dissipative energy; production claims still need seed/aspect-ratio/Lundquist sweeps. |
-| Seeded double-Harris convergence | `periodic_double_harris_convergence.png` | `validation` | Ready as a resolution/time-step scaffold, including the medium GPU-assisted `32/48/64` sweep; still not production plasmoid/Rutherford evidence. |
+| Seeded double-Harris convergence | `periodic_double_harris_convergence.png` | `validation` | Ready as convergence-backed validation evidence, including the medium GPU-assisted `32/48/64` sweep; still not production plasmoid/Rutherford evidence. |
+| Seeded double-Harris parameter sweep | `periodic_double_harris_parameter_sweep.png` | `validation` | Ready as finite-response robustness evidence across mode/width/resistivity sweeps; still not a scaling-law or production reconnection claim. |
 | Seeded double-Harris promotion report | `promotion_matrix.png`, `promotion_readiness.json` | `validation` only | Ready as the boundary between single-run media and convergence-backed validation evidence; not a production physics gate. |
 | Nonlinear energy budget | `nonlinear_energy_budget.png` | `validation` | Ready as nonlinear conservation/dissipation evidence. |
 | Orszag--Tang vortex media | `orszag_tang_summary.png`, optional flux/current/vorticity GIFs | `validation` | Ready as nonlinear reduced-MHD morphology and high-$k$ transfer evidence, not full-MHD shock validation. |
@@ -82,10 +83,10 @@ long-run gate:
 ```
 
 The current nonlinear evidence boundary is the double-Harris promotion report
-plus the medium GPU-assisted resolution/time-step scaffold:
+plus the medium GPU-assisted resolution/time-step validation sweep:
 
 ```{image} _static/validation/periodic_double_harris_convergence/periodic_double_harris_convergence.png
-:alt: Seeded periodic double-Harris convergence scaffold
+:alt: Seeded periodic double-Harris convergence evidence
 :width: 760px
 ```
 
@@ -103,8 +104,9 @@ The most important claim-boundary figure is the nonlinear duration audit:
 
 These claim-boundary figures should be shown together in reviewer discussions:
 one tearing benchmark, one nonlinear growth-path gate, one seeded long-run
-response plot, one convergence scaffold, one nonlinear identity, and one
-explicit warning that short nonlinear runs are not island/plasmoid evidence.
+response plot, one convergence-backed validation sweep, one nonlinear identity,
+and one explicit warning that short nonlinear runs are not island/plasmoid
+evidence.
 
 ## Nonlinear plot acceptance gates
 
@@ -166,6 +168,8 @@ The README currently ships validation/theory movies only:
 - [Validation media generator](https://github.com/uwplasma/MHX/blob/main/examples/make_validation_media.py)
 - [README media generator](https://github.com/uwplasma/MHX/blob/main/examples/make_readme_media.py)
 - [Figure manifest](figures/manifest.toml)
+- [Double-Harris validation and promotion checks](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/current_sheet.py)
+- [Forced turbulent-reconnection readiness](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/turbulence.py)
 - [Reduced-MHD plotting helpers](https://github.com/uwplasma/MHX/blob/main/src/mhx/plotting/reduced_mhd.py)
 - [Artifact manifests](https://github.com/uwplasma/MHX/blob/main/src/mhx/io/manifest.py)
 - [Docs-link tests](https://github.com/uwplasma/MHX/blob/main/tests/test_docs_links.py)

@@ -66,6 +66,15 @@ sources = ["src/mhx/benchmarks/current_sheet.py"]
 tests = ["tests/test_current_sheet_eigenvalue_validation.py"]
 
 [[figures]]
+id = "validation_double_harris_parameter_sweep"
+path = "docs/_static/validation/periodic_double_harris_parameter_sweep/periodic_double_harris_parameter_sweep.png"
+command = "mhx benchmark double-harris-parameter-sweep --sweep-axis width --widths 0.35,0.4,0.45 --t-end 6 --fit-stop 3"
+claim_level = "validation"
+claim_scope = "FAST mode/width/resistivity response sweep for seeded periodic double-Harris replay; not production scaling evidence."
+sources = ["src/mhx/benchmarks/current_sheet.py"]
+tests = ["tests/test_current_sheet_eigenvalue_validation.py"]
+
+[[figures]]
 id = "validation_double_harris_seeded_long_run_response"
 path = "docs/_static/validation/periodic_double_harris_seeded_long_run/figures/periodic_double_harris_seeded_long_run.png"
 command = "mhx benchmark double-harris-long-run --nx 64 --ny 64 --t-end 30 --save-every 100 --fit-stop 10 --movies"

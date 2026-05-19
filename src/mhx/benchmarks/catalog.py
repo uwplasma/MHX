@@ -416,6 +416,31 @@ def validation_catalog_entries() -> tuple[BenchmarkCatalogEntry, ...]:
             ),
         ),
         BenchmarkCatalogEntry(
+            name="periodic_double_harris_parameter_sweep",
+            command=(
+                "mhx benchmark double-harris-parameter-sweep "
+                "--outdir outputs/benchmarks/periodic_double_harris_parameter_sweep"
+            ),
+            schema="mhx.validation.periodic_double_harris_parameter_sweep.v1",
+            purpose=(
+                "Seeded double-Harris mode/width/resistivity response sweep. It "
+                "checks finite metrics, growth, reconnecting-flux amplification, "
+                "island-width amplification, energy monotonicity, and anomaly-scale "
+                "spreads across physically different FAST cases."
+            ),
+            expected_outputs=(
+                "diagnostics.json",
+                "validation.json",
+                "periodic_double_harris_parameter_sweep.npz",
+                "figures/periodic_double_harris_parameter_sweep.png",
+            ),
+            literature_anchor=(
+                "Seed-mode, sheet-width, and resistivity sweeps are a required "
+                "pre-publication step before interpreting current-sheet media as "
+                "FKR/Coppi, Rutherford, Sweet-Parker, or plasmoid evidence."
+            ),
+        ),
+        BenchmarkCatalogEntry(
             name="nonlinear_energy_budget",
             command=(
                 "mhx benchmark nonlinear-energy-budget "

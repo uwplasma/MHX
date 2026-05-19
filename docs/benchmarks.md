@@ -84,6 +84,11 @@ mhx validate all --outdir outputs/validation_suite
 mhx validate readiness --suite outputs/validation_suite --outdir outputs/validation_readiness
 ```
 
+`mhx validate all` includes the forced-turbulent-reconnection readiness check as
+a separate required public-release gate after generating a FAST forced run. This
+accounts for the validation-only claim boundary in release readiness while still
+leaving nonlinear publication claims blocked pending production evidence.
+
 The equation-heavy physics gates and still figures are on
 [validation.md](validation.md). Campaign scaffolds and restartable execution are
 documented in [campaigns.md](campaigns.md) and
@@ -329,6 +334,13 @@ The periodic double-Harris convergence command writes:
 - `validation.json`
 - `periodic_double_harris_convergence.npz`
 - `figures/periodic_double_harris_convergence.png`
+
+The periodic double-Harris parameter-sweep command writes:
+
+- `diagnostics.json`
+- `validation.json`
+- `periodic_double_harris_parameter_sweep.npz`
+- `figures/periodic_double_harris_parameter_sweep.png`
 
 The periodic double-Harris promotion checker writes:
 

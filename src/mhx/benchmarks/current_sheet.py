@@ -64,6 +64,9 @@ PERIODIC_DOUBLE_HARRIS_SEEDED_LONG_RUN_SCHEMA = (
 PERIODIC_DOUBLE_HARRIS_CONVERGENCE_SCHEMA = (
     "mhx.validation.periodic_double_harris_convergence.v1"
 )
+PERIODIC_DOUBLE_HARRIS_PARAMETER_SWEEP_SCHEMA = (
+    "mhx.validation.periodic_double_harris_parameter_sweep.v1"
+)
 PERIODIC_DOUBLE_HARRIS_PROMOTION_SCHEMA = (
     "mhx.validation.periodic_double_harris_promotion.v1"
 )
@@ -197,6 +200,40 @@ class PeriodicDoubleHarrisConvergenceResult:
     relative_energy_increase: np.ndarray
     max_current_density_linf: np.ndarray
     max_kinetic_energy: np.ndarray
+    diagnostics: dict[str, Any]
+    validation: dict[str, Any]
+
+
+@dataclass(frozen=True)
+class PeriodicDoubleHarrisParameterSweepResult:
+    """Parameter sweep for seeded periodic double-Harris nonlinear response."""
+
+    sweep_axis: str
+    case_index: np.ndarray
+    case_label: np.ndarray
+    mode_x: np.ndarray
+    mode_y: np.ndarray
+    width: np.ndarray
+    resistivity: np.ndarray
+    viscosity: np.ndarray
+    dt: np.ndarray
+    t_end: np.ndarray
+    save_every: np.ndarray
+    samples: np.ndarray
+    passed: np.ndarray
+    fitted_early_growth_rate: np.ndarray
+    early_growth_factor: np.ndarray
+    max_growth_factor: np.ndarray
+    reconnected_flux_amplification: np.ndarray
+    seed_mode_reconnected_flux_amplification: np.ndarray
+    island_width_amplification: np.ndarray
+    relative_energy_increase: np.ndarray
+    max_current_density_linf: np.ndarray
+    max_kinetic_energy: np.ndarray
+    max_x_point_count: np.ndarray
+    max_o_point_count: np.ndarray
+    growth_rate_spread: float
+    max_growth_spread: float
     diagnostics: dict[str, Any]
     validation: dict[str, Any]
 
@@ -1416,6 +1453,307 @@ def run_periodic_double_harris_convergence_validation(
     )
 
 
+def run_periodic_double_harris_parameter_sweep_validation(
+    *,
+    shape: tuple[int, int] = (16, 16),
+    sweep_axis: str = "width",
+    modes: tuple[tuple[int, int], ...] = ((2, 1), (2, 2), (4, 1)),
+    widths: tuple[float, ...] = (0.35, 0.4, 0.45),
+    resistivities: tuple[float, ...] = (4.0e-3, 5.0e-3, 6.0e-3),
+    viscosity_values: tuple[float, ...] | None = None,
+    width: float = 0.4,
+    amplitude: float = 1.0,
+    resistivity: float = 5.0e-3,
+    viscosity: float = 5.0e-3,
+    perturbation_amplitude: float = 1.0e-3,
+    perturbation_mode: tuple[int, int] = (2, 1),
+    dt: float = 1.0e-2,
+    t_end: float = 6.0,
+    save_interval: float = 1.0,
+    fit_window: tuple[float, float] = (0.0, 3.0),
+    min_saved_samples: int = 5,
+    min_early_growth_rate: float = 1.0e-3,
+    min_early_growth_factor: float = 1.01,
+    min_max_growth_factor: float = 1.05,
+    min_reconnected_flux_amplification: float = 1.01,
+    min_island_width_amplification: float = 1.01,
+    max_relative_energy_increase: float = 1.0e-8,
+    max_relative_growth_rate_spread: float = 10.0,
+    max_relative_max_growth_spread: float = 20.0,
+) -> PeriodicDoubleHarrisParameterSweepResult:
+    """Run a small physical-parameter sweep for seeded double-Harris response.
+
+    This gate is intentionally distinct from convergence: it checks that the
+    nonlinear response diagnostics remain finite, dissipative, and visibly
+    reconnecting over a deterministic family of seed modes, sheet widths, or
+    resistivities. The spread limits are anomaly checks, not claims that these
+    physically different cases should agree.
+    """
+    sweep_axis = sweep_axis.lower()
+    _validate_double_harris_parameter_sweep_inputs(
+        shape=shape,
+        sweep_axis=sweep_axis,
+        modes=modes,
+        widths=widths,
+        resistivities=resistivities,
+        viscosity_values=viscosity_values,
+        width=width,
+        amplitude=amplitude,
+        resistivity=resistivity,
+        viscosity=viscosity,
+        perturbation_amplitude=perturbation_amplitude,
+        perturbation_mode=perturbation_mode,
+        dt=dt,
+        t_end=t_end,
+        save_interval=save_interval,
+        fit_window=fit_window,
+        min_saved_samples=min_saved_samples,
+        min_early_growth_rate=min_early_growth_rate,
+        min_early_growth_factor=min_early_growth_factor,
+        min_max_growth_factor=min_max_growth_factor,
+        min_reconnected_flux_amplification=min_reconnected_flux_amplification,
+        min_island_width_amplification=min_island_width_amplification,
+        max_relative_energy_increase=max_relative_energy_increase,
+        max_relative_growth_rate_spread=max_relative_growth_rate_spread,
+        max_relative_max_growth_spread=max_relative_max_growth_spread,
+    )
+    cases: list[dict[str, Any]] = []
+    save_every = _save_every_for_interval(dt, save_interval)
+    if sweep_axis == "mode":
+        sweep_specs = [
+            (f"mode=({mode_x},{mode_y})", (mode_x, mode_y), width, resistivity, viscosity)
+            for mode_x, mode_y in modes
+        ]
+    elif sweep_axis == "width":
+        sweep_specs = [
+            (f"width={case_width:g}", perturbation_mode, case_width, resistivity, viscosity)
+            for case_width in widths
+        ]
+    else:
+        case_viscosities = viscosity_values if viscosity_values is not None else resistivities
+        sweep_specs = [
+            (
+                f"eta={case_resistivity:g},nu={case_viscosity:g}",
+                perturbation_mode,
+                width,
+                case_resistivity,
+                case_viscosity,
+            )
+            for case_resistivity, case_viscosity in zip(
+                resistivities,
+                case_viscosities,
+                strict=True,
+            )
+        ]
+    for label, case_mode, case_width, case_resistivity, case_viscosity in sweep_specs:
+        result = run_periodic_double_harris_seeded_long_run_validation(
+            shape=shape,
+            width=case_width,
+            amplitude=amplitude,
+            resistivity=case_resistivity,
+            viscosity=case_viscosity,
+            perturbation_amplitude=perturbation_amplitude,
+            perturbation_mode=case_mode,
+            dt=dt,
+            t_end=t_end,
+            save_every=save_every,
+            fit_window=fit_window,
+            duration_label="fast_validation",
+            min_saved_samples=min_saved_samples,
+            min_early_growth_rate=min_early_growth_rate,
+            min_early_growth_factor=min_early_growth_factor,
+            min_max_growth_factor=min_max_growth_factor,
+            min_reconnected_flux_amplification=min_reconnected_flux_amplification,
+            min_island_width_amplification=min_island_width_amplification,
+            max_relative_energy_increase=max_relative_energy_increase,
+        )
+        cases.append(
+            _double_harris_parameter_sweep_case(
+                label,
+                mode=case_mode,
+                width=case_width,
+                resistivity=case_resistivity,
+                viscosity=case_viscosity,
+                dt=dt,
+                t_end=t_end,
+                save_every=save_every,
+                result=result,
+            )
+        )
+
+    case_index = np.arange(len(cases), dtype=np.int64)
+    case_label = np.asarray([case["case_label"] for case in cases])
+    mode_x = np.asarray([case["mode_x"] for case in cases], dtype=np.int64)
+    mode_y = np.asarray([case["mode_y"] for case in cases], dtype=np.int64)
+    width_values = np.asarray([case["width"] for case in cases], dtype=np.float64)
+    resistivity_values = np.asarray(
+        [case["resistivity"] for case in cases],
+        dtype=np.float64,
+    )
+    viscosity_array = np.asarray([case["viscosity"] for case in cases], dtype=np.float64)
+    dt_values = np.asarray([case["dt"] for case in cases], dtype=np.float64)
+    t_end_values = np.asarray([case["t_end"] for case in cases], dtype=np.float64)
+    save_every_values = np.asarray([case["save_every"] for case in cases], dtype=np.int64)
+    samples = np.asarray([case["samples"] for case in cases], dtype=np.int64)
+    passed = np.asarray([case["passed"] for case in cases], dtype=bool)
+    growth_rate = np.asarray(
+        [case["fitted_early_growth_rate"] for case in cases],
+        dtype=np.float64,
+    )
+    early_growth = np.asarray(
+        [case["early_growth_factor"] for case in cases],
+        dtype=np.float64,
+    )
+    max_growth = np.asarray([case["max_growth_factor"] for case in cases], dtype=np.float64)
+    flux_amplification = np.asarray(
+        [case["reconnected_flux_amplification"] for case in cases],
+        dtype=np.float64,
+    )
+    seed_flux_amplification = np.asarray(
+        [case["seed_mode_reconnected_flux_amplification"] for case in cases],
+        dtype=np.float64,
+    )
+    island_width_amplification = np.asarray(
+        [case["island_width_amplification"] for case in cases],
+        dtype=np.float64,
+    )
+    energy_increase = np.asarray(
+        [case["relative_energy_increase"] for case in cases],
+        dtype=np.float64,
+    )
+    max_current = np.asarray(
+        [case["max_current_density_linf"] for case in cases],
+        dtype=np.float64,
+    )
+    max_kinetic = np.asarray(
+        [case["max_kinetic_energy"] for case in cases],
+        dtype=np.float64,
+    )
+    max_x_points = np.asarray([case["max_x_point_count"] for case in cases], dtype=np.int64)
+    max_o_points = np.asarray([case["max_o_point_count"] for case in cases], dtype=np.int64)
+    growth_rate_spread = _relative_spread(growth_rate)
+    max_growth_spread = _relative_spread(max_growth)
+    checks = {
+        "finite_case_metrics": bool(
+            np.isfinite(growth_rate).all()
+            and np.isfinite(early_growth).all()
+            and np.isfinite(max_growth).all()
+            and np.isfinite(flux_amplification).all()
+            and np.isfinite(seed_flux_amplification).all()
+            and np.isfinite(island_width_amplification).all()
+            and np.isfinite(energy_increase).all()
+            and np.isfinite(max_current).all()
+            and np.isfinite(max_kinetic).all()
+        ),
+        "case_count_at_least_three": len(cases) >= 3,
+        "all_subcases_passed": bool(np.all(passed)),
+        "early_growth_positive_all": bool(np.all(growth_rate >= min_early_growth_rate)),
+        "visible_growth_all": bool(np.all(max_growth >= min_max_growth_factor)),
+        "reconnected_flux_amplifies_all": bool(
+            np.all(flux_amplification >= min_reconnected_flux_amplification)
+        ),
+        "island_width_amplifies_all": bool(
+            np.all(island_width_amplification >= min_island_width_amplification)
+        ),
+        "energy_dissipative_all": bool(
+            np.all(energy_increase <= max_relative_energy_increase)
+        ),
+        "growth_rate_spread_bounded": growth_rate_spread
+        <= max_relative_growth_rate_spread,
+        "max_growth_spread_bounded": max_growth_spread
+        <= max_relative_max_growth_spread,
+    }
+    diagnostics = {
+        "schema": PERIODIC_DOUBLE_HARRIS_PARAMETER_SWEEP_SCHEMA,
+        "equilibrium": "periodic_double_harris",
+        "shape": list(shape),
+        "sweep_axis": sweep_axis,
+        "case_count": len(cases),
+        "modes": [list(mode) for mode in modes],
+        "widths": list(widths),
+        "resistivities": list(resistivities),
+        "viscosity_values": (
+            list(viscosity_values) if viscosity_values is not None else None
+        ),
+        "width": width,
+        "amplitude": amplitude,
+        "resistivity": resistivity,
+        "viscosity": viscosity,
+        "perturbation_amplitude": perturbation_amplitude,
+        "perturbation_mode": list(perturbation_mode),
+        "dt": dt,
+        "t_end": t_end,
+        "save_interval": save_interval,
+        "save_every": save_every,
+        "fit_window": list(fit_window),
+        "growth_rate_spread": growth_rate_spread,
+        "max_growth_spread": max_growth_spread,
+        "min_growth_rate": float(np.min(growth_rate)),
+        "min_max_growth_factor_observed": float(np.min(max_growth)),
+        "max_relative_energy_increase_observed": float(np.max(energy_increase)),
+        "cases": cases,
+        "references": {
+            "scope": (
+                "Deterministic seeded double-Harris parameter sweep for nonlinear "
+                "response diagnostics. This is a validation-only anomaly gate, "
+                "not a production FKR, Rutherford, Sweet-Parker, or plasmoid claim."
+            ),
+            "literature": (
+                "Anchored to Harris current-sheet validation practice: seed-mode, "
+                "sheet-width, and resistivity sweeps are required before promoting "
+                "single-run media to physics claims."
+            ),
+        },
+    }
+    validation = {
+        "schema": "mhx.validation.periodic_double_harris_parameter_sweep.gates.v1",
+        "passed": all(checks.values()),
+        "checks": checks,
+        "thresholds": {
+            "min_saved_samples": min_saved_samples,
+            "min_early_growth_rate": min_early_growth_rate,
+            "min_early_growth_factor": min_early_growth_factor,
+            "min_max_growth_factor": min_max_growth_factor,
+            "min_reconnected_flux_amplification": min_reconnected_flux_amplification,
+            "min_island_width_amplification": min_island_width_amplification,
+            "max_relative_energy_increase": max_relative_energy_increase,
+            "max_relative_growth_rate_spread": max_relative_growth_rate_spread,
+            "max_relative_max_growth_spread": max_relative_max_growth_spread,
+        },
+        "diagnostics": diagnostics,
+    }
+    return PeriodicDoubleHarrisParameterSweepResult(
+        sweep_axis=sweep_axis,
+        case_index=case_index,
+        case_label=case_label,
+        mode_x=mode_x,
+        mode_y=mode_y,
+        width=width_values,
+        resistivity=resistivity_values,
+        viscosity=viscosity_array,
+        dt=dt_values,
+        t_end=t_end_values,
+        save_every=save_every_values,
+        samples=samples,
+        passed=passed,
+        fitted_early_growth_rate=growth_rate,
+        early_growth_factor=early_growth,
+        max_growth_factor=max_growth,
+        reconnected_flux_amplification=flux_amplification,
+        seed_mode_reconnected_flux_amplification=seed_flux_amplification,
+        island_width_amplification=island_width_amplification,
+        relative_energy_increase=energy_increase,
+        max_current_density_linf=max_current,
+        max_kinetic_energy=max_kinetic,
+        max_x_point_count=max_x_points,
+        max_o_point_count=max_o_points,
+        growth_rate_spread=growth_rate_spread,
+        max_growth_spread=max_growth_spread,
+        diagnostics=diagnostics,
+        validation=validation,
+    )
+
+
 def assess_periodic_double_harris_promotion(
     run_dir: str | Path,
     *,
@@ -2103,6 +2441,83 @@ def write_periodic_double_harris_convergence_validation(
     return manifest_path, result.validation
 
 
+def write_periodic_double_harris_parameter_sweep_validation(
+    outdir: str | Path,
+    **kwargs: Any,
+) -> tuple[Path, dict[str, Any]]:
+    """Write seeded double-Harris parameter-sweep JSON, NPZ, figure, and manifest."""
+    output_dir = Path(outdir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    result = run_periodic_double_harris_parameter_sweep_validation(**kwargs)
+
+    diagnostics_path = output_dir / "diagnostics.json"
+    validation_path = output_dir / "validation.json"
+    history_path = output_dir / "periodic_double_harris_parameter_sweep.npz"
+    manifest_path = output_dir / "manifest.json"
+    diagnostics_path.write_text(
+        json.dumps(result.diagnostics, indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+    validation_path.write_text(
+        json.dumps(result.validation, indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+    np.savez_compressed(
+        history_path,
+        schema=PERIODIC_DOUBLE_HARRIS_PARAMETER_SWEEP_SCHEMA,
+        sweep_axis=result.sweep_axis,
+        case_index=result.case_index,
+        case_label=result.case_label,
+        mode_x=result.mode_x,
+        mode_y=result.mode_y,
+        width=result.width,
+        resistivity=result.resistivity,
+        viscosity=result.viscosity,
+        dt=result.dt,
+        t_end=result.t_end,
+        save_every=result.save_every,
+        samples=result.samples,
+        passed=result.passed,
+        fitted_early_growth_rate=result.fitted_early_growth_rate,
+        early_growth_factor=result.early_growth_factor,
+        max_growth_factor=result.max_growth_factor,
+        reconnected_flux_amplification=result.reconnected_flux_amplification,
+        seed_mode_reconnected_flux_amplification=(
+            result.seed_mode_reconnected_flux_amplification
+        ),
+        island_width_amplification=result.island_width_amplification,
+        relative_energy_increase=result.relative_energy_increase,
+        max_current_density_linf=result.max_current_density_linf,
+        max_kinetic_energy=result.max_kinetic_energy,
+        max_x_point_count=result.max_x_point_count,
+        max_o_point_count=result.max_o_point_count,
+        growth_rate_spread=result.growth_rate_spread,
+        max_growth_spread=result.max_growth_spread,
+    )
+    figure_path = _write_double_harris_parameter_sweep_figure(
+        output_dir / "figures" / "periodic_double_harris_parameter_sweep.png",
+        result,
+    )
+    write_manifest(
+        manifest_path,
+        config=result.diagnostics,
+        outputs={
+            "diagnostics": diagnostics_path.name,
+            "validation": validation_path.name,
+            "history": history_path.name,
+            "periodic_double_harris_parameter_sweep": str(
+                figure_path.relative_to(output_dir)
+            ),
+        },
+        claim_level="validation",
+        claim_scope=(
+            "Seeded periodic double-Harris parameter sweep with finite, dissipative "
+            "response diagnostics; not a production FKR/Rutherford/plasmoid claim."
+        ),
+    )
+    return manifest_path, result.validation
+
+
 def _dense_matrix(operator) -> np.ndarray:
     vector_size = int(operator.shape[0])
     basis = np.eye(vector_size, dtype=np.float64)
@@ -2502,6 +2917,113 @@ def _double_harris_convergence_case(
     }
 
 
+def _double_harris_parameter_sweep_case(
+    label: str,
+    *,
+    mode: tuple[int, int],
+    width: float,
+    resistivity: float,
+    viscosity: float,
+    dt: float,
+    t_end: float,
+    save_every: int,
+    result: PeriodicDoubleHarrisSeededLongRunResult,
+) -> dict[str, Any]:
+    diagnostics = result.diagnostics
+    return {
+        "case_label": label,
+        "mode_x": int(mode[0]),
+        "mode_y": int(mode[1]),
+        "width": float(width),
+        "resistivity": float(resistivity),
+        "viscosity": float(viscosity),
+        "dt": float(dt),
+        "t_end": float(t_end),
+        "save_every": int(save_every),
+        "samples": int(diagnostics["samples"]),
+        "fitted_early_growth_rate": float(result.fitted_early_growth_rate),
+        "early_growth_factor": float(result.early_growth_factor),
+        "max_growth_factor": float(result.max_growth_factor),
+        "reconnected_flux_amplification": float(result.reconnected_flux_amplification),
+        "seed_mode_reconnected_flux_amplification": float(
+            diagnostics["seed_mode_reconnected_flux_amplification"]
+        ),
+        "island_width_amplification": float(result.island_width_amplification),
+        "relative_energy_increase": float(diagnostics["relative_energy_increase"]),
+        "max_current_density_linf": float(diagnostics["max_current_density_linf"]),
+        "max_kinetic_energy": float(diagnostics["max_kinetic_energy"]),
+        "max_x_point_count": int(diagnostics["max_x_point_count"]),
+        "max_o_point_count": int(diagnostics["max_o_point_count"]),
+        "passed": bool(result.validation["passed"]),
+        "failed_checks": [
+            name
+            for name, passed in result.validation["checks"].items()
+            if not bool(passed)
+        ],
+    }
+
+
+def _write_double_harris_parameter_sweep_figure(
+    path: Path,
+    result: PeriodicDoubleHarrisParameterSweepResult,
+) -> Path:
+    import matplotlib.pyplot as plt
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    labels = [str(label) for label in result.case_label.tolist()]
+    indices = np.arange(len(labels))
+    fig, axes = plt.subplots(2, 2, figsize=(10.5, 7.5), constrained_layout=True)
+    axes[0, 0].plot(indices, result.fitted_early_growth_rate, "o-", color="tab:blue")
+    axes[0, 0].set_title("early fitted growth")
+    axes[0, 0].set_ylabel(r"$\hat{\gamma}$")
+    axes[0, 0].grid(True, alpha=0.3)
+
+    axes[0, 1].plot(indices, result.max_growth_factor, "o-", label="state norm")
+    axes[0, 1].plot(
+        indices,
+        result.reconnected_flux_amplification,
+        "s-",
+        label="dominant flux",
+    )
+    axes[0, 1].plot(
+        indices,
+        result.island_width_amplification,
+        "^-",
+        label="island width",
+    )
+    axes[0, 1].set_title("response amplification")
+    axes[0, 1].set_yscale("log")
+    axes[0, 1].legend(fontsize="small")
+    axes[0, 1].grid(True, alpha=0.3)
+
+    axes[1, 0].plot(
+        indices,
+        result.relative_energy_increase,
+        "o-",
+        color="tab:green",
+        label="relative energy increase",
+    )
+    axes[1, 0].set_title("energy gate")
+    axes[1, 0].set_ylabel("relative increase")
+    axes[1, 0].grid(True, alpha=0.3)
+    axes[1, 0].ticklabel_format(axis="y", style="sci", scilimits=(-2, 2))
+
+    axes[1, 1].plot(indices, result.max_current_density_linf, "o-", label=r"$||j||_\infty$")
+    axes[1, 1].plot(indices, result.max_x_point_count, "s-", label="max X count")
+    axes[1, 1].plot(indices, result.max_o_point_count, "^-", label="max O count")
+    axes[1, 1].set_title("current and critical points")
+    axes[1, 1].legend(fontsize="small")
+    axes[1, 1].grid(True, alpha=0.3)
+
+    for axis in axes.ravel():
+        axis.set_xticks(indices)
+        axis.set_xticklabels(labels, rotation=25, ha="right")
+    fig.suptitle(f"Seeded double-Harris parameter sweep: {result.sweep_axis}")
+    fig.savefig(path, dpi=180)
+    plt.close(fig)
+    return path
+
+
 def _save_every_for_interval(dt: float, save_interval: float) -> int:
     return max(1, int(round(save_interval / dt)))
 
@@ -2813,3 +3335,115 @@ def _validate_double_harris_convergence_inputs(
         raise ValueError("max_relative_flux_amplification_spread must be positive")
     if max_relative_width_amplification_spread <= 0.0:
         raise ValueError("max_relative_width_amplification_spread must be positive")
+
+
+def _validate_double_harris_parameter_sweep_inputs(
+    *,
+    shape: tuple[int, int],
+    sweep_axis: str,
+    modes: tuple[tuple[int, int], ...],
+    widths: tuple[float, ...],
+    resistivities: tuple[float, ...],
+    viscosity_values: tuple[float, ...] | None,
+    width: float,
+    amplitude: float,
+    resistivity: float,
+    viscosity: float,
+    perturbation_amplitude: float,
+    perturbation_mode: tuple[int, int],
+    dt: float,
+    t_end: float,
+    save_interval: float,
+    fit_window: tuple[float, float],
+    min_saved_samples: int,
+    min_early_growth_rate: float,
+    min_early_growth_factor: float,
+    min_max_growth_factor: float,
+    min_reconnected_flux_amplification: float,
+    min_island_width_amplification: float,
+    max_relative_energy_increase: float,
+    max_relative_growth_rate_spread: float,
+    max_relative_max_growth_spread: float,
+) -> None:
+    if sweep_axis not in {"mode", "width", "resistivity"}:
+        raise ValueError("sweep_axis must be one of: mode, width, resistivity")
+    if len(shape) != 2 or shape[0] < 8 or shape[1] < 8:
+        raise ValueError("shape must contain two dimensions >= 8")
+    if len(modes) < 2:
+        raise ValueError("modes must contain at least two entries")
+    if any(len(mode) != 2 or mode == (0, 0) for mode in modes):
+        raise ValueError("modes must be nonzero two-index modes")
+    if len(set(modes)) != len(modes):
+        raise ValueError("modes must be unique")
+    if len(widths) < 2:
+        raise ValueError("widths must contain at least two entries")
+    if any(case_width <= 0.0 for case_width in widths):
+        raise ValueError("widths must be positive")
+    if len(set(widths)) != len(widths):
+        raise ValueError("widths must be unique")
+    if len(resistivities) < 2:
+        raise ValueError("resistivities must contain at least two entries")
+    if any(case_resistivity <= 0.0 for case_resistivity in resistivities):
+        raise ValueError("resistivities must be positive")
+    if len(set(resistivities)) != len(resistivities):
+        raise ValueError("resistivities must be unique")
+    if viscosity_values is not None:
+        if len(viscosity_values) != len(resistivities):
+            raise ValueError("viscosity_values must match resistivities length")
+        if any(case_viscosity <= 0.0 for case_viscosity in viscosity_values):
+            raise ValueError("viscosity_values must be positive")
+    if width <= 0.0:
+        raise ValueError("width must be positive")
+    if amplitude == 0.0:
+        raise ValueError("amplitude must be nonzero")
+    if resistivity <= 0.0 or viscosity <= 0.0:
+        raise ValueError("resistivity and viscosity must be positive")
+    if perturbation_amplitude <= 0.0:
+        raise ValueError("perturbation_amplitude must be positive")
+    if len(perturbation_mode) != 2 or perturbation_mode == (0, 0):
+        raise ValueError("perturbation_mode must be a nonzero two-index mode")
+    if dt <= 0.0:
+        raise ValueError("dt must be positive")
+    if t_end <= 0.0:
+        raise ValueError("t_end must be positive")
+    if save_interval <= 0.0:
+        raise ValueError("save_interval must be positive")
+    if save_interval > t_end:
+        raise ValueError("save_interval must not exceed t_end")
+    save_every = _save_every_for_interval(dt, save_interval)
+    steps = round(t_end / dt)
+    if steps < 2:
+        raise ValueError("t_end / dt must allow at least two RK4 steps")
+    if save_every > steps:
+        raise ValueError("save_interval leaves no saved samples")
+    fit_start, fit_stop = fit_window
+    if fit_start < 0.0 or fit_stop <= fit_start:
+        raise ValueError("fit_window must be ordered and non-negative")
+    if fit_stop > t_end:
+        raise ValueError("fit_window stop must not exceed t_end")
+    saved_fit_count = 1 + sum(
+        1
+        for step_index in range(steps)
+        if (step_index + 1) % save_every == 0
+        and fit_start <= (step_index + 1) * dt <= fit_stop
+    )
+    if saved_fit_count < 3:
+        raise ValueError("fit_window must include at least three saved samples")
+    if min_saved_samples < 3:
+        raise ValueError("min_saved_samples must be at least three")
+    if min_early_growth_rate <= 0.0:
+        raise ValueError("min_early_growth_rate must be positive")
+    if min_early_growth_factor <= 1.0:
+        raise ValueError("min_early_growth_factor must exceed one")
+    if min_max_growth_factor <= 1.0:
+        raise ValueError("min_max_growth_factor must exceed one")
+    if min_reconnected_flux_amplification <= 1.0:
+        raise ValueError("min_reconnected_flux_amplification must exceed one")
+    if min_island_width_amplification <= 1.0:
+        raise ValueError("min_island_width_amplification must exceed one")
+    if max_relative_energy_increase < 0.0:
+        raise ValueError("max_relative_energy_increase must be non-negative")
+    if max_relative_growth_rate_spread <= 0.0:
+        raise ValueError("max_relative_growth_rate_spread must be positive")
+    if max_relative_max_growth_spread <= 0.0:
+        raise ValueError("max_relative_max_growth_spread must be positive")

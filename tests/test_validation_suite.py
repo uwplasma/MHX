@@ -30,6 +30,8 @@ def test_validation_suite_cases_are_unique() -> None:
     assert "periodic_double_harris_convergence" in names
     assert "nonlinear_energy_budget" in names
     assert "orszag_tang_vortex" in names
+    assert "forced_turbulent_reconnection" in names
+    assert "forced_turbulent_reconnection_readiness" in names
     assert "nonlinear_duration_audit" in names
     assert "seed_robust_qi" in names
     assert "seed_robust_qi_sweep" in names
@@ -146,6 +148,14 @@ def test_write_validation_suite_artifacts_and_cli(tmp_path) -> None:
     assert (
         tmp_path
         / "suite"
+        / "forced_turbulent_reconnection_readiness"
+        / "readiness"
+        / "figures"
+        / "promotion_matrix.png"
+    ).stat().st_size > 0
+    assert (
+        tmp_path
+        / "suite"
         / "nonlinear_duration_audit"
         / "figures"
         / "nonlinear_duration_audit.png"
@@ -183,6 +193,20 @@ def test_write_validation_suite_artifacts_and_cli(tmp_path) -> None:
     persisted = json.loads((tmp_path / "suite" / "validation_suite.json").read_text())
     assert persisted["cases"][0]["passed"] is True
     assert persisted["cases"][0]["claim_level"] == "smoke"
+    forced_readiness = next(
+        case
+        for case in persisted["cases"]
+        if case["name"] == "forced_turbulent_reconnection_readiness"
+    )
+    assert forced_readiness["passed"] is True
+    assert forced_readiness["schema"] == (
+        "mhx.validation.forced_turbulent_reconnection.readiness.gates.v1"
+    )
+    assert forced_readiness["validation"] == (
+        "forced_turbulent_reconnection_readiness/readiness/validation.json"
+    )
+    assert " --outdir " in forced_readiness["command"]
+    assert forced_readiness["command"].endswith("--max-relative-energy-growth 10.0")
     assert {
         item["claim_level"] for item in persisted["cases"]
     } <= {"smoke", "validation"}

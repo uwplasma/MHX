@@ -50,6 +50,7 @@ from mhx.benchmarks.tearing_eigen import (
 )
 from mhx.benchmarks.turbulence import (
     write_decaying_mhd_turbulence_validation,
+    write_forced_turbulent_reconnection_readiness_report,
     write_forced_turbulent_reconnection_validation,
 )
 from mhx.config import load_config
@@ -69,6 +70,7 @@ class ValidationSuiteCase:
     name: str
     command: str
     runner: Callable[[Path], tuple[Path, dict[str, Any]]]
+    append_outdir: bool = True
 
 
 def validation_suite_cases() -> tuple[ValidationSuiteCase, ...]:
@@ -185,6 +187,17 @@ def validation_suite_cases() -> tuple[ValidationSuiteCase, ...]:
             runner=_write_forced_turbulent_reconnection_validation,
         ),
         ValidationSuiteCase(
+            name="forced_turbulent_reconnection_readiness",
+            command=(
+                "mhx benchmark forced-turbulent-reconnection-readiness-check "
+                "{outdir} --outdir {outdir}/readiness "
+                "--require-movies --min-history-samples 5 --min-t-end 1.0 "
+                "--max-relative-energy-growth 10.0"
+            ),
+            runner=_write_forced_turbulent_reconnection_readiness_validation,
+            append_outdir=False,
+        ),
+        ValidationSuiteCase(
             name="nonlinear_duration_audit",
             command="mhx benchmark nonlinear-duration-audit",
             runner=write_nonlinear_duration_audit,
@@ -252,14 +265,17 @@ def write_validation_suite(
     for case in selected_cases:
         case_dir = output_dir / case.name
         manifest_path, validation = case.runner(case_dir)
+        validation_path = manifest_path.parent / "validation.json"
+        if not validation_path.exists():
+            validation_path = case_dir / "validation.json"
         case_results.append(
             {
                 "name": case.name,
-                "command": f"{case.command} --outdir {case_dir.as_posix()}",
+                "command": _case_command(case, case_dir),
                 "output_dir": case_dir.relative_to(output_dir).as_posix(),
                 "manifest": manifest_path.relative_to(output_dir).as_posix(),
                 "claim_level": _manifest_claim_level(manifest_path),
-                "validation": (case_dir / "validation.json").relative_to(output_dir).as_posix(),
+                "validation": validation_path.relative_to(output_dir).as_posix(),
                 "schema": validation["schema"],
                 "passed": bool(validation["passed"]),
                 "checks": validation["checks"],
@@ -387,6 +403,26 @@ def _write_forced_turbulent_reconnection_validation(
     )
 
 
+def _write_forced_turbulent_reconnection_readiness_validation(
+    outdir: Path,
+) -> tuple[Path, dict[str, Any]]:
+    write_forced_turbulent_reconnection_validation(
+        outdir,
+        shape=(24, 24),
+        t_end=1.0,
+        save_every=10,
+        max_relative_energy_growth=10.0,
+        movies=True,
+    )
+    return write_forced_turbulent_reconnection_readiness_report(
+        outdir,
+        require_movies=True,
+        min_history_samples=5,
+        min_t_end=1.0,
+        max_relative_energy_growth=10.0,
+    )
+
+
 def _write_neural_ode_training_validation(outdir: Path) -> tuple[Path, dict[str, Any]]:
     from mhx.neural_ode import write_neural_ode_training_bundle
 
@@ -463,3 +499,10 @@ def _suite_markdown(summary: dict[str, Any]) -> str:
 def _manifest_claim_level(path: Path) -> str:
     manifest = json.loads(path.read_text(encoding="utf-8"))
     return str(manifest.get("claim_level", "unspecified"))
+
+
+def _case_command(case: ValidationSuiteCase, case_dir: Path) -> str:
+    outdir = case_dir.as_posix()
+    if case.append_outdir:
+        return f"{case.command} --outdir {outdir}"
+    return case.command.format(outdir=outdir)

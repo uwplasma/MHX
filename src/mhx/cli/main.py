@@ -37,6 +37,7 @@ from mhx.benchmarks import (
     write_periodic_current_sheet_timedomain_validation,
     write_periodic_double_harris_convergence_validation,
     write_periodic_double_harris_nonlinear_growth_validation,
+    write_periodic_double_harris_parameter_sweep_validation,
     write_periodic_double_harris_promotion_report,
     write_periodic_double_harris_seeded_long_run_validation,
     write_power_iteration_validation,
@@ -1549,6 +1550,121 @@ def benchmark_double_harris_convergence(
         raise typer.Exit(code=1)
 
 
+@benchmark_app.command("double-harris-parameter-sweep")
+def benchmark_double_harris_parameter_sweep(
+    outdir: Annotated[
+        Path,
+        typer.Option(
+            "--outdir",
+            help="Output directory for seeded double-Harris parameter-sweep artifacts.",
+        ),
+    ] = Path("outputs/benchmarks/periodic_double_harris_parameter_sweep"),
+    sweep_axis: Annotated[
+        str,
+        typer.Option(
+            "--sweep-axis",
+            help="Parameter family to sweep: mode, width, or resistivity.",
+        ),
+    ] = "width",
+    modes: Annotated[
+        str,
+        typer.Option(
+            "--modes",
+            help="Comma-separated Fourier modes as mx:my entries, e.g. 1:1,2:1,3:1.",
+        ),
+    ] = "2:1,2:2,4:1",
+    widths: Annotated[
+        str,
+        typer.Option("--widths", help="Comma-separated sheet widths for width sweep."),
+    ] = "0.35,0.4,0.45",
+    etas: Annotated[
+        str,
+        typer.Option("--etas", help="Comma-separated resistivities for resistivity sweep."),
+    ] = "0.004,0.005,0.006",
+    viscosities: Annotated[
+        str | None,
+        typer.Option(
+            "--viscosities",
+            help="Optional comma-separated viscosities matching --etas; defaults to Pm=1.",
+        ),
+    ] = None,
+    nx: Annotated[int, typer.Option("--nx", help="Grid points in x.")] = 16,
+    ny: Annotated[int, typer.Option("--ny", help="Grid points in y.")] = 16,
+    width: Annotated[
+        float,
+        typer.Option("--width", help="Baseline current-sheet half-width proxy."),
+    ] = 0.4,
+    eta: Annotated[float, typer.Option("--eta", help="Baseline resistivity.")] = 5.0e-3,
+    nu: Annotated[float, typer.Option("--nu", help="Baseline viscosity.")] = 5.0e-3,
+    perturbation_amplitude: Annotated[
+        float,
+        typer.Option("--perturbation-amplitude", help="Seed flux perturbation amplitude."),
+    ] = 1.0e-3,
+    mode_x: Annotated[int, typer.Option("--mode-x", help="Baseline seed Fourier mode x.")] = 2,
+    mode_y: Annotated[int, typer.Option("--mode-y", help="Baseline seed Fourier mode y.")] = 1,
+    dt: Annotated[float, typer.Option("--dt", help="RK4 time step.")] = 1.0e-2,
+    t_end: Annotated[float, typer.Option("--t-end", help="Final nonlinear time.")] = 6.0,
+    save_interval: Annotated[
+        float,
+        typer.Option("--save-interval", help="Approximate physical interval between saves."),
+    ] = 1.0,
+    fit_start: Annotated[float, typer.Option("--fit-start", help="Early fit window start.")] = 0.0,
+    fit_stop: Annotated[float, typer.Option("--fit-stop", help="Early fit window stop.")] = 3.0,
+    min_early_growth_rate: Annotated[
+        float,
+        typer.Option("--min-early-growth-rate", help="Minimum fitted early growth rate."),
+    ] = 1.0e-3,
+    min_max_growth_factor: Annotated[
+        float,
+        typer.Option("--min-max-growth-factor", help="Minimum maximum normalized growth."),
+    ] = 1.05,
+    max_relative_growth_rate_spread: Annotated[
+        float,
+        typer.Option(
+            "--max-relative-growth-rate-spread",
+            help="Anomaly-check relative spread limit for fitted growth rates.",
+        ),
+    ] = 10.0,
+    max_relative_max_growth_spread: Annotated[
+        float,
+        typer.Option(
+            "--max-relative-max-growth-spread",
+            help="Anomaly-check relative spread limit for maximum amplification.",
+        ),
+    ] = 20.0,
+) -> None:
+    """Run seeded double-Harris mode/width/resistivity response sweep."""
+    _configure_validation_precision()
+    parsed_viscosities = (
+        _parse_float_tuple(viscosities) if viscosities is not None else None
+    )
+    manifest_path, validation = write_periodic_double_harris_parameter_sweep_validation(
+        outdir,
+        shape=(nx, ny),
+        sweep_axis=sweep_axis,
+        modes=_parse_mode_tuple(modes),
+        widths=_parse_float_tuple(widths),
+        resistivities=_parse_float_tuple(etas),
+        viscosity_values=parsed_viscosities,
+        width=width,
+        resistivity=eta,
+        viscosity=nu,
+        perturbation_amplitude=perturbation_amplitude,
+        perturbation_mode=(mode_x, mode_y),
+        dt=dt,
+        t_end=t_end,
+        save_interval=save_interval,
+        fit_window=(fit_start, fit_stop),
+        min_early_growth_rate=min_early_growth_rate,
+        min_max_growth_factor=min_max_growth_factor,
+        max_relative_growth_rate_spread=max_relative_growth_rate_spread,
+        max_relative_max_growth_spread=max_relative_max_growth_spread,
+    )
+    typer.echo(f"wrote {manifest_path}")
+    if not validation["passed"]:
+        raise typer.Exit(code=1)
+
+
 @benchmark_app.command("double-harris-promotion-check")
 def benchmark_double_harris_promotion_check(
     run_dir: Annotated[
@@ -2027,6 +2143,22 @@ def _parse_float_tuple(value: str) -> tuple[float, ...]:
         return tuple(float(part.strip()) for part in value.split(",") if part.strip())
     except ValueError as exc:
         raise typer.BadParameter("expected comma-separated floats") from exc
+
+
+def _parse_mode_tuple(value: str) -> tuple[tuple[int, int], ...]:
+    modes: list[tuple[int, int]] = []
+    try:
+        for part in value.split(","):
+            item = part.strip()
+            if not item:
+                continue
+            left, right = item.split(":", maxsplit=1)
+            modes.append((int(left.strip()), int(right.strip())))
+    except ValueError as exc:
+        raise typer.BadParameter("expected comma-separated modes like 1:1,2:1") from exc
+    if not modes:
+        raise typer.BadParameter("expected at least one mode")
+    return tuple(modes)
 
 
 @physics_app.command("list")

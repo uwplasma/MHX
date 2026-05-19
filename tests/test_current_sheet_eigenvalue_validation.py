@@ -12,6 +12,7 @@ from mhx.benchmarks import (
     PERIODIC_CURRENT_SHEET_TIMEDOMAIN_SCHEMA,
     PERIODIC_DOUBLE_HARRIS_CONVERGENCE_SCHEMA,
     PERIODIC_DOUBLE_HARRIS_NONLINEAR_GROWTH_SCHEMA,
+    PERIODIC_DOUBLE_HARRIS_PARAMETER_SWEEP_SCHEMA,
     PERIODIC_DOUBLE_HARRIS_PROMOTION_SCHEMA,
     PERIODIC_DOUBLE_HARRIS_SEEDED_LONG_RUN_SCHEMA,
     assess_periodic_double_harris_promotion,
@@ -21,12 +22,14 @@ from mhx.benchmarks import (
     run_periodic_current_sheet_timedomain_validation,
     run_periodic_double_harris_convergence_validation,
     run_periodic_double_harris_nonlinear_growth_validation,
+    run_periodic_double_harris_parameter_sweep_validation,
     run_periodic_double_harris_seeded_long_run_validation,
     write_periodic_current_sheet_eigenvalue_validation,
     write_periodic_current_sheet_nonlinear_bridge_validation,
     write_periodic_current_sheet_timedomain_validation,
     write_periodic_double_harris_convergence_validation,
     write_periodic_double_harris_nonlinear_growth_validation,
+    write_periodic_double_harris_parameter_sweep_validation,
     write_periodic_double_harris_promotion_report,
     write_periodic_double_harris_seeded_long_run_validation,
 )
@@ -381,6 +384,170 @@ def test_periodic_double_harris_convergence_rejects_invalid_inputs() -> None:
         )
 
 
+def test_periodic_double_harris_parameter_sweep_gate() -> None:
+    result = run_periodic_double_harris_parameter_sweep_validation(
+        sweep_axis="width",
+        widths=(0.35, 0.4, 0.45),
+        t_end=6.0,
+        fit_window=(0.0, 3.0),
+    )
+    assert result.diagnostics["schema"] == PERIODIC_DOUBLE_HARRIS_PARAMETER_SWEEP_SCHEMA
+    assert result.validation["passed"] is True
+    assert all(result.validation["checks"].values())
+    assert result.sweep_axis == "width"
+    assert result.case_index.shape == (3,)
+    assert result.case_label.shape == (3,)
+    assert result.mode_x.shape == result.width.shape
+    assert result.resistivity.shape == result.viscosity.shape
+    assert result.fitted_early_growth_rate.shape == result.case_index.shape
+    assert result.reconnected_flux_amplification.shape == result.case_index.shape
+    assert result.seed_mode_reconnected_flux_amplification.shape == result.case_index.shape
+    assert result.max_x_point_count.shape == result.case_index.shape
+    assert np.isfinite(result.fitted_early_growth_rate).all()
+    assert np.isfinite(result.relative_energy_increase).all()
+    assert np.all(result.passed)
+    assert np.all(result.fitted_early_growth_rate > 0.0)
+    assert np.all(result.max_growth_factor > 1.0)
+    assert result.growth_rate_spread <= result.validation["thresholds"][
+        "max_relative_growth_rate_spread"
+    ]
+    assert result.max_growth_spread <= result.validation["thresholds"][
+        "max_relative_max_growth_spread"
+    ]
+
+
+def test_periodic_double_harris_parameter_sweep_mode_and_resistivity_branches() -> None:
+    mode_result = run_periodic_double_harris_parameter_sweep_validation(
+        sweep_axis="mode",
+        modes=((2, 1), (2, 2), (4, 1)),
+        t_end=6.0,
+        fit_window=(0.0, 3.0),
+        max_relative_growth_rate_spread=20.0,
+        max_relative_max_growth_spread=40.0,
+    )
+    assert mode_result.validation["passed"] is True
+    assert mode_result.sweep_axis == "mode"
+    assert set(mode_result.mode_x.tolist()) == {2, 4}
+
+    resistive_result = run_periodic_double_harris_parameter_sweep_validation(
+        sweep_axis="resistivity",
+        resistivities=(0.004, 0.005, 0.006),
+        viscosity_values=(0.004, 0.005, 0.006),
+        t_end=6.0,
+        fit_window=(0.0, 3.0),
+    )
+    assert resistive_result.validation["passed"] is True
+    assert resistive_result.sweep_axis == "resistivity"
+    assert np.allclose(resistive_result.resistivity, resistive_result.viscosity)
+
+
+def test_periodic_double_harris_parameter_sweep_rejects_invalid_inputs() -> None:
+    with pytest.raises(ValueError, match="sweep_axis"):
+        run_periodic_double_harris_parameter_sweep_validation(sweep_axis="bad")
+    with pytest.raises(ValueError, match="shape"):
+        run_periodic_double_harris_parameter_sweep_validation(shape=(6, 16))
+    with pytest.raises(ValueError, match="modes"):
+        run_periodic_double_harris_parameter_sweep_validation(modes=((1, 1),))
+    with pytest.raises(ValueError, match="nonzero"):
+        run_periodic_double_harris_parameter_sweep_validation(modes=((1, 1), (0, 0)))
+    with pytest.raises(ValueError, match="unique"):
+        run_periodic_double_harris_parameter_sweep_validation(modes=((1, 1), (1, 1)))
+    with pytest.raises(ValueError, match="widths"):
+        run_periodic_double_harris_parameter_sweep_validation(widths=(0.4,))
+    with pytest.raises(ValueError, match="positive"):
+        run_periodic_double_harris_parameter_sweep_validation(widths=(0.4, -0.5))
+    with pytest.raises(ValueError, match="unique"):
+        run_periodic_double_harris_parameter_sweep_validation(widths=(0.4, 0.4))
+    with pytest.raises(ValueError, match="resistivities"):
+        run_periodic_double_harris_parameter_sweep_validation(resistivities=(0.005,))
+    with pytest.raises(ValueError, match="positive"):
+        run_periodic_double_harris_parameter_sweep_validation(
+            resistivities=(0.004, 0.0)
+        )
+    with pytest.raises(ValueError, match="unique"):
+        run_periodic_double_harris_parameter_sweep_validation(
+            resistivities=(0.004, 0.004)
+        )
+    with pytest.raises(ValueError, match="match resistivities length"):
+        run_periodic_double_harris_parameter_sweep_validation(
+            resistivities=(0.004, 0.005),
+            viscosity_values=(0.004,),
+        )
+    with pytest.raises(ValueError, match="viscosity_values"):
+        run_periodic_double_harris_parameter_sweep_validation(
+            resistivities=(0.004, 0.005),
+            viscosity_values=(0.004, 0.0),
+        )
+    with pytest.raises(ValueError, match="width"):
+        run_periodic_double_harris_parameter_sweep_validation(width=0.0)
+    with pytest.raises(ValueError, match="amplitude"):
+        run_periodic_double_harris_parameter_sweep_validation(amplitude=0.0)
+    with pytest.raises(ValueError, match="resistivity and viscosity"):
+        run_periodic_double_harris_parameter_sweep_validation(resistivity=0.0)
+    with pytest.raises(ValueError, match="perturbation_amplitude"):
+        run_periodic_double_harris_parameter_sweep_validation(
+            perturbation_amplitude=0.0
+        )
+    with pytest.raises(ValueError, match="perturbation_mode"):
+        run_periodic_double_harris_parameter_sweep_validation(perturbation_mode=(0, 0))
+    with pytest.raises(ValueError, match="dt"):
+        run_periodic_double_harris_parameter_sweep_validation(dt=0.0)
+    with pytest.raises(ValueError, match="t_end"):
+        run_periodic_double_harris_parameter_sweep_validation(t_end=0.0)
+    with pytest.raises(ValueError, match="save_interval"):
+        run_periodic_double_harris_parameter_sweep_validation(save_interval=0.0)
+    with pytest.raises(ValueError, match="must not exceed"):
+        run_periodic_double_harris_parameter_sweep_validation(
+            save_interval=7.0,
+            t_end=6.0,
+        )
+    with pytest.raises(ValueError, match="at least two RK4"):
+        run_periodic_double_harris_parameter_sweep_validation(
+            t_end=0.01,
+            dt=0.01,
+            save_interval=0.005,
+            fit_window=(0.0, 0.005),
+        )
+    with pytest.raises(ValueError, match="fit_window"):
+        run_periodic_double_harris_parameter_sweep_validation(fit_window=(2.0, 1.0))
+    with pytest.raises(ValueError, match="must not exceed"):
+        run_periodic_double_harris_parameter_sweep_validation(fit_window=(0.0, 7.0))
+    with pytest.raises(ValueError, match="at least three"):
+        run_periodic_double_harris_parameter_sweep_validation(
+            t_end=2.0,
+            fit_window=(0.0, 1.0),
+            save_interval=1.0,
+        )
+    with pytest.raises(ValueError, match="min_saved_samples"):
+        run_periodic_double_harris_parameter_sweep_validation(min_saved_samples=2)
+    with pytest.raises(ValueError, match="min_early_growth_rate"):
+        run_periodic_double_harris_parameter_sweep_validation(min_early_growth_rate=0.0)
+    with pytest.raises(ValueError, match="min_early_growth_factor"):
+        run_periodic_double_harris_parameter_sweep_validation(min_early_growth_factor=1.0)
+    with pytest.raises(ValueError, match="min_max_growth_factor"):
+        run_periodic_double_harris_parameter_sweep_validation(min_max_growth_factor=1.0)
+    with pytest.raises(ValueError, match="min_reconnected_flux_amplification"):
+        run_periodic_double_harris_parameter_sweep_validation(
+            min_reconnected_flux_amplification=1.0
+        )
+    with pytest.raises(ValueError, match="min_island_width_amplification"):
+        run_periodic_double_harris_parameter_sweep_validation(
+            min_island_width_amplification=1.0
+        )
+    with pytest.raises(ValueError, match="max_relative_energy_increase"):
+        run_periodic_double_harris_parameter_sweep_validation(
+            max_relative_energy_increase=-1.0
+        )
+    with pytest.raises(ValueError, match="max_relative_growth_rate_spread"):
+        run_periodic_double_harris_parameter_sweep_validation(
+            max_relative_growth_rate_spread=0.0
+        )
+    with pytest.raises(ValueError, match="max_relative_max_growth_spread"):
+        run_periodic_double_harris_parameter_sweep_validation(
+            max_relative_max_growth_spread=0.0
+        )
+
+
 def test_periodic_current_sheet_nonlinear_bridge_rejects_invalid_inputs() -> None:
     with pytest.raises(ValueError, match="shape"):
         run_periodic_current_sheet_nonlinear_bridge_validation(shape=(3, 6))
@@ -608,6 +775,59 @@ def test_write_periodic_double_harris_convergence_artifacts_and_cli(tmp_path) ->
             "3",
             "--max-relative-growth-rate-spread",
             "2.0",
+        ],
+    )
+    assert cli_result.exit_code == 0, cli_result.stdout
+    assert (outdir / "validation.json").exists()
+
+
+def test_write_periodic_double_harris_parameter_sweep_artifacts_and_cli(tmp_path) -> None:
+    manifest_path, validation = write_periodic_double_harris_parameter_sweep_validation(
+        tmp_path,
+        sweep_axis="width",
+        widths=(0.35, 0.4, 0.45),
+        t_end=6.0,
+        fit_window=(0.0, 3.0),
+    )
+    assert manifest_path == tmp_path / "manifest.json"
+    assert validation["passed"] is True
+    diagnostics = json.loads((tmp_path / "diagnostics.json").read_text())
+    assert diagnostics["references"]["scope"].startswith("Deterministic seeded")
+    history = np.load(tmp_path / "periodic_double_harris_parameter_sweep.npz")
+    assert history["schema"] == PERIODIC_DOUBLE_HARRIS_PARAMETER_SWEEP_SCHEMA
+    assert history["sweep_axis"] == "width"
+    assert history["case_index"].shape == (3,)
+    assert history["case_label"].shape == (3,)
+    assert history["mode_x"].shape == history["mode_y"].shape
+    assert history["width"].shape == history["resistivity"].shape
+    assert history["fitted_early_growth_rate"].shape == history["case_index"].shape
+    assert history["seed_mode_reconnected_flux_amplification"].shape == (
+        history["case_index"].shape
+    )
+    assert history["max_x_point_count"].shape == history["case_index"].shape
+    manifest = json.loads(manifest_path.read_text())
+    assert manifest["claim_level"] == "validation"
+    assert "not a production" in manifest["claim_scope"]
+    assert (
+        tmp_path / "figures" / "periodic_double_harris_parameter_sweep.png"
+    ).stat().st_size > 0
+
+    outdir = tmp_path / "cli-double-harris-parameter-sweep"
+    cli_result = CliRunner().invoke(
+        app,
+        [
+            "benchmark",
+            "double-harris-parameter-sweep",
+            "--outdir",
+            str(outdir),
+            "--sweep-axis",
+            "width",
+            "--widths",
+            "0.35,0.4,0.45",
+            "--t-end",
+            "6",
+            "--fit-stop",
+            "3",
         ],
     )
     assert cli_result.exit_code == 0, cli_result.stdout

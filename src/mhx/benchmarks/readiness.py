@@ -36,6 +36,7 @@ REQUIRED_PUBLIC_RELEASE_CASES = (
     "orszag_tang_vortex",
     "decaying_mhd_turbulence",
     "forced_turbulent_reconnection",
+    "forced_turbulent_reconnection_readiness",
     "nonlinear_duration_audit",
     "seed_robust_qi",
     "seed_robust_qi_sweep",
