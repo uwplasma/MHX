@@ -192,7 +192,7 @@ def test_relocated_validation_content_has_doc_entrypoints() -> None:
         assert doc_entry in index_text
 
     assert "_static/validation/periodic_double_harris_seeded_long_run" in media_text
-    assert "--t-end 100" in media_text
+    assert "--t-end 120" in media_text
     assert "readme_media_visual_qa.json" in media_text
     assert "Rutherford-duration executor run" in long_run_text
     assert "Current claim boundary" in long_run_text

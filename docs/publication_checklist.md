@@ -29,13 +29,13 @@ Every figure included in the paper-style documentation should have:
 | Dispersion/layer/time replay | `linear_tearing_dispersion.png`, `linear_tearing_layer.png`, `linear_tearing_timedomain.png` | `validation` | Ready as FAST branch, shape, and growth-fit gates. |
 | Periodic current sheet | `periodic_current_sheet_spectrum.png`, `periodic_current_sheet_timedomain.png`, `periodic_current_sheet_nonlinear_bridge.png` | `validation` | Ready as operator and differentiability gates. |
 | Periodic double-Harris growth | `periodic_double_harris_nonlinear_growth.png` | `validation` | Ready as small-grid instability-path evidence; not a Rutherford/plasmoid production claim. |
-| Seeded double-Harris long run | `periodic_double_harris_seeded_long_run.png`, optional flux/current GIFs | `validation` | Ready as bounded nonlinear evidence with early growth and dissipative energy; still needs convergence and seed/aspect-ratio sweeps. |
-| Seeded double-Harris convergence | `periodic_double_harris_convergence.png` | `validation` | Ready as a FAST resolution/time-step scaffold; still not production plasmoid/Rutherford evidence. |
+| Seeded double-Harris long run | `periodic_double_harris_seeded_long_run.png`, optional flux/current GIFs | `validation` | Ready as bounded nonlinear evidence with early growth, response amplification, X/O counts, and dissipative energy; production claims still need seed/aspect-ratio/Lundquist sweeps. |
+| Seeded double-Harris convergence | `periodic_double_harris_convergence.png` | `validation` | Ready as a resolution/time-step scaffold, including the medium GPU-assisted `32/48/64` sweep; still not production plasmoid/Rutherford evidence. |
 | Seeded double-Harris promotion report | `promotion_matrix.png`, `promotion_readiness.json` | `validation` only | Ready as the boundary between single-run media and convergence-backed validation evidence; not a production physics gate. |
 | Nonlinear energy budget | `nonlinear_energy_budget.png` | `validation` | Ready as nonlinear conservation/dissipation evidence. |
 | Orszag--Tang vortex media | `orszag_tang_summary.png`, optional flux/current/vorticity GIFs | `validation` | Ready as nonlinear reduced-MHD morphology and high-$k$ transfer evidence, not full-MHD shock validation. |
 | Decaying turbulence media | `decaying_mhd_turbulence_summary.png`, optional flux/current GIFs | `validation` | Ready as deterministic reduced-MHD turbulence morphology and current-filament evidence; not turbulence-statistics evidence. |
-| Forced turbulent reconnection media | `forced_turbulent_reconnection_summary.png`, optional flux/current GIFs | `validation` | Ready as a pedagogical forced current-sheet/reconnection-proxy example; not 3-D fast-reconnection evidence. |
+| Forced turbulent reconnection media | `forced_turbulent_reconnection_summary.png`, optional flux/current GIFs, `readiness/promotion_matrix.png` | `validation` | Ready as a pedagogical forced current-sheet/reconnection-proxy example with a validation-only readiness gate; not 3-D fast-reconnection evidence. |
 | Nonlinear duration audit | `nonlinear_duration_audit.png` | `validation` | Ready as an overclaim-prevention figure. |
 | Seed-robust QI | `qi_summary.png` | `validation` | Ready as FAST seed-sensitivity evidence after generation in the evidence bundle. |
 | Seed-robust QI sweep | `qi_sweep_cv.png`, `qi_sweep_mean_drift.png` | `validation` | Ready as FAST perturbation-amplitude sensitivity evidence. |
@@ -81,10 +81,16 @@ long-run gate:
 :width: 760px
 ```
 
-The next nonlinear evidence step is the FAST resolution/time-step scaffold:
+The current nonlinear evidence boundary is the double-Harris promotion report
+plus the medium GPU-assisted resolution/time-step scaffold:
 
 ```{image} _static/validation/periodic_double_harris_convergence/periodic_double_harris_convergence.png
 :alt: Seeded periodic double-Harris convergence scaffold
+:width: 760px
+```
+
+```{image} _static/validation/long_runs/double_harris_convergence_gpu_n32_48_64_t16/periodic_double_harris_convergence.png
+:alt: Medium GPU-assisted double-Harris convergence sweep
 :width: 760px
 ```
 

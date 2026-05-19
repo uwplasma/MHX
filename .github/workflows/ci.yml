@@ -136,10 +136,12 @@ jobs:
           mhx benchmark double-harris-growth --outdir outputs/ci/periodic_double_harris_nonlinear_growth
           mhx benchmark double-harris-long-run --outdir outputs/ci/periodic_double_harris_seeded_long_run --nx 16 --ny 16 --ci-fast --movies
           mhx benchmark double-harris-convergence --outdir outputs/ci/periodic_double_harris_convergence --resolutions 16,18 --dt-values 0.02,0.01 --reference-resolution 16 --t-end 6 --fit-stop 3 --max-relative-growth-rate-spread 2.0
+          mhx benchmark double-harris-promotion-check outputs/ci/periodic_double_harris_seeded_long_run --outdir outputs/ci/periodic_double_harris_seeded_long_run/promotion --convergence-dir outputs/ci/periodic_double_harris_convergence --require-movies --min-history-samples 3 --min-convergence-dirs 1 --min-t-end 10 --min-reconnected-flux-amplification 1.05 --min-island-width-amplification 1.05 --max-relative-energy-increase 1e-8
           mhx benchmark nonlinear-energy-budget --outdir outputs/ci/nonlinear_energy_budget
           mhx benchmark orszag-tang --outdir outputs/ci/orszag_tang_vortex --nx 24 --ny 24 --t-end 2.0 --save-every 20 --movies
           mhx benchmark decaying-turbulence --outdir outputs/ci/decaying_mhd_turbulence --nx 24 --ny 24 --t-end 0.5 --save-every 10 --movies
           mhx benchmark forced-turbulent-reconnection --outdir outputs/ci/forced_turbulent_reconnection --nx 24 --ny 24 --t-end 1.0 --save-every 10 --max-relative-energy-growth 10 --movies
+          mhx benchmark forced-turbulent-reconnection-readiness-check outputs/ci/forced_turbulent_reconnection --min-history-samples 5 --min-t-end 1.0 --max-relative-energy-growth 10 --require-movies
           mhx benchmark nonlinear-duration-audit --outdir outputs/ci/nonlinear_duration_audit
           mhx benchmark seed-robust-qi --outdir outputs/ci/seed_robust_qi --nx 8 --ny 8 --seeds 0,1,2,3 --t-end 0.08
           mhx benchmark seed-robust-qi-sweep --outdir outputs/ci/seed_robust_qi_sweep --nx 8 --ny 8 --seeds 0,1,2,3 --amplitudes 0,1e-9 --steps 4
@@ -219,6 +221,10 @@ jobs:
           test -f outputs/ci/periodic_double_harris_convergence/validation.json
           test -f outputs/ci/periodic_double_harris_convergence/periodic_double_harris_convergence.npz
           test -f outputs/ci/periodic_double_harris_convergence/figures/periodic_double_harris_convergence.png
+          test -f outputs/ci/periodic_double_harris_seeded_long_run/promotion/validation.json
+          test -f outputs/ci/periodic_double_harris_seeded_long_run/promotion/promotion_readiness.json
+          test -f outputs/ci/periodic_double_harris_seeded_long_run/promotion/figures/promotion_matrix.png
+          test -f outputs/ci/periodic_double_harris_seeded_long_run/promotion/artifact_manifest.json
           test -f outputs/ci/nonlinear_energy_budget/validation.json
           test -f outputs/ci/nonlinear_energy_budget/figures/nonlinear_energy_budget.png
           test -f outputs/ci/orszag_tang_vortex/validation.json
@@ -226,6 +232,15 @@ jobs:
           test -f outputs/ci/orszag_tang_vortex/figures/orszag_tang_flux.gif
           test -f outputs/ci/orszag_tang_vortex/figures/orszag_tang_current.gif
           test -f outputs/ci/orszag_tang_vortex/figures/orszag_tang_vorticity.gif
+          test -f outputs/ci/forced_turbulent_reconnection/validation.json
+          test -f outputs/ci/forced_turbulent_reconnection/forced_turbulent_reconnection.npz
+          test -f outputs/ci/forced_turbulent_reconnection/figures/forced_turbulent_reconnection_summary.png
+          test -f outputs/ci/forced_turbulent_reconnection/figures/forced_turbulent_reconnection_current.gif
+          test -f outputs/ci/forced_turbulent_reconnection/figures/forced_turbulent_reconnection_flux_contours.gif
+          test -f outputs/ci/forced_turbulent_reconnection/readiness/validation.json
+          test -f outputs/ci/forced_turbulent_reconnection/readiness/promotion_readiness.json
+          test -f outputs/ci/forced_turbulent_reconnection/readiness/figures/promotion_matrix.png
+          test -f outputs/ci/forced_turbulent_reconnection/readiness/artifact_manifest.json
           test -f outputs/ci/nonlinear_duration_audit/validation.json
           test -f outputs/ci/nonlinear_duration_audit/figures/nonlinear_duration_audit.png
           test -f outputs/ci/seed_robust_qi/validation.json
@@ -352,6 +367,8 @@ jobs:
           for validation_path in [
               "outputs/ci/linear_tearing_fast/validation.json",
               "outputs/ci/periodic_double_harris_convergence/validation.json",
+              "outputs/ci/periodic_double_harris_seeded_long_run/promotion/validation.json",
+              "outputs/ci/forced_turbulent_reconnection/readiness/validation.json",
               "outputs/ci/seed_robust_qi/validation.json",
               "outputs/ci/neural_ode_latent_fit/validation.json",
               "outputs/ci/validation_suite/validation_suite.json",

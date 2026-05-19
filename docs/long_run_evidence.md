@@ -285,6 +285,15 @@ Rutherford/plasmoid evidence.
 
 ![GPU-assisted double-Harris promotion matrix](_static/validation/long_runs/growing_double_harris_96_t120/promotion_matrix.png)
 
+The same convergence code path was also run on a bounded GPU-assisted medium
+sweep (`32/48/64`, `t_end=16`, `dt=0.02/0.01`). It passed with fitted growth
+rates `0.1970–0.1978`, maximum amplification `7.886–7.899`, zero measured
+relative energy increase, `0.41%` resolution growth-rate spread, and
+effectively zero time-step spread. This strengthens validation evidence while
+remaining below production claim level.
+
+![Medium GPU-assisted double-Harris convergence sweep](_static/validation/long_runs/double_harris_convergence_gpu_n32_48_64_t16/periodic_double_harris_convergence.png)
+
 ## Current claim boundary
 
 These runs support:

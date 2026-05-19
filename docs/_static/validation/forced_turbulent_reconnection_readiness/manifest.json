@@ -1,0 +1,65 @@
+{
+  "api_version": "v1",
+  "claim_level": "validation",
+  "claim_scope": "Readiness evidence for the existing forced turbulent reconnection validation artifact only. Passing does not authorize production 3-D turbulent-reconnection or LV99 scaling claims.",
+  "config": {
+    "checks": {
+      "energy_growth_within_tolerance": true,
+      "execution_diagnostics_present": true,
+      "execution_validation_passed": true,
+      "execution_validation_present": true,
+      "finite_history_arrays": true,
+      "history_schema_supported": true,
+      "minimum_duration_reached": true,
+      "minimum_history_samples": true,
+      "movies_present_or_not_required": true,
+      "nontrivial_reconnection_proxy_or_rate": true,
+      "positive_reconnection_proxy_or_rate": true,
+      "required_history_keys_present": true,
+      "run_manifest_present": true,
+      "summary_figure_present_or_not_required": true
+    },
+    "claim_boundary": "Readiness evidence for the existing forced turbulent reconnection validation artifact only. Passing does not authorize production 3-D turbulent-reconnection or LV99 scaling claims.",
+    "claim_level_if_passed": "validation",
+    "history_sample_count": 41,
+    "history_schema": "mhx.validation.forced_turbulent_reconnection.v1",
+    "max_abs_reconnection_rate_proxy": 0.34346295991354914,
+    "max_reconnection_proxy": 1.395875728292237,
+    "promotion_ready": true,
+    "reconnection_proxy_change": 1.3824911570030323,
+    "relative_energy_growth": 0.0,
+    "required_movies": [
+      "outputs/readme_media/forced_turbulent_reconnection_64_t80_wide/figures/forced_turbulent_reconnection_current.gif",
+      "outputs/readme_media/forced_turbulent_reconnection_64_t80_wide/figures/forced_turbulent_reconnection_flux_contours.gif"
+    ],
+    "required_summary": "outputs/readme_media/forced_turbulent_reconnection_64_t80_wide/figures/forced_turbulent_reconnection_summary.png",
+    "run_dir": "outputs/readme_media/forced_turbulent_reconnection_64_t80_wide",
+    "schema": "mhx.validation.forced_turbulent_reconnection.readiness.v1",
+    "terminal_time": 80.0,
+    "thresholds": {
+      "max_relative_energy_growth": 2.0,
+      "min_abs_reconnection_rate_proxy": 1e-06,
+      "min_history_samples": 20,
+      "min_reconnection_proxy_change": 0.001,
+      "min_t_end": 20.0,
+      "require_movies": false,
+      "require_summary": true
+    },
+    "validation_schema": "mhx.validation.forced_turbulent_reconnection.readiness.gates.v1"
+  },
+  "created_utc": "2026-05-19T17:53:18.546590+00:00",
+  "hashes": {
+    "artifact_manifest": "b382cd48b2f4d0e74013b9536aa521e530703fa1f03022abc258f08622511a7c",
+    "promotion_readiness": "e3402687e56b1595e2bd56354d9a58f6b3b92422e23037d3b6cfdae415b98575",
+    "readiness_matrix": "11704b7d12c4bfa00552c6ebcbfd0b667ea76f733abc14eeb2d3d8521215a64c",
+    "validation": "c8dce25bbb5fe368f3b8575b1718bd9097a3566b70b083b334ed16bac6b60069"
+  },
+  "mhx_version": "0.1.0a0",
+  "outputs": {
+    "artifact_manifest": "artifact_manifest.json",
+    "promotion_readiness": "promotion_readiness.json",
+    "readiness_matrix": "figures/promotion_matrix.png",
+    "validation": "validation.json"
+  },
+  "schema": "mhx.manifest.v1"
+}

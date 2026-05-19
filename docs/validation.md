@@ -132,6 +132,7 @@ Run the validations:
 ```bash
 mhx benchmark decaying-turbulence --outdir outputs/benchmarks/decaying_mhd_turbulence --movies
 mhx benchmark forced-turbulent-reconnection --outdir outputs/benchmarks/forced_turbulent_reconnection --movies
+mhx benchmark forced-turbulent-reconnection-readiness-check outputs/benchmarks/forced_turbulent_reconnection
 ```
 
 Expected files:
@@ -140,7 +141,16 @@ Expected files:
 - `outputs/benchmarks/decaying_mhd_turbulence/figures/decaying_mhd_turbulence_summary.png`
 - `outputs/benchmarks/forced_turbulent_reconnection/forced_turbulent_reconnection.npz`
 - `outputs/benchmarks/forced_turbulent_reconnection/figures/forced_turbulent_reconnection_summary.png`
+- `outputs/benchmarks/forced_turbulent_reconnection/readiness/promotion_readiness.json`
+- `outputs/benchmarks/forced_turbulent_reconnection/readiness/figures/promotion_matrix.png`
 - optional flux/current GIFs under each `figures/` directory
+
+The readiness matrix is a validation-only claim boundary for the forced
+current-sheet replay. It requires finite histories, enough saved samples,
+minimum duration, nontrivial reconnecting-flux or reconnection-rate proxy,
+bounded total-energy growth, and the expected summary/movie artifacts.
+
+![Forced turbulent reconnection readiness matrix](_static/validation/forced_turbulent_reconnection_readiness/figures/promotion_matrix.png)
 
 These examples are literature-anchored to 2-D MHD turbulence and
 turbulent-reconnection studies, including the current-sheet/turbulence
@@ -1000,9 +1010,12 @@ $$
 
 The gate requires finite metrics, positive early growth, dissipative total
 energy, successful subcase gates, and bounded relative spread in
-`gamma_fit`/`G_max`. This is still intentionally a **validation** scaffold, not
-a production claim: it is designed to prevent single-run overclaiming before
-larger aspect-ratio, Lundquist-number, seed, and duration sweeps are executed.
+`gamma_fit`/`G_max`. The same code path has also been exercised on a
+GPU-assisted medium sweep with resolutions `32,48,64`, `t_end=16`, and
+`0.41%` growth-rate spread. This is still intentionally a **validation**
+scaffold, not a production claim: it is designed to prevent single-run
+overclaiming before larger aspect-ratio, Lundquist-number, seed, and duration
+sweeps are executed.
 
 Expected files:
 
@@ -1012,6 +1025,8 @@ Expected files:
 - `outputs/benchmarks/periodic_double_harris_convergence/figures/periodic_double_harris_convergence.png`
 
 ![Seeded periodic double-Harris convergence scaffold](_static/validation/periodic_double_harris_convergence/periodic_double_harris_convergence.png)
+
+![Medium GPU-assisted double-Harris convergence sweep](_static/validation/long_runs/double_harris_convergence_gpu_n32_48_64_t16/periodic_double_harris_convergence.png)
 
 Source anchors:
 

@@ -21,6 +21,7 @@ from mhx.benchmarks import (
     write_duration_policy,
     write_fkr_growth_rate_validation,
     write_fkr_window_validation,
+    write_forced_turbulent_reconnection_readiness_report,
     write_forced_turbulent_reconnection_validation,
     write_harris_delta_prime_validation,
     write_linear_tearing_dispersion_validation,
@@ -1274,6 +1275,79 @@ def benchmark_forced_turbulent_reconnection(
     typer.echo(f"wrote {manifest_path}")
     if not validation["passed"]:
         raise typer.Exit(code=1)
+
+
+@benchmark_app.command("forced-turbulent-reconnection-readiness-check")
+def benchmark_forced_turbulent_reconnection_readiness_check(
+    run_dir: Annotated[
+        Path,
+        typer.Argument(help="Forced turbulent reconnection artifact directory."),
+    ],
+    outdir: Annotated[
+        Path | None,
+        typer.Option(
+            "--outdir",
+            help="Readiness-report directory; defaults to <run-dir>/readiness.",
+        ),
+    ] = None,
+    require_summary: Annotated[
+        bool,
+        typer.Option(
+            "--require-summary/--no-require-summary",
+            help="Require the summary PNG in the run bundle.",
+        ),
+    ] = True,
+    require_movies: Annotated[
+        bool,
+        typer.Option(
+            "--require-movies/--no-require-movies",
+            help="Require current/flux GIFs in the run bundle.",
+        ),
+    ] = False,
+    min_history_samples: Annotated[
+        int,
+        typer.Option("--min-history-samples", help="Minimum saved history samples."),
+    ] = 20,
+    min_t_end: Annotated[
+        float,
+        typer.Option("--min-t-end", help="Minimum terminal time for readiness."),
+    ] = 20.0,
+    min_reconnection_proxy_change: Annotated[
+        float,
+        typer.Option(
+            "--min-reconnection-proxy-change",
+            help="Minimum reconnecting-flux proxy range unless rate threshold passes.",
+        ),
+    ] = 1.0e-3,
+    min_abs_reconnection_rate_proxy: Annotated[
+        float,
+        typer.Option(
+            "--min-abs-reconnection-rate-proxy",
+            help="Minimum absolute reconnection-rate proxy unless flux-change threshold passes.",
+        ),
+    ] = 1.0e-6,
+    max_relative_energy_growth: Annotated[
+        float,
+        typer.Option(
+            "--max-relative-energy-growth",
+            help="Maximum relative total-energy growth allowed.",
+        ),
+    ] = 2.0,
+) -> None:
+    """Write a validation-only readiness report for forced turbulent reconnection."""
+    manifest_path, validation = write_forced_turbulent_reconnection_readiness_report(
+        run_dir,
+        outdir=outdir,
+        require_summary=require_summary,
+        require_movies=require_movies,
+        min_history_samples=min_history_samples,
+        min_t_end=min_t_end,
+        min_reconnection_proxy_change=min_reconnection_proxy_change,
+        min_abs_reconnection_rate_proxy=min_abs_reconnection_rate_proxy,
+        max_relative_energy_growth=max_relative_energy_growth,
+    )
+    typer.echo(f"wrote {manifest_path}")
+    _exit_if_validation_failed(validation, context="forced-turbulent-reconnection-readiness-check")
 
 
 @benchmark_app.command("double-harris-long-run")

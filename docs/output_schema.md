@@ -166,7 +166,18 @@ write:
 | `diagnostics.json` | Scalar controls, energy/current diagnostics, high-$k$ summaries, and reconnection-proxy statistics. |
 | `validation.json` | Finite-array, energy, current, high-$k$, and reconnection-proxy gates. |
 | `figures/*_summary.png` | Energy, current/reconnection, final current, and final flux summary. |
-| `figures/*_flux.gif`, `figures/*_current.gif` | Optional fixed-scale movies when `--movies` is set. |
+| `figures/*_flux_contours.gif`, `figures/*_current.gif` | Optional fixed-scale movies when `--movies` is set. |
+
+`mhx benchmark forced-turbulent-reconnection-readiness-check <run-dir>` writes
+`<run-dir>/readiness/` by default:
+
+| File | Schema / contents |
+| --- | --- |
+| `promotion_readiness.json` | `mhx.validation.forced_turbulent_reconnection.readiness.v1`; validation-only claim boundary, terminal time, sample count, reconnecting-flux/rate proxy changes, energy growth, thresholds, and pass/fail checks. |
+| `validation.json` | `mhx.validation.forced_turbulent_reconnection.readiness.gates.v1`; finite-history, schema, duration, reconnection-proxy, energy, summary, and optional movie checks. |
+| `figures/promotion_matrix.png` | Reviewer-readable pass/fail readiness matrix. |
+| `artifact_manifest.json` | Recursive hashes for the readiness bundle. |
+| `manifest.json` | `claim_level = validation`; this command deliberately cannot promote the artifact to 3-D LV99 or production turbulent-reconnection evidence. |
 
 ### Rutherford production execution
 

@@ -65,7 +65,7 @@ Run a deterministic reduced-MHD smoke workflow:
 
 ```bash
 mhx init outputs/tutorial/linear_tearing.toml
-mhx run examples/linear_tearing.toml --outdir outputs/smoke
+mhx run outputs/tutorial/linear_tearing.toml --outdir outputs/smoke
 mhx figures outputs/smoke --gif
 mhx report outputs/smoke
 mhx artifact-manifest outputs/smoke
@@ -110,6 +110,11 @@ Common entry points:
 ```bash
 mhx validate all --outdir outputs/validation_suite
 mhx benchmark catalog --outdir outputs/benchmarks/catalog
+mhx benchmark double-harris-promotion-check \
+  outputs/benchmarks/periodic_double_harris_seeded_long_run \
+  --convergence-dir outputs/benchmarks/periodic_double_harris_convergence
+mhx benchmark forced-turbulent-reconnection-readiness-check \
+  outputs/benchmarks/forced_turbulent_reconnection
 mhx campaign rutherford-plan-production --outdir outputs/campaigns/rutherford_production_plan
 # Run restartable chunks until the target completes; then attach convergence and seed-QI evidence:
 mhx campaign rutherford-execute outputs/campaigns/rutherford_production_plan --movies

@@ -59,6 +59,7 @@ mhx benchmark nonlinear-energy-budget --outdir outputs/benchmarks/nonlinear_ener
 mhx benchmark orszag-tang --outdir outputs/benchmarks/orszag_tang_vortex --movies
 mhx benchmark decaying-turbulence --outdir outputs/benchmarks/decaying_mhd_turbulence --movies
 mhx benchmark forced-turbulent-reconnection --outdir outputs/benchmarks/forced_turbulent_reconnection --movies
+mhx benchmark forced-turbulent-reconnection-readiness-check outputs/benchmarks/forced_turbulent_reconnection
 mhx benchmark nonlinear-duration-audit --outdir outputs/benchmarks/nonlinear_duration_audit
 mhx benchmark duration-policy --outdir outputs/benchmarks/duration_policy
 mhx benchmark diffusion-eigenvalue --outdir outputs/benchmarks/diffusion_eigenvalue
@@ -413,6 +414,7 @@ mhx benchmark nonlinear-energy-budget --outdir outputs/ci/nonlinear_energy_budge
 mhx benchmark orszag-tang --outdir outputs/ci/orszag_tang_vortex
 mhx benchmark decaying-turbulence --outdir outputs/ci/decaying_mhd_turbulence
 mhx benchmark forced-turbulent-reconnection --outdir outputs/ci/forced_turbulent_reconnection
+mhx benchmark forced-turbulent-reconnection-readiness-check outputs/ci/forced_turbulent_reconnection
 mhx benchmark nonlinear-duration-audit --outdir outputs/ci/nonlinear_duration_audit
 mhx benchmark duration-policy --outdir outputs/ci/duration_policy
 mhx benchmark diffusion-eigenvalue --outdir outputs/ci/diffusion_eigenvalue

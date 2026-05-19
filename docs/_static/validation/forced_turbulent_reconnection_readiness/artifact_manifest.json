@@ -1,0 +1,32 @@
+{
+  "api_version": "v1",
+  "claim_levels": {
+    "manifest.json": "validation"
+  },
+  "created_utc": "2026-05-19T17:53:18.547402+00:00",
+  "files": [
+    {
+      "path": "figures/promotion_matrix.png",
+      "sha256": "11704b7d12c4bfa00552c6ebcbfd0b667ea76f733abc14eeb2d3d8521215a64c",
+      "size_bytes": 102433
+    },
+    {
+      "path": "manifest.json",
+      "sha256": "749a443fc5f0fac750397ae2dd6fcbf5caacc9ac8b18762049b46776b13f9c55",
+      "size_bytes": 3187
+    },
+    {
+      "path": "promotion_readiness.json",
+      "sha256": "e3402687e56b1595e2bd56354d9a58f6b3b92422e23037d3b6cfdae415b98575",
+      "size_bytes": 2114
+    },
+    {
+      "path": "validation.json",
+      "sha256": "c8dce25bbb5fe368f3b8575b1718bd9097a3566b70b083b334ed16bac6b60069",
+      "size_bytes": 2430
+    }
+  ],
+  "mhx_version": "0.1.0a0",
+  "root": "docs/_static/validation/forced_turbulent_reconnection_readiness",
+  "schema": "mhx.artifacts.v1"
+}
