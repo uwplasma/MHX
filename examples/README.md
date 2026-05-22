@@ -21,3 +21,22 @@ tree by default.
 
 The package skeleton in `examples/plugin_template/` is the recommended layout
 for third-party physics and diagnostics plugins.
+
+## Publication examples
+
+The `publication_*.py` scripts are standalone, FAST, publication-style
+workflows. Edit the input parameters at the top of each file for larger runs.
+By default they write under `outputs/examples/publication`; set
+`MHX_EXAMPLE_OUTDIR_ROOT=/path/to/root` to redirect all outputs during tests.
+
+| Problem | Command | Expected primary outputs |
+| --- | --- | --- |
+| Linear Harris tearing | `python examples/publication_linear_harris_tearing.py` | `$MHX_EXAMPLE_OUTDIR_ROOT/linear_harris_tearing/manifest.json`, `linear_tearing_timedomain.npz`, `figures/linear_tearing_timedomain.png`, `figures/publication_linear_harris_tearing_summary.png` |
+| Double-Harris nonlinear reconnection | `python examples/publication_double_harris_reconnection.py` | `$MHX_EXAMPLE_OUTDIR_ROOT/double_harris_reconnection/manifest.json`, `periodic_double_harris_seeded_long_run.npz`, `figures/periodic_double_harris_flux.gif`, `figures/periodic_double_harris_current.gif`, `figures/publication_double_harris_delta_flux.gif`, `figures/publication_double_harris_reconnection_summary.png` |
+| Orszag--Tang plus turbulence | `python examples/publication_orszag_tang_turbulence.py` | `$MHX_EXAMPLE_OUTDIR_ROOT/orszag_tang_turbulence/orszag_tang/manifest.json`, `$MHX_EXAMPLE_OUTDIR_ROOT/orszag_tang_turbulence/forced_turbulent_reconnection/manifest.json`, `figures/publication_orszag_tang_turbulence_summary.png`, generated current/flux GIFs |
+| Rutherford production path | `python examples/publication_rutherford_production.py` | `$MHX_EXAMPLE_OUTDIR_ROOT/rutherford_production_path/campaign_plan.json`, `resume_plan.json`, `production_history.npz`, `checkpoints/state_step_000000000006.npz`, `figures/fixed_scale_flux_movie.gif`, `figures/publication_rutherford_production_summary.png` |
+| Neural ODE | `python examples/publication_neural_ode.py` | `$MHX_EXAMPLE_OUTDIR_ROOT/neural_ode/manifest.json`, `dataset.npz`, `latent_ode_predictions.npz`, `latent_ode_metrics.json`, `figures/latent_ode_predictions.png`, `figures/publication_neural_ode_summary.png` |
+
+For a clean rerun, remove the corresponding output directory first. The
+Rutherford script intentionally demonstrates the restart/resume path, so an
+existing checkpoint directory may cause it to resume instead of starting fresh.

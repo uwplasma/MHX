@@ -225,6 +225,78 @@
     },
     {
       "artifacts": {
+        "diagnostics": "outputs/campaigns/gpu_nonlinear_20260522_085049/double_harris_long_n128_t160/diagnostics.json",
+        "manifest": "outputs/campaigns/gpu_nonlinear_20260522_085049/double_harris_long_n128_t160/manifest.json",
+        "promotion_readiness": "outputs/campaigns/gpu_nonlinear_20260522_085049/double_harris_long_n128_t160/promotion/promotion_readiness.json",
+        "validation": "outputs/campaigns/gpu_nonlinear_20260522_085049/double_harris_long_n128_t160/validation.json"
+      },
+      "blocker": "Convergence-backed validation media passes duration, X/O, flux, width, movie, and manifest gates, but the attached promotion report declares claim_level_if_passed=validation; it is not a production Rutherford, Sweet-Parker, or plasmoid-chain claim.",
+      "checks": {
+        "early_difference_grows": true,
+        "early_growth_positive": true,
+        "enough_saved_samples": true,
+        "finite_histories": true,
+        "full_duration_reached": true,
+        "island_width_amplifies": true,
+        "nonlinear_difference_reaches_visible_growth": true,
+        "readme_release_media_duration_exceeds_documented_minimum": true,
+        "reconnected_flux_amplifies": true,
+        "short_duration_is_labeled_fast": true,
+        "total_energy_is_dissipative": true
+      },
+      "claim_level": "validation",
+      "claim_scope": "Seeded longer nonlinear periodic double-Harris replay with finite, dissipative histories; not yet a converged plasmoid/Rutherford claim.",
+      "command": "timeout 1800 python3 -m mhx.cli.main benchmark double-harris-long-run --nx 128 --ny 128 --width 0.36 --eta 0.0045 --nu 0.0045 --perturbation-amplitude 0.004 --dt 0.02 --t-end 160 --save-every 100 --movies; followed by matched n=64/96/128 convergence, width, eta, seed-QI, artifact-manifest, and double-harris-promotion-check gates.",
+      "family": "periodic double-Harris",
+      "label": "2026-05-22 GPU double-Harris validation promotion",
+      "metrics": {
+        "fitted_early_growth_rate": 0.0716284,
+        "history_sample_count": 81,
+        "island_width_amplification": 2.89076,
+        "max_growth_factor": 8.62337,
+        "max_o_point_count": 2,
+        "max_x_point_count": 4,
+        "promotion_ready": true,
+        "reconnected_flux_amplification": 8.35649,
+        "relative_energy_increase": 0.0,
+        "resistivity": 0.0045,
+        "samples": 81,
+        "shape": [
+          128,
+          128
+        ],
+        "t_end": 160.0,
+        "viscosity": 0.0045,
+        "width": 0.36
+      },
+      "present": true,
+      "production_claim_ready": false,
+      "promotion_checks": {
+        "convergence_bundle_count": true,
+        "convergence_bundles_passed": true,
+        "critical_point_counts_present": true,
+        "energy_increase_within_tolerance": true,
+        "execution_diagnostics_present": true,
+        "execution_validation_passed": true,
+        "execution_validation_present": true,
+        "finite_history_arrays": true,
+        "fixed_scale_movies_present": true,
+        "history_schema_supported": true,
+        "island_width_amplifies": true,
+        "minimum_duration_reached": true,
+        "minimum_history_samples": true,
+        "o_critical_points_detected": true,
+        "reconnected_flux_amplifies": true,
+        "required_history_keys_present": true,
+        "run_manifest_present": true,
+        "x_critical_points_detected": true
+      },
+      "promotion_ready": true,
+      "run_dir": "outputs/campaigns/gpu_nonlinear_20260522_085049/double_harris_long_n128_t160",
+      "validation_passed": true
+    },
+    {
+      "artifacts": {
         "diagnostics": "outputs/campaigns/growing_double_harris_gpu_96_t120_20260518_044120/diagnostics.json",
         "manifest": "outputs/campaigns/growing_double_harris_gpu_96_t120_20260518_044120/manifest.json",
         "promotion_readiness": "outputs/campaigns/growing_double_harris_gpu_96_t120_20260518_044120/promotion/promotion_readiness.json",
