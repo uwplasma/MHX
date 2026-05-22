@@ -7,6 +7,25 @@ integration, checkpointing, media, nonlinear budget gates, and bounded
 current-sheet response diagnostics; they do **not** yet demonstrate Rutherford
 growth or plasmoid onset.
 
+## Production automation lane
+
+The current production-campaign lane is generated, not launched, by default:
+
+```bash
+python tools/run_nonlinear_production_campaign.py \
+  --outdir outputs/campaigns/nonlinear_production_campaign \
+  --dry-run
+```
+
+This writes `production_campaign_manifest.json` and `run_commands.sh` with exact
+Rutherford and double-Harris commands for the duration, convergence, seed-QI,
+sheet-width/aspect, eta/Lundquist, fixed-scale movie, and promotion gates. The
+manifest itself is validation-level planning evidence only. Running the lane
+requires the explicit `--execute` flag plus timeout controls, and production
+wording remains blocked until the Rutherford target completes, the promotion
+report passes, and the final `--allow-production-claim --max-steps 0` refresh
+command succeeds.
+
 ## Reproducible command sequence
 
 The completed duration run used the restartable production executor:

@@ -14,17 +14,18 @@ API for reproducible reduced-MHD studies.
 
 ## MHD at a Glance
 
-These previews keep the README visual and short. The first row shows longer
-Harris-sheet and forced turbulent current-sheet replays with magnetic-flux
-(`Az`/`ψ`) contours; the second row shows nonlinear reduced-MHD turbulence,
-Orszag--Tang roll-up, and a Harris tearing layer sweep. See
+These previews keep the README visual and short. The first row shows residual
+double-Harris reconnecting fields, a forced turbulent current-sheet replay with
+magnetic-flux (`Az`/`ψ`) contours, and Orszag--Tang current sheets; the second
+row shows nonlinear reduced-MHD turbulence, Orszag--Tang roll-up, and a Harris
+tearing layer sweep. See
 [docs/media.md](docs/media.md) for source commands, visual QA, and claim
 boundaries.
 
-| Harris-sheet validation (`Az` contours) | Forced turbulent-reconnection proxy | Orszag--Tang current sheets |
+| Residual double-Harris reconnection | Forced turbulent-reconnection proxy | Orszag--Tang current sheets |
 | --- | --- | --- |
 | ![Double-Harris reconnection replay](docs/_static/readme/double_harris_reconnection.gif) | ![Forced turbulent reconnection](docs/_static/readme/forced_turbulent_reconnection.gif) | ![Orszag-Tang current sheets](docs/_static/readme/orszag_tang_current.gif) |
-| Single-sheet zoom from a `96×96`, `t=120` validation run: `j_z` background plus `Az` contours and refined diagnostic X/O annotations, not separatrix-event labels. | `64×64`, `t=80` forced-turbulence current sheet with reconnection-rate proxy diagnostics. | Solver-generated Orszag--Tang current-density morphology and high-$k$ transfer over a `96×96`, `t=10` validation run. |
+| Single-sheet zoom from a `128×128`, `t=160` GPU validation bundle: residual reconnecting flux `Δψ` with total `Az` contours and diagnostic X/O markers; not separatrix-event, Rutherford, or plasmoid-production evidence. | `64×64`, `t=80` forced-turbulence current sheet with reconnection-rate proxy diagnostics. | Solver-generated Orszag--Tang current-density morphology and high-$k$ transfer over a `96×96`, `t=10` validation run. |
 
 | Decaying MHD turbulence | Orszag--Tang vorticity | Harris tearing layer |
 | --- | --- | --- |

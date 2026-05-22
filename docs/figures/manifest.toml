@@ -5,7 +5,7 @@ description = "Reviewer-facing map from documentation figures and movies to comm
 [[figures]]
 id = "readme_double_harris_reconnection"
 path = "docs/_static/readme/double_harris_reconnection.gif"
-sha256 = "5b4e7c872f8f1ecadc2a5706f5afb27d238845ea66947089e5310f027947cbc6"
+sha256 = "f54638f9907416d59499d75a0761dbf362c3e6f6f0936532bc8030a79ac808a2"
 command = "python examples/make_readme_media.py"
 claim_level = "validation"
 claim_scope = "Longer seeded double-Harris visual communication; not a converged Rutherford or plasmoid claim."

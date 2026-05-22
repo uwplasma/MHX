@@ -18,6 +18,9 @@ implementation, and explicit claim boundary.
   skeptical interpretations and explicit non-claims.
 - [Publication checklist](publication_checklist.md) states which still figures
   and movies are ready as validation evidence and which are production-only.
+- [Nonlinear campaign evidence](nonlinear_campaign_evidence.md) records the
+  latest local gate summaries, including the bounded GPU validation lane where
+  `gate_ready = true` and `production_claim_ready = false`.
 
 ## Evidence standard
 
@@ -71,6 +74,7 @@ manifest writer paths:
 | Seeded double-Harris long run | Scalable base-vs-seeded nonlinear replay with early growth, dominant reconnecting-flux response, Rutherford-width proxy, X/O counts, dissipative energy, current-density histories, and optional movies. | Bounded nonlinear validation, not convergence-backed Rutherford/plasmoid production. | [current_sheet.py](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/current_sheet.py), [test_current_sheet_eigenvalue_validation.py](https://github.com/uwplasma/MHX/blob/main/tests/test_current_sheet_eigenvalue_validation.py) |
 | Seeded double-Harris convergence | Same replay swept over tiny and medium validation resolution/time-step cases with spread gates. | Convergence-backed validation evidence; production claims still require larger seed, aspect-ratio, Lundquist-number, and duration sweeps. | [current_sheet.py](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/current_sheet.py), [test_current_sheet_eigenvalue_validation.py](https://github.com/uwplasma/MHX/blob/main/tests/test_current_sheet_eigenvalue_validation.py) |
 | Seeded double-Harris parameter sweep | Same replay swept over seed mode, sheet width, or resistivity with finite-response, energy, reconnection-proxy, island-width, and anomaly-spread gates. | Validation-only robustness evidence; not a fitted FKR/Coppi, Rutherford, Sweet-Parker, or plasmoid scaling claim. | [current_sheet.py](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/current_sheet.py), [test_current_sheet_eigenvalue_validation.py](https://github.com/uwplasma/MHX/blob/main/tests/test_current_sheet_eigenvalue_validation.py) |
+| Latest bounded GPU double-Harris gate | `128×128`, `t_end=160` replay plus `64/96/128` convergence, width/resistivity sweeps, seed-QI evidence, fixed-scale movies, manifests, and local gate summary. | `gate_ready = true` for validation media and `production_claim_ready = false`; the attached promotion report declares `claim_level_if_passed = "validation"`. | [current_sheet.py](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/current_sheet.py), [nonlinear_campaign_evidence.py](https://github.com/uwplasma/MHX/blob/main/tools/nonlinear_campaign_evidence.py), [test_nonlinear_campaign_evidence.py](https://github.com/uwplasma/MHX/blob/main/tests/test_nonlinear_campaign_evidence.py) |
 | Nonlinear energy budget | Reduced-MHD identity $dE/dt=-\eta\langle j^2\rangle-\nu\langle\omega^2\rangle$. | Nonlinear conservation/dissipation validation. | [nonlinear.py](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/nonlinear.py), [test_nonlinear_energy_budget_validation.py](https://github.com/uwplasma/MHX/blob/main/tests/test_nonlinear_energy_budget_validation.py) |
 | Orszag--Tang vortex | Reduced-MHD nonlinear roll-up, high-$k$ transfer, energy decay, and divergence preservation. | Nonlinear morphology validation, not compressible shock validation. | [orszag_tang.py](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/orszag_tang.py), [test_orszag_tang_validation.py](https://github.com/uwplasma/MHX/blob/main/tests/test_orszag_tang_validation.py) |
 | Decaying turbulence | Deterministic broadband reduced-MHD current filamentation and high-$k$ transfer. | Turbulence media validation, not converged statistics. | [turbulence.py](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/turbulence.py), [test_turbulence_validation.py](https://github.com/uwplasma/MHX/blob/main/tests/test_turbulence_validation.py) |
@@ -143,6 +147,135 @@ The resulting evidence bundle should contain:
 - `outputs/reviewer/readiness/readiness.json`
 - `outputs/reviewer/artifact_manifest.json`
 
+## Reviewer example commands
+
+The standalone publication-style examples are reproduced with these exact
+commands. `MHX_EXAMPLE_FAST=1` keeps nonlinear examples cheap for review; omit
+it only when intentionally regenerating the larger defaults.
+
+```bash
+MHX_EXAMPLE_FAST=1 MHX_EXAMPLE_OUTDIR_ROOT=outputs/reviewer/examples \
+  python examples/publication_linear_harris_tearing.py
+MHX_EXAMPLE_FAST=1 MHX_EXAMPLE_OUTDIR_ROOT=outputs/reviewer/examples \
+  python examples/publication_double_harris_reconnection.py
+MHX_EXAMPLE_FAST=1 MHX_EXAMPLE_OUTDIR_ROOT=outputs/reviewer/examples \
+  python examples/publication_orszag_tang_turbulence.py
+MHX_EXAMPLE_FAST=1 MHX_EXAMPLE_OUTDIR_ROOT=outputs/reviewer/examples \
+  python examples/publication_rutherford_production.py
+MHX_EXAMPLE_FAST=1 MHX_EXAMPLE_OUTDIR_ROOT=outputs/reviewer/examples \
+  python examples/publication_neural_ode.py
+```
+
+The double-Harris example writes both raw flux/current movies and the
+policy-preferred residual-flux movie:
+`outputs/reviewer/examples/double_harris_reconnection/figures/publication_double_harris_delta_flux.gif`.
+
+## Reviewer gate-summary commands
+
+Regenerate the latest bounded GPU validation gate summary without asserting a
+production claim:
+
+```bash
+python tools/nonlinear_campaign_evidence.py \
+  --campaign-dir outputs/campaigns/gpu_nonlinear_20260522_085049/double_harris_long_n128_t160 \
+  --output-json outputs/campaigns/gpu_nonlinear_20260522_085049/double_harris_long_n128_t160/promotion_gate_summary.json \
+  --output-md outputs/campaigns/gpu_nonlinear_20260522_085049/double_harris_long_n128_t160/promotion_gate_summary.md
+```
+
+Regenerate the duration-complete Rutherford blocker summary without hiding the
+failed response gates:
+
+```bash
+python tools/nonlinear_campaign_evidence.py \
+  --campaign-dir outputs/campaigns/rutherford_current_schema_96_dt005_20260517_161235 \
+  --output-json outputs/campaigns/rutherford_current_schema_96_dt005_20260517_161235/promotion_gate_summary.json \
+  --output-md outputs/campaigns/rutherford_current_schema_96_dt005_20260517_161235/promotion_gate_summary.md
+```
+
+For a future production candidate, add `--require-production-ready`; that flag
+is intentionally omitted for the current GPU validation lane because it should
+remain `production_claim_ready = false`.
+
+The exact commands used to recreate the latest bounded GPU inputs are:
+
+```bash
+RUN_DIR=outputs/campaigns/gpu_nonlinear_20260522_085049
+
+python3 -m mhx.cli.main benchmark double-harris-long-run \
+  --outdir "$RUN_DIR/double_harris_long_n128_t160" \
+  --nx 128 --ny 128 --width 0.36 --eta 0.0045 --nu 0.0045 \
+  --perturbation-amplitude 0.004 --mode-x 2 --mode-y 1 \
+  --dt 0.02 --t-end 160 --save-every 100 \
+  --fit-start 0 --fit-stop 16 \
+  --min-early-growth-rate 1e-9 \
+  --min-max-growth-factor 1.000000001 \
+  --min-reconnected-flux-amplification 1.000000001 \
+  --min-island-width-amplification 1.000000001 \
+  --movies
+
+python3 -m mhx.cli.main benchmark double-harris-convergence \
+  --outdir "$RUN_DIR/double_harris_convergence_n64_96_128" \
+  --resolutions 64,96,128 --dt-values 0.02,0.01 \
+  --reference-resolution 96 --reference-dt 0.02 \
+  --width 0.36 --eta 0.0045 --nu 0.0045 \
+  --perturbation-amplitude 0.004 --mode-x 2 --mode-y 1 \
+  --t-end 32 --save-interval 2 --fit-start 0 --fit-stop 12 \
+  --min-early-growth-rate 1e-9 \
+  --min-max-growth-factor 1.000000001 \
+  --max-relative-growth-rate-spread 10 \
+  --max-relative-max-growth-spread 20 \
+  --max-relative-flux-amplification-spread 20 \
+  --max-relative-width-amplification-spread 20
+
+python3 -m mhx.cli.main benchmark double-harris-parameter-sweep \
+  --outdir "$RUN_DIR/double_harris_width_sweep" \
+  --sweep-axis width --widths 0.30,0.36,0.42 \
+  --nx 96 --ny 96 --eta 0.0045 --nu 0.0045 \
+  --perturbation-amplitude 0.004 --mode-x 2 --mode-y 1 \
+  --dt 0.02 --t-end 32 --save-interval 2 \
+  --fit-start 0 --fit-stop 12 \
+  --min-early-growth-rate 1e-9 \
+  --min-max-growth-factor 1.000000001 \
+  --max-relative-growth-rate-spread 20 \
+  --max-relative-max-growth-spread 40
+
+python3 -m mhx.cli.main benchmark double-harris-parameter-sweep \
+  --outdir "$RUN_DIR/double_harris_eta_sweep" \
+  --sweep-axis resistivity --etas 0.0035,0.0045,0.0060 \
+  --viscosities 0.0035,0.0045,0.0060 \
+  --nx 96 --ny 96 --width 0.36 \
+  --perturbation-amplitude 0.004 --mode-x 2 --mode-y 1 \
+  --dt 0.02 --t-end 32 --save-interval 2 \
+  --fit-start 0 --fit-stop 12 \
+  --min-early-growth-rate 1e-9 \
+  --min-max-growth-factor 1.000000001 \
+  --max-relative-growth-rate-spread 20 \
+  --max-relative-max-growth-spread 40
+
+python3 -m mhx.cli.main benchmark seed-robust-qi \
+  --outdir "$RUN_DIR/seed_robust_qi_n32_t0p12" \
+  --seeds 0,1,2,3,4,5 --nx 32 --ny 32 \
+  --t-end 0.12 --dt 0.01 --eta 0.0045 --nu 0.0045 \
+  --noise-amplitude 1e-6
+
+python3 -m mhx.cli.main benchmark double-harris-promotion-check \
+  "$RUN_DIR/double_harris_long_n128_t160" \
+  --outdir "$RUN_DIR/double_harris_long_n128_t160/promotion" \
+  --convergence-dir "$RUN_DIR/double_harris_convergence_n64_96_128" \
+  --require-movies --min-history-samples 50 \
+  --min-convergence-dirs 1 --min-t-end 120 \
+  --min-reconnected-flux-amplification 1.05 \
+  --min-island-width-amplification 1.05 \
+  --max-relative-energy-increase 1e-8
+
+python3 -m mhx.cli.main artifact-manifest "$RUN_DIR"
+
+python tools/nonlinear_campaign_evidence.py \
+  --campaign-dir "$RUN_DIR/double_harris_long_n128_t160" \
+  --output-json "$RUN_DIR/double_harris_long_n128_t160/promotion_gate_summary.json" \
+  --output-md "$RUN_DIR/double_harris_long_n128_t160/promotion_gate_summary.md"
+```
+
 ## What is strong today
 
 The current repository can defend:
@@ -155,6 +288,9 @@ The current repository can defend:
 - small-grid nonlinear growth of an unstable periodic double-Harris sheet;
 - seeded double-Harris long-run response with validation-only promotion and
   convergence evidence;
+- the 2026-05-22 bounded GPU double-Harris validation gate with
+  `gate_ready = true`, residual-flux media policy, and
+  `production_claim_ready = false`;
 - forced turbulent-reconnection proxy media with a validation-only readiness
   matrix;
 - nonlinear reduced-MHD energy-budget consistency;
@@ -176,6 +312,8 @@ The current repository should not claim:
 - Rutherford algebraic island growth;
 - Sweet-Parker plasmoid-chain formation;
 - production scaling on large grids;
+- production promotion from the latest GPU double-Harris gate, because its
+  promotion report explicitly declares `claim_level_if_passed = "validation"`;
 - neural-ODE predictive superiority;
 - inverse-design superiority over grid search.
 

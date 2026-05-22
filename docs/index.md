@@ -11,10 +11,15 @@ The current repository supports deterministic FAST validation, seed-robust QI,
 fitted latent-ODE reproducibility, timing/readiness reports, nonlinear
 reduced-MHD media examples such as double-Harris, Orszag--Tang, decaying
 turbulence, and forced turbulent reconnection, plus short validation-grade
-Rutherford executor chunks. Long nonlinear Rutherford/plasmoid production
-campaigns are still gated as future `production` claims and must pass duration,
-checkpoint-restart, convergence, seed/QI, and artifact-hash checks before being
-used as paper evidence.
+Rutherford executor chunks. The latest bounded GPU double-Harris campaign
+(`outputs/campaigns/gpu_nonlinear_20260522_085049/double_harris_long_n128_t160`)
+is `gate_ready = true` for validation media and
+`production_claim_ready = false`; its promotion report explicitly permits only
+`claim_level_if_passed = "validation"`. Long nonlinear Rutherford/plasmoid
+production campaigns are still gated as future `production` claims and must
+pass duration, checkpoint-restart, convergence, seed/QI, positive
+reconnecting-flux and island-width response, artifact-hash, and explicit
+production-claim checks before being used as paper evidence.
 
 ## Evidence guide
 
@@ -28,11 +33,12 @@ Start with these pages when checking validation evidence and scope boundaries:
 - [Benchmark command index](benchmarks.md) lists validation, scaffold,
   comparison, campaign, and neural-ODE commands with expected output families.
 - [Validation movies](media.md) separates solver-generated movies from theory
-  schematics and keeps the literature anchors next to the visuals.
+  schematics, documents the residual-flux media policy, and keeps the
+  literature anchors next to the visuals.
 - [Publication checklist](publication_checklist.md) states which figures are
   ready as validation evidence and which remain roadmap or production-only.
 - [Nonlinear campaign evidence claims](nonlinear_campaign_evidence.md) is the
-  generated claim table for double-Harris, Rutherford, and forced
+  claim table plus reviewer commands for double-Harris, Rutherford, and forced
   turbulent-reconnection long-run evidence.
 
 ```{toctree}

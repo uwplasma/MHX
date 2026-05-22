@@ -17,6 +17,9 @@ README_GIF_DURATION_MS = 90
 DOUBLE_HARRIS_MAX_FRAMES = 18
 DOUBLE_HARRIS_LENGTHS = (2.0 * np.pi, 2.0 * np.pi)
 DOUBLE_HARRIS_SHEET_HALF_WIDTH = 1.2
+PREFERRED_GPU_DOUBLE_HARRIS_CAMPAIGN = Path(
+    "outputs/campaigns/gpu_nonlinear_20260522_085049"
+)
 ORSZAG_TANG_MAX_FRAMES = 36
 TURBULENCE_MAX_FRAMES = 20
 
@@ -114,8 +117,9 @@ def _write_double_harris_readme_movies(
             t_end=history["t_end"],
             time_span=common_source["time_span"],
             notes=(
-                "Solver-generated Harris-sheet reconnection movie: out-of-plane "
-                "current density with magnetic-flux/Az contours and detected X/O markers."
+                "Solver-generated Harris-sheet reconnection movie: perturbed-minus-base "
+                "residual flux Δψ background with total magnetic-flux/Az contours and "
+                "detected diagnostic X/O markers."
             ),
         ),
         _gif_manifest_entry(
@@ -124,8 +128,9 @@ def _write_double_harris_readme_movies(
             t_end=history["t_end"],
             time_span=common_source["time_span"],
             notes=(
-                "Solver-generated full-domain periodic double-Harris movie: total "
-                "current density with magnetic-flux/Az contours across both sheets."
+                "Solver-generated full-domain periodic double-Harris movie: "
+                "perturbed-minus-base residual current density Δj_z with total "
+                "magnetic-flux/Az contours across both sheets."
             ),
         ),
     ]
@@ -136,6 +141,9 @@ def _select_double_harris_history(output_dir: Path) -> dict[str, Any]:
     """Prefer precomputed longer nonlinear histories; generate a labeled fallback if absent."""
     candidates = sorted(
         {
+            *PREFERRED_GPU_DOUBLE_HARRIS_CAMPAIGN.glob(
+                "**/periodic_double_harris_seeded_long_run.npz"
+            ),
             *Path("outputs/readme_media").glob("**/periodic_double_harris_seeded_long_run.npz"),
             *Path("outputs/long_runs").glob("**/periodic_double_harris_seeded_long_run.npz"),
             *Path("outputs/docs_validation").glob("**/periodic_double_harris_seeded_long_run.npz"),
@@ -145,7 +153,7 @@ def _select_double_harris_history(output_dir: Path) -> dict[str, Any]:
             ),
         }
     )
-    ranked: list[tuple[tuple[float, int, int], dict[str, Any]]] = []
+    ranked: list[tuple[tuple[int, int, float, int], dict[str, Any]]] = []
     for path in candidates:
         try:
             history = _load_double_harris_history(path, fields_only=True)
@@ -156,12 +164,19 @@ def _select_double_harris_history(output_dir: Path) -> dict[str, Any]:
         if validation_path.exists():
             validation_passed = bool(json.loads(validation_path.read_text()).get("passed"))
         source_kind = "precomputed long-run artifact"
+        is_preferred_gpu_campaign = PREFERRED_GPU_DOUBLE_HARRIS_CAMPAIGN in path.parents
+        if is_preferred_gpu_campaign:
+            source_kind = "GPU nonlinear campaign validation bundle"
         if output_dir in path.parents:
             source_kind = "generated README fallback artifact"
+        validation_rank = (
+            2 if validation_passed is True else 1 if validation_passed is None else 0
+        )
         rank = (
+            validation_rank,
+            int(is_preferred_gpu_campaign),
             float(history["t_end"]),
             int(history["shape"][0] * history["shape"][1]),
-            int(validation_passed is not False),
         )
         ranked.append(
             (
@@ -655,12 +670,18 @@ def _load_double_harris_history(path: Path, *, fields_only: bool = False) -> dic
             ),
             axis=0,
         )
+        reconnected_flux = (
+            np.asarray(data["reconnected_flux"], dtype=float)
+            if "reconnected_flux" in data.files
+            else None
+        )
     shape = tuple(int(value) for value in psi.shape[1:])
     result: dict[str, Any] = {
         "time": saved_time,
         "psi": psi,
         "base_psi": base_psi,
         "delta_psi": psi - base_psi,
+        "reconnected_flux": reconnected_flux,
         "shape": shape,
         "t_end": float(saved_time[-1]),
     }
@@ -773,12 +794,16 @@ def _write_harris_sheet_contour_movie(
     path: Path,
     source_label: str,
 ) -> None:
-    """Write a single-sheet Harris reconnection movie with Az/psi contours."""
+    """Write a single-sheet Harris residual-flux movie with total Az/psi contours."""
     import matplotlib.pyplot as plt
 
     frames = []
-    y, normal, current_crop, psi_crop = _left_sheet_crop(history)
-    vmax = max(float(np.percentile(np.abs(current_crop), 99.5)), np.finfo(float).eps)
+    y, normal, delta_psi_crop = _left_sheet_field_crop(history, "delta_psi")
+    _, _, psi_crop = _left_sheet_field_crop(history, "psi")
+    vmax = max(
+        float(np.percentile(np.abs(delta_psi_crop[frame_indices]), 99.5)),
+        np.finfo(float).eps,
+    )
     psi_levels = np.linspace(
         float(np.percentile(psi_crop, 3.0)),
         float(np.percentile(psi_crop, 97.0)),
@@ -787,7 +812,7 @@ def _write_harris_sheet_contour_movie(
     for index in frame_indices:
         fig, ax = plt.subplots(figsize=(3.8, 2.75), dpi=72, constrained_layout=True)
         image = ax.imshow(
-            current_crop[index],
+            delta_psi_crop[index],
             origin="lower",
             extent=(0.0, DOUBLE_HARRIS_LENGTHS[1], normal[0], normal[-1]),
             aspect="auto",
@@ -808,7 +833,7 @@ def _write_harris_sheet_contour_movie(
             ax,
             _detect_critical_points_for_frame(history, index),
         )
-        ax.set_title(f"Harris reconnection: Az contours, t={history['time'][index]:.0f}")
+        ax.set_title(f"Harris Δψ + total Az, t={history['time'][index]:.0f}")
         ax.set_xlabel("sheet coordinate")
         ax.set_ylabel("normal to sheet")
         ax.set_xlim(0.0, DOUBLE_HARRIS_LENGTHS[1])
@@ -826,14 +851,17 @@ def _write_harris_full_domain_contour_movie(
     path: Path,
     source_label: str,
 ) -> None:
-    """Write a full periodic double-Harris current-sheet movie with Az contours."""
+    """Write a full periodic double-Harris residual-current movie with Az contours."""
     import matplotlib.pyplot as plt
 
     frames = []
     _, _, x_mesh, y_mesh = _history_mesh(history)
-    current = history["current"]
+    current = history["delta_current"]
     psi = history["psi"]
-    vmax = max(float(np.percentile(np.abs(current), 99.5)), np.finfo(float).eps)
+    vmax = max(
+        float(np.percentile(np.abs(current[frame_indices]), 99.5)),
+        np.finfo(float).eps,
+    )
     psi_levels = np.linspace(float(np.percentile(psi, 2.0)), float(np.percentile(psi, 98.0)), 20)
     for index in frame_indices:
         fig, ax = plt.subplots(figsize=(3.8, 2.75), dpi=72, constrained_layout=True)
@@ -859,7 +887,7 @@ def _write_harris_full_domain_contour_movie(
             ax,
             _detect_critical_points_for_frame(history, index),
         )
-        ax.set_title(f"Periodic double-Harris sheets, t={history['time'][index]:.0f}")
+        ax.set_title(f"Double-Harris Δj_z + total Az, t={history['time'][index]:.0f}")
         ax.set_xlabel("x")
         ax.set_ylabel("y")
         _ = image, source_label
@@ -878,9 +906,10 @@ def _history_mesh(
     return x, y, x_mesh, y_mesh
 
 
-def _left_sheet_crop(
+def _left_sheet_field_crop(
     history: dict[str, Any],
-) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    field_key: str,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     x, y, _, _ = _history_mesh(history)
     sheet = 0.25 * DOUBLE_HARRIS_LENGTHS[0]
     normal = ((x - sheet + 0.5 * DOUBLE_HARRIS_LENGTHS[0]) % DOUBLE_HARRIS_LENGTHS[0]) - (
@@ -891,8 +920,7 @@ def _left_sheet_crop(
     return (
         y,
         normal[mask][order],
-        history["current"][:, mask, :][:, order, :],
-        history["psi"][:, mask, :][:, order, :],
+        history[field_key][:, mask, :][:, order, :],
     )
 
 
@@ -994,11 +1022,11 @@ def _write_double_harris_snapshot_contact_sheets(
         source_label=source_label,
     )
     _write_snapshot_contact_sheet(
-        history["current"],
+        history["delta_current"],
         history["time"],
         path=current_sheet_path,
         cmap="RdBu_r",
-        title="Fixed-scale total double-Harris current-density snapshots",
+        title="Fixed-scale residual double-Harris current-density snapshots",
         source_label=source_label,
         symmetric=True,
     )
@@ -1023,8 +1051,9 @@ def _write_harris_sheet_snapshot_contact_sheet(
         2 * len(history["time"]) // 3,
         len(history["time"]) - 1,
     ]
-    y, normal, current_crop, psi_crop = _left_sheet_crop(history)
-    vmax = max(float(np.percentile(np.abs(current_crop), 99.5)), np.finfo(float).eps)
+    y, normal, delta_psi_crop = _left_sheet_field_crop(history, "delta_psi")
+    _, _, psi_crop = _left_sheet_field_crop(history, "psi")
+    vmax = max(float(np.percentile(np.abs(delta_psi_crop), 99.5)), np.finfo(float).eps)
     psi_levels = np.linspace(
         float(np.percentile(psi_crop, 3.0)),
         float(np.percentile(psi_crop, 97.0)),
@@ -1033,7 +1062,7 @@ def _write_harris_sheet_snapshot_contact_sheet(
     fig, axes = plt.subplots(1, 4, figsize=(12.0, 3.2), constrained_layout=True)
     for ax, index in zip(axes, indices, strict=True):
         image = ax.imshow(
-            current_crop[index],
+            delta_psi_crop[index],
             origin="lower",
             extent=(0.0, DOUBLE_HARRIS_LENGTHS[1], normal[0], normal[-1]),
             aspect="auto",
@@ -1057,9 +1086,10 @@ def _write_harris_sheet_snapshot_contact_sheet(
         ax.set_title(f"t={history['time'][index]:.0f}")
         ax.set_xlabel("sheet coordinate")
         ax.set_ylabel("normal")
-    fig.colorbar(image, ax=axes, shrink=0.76, label=r"$j_z$")
+    fig.colorbar(image, ax=axes, shrink=0.76, label=r"$\Delta\psi$")
     fig.suptitle(
-        f"Harris-sheet reconnection snapshots: current density + Az contours\n{source_label}"
+        f"Harris-sheet reconnection snapshots: residual flux + total Az contours\n"
+        f"{source_label}"
     )
     fig.savefig(path, dpi=160)
     plt.close(fig)
@@ -1081,7 +1111,7 @@ def _write_harris_full_snapshot_contact_sheet(
     ]
     x, y, x_mesh, y_mesh = _history_mesh(history)
     del x, y
-    current = history["current"]
+    current = history["delta_current"]
     psi = history["psi"]
     vmax = max(float(np.percentile(np.abs(current), 99.5)), np.finfo(float).eps)
     psi_levels = np.linspace(float(np.percentile(psi, 2.0)), float(np.percentile(psi, 98.0)), 28)
@@ -1112,9 +1142,10 @@ def _write_harris_full_snapshot_contact_sheet(
         ax.set_title(f"t={history['time'][index]:.0f}")
         ax.set_xlabel("x")
         ax.set_ylabel("y")
-    fig.colorbar(image, ax=axes, shrink=0.76, label=r"$j_z$")
+    fig.colorbar(image, ax=axes, shrink=0.76, label=r"$\Delta j_z$")
     fig.suptitle(
-        f"Periodic double-Harris snapshots: current density + Az contours\n{source_label}"
+        f"Periodic double-Harris snapshots: residual current + total Az contours\n"
+        f"{source_label}"
     )
     fig.savefig(path, dpi=160)
     plt.close(fig)
@@ -1172,6 +1203,44 @@ def _double_harris_visual_qa(
     peak_index = int(np.argmax(current_peaks))
     delta_peak_index = int(np.argmax(delta_current_peaks))
     growth_factor = float(np.max(delta_linf) / max(delta_linf[0], np.finfo(float).tiny))
+    metrics = {
+        "current_linf_first": float(current_peaks[0]),
+        "current_linf_mid": float(current_peaks[mid_index]),
+        "current_linf_final": float(current_peaks[-1]),
+        "current_linf_peak": float(current_peaks[peak_index]),
+        "current_linf_peak_time": float(time[peak_index]),
+        "delta_current_linf_first": float(delta_current_peaks[0]),
+        "delta_current_linf_mid": float(delta_current_peaks[mid_index]),
+        "delta_current_linf_final": float(delta_current_peaks[-1]),
+        "delta_current_linf_peak": float(delta_current_peaks[delta_peak_index]),
+        "delta_current_linf_peak_time": float(time[delta_peak_index]),
+        "flux_delta_linf_first": float(delta_linf[0]),
+        "flux_delta_linf_mid": float(delta_linf[mid_index]),
+        "flux_delta_linf_final": float(delta_linf[-1]),
+        "flux_delta_linf_peak": float(np.max(delta_linf)),
+        "flux_delta_growth_factor": growth_factor,
+    }
+    reconnected_flux = history["reconnected_flux"]
+    reconnected_flux_note = ""
+    if reconnected_flux is not None:
+        reconnected_flux = np.asarray(reconnected_flux, dtype=float)
+        reconnected_flux_peak = float(np.max(reconnected_flux))
+        reconnected_flux_amplification = reconnected_flux_peak / max(
+            float(abs(reconnected_flux[0])),
+            np.finfo(float).tiny,
+        )
+        metrics.update(
+            {
+                "reconnected_flux_first": float(reconnected_flux[0]),
+                "reconnected_flux_final": float(reconnected_flux[-1]),
+                "reconnected_flux_peak": reconnected_flux_peak,
+                "reconnected_flux_amplification": float(reconnected_flux_amplification),
+            }
+        )
+        reconnected_flux_note = (
+            f" The validation reconnected-flux proxy amplifies by "
+            f"{reconnected_flux_amplification:.2f}."
+        )
     return {
         "source": str(source["history_path"]),
         "snapshot_contact_sheets": snapshots,
@@ -1180,41 +1249,29 @@ def _double_harris_visual_qa(
             {"label": "mid", "index": int(mid_index), "time": float(time[mid_index])},
             {"label": "final", "index": int(len(time) - 1), "time": float(time[-1])},
         ],
-        "metrics": {
-            "current_linf_first": float(current_peaks[0]),
-            "current_linf_mid": float(current_peaks[mid_index]),
-            "current_linf_final": float(current_peaks[-1]),
-            "current_linf_peak": float(current_peaks[peak_index]),
-            "current_linf_peak_time": float(time[peak_index]),
-            "delta_current_linf_peak": float(delta_current_peaks[delta_peak_index]),
-            "delta_current_linf_peak_time": float(time[delta_peak_index]),
-            "flux_delta_linf_first": float(delta_linf[0]),
-            "flux_delta_linf_mid": float(delta_linf[mid_index]),
-            "flux_delta_linf_final": float(delta_linf[-1]),
-            "flux_delta_linf_peak": float(np.max(delta_linf)),
-            "flux_delta_growth_factor": growth_factor,
-        },
+        "metrics": metrics,
         "observations": [
             (
-                "The README Harris movie now shows the total out-of-plane current "
-                "with magnetic-flux/Az contours, cropped around one current sheet "
-                "so the automatically detected X/O topology is visible."
+                "The README Harris movies now show perturbed-minus-base reconnecting "
+                "fields: residual flux Δψ in the single-sheet zoom and residual "
+                "current Δj_z in the full-domain view, both with total magnetic-flux/Az "
+                "contours for equilibrium context rather than static total-field movies."
             ),
             (
-                "X/O markers are selected by local |grad(Az)| minima and Hessian "
-                "classification; locations are grid-localized rather than "
-                "sub-cell Newton-refined."
+                "X/O markers are selected from the total Az field by local |grad(Az)| "
+                "minima and Hessian classification; locations are grid-localized "
+                "rather than sub-cell Newton-refined diagnostic event labels."
             ),
             (
-                "Flux contours evolve from a nearly straight Harris sheet into a "
-                "single-island topology around the sheet, while total energy remains "
-                "dissipative in the validation manifest."
+                "Total flux contours provide the two-sheet topology while residual "
+                "color scales expose the seeded reconnecting response; total energy "
+                "remains dissipative in the validation manifest."
             ),
             (
                 "Perturbed-minus-base flux remains tracked quantitatively: it grows from "
                 f"{delta_linf[0]:.3e} at t={time[0]:.1f} to "
                 f"{delta_linf[-1]:.3e} at t={time[-1]:.1f}, with peak growth factor "
-                f"{growth_factor:.2f}, consistent with a "
+                f"{growth_factor:.2f}.{reconnected_flux_note} This is consistent with a "
                 "bounded nonlinear validation replay; this is not yet a "
                 "production plasmoid/Rutherford claim."
             ),
@@ -1610,9 +1667,13 @@ def _write_visual_qa_manifest(
         "schema": "mhx.readme_media_visual_qa.v1",
         "generated_utc": datetime.now(UTC).isoformat(),
         "source_policy": (
-            "README solver movies use the longest available matching nonlinear "
-            "NPZ under outputs/readme_media, outputs/long_runs, outputs/docs_validation, "
-            "or outputs/ci. "
+            "README solver movies prefer the GPU nonlinear campaign bundle under "
+            "outputs/campaigns/gpu_nonlinear_20260522_085049 when it is present "
+            "and validation-passing; otherwise they use the longest available "
+            "matching nonlinear NPZ under outputs/readme_media, outputs/long_runs, "
+            "outputs/docs_validation, or outputs/ci. Double-Harris README frames "
+            "show perturbed-minus-base Δψ/Δj_z residuals with total Az/ψ contours, "
+            "not static total-field movies. "
             "Double-Harris fallback is a labeled 64×64, t_end=60 replay; Orszag-Tang "
             "fallback is a labeled 48×48, t_end=4 replay; turbulence fallbacks are "
             "labeled 32×32 validation replays. Committed release media "

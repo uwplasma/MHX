@@ -93,8 +93,30 @@ evaluations. Larger `save_every` reduces IO and plotting memory. X64 is used in
 physics validation gates; exploratory performance runs may use X32 after a
 regression check confirms diagnostics remain stable.
 
+## Long-run trajectory memory
+
+The fixed-step RK4 integrator stores only saved states. Internally it advances
+`save_every` RK4 steps inside each saved-sample scan chunk, rather than storing
+all internal steps and slicing afterward. This matters for long nonlinear
+campaigns: a `160×160`, `t_end=220`, `dt=0.02`, `save_every=110`
+double-Harris replay initially requested about 2.1 GiB for one full internal
+trajectory buffer on the `office` RTX A4000 node. After chunked saving, the same
+bounded validation run completed and wrote 101 saved samples with finite
+diagnostics.
+
+Practical guidance:
+
+- Increase `save_every` when the analysis only needs coarse movies or growth
+  histories.
+- Keep `dt` controlled by physics/stability, not by output cadence.
+- For GPU runs, set `XLA_PYTHON_CLIENT_PREALLOCATE=false` when sharing a GPU.
+- Treat very long reverse-mode differentiable runs separately: checkpointing or
+  custom adjoints are still needed for memory-efficient gradients through
+  production trajectories.
+
 ## Source links
 
 - [Timing implementation](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/timing.py)
+- [Fixed-step RK4 integrator](https://github.com/uwplasma/MHX/blob/main/src/mhx/time_integrators/fixed_step.py)
 - [Timing tests](https://github.com/uwplasma/MHX/blob/main/tests/test_timing_benchmark.py)
 - [CI artifact workflow](https://github.com/uwplasma/MHX/blob/main/.github/workflows/ci.yml)

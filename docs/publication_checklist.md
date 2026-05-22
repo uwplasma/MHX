@@ -31,8 +31,8 @@ Every figure included in the paper-style documentation should have:
 | Dispersion/layer/time replay | `linear_tearing_dispersion.png`, `linear_tearing_layer.png`, `linear_tearing_timedomain.png` | `validation` | Ready as FAST branch, shape, and growth-fit gates. |
 | Periodic current sheet | `periodic_current_sheet_spectrum.png`, `periodic_current_sheet_timedomain.png`, `periodic_current_sheet_nonlinear_bridge.png` | `validation` | Ready as operator and differentiability gates. |
 | Periodic double-Harris growth | `periodic_double_harris_nonlinear_growth.png` | `validation` | Ready as small-grid instability-path evidence; not a Rutherford/plasmoid production claim. |
-| Seeded double-Harris long run | `periodic_double_harris_seeded_long_run.png`, optional flux/current GIFs | `validation` | Ready as bounded nonlinear evidence with early growth, response amplification, X/O counts, and dissipative energy; production claims still need seed/aspect-ratio/Lundquist sweeps. |
-| Seeded double-Harris convergence | `periodic_double_harris_convergence.png` | `validation` | Ready as convergence-backed validation evidence, including the medium GPU-assisted `32/48/64` sweep; still not production plasmoid/Rutherford evidence. |
+| Seeded double-Harris long run | `periodic_double_harris_seeded_long_run.png`, optional flux/current GIFs, residual-flux GIFs | `validation` | Ready as bounded nonlinear evidence with early growth, response amplification, X/O counts, and dissipative energy; reviewer media should include residual flux or proxy histories, and production claims still need seed/aspect-ratio/Lundquist sweeps. |
+| Seeded double-Harris convergence | `periodic_double_harris_convergence.png` | `validation` | Ready as convergence-backed validation evidence, including the medium GPU-assisted `32/48/64` sweep and latest bounded `64/96/128` GPU gate; still not production plasmoid/Rutherford evidence. |
 | Seeded double-Harris parameter sweep | `periodic_double_harris_parameter_sweep.png` | `validation` | Ready as finite-response robustness evidence across mode/width/resistivity sweeps; still not a scaling-law or production reconnection claim. |
 | Seeded double-Harris promotion report | `promotion_matrix.png`, `promotion_readiness.json` | `validation` only | Ready as the boundary between single-run media and convergence-backed validation evidence; not a production physics gate. |
 | Nonlinear energy budget | `nonlinear_energy_budget.png` | `validation` | Ready as nonlinear conservation/dissipation evidence. |
@@ -84,8 +84,9 @@ long-run gate:
 :width: 760px
 ```
 
-The current nonlinear evidence boundary is the double-Harris promotion report
-plus the medium GPU-assisted resolution/time-step validation sweep:
+The current nonlinear evidence boundary is the double-Harris promotion report,
+the medium GPU-assisted resolution/time-step validation sweep, and the latest
+bounded GPU validation gate:
 
 ```{image} _static/validation/periodic_double_harris_convergence/periodic_double_harris_convergence.png
 :alt: Seeded periodic double-Harris convergence evidence
@@ -110,6 +111,19 @@ response plot, one convergence-backed validation sweep, one nonlinear identity,
 and one explicit warning that short nonlinear runs are not island/plasmoid
 evidence.
 
+The latest GPU bundle,
+`outputs/campaigns/gpu_nonlinear_20260522_085049/double_harris_long_n128_t160`,
+is ready only as validation media: the local summary reports
+`gate_ready = true`, `production_claim_ready = false`, and
+`claim_level_if_gates_pass = "validation"`. It passes duration, convergence,
+X/O-count, reconnecting-flux, island-width, fixed-scale movie, and manifest
+gates with `reconnected_flux_amplification = 8.356`,
+`island_width_amplification = 2.891`, `max_x_point_count = 4`, and
+`max_o_point_count = 2`. The remaining production blockers are the explicit
+validation-only promotion declaration, lack of Rutherford/Sweet-Parker/plasmoid
+physics target, and missing production-scale seed, width/aspect, Lundquist,
+duration, and independent production-claim promotion evidence.
+
 ## Nonlinear plot acceptance gates
 
 Before adding a nonlinear island or plasmoid plot to the paper set, require:
@@ -124,9 +138,12 @@ Before adding a nonlinear island or plasmoid plot to the paper set, require:
 5. Resolution and time-step comparison curves appear on the same axes or in a
    companion panel.
 6. Movies show flux and current with fixed color limits and a clear timestamp.
-7. `mhx campaign rutherford-promotion-check` passes with the convergence and
+7. Seeded double-Harris media include residual flux
+   $\psi_\mathrm{perturbed}-\psi_\mathrm{base}$ or proxy histories next to raw
+   total-field movies.
+8. `mhx campaign rutherford-promotion-check` passes with the convergence and
    seed-QI bundle paths used for the paper artifact.
-8. The promotion report shows peak/initial reconnecting-flux and island-width
+9. The promotion report shows peak/initial reconnecting-flux and island-width
    amplification above the declared thresholds; purely dissipative duration
    tests remain validation artifacts.
 
@@ -158,6 +175,13 @@ Every movie should state one of:
 - `theory schematic`: generated from formulas, not from MHX nonlinear PDE data;
 - `production movie`: generated from a long production run with convergence and
   manifest evidence.
+
+Double-Harris public media has an extra residual-flux rule: raw total-flux
+movies are acceptable QA artifacts, but reviewer/publication media should show
+the seeded response with $\Delta\psi=\psi_\mathrm{perturbed}-\psi_\mathrm{base}$,
+reconnection-proxy histories, or a gate-summary table. A visually clear
+residual-flux movie still inherits the manifest claim level; it does not turn a
+validation promotion into a production claim.
 
 The README currently ships validation/theory movies only:
 

@@ -214,6 +214,43 @@ A production Rutherford or plasmoid campaign should pass all of the following:
 | Flux/current movies use fixed color limits and include timestamps. | Makes visual comparisons honest across resolutions and seeds. |
 | Artifact manifests include hashes, config, git commit, API version, and dependencies. | Makes reviewer reruns and diffs possible. |
 
+## Dry-run production automation lane
+
+`tools/run_nonlinear_production_campaign.py` is the dry-run-first launcher for a
+true nonlinear production lane. By default it does not run the solver; it writes
+`production_campaign_manifest.json` and `run_commands.sh` with exact commands,
+timeouts, expected outputs, and claim boundaries:
+
+```bash
+python tools/run_nonlinear_production_campaign.py \
+  --outdir outputs/campaigns/nonlinear_production_campaign \
+  --dry-run
+```
+
+The manifest includes Rutherford duration planning/execution, a seeded
+double-Harris production-duration movie run, two convergence bundles, seed-QI,
+sheet-width plus aspect-ratio evidence, eta/Lundquist sweeps, fixed-scale movie
+gates, double-Harris validation promotion, Rutherford promotion, and a final
+`--allow-production-claim` refresh command. The double-Harris promotion command
+can only promote media to convergence-backed validation. Rutherford artifacts
+remain `claim_level = "validation"` unless the target duration completes, the
+promotion report passes with convergence/seed/movie/response evidence, and the
+final zero-step production-claim refresh succeeds.
+
+Execution is intentionally opt-in and bounded per command:
+
+```bash
+python tools/run_nonlinear_production_campaign.py \
+  --outdir outputs/campaigns/nonlinear_production_campaign \
+  --execute \
+  --timeout-seconds 43200 \
+  --gate-timeout-seconds 1800
+```
+
+Use the generated shell script only when an external scheduler owns walltime.
+The Python `--execute` path enforces portable subprocess timeouts and updates
+the manifest with pass/fail/timeout records after each command.
+
 ## Proposed production directory
 
 ```text

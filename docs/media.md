@@ -18,12 +18,40 @@ walkthroughs, still figures, and scaffold comparisons belong in the
 documentation pages where they can carry tolerances, commands, claim
 boundaries, and maintenance context.
 
+## Residual-flux media policy
+
+Public-facing double-Harris media must not rely on raw total-flux movies alone.
+The total magnetic flux is visually dominated by the static equilibrium sheet,
+so reviewer-facing media should pair any raw flux/current movie with at least
+one of:
+
+- a residual-flux movie or panel, $\Delta\psi=\psi_\mathrm{perturbed}-\psi_\mathrm{base}$;
+- reconnected-flux and island-width proxy histories from the validation JSON;
+- a promotion or local gate summary that states `gate_ready`,
+  `production_claim_ready`, and the declared `claim_level_if_passed`.
+
+The residual-flux view is visualization policy, not a stronger physics claim:
+it makes the seeded reconnecting response visible while the claim level remains
+bounded by the manifest and promotion gate. The standalone reviewer example
+that follows this policy is reproduced with:
+
+```bash
+MHX_EXAMPLE_FAST=1 \
+MHX_EXAMPLE_OUTDIR_ROOT=outputs/reviewer/examples \
+python examples/publication_double_harris_reconnection.py
+```
+
+It writes
+`outputs/reviewer/examples/double_harris_reconnection/figures/publication_double_harris_delta_flux.gif`
+alongside the raw flux/current movies, summary figure, `manifest.json`, and
+`validation.json`.
+
 ## At-a-glance media table
 
 | Asset | What it shows | Claim boundary and anchor |
 | --- | --- | --- |
-| ![Double-Harris reconnection replay](_static/readme/double_harris_reconnection.gif) | Single-sheet Harris reconnection zoom from a `96×96`, `t_end=120` periodic double-Harris replay: out-of-plane current density with magnetic-flux/Az contours and refined diagnostic X/O annotations. | Solver-generated validation media anchored to the Harris current-sheet and FKR tearing picture; the markers are diagnostic annotations, not separatrix-event labels or converged Rutherford/plasmoid evidence. |
-| ![Double-Harris current sheet](_static/readme/double_harris_current_sheet.gif) | Full-domain periodic double-Harris view from the same run, showing both current sheets and island-forming flux contours. | Solver-generated validation media; useful for morphology QA before larger seed, duration, and resolution sweeps. |
+| ![Double-Harris reconnection replay](_static/readme/double_harris_reconnection.gif) | Single-sheet Harris reconnection zoom from a `128×128`, `t_end=160` GPU validation bundle: residual reconnecting flux $\Delta\psi$ with total magnetic-flux/Az contours and diagnostic X/O annotations. | Solver-generated validation media anchored to the Harris current-sheet and FKR tearing picture; the markers are diagnostic annotations, not separatrix-event labels or converged Rutherford/plasmoid evidence. |
+| ![Double-Harris current sheet](_static/readme/double_harris_current_sheet.gif) | Full-domain periodic double-Harris view from the same bundle, showing residual current $\Delta j_z$ across both sheets with total flux contours. | Solver-generated validation media; useful for morphology QA before larger seed, duration, and resolution sweeps. |
 | ![Forced turbulent reconnection](_static/readme/forced_turbulent_reconnection.gif) | `64×64`, `t_end=80` forced-turbulence current-sheet replay: current density with magnetic-flux contours and reconnection-rate proxy diagnostics. | Pedagogical 2-D reduced-MHD validation media anchored to turbulent-reconnection literature; not a 3-D LV99 fast-reconnection production test. |
 | ![Decaying MHD turbulence](_static/readme/decaying_mhd_turbulence_current.gif) | `64×64`, `t_end=8` decaying reduced-MHD turbulence replay with current filaments and flux contours. | Solver-generated nonlinear validation media; useful for turbulence morphology and current-sheet diagnostics, not converged turbulence statistics. |
 | ![Orszag-Tang current sheets](_static/readme/orszag_tang_current.gif) | Current-density filament formation from a `96×96`, `t_end=10` reduced-MHD Orszag--Tang replay. | Solver-generated validation media; nonlinear reduced-MHD cascade evidence, not a compressible shock-capturing full-MHD result. |
@@ -32,7 +60,7 @@ boundaries, and maintenance context.
 | ![Harris tearing layer sweep](_static/readme/harris_layer_sweep.gif) | Direct Harris-sheet eigenproblem: growth decreases with $S$ while the resonant flow/current layer narrows. | Solver-generated validation media from `mhx benchmark linear-tearing-layer`; anchored to classical tearing localization from [FKR 1963](https://doi.org/10.1063/1.1706761) and the reduced-MHD Harris eigenproblem used by [MacTaggart 2019](https://eprints.gla.ac.uk/191898/1/191898.pdf). |
 | ![Plasmoid scaling schematic](_static/readme/plasmoid_scaling_schematic.gif) | Schematic Sweet-Parker sheet fragmentation with $\gamma_{\max}\tau_A\propto S^{1/4}$ and $k_{\max}L\propto S^{3/8}$. | Theory schematic only; anchored to [Loureiro, Schekochihin & Cowley 2007](https://arxiv.org/abs/astro-ph/0703631), not a nonlinear MHX plasmoid result. |
 | ![MHD turbulence cascade schematic](_static/readme/mhd_turbulence_cascade.gif) | Synthetic magnetic-flux eddies, current filaments, and an animated cascade guide. | Theory/pedagogy schematic only; not a nonlinear MHX turbulence simulation. |
-| ![Seeded double-Harris flux](_static/validation/periodic_double_harris_seeded_long_run/figures/periodic_double_harris_flux.gif) | Historical committed validation replay at `64×64`, showing magnetic-flux evolution over `t_end=30`; README landing-page media now uses the longer `96×96`, `t_end=120` run documented below. | Validation bridge from Harris tearing to longer nonlinear campaigns; bounded evidence, not converged Rutherford/plasmoid production. |
+| ![Seeded double-Harris flux](_static/validation/periodic_double_harris_seeded_long_run/figures/periodic_double_harris_flux.gif) | Historical committed validation replay at `64×64`, showing magnetic-flux evolution over `t_end=30`; README landing-page media now uses the longer `128×128`, `t_end=160` GPU validation bundle documented below. | Validation bridge from Harris tearing to longer nonlinear campaigns; bounded evidence, not converged Rutherford/plasmoid production. |
 | ![Seeded double-Harris current](_static/validation/periodic_double_harris_seeded_long_run/figures/periodic_double_harris_current.gif) | Same seeded run through fixed-scale out-of-plane current density. | Checks current-density visualization and dissipative nonlinear replay before aspect-ratio, seed, and resolution sweeps. |
 | ![Seeded double-Harris convergence](_static/validation/periodic_double_harris_convergence/periodic_double_harris_convergence.png) | FAST resolution/time-step sweep for the seeded periodic double-Harris replay. | Convergence scaffold that gates spread in early growth/amplification before any production Rutherford/plasmoid claim. |
 | ![Restartable Rutherford flux chunk](_static/validation/rutherford_production_execution/fixed_scale_flux_movie.gif) | Restartable Rutherford executor chunk with fixed-scale magnetic flux. | Execution-path validation for the chunked production runner; not completed nonlinear production evidence. |
@@ -45,20 +73,29 @@ interpreted with equations, tolerances, and source links.
 
 ## README Harris-sheet reconnection previews
 
-The README Harris pair is regenerated from the longest available seeded
-periodic double-Harris history under `outputs/readme_media/`,
-`outputs/long_runs/`, `outputs/docs_validation/`, or `outputs/ci/`. The current
-release media were regenerated from a `96×96`, `t_end=120` run chosen for
-visible topology rather than production convergence:
+The README Harris pair is regenerated from the preferred GPU validation bundle
+when present, then from the longest available seeded periodic double-Harris
+history under `outputs/readme_media/`, `outputs/long_runs/`,
+`outputs/docs_validation/`, or `outputs/ci/`. The current release media were
+regenerated from
+`outputs/campaigns/gpu_nonlinear_20260522_085049/double_harris_long_n128_t160`,
+a `128×128`, `t_end=160` validation bundle chosen for visible residual
+response rather than production convergence:
 
 ```bash
+RUN_DIR=outputs/campaigns/gpu_nonlinear_20260522_085049
+
 mhx benchmark double-harris-long-run \
-  --outdir outputs/readme_media/periodic_double_harris_reconnection_96_t120 \
-  --nx 96 --ny 96 --width 0.32 --eta 1.5e-3 --nu 1.5e-3 \
-  --perturbation-amplitude 1e-2 --mode-x 0 --mode-y 1 \
-  --dt 2e-2 --t-end 120 --save-every 100 \
-  --fit-stop 20 --min-early-growth-rate 1e-9 \
-  --min-max-growth-factor 1.000000001 --movies
+  --outdir "$RUN_DIR/double_harris_long_n128_t160" \
+  --nx 128 --ny 128 --width 0.36 --eta 0.0045 --nu 0.0045 \
+  --perturbation-amplitude 0.004 --mode-x 2 --mode-y 1 \
+  --dt 0.02 --t-end 160 --save-every 100 \
+  --fit-start 0 --fit-stop 16 \
+  --min-early-growth-rate 1e-9 \
+  --min-max-growth-factor 1.000000001 \
+  --min-reconnected-flux-amplification 1.000000001 \
+  --min-island-width-amplification 1.000000001 \
+  --movies
 
 python examples/make_readme_media.py
 ```
@@ -79,11 +116,13 @@ $$
 \delta\psi(y,0)=\epsilon \cos(2\pi y/L_y).
 $$
 
-The movie uses the total out-of-plane current density
-$j_z=-\nabla^2\psi$ as the color field and overlays magnetic-flux
-(`Az`/`ψ`) contours. The single-sheet movie rotates the view into standard
-current-sheet coordinates: horizontal is the sheet direction and vertical is
-the normal coordinate. The `X`/`O` labels are generated by the MHX
+The single-sheet README movie uses residual reconnecting flux
+$\Delta\psi=\psi_\mathrm{perturbed}-\psi_\mathrm{base}$ as the color field and
+overlays total magnetic-flux (`Az`/`ψ`) contours. The full-domain companion
+uses residual current $\Delta j_z=-\nabla^2\Delta\psi$ with the same total-flux
+contour context. The single-sheet movie rotates the view into standard
+current-sheet coordinates: horizontal is the sheet direction and vertical is the
+normal coordinate. The `X`/`O` labels are generated by the MHX
 critical-point detector: local minima of $|\nabla\psi|$ are classified by the
 Hessian determinant, with saddle points marked as `X` and elliptic extrema
 marked as `O`. The detector now supports sub-cell quadratic Newton refinement
@@ -100,10 +139,15 @@ and dissipative total energy. `mhx benchmark double-harris-promotion-check`
 now marks the boundary between single-run media and convergence-backed
 validation evidence. It remains `claim_level = "validation"` until broader
 seed, aspect-ratio, Lundquist-number, and duration sweeps are attached.
+When the same data are used for reviewer/publication media, include the
+residual flux $\psi_\mathrm{perturbed}-\psi_\mathrm{base}$ or the
+reconnected-flux proxy next to these raw total-field movies; raw total flux is
+not sufficient by itself because the equilibrium sheet can visually mask the
+seeded response.
 
-![Harris reconnection replay with Az contours](_static/readme/double_harris_reconnection.gif)
+![Harris residual-flux reconnection replay with Az contours](_static/readme/double_harris_reconnection.gif)
 
-![Periodic double-Harris current sheets with Az contours](_static/readme/double_harris_current_sheet.gif)
+![Periodic double-Harris residual-current sheets with Az contours](_static/readme/double_harris_current_sheet.gif)
 
 Visual QA artifacts are written next to the README movies:
 
@@ -112,9 +156,9 @@ Visual QA artifacts are written next to the README movies:
 - `docs/_static/readme/double_harris_current_snapshots.png`
 - `docs/_static/readme/double_harris_current_sheet_snapshots.png`
 
-![Harris reconnection Az-contour contact sheet](_static/readme/double_harris_flux_snapshots.png)
+![Harris residual-flux Az-contour contact sheet](_static/readme/double_harris_flux_snapshots.png)
 
-![Full double-Harris Az-contour contact sheet](_static/readme/double_harris_current_snapshots.png)
+![Full double-Harris residual-current Az-contour contact sheet](_static/readme/double_harris_current_snapshots.png)
 
 ![Total current-sheet contact sheet](_static/readme/double_harris_current_sheet_snapshots.png)
 
@@ -339,6 +383,32 @@ Source links:
 - [Production executor implementation](https://github.com/uwplasma/MHX/blob/main/src/mhx/campaigns/production.py)
 - [Current-sheet tests](https://github.com/uwplasma/MHX/blob/main/tests/test_current_sheet_eigenvalue_validation.py)
 - [Production executor tests](https://github.com/uwplasma/MHX/blob/main/tests/test_production_campaign.py)
+
+## Latest GPU validation media status
+
+The latest bounded GPU validation bundle is
+`outputs/campaigns/gpu_nonlinear_20260522_085049/double_harris_long_n128_t160`.
+Its raw fixed-scale flux/current movies and residual-flux audit movie are:
+
+- `figures/periodic_double_harris_flux.gif`
+- `figures/periodic_double_harris_current.gif`
+- `figures/gpu_long_delta_flux_validation.gif`
+
+The local promotion gate summary reports `gate_ready = true` and
+`production_claim_ready = false`. The passed gates cover duration, one
+`64/96/128` convergence bundle, X/O counts, reconnecting-flux amplification,
+island-width amplification, fixed-scale movies, and manifests. It remains
+validation media because the attached promotion report declares
+`claim_level_if_passed = "validation"`, not `production`.
+
+Recreate the local gate summary without asserting a production claim:
+
+```bash
+python tools/nonlinear_campaign_evidence.py \
+  --campaign-dir outputs/campaigns/gpu_nonlinear_20260522_085049/double_harris_long_n128_t160 \
+  --output-json outputs/campaigns/gpu_nonlinear_20260522_085049/double_harris_long_n128_t160/promotion_gate_summary.json \
+  --output-md outputs/campaigns/gpu_nonlinear_20260522_085049/double_harris_long_n128_t160/promotion_gate_summary.md
+```
 
 Regenerate the README teaser movies with:
 
