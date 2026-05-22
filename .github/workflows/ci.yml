@@ -184,6 +184,7 @@ jobs:
           mhx campaign rutherford-promotion-check outputs/ci/rutherford_production_plan --no-require-movies --min-history-samples 2 --min-convergence-dirs 0 || true
           mhx validate all --outdir outputs/ci/validation_suite
           mhx validate readiness --suite outputs/ci/validation_suite --outdir outputs/ci/readiness
+          mhx validate release-candidate --outdir outputs/ci/release_candidate
           mhx validate paper-pipeline --outdir outputs/ci/paper_pipeline --cases resistive_decay,fkr_window --no-require-release-ready
           python examples/make_readme_media.py
           mhx run examples/linear_tearing_twofluid_toy.toml --outdir outputs/ci/twofluid_toy
@@ -349,6 +350,10 @@ jobs:
           test -f outputs/ci/readiness/readiness.json
           test -f outputs/ci/readiness/readiness.md
           test -f outputs/ci/readiness/figures/readiness_matrix.png
+          test -f outputs/ci/release_candidate/release_candidate.json
+          test -f outputs/ci/release_candidate/release_candidate.md
+          test -f outputs/ci/release_candidate/validation.json
+          test -f outputs/ci/release_candidate/manifest.json
           test -f outputs/ci/paper_pipeline/paper_pipeline.json
           test -f outputs/ci/paper_pipeline/validation.json
           test -f outputs/ci/paper_pipeline/paper_pipeline.md
@@ -409,6 +414,7 @@ jobs:
               "outputs/ci/neural_ode_latent_fit/validation.json",
               "outputs/ci/validation_suite/validation_suite.json",
               "outputs/ci/readiness/validation.json",
+              "outputs/ci/release_candidate/validation.json",
           ]:
               assert_validation_passed(validation_path)
 

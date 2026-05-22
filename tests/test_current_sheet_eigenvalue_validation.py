@@ -229,7 +229,7 @@ def test_periodic_double_harris_seeded_long_run_rejects_invalid_inputs() -> None
     with pytest.raises(ValueError, match="ordered"):
         run_periodic_double_harris_seeded_long_run_validation(fit_window=(2.0, 1.0))
     with pytest.raises(ValueError, match="must not exceed"):
-        run_periodic_double_harris_seeded_long_run_validation(fit_window=(0.0, 101.0))
+        run_periodic_double_harris_seeded_long_run_validation(fit_window=(0.0, 161.0))
     with pytest.raises(ValueError, match="at least three"):
         run_periodic_double_harris_seeded_long_run_validation(
             t_end=2.0,

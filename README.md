@@ -123,6 +123,7 @@ mhx campaign rutherford-plan-production --outdir outputs/campaigns/rutherford_pr
 mhx campaign rutherford-execute outputs/campaigns/rutherford_production_plan --movies
 mhx campaign rutherford-promotion-check outputs/campaigns/rutherford_production_plan
 mhx validate readiness --suite outputs/validation_suite --outdir outputs/validation_readiness
+mhx validate release-candidate --outdir outputs/release_candidate
 mhx api deprecations
 mhx physics list
 mhx diagnostics list
@@ -130,6 +131,5 @@ mhx diagnostics list
 
 ## Citation
 
-MHX is not yet publication-release-citable. Until a tagged release and DOI are
-created, cite the repository URL and commit SHA, or use the provisional metadata
-in `CITATION.cff`.
+Until a DOI is minted, cite the repository URL plus release tag or commit SHA,
+or use the provisional metadata in `CITATION.cff`.

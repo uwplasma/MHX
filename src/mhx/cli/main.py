@@ -45,6 +45,7 @@ from mhx.benchmarks import (
     write_readiness_report,
     write_reconnection_scaling_validation,
     write_reduced_mhd_linear_eigenmode_validation,
+    write_release_candidate_report,
     write_resistive_decay_validation,
     write_run_report,
     write_rutherford_campaign_fast,
@@ -2123,6 +2124,43 @@ def validate_readiness(
 ) -> None:
     """Assess public-release and nonlinear-publication readiness."""
     diagnostics_path, validation = write_readiness_report(outdir, suite)
+    typer.echo(f"wrote {diagnostics_path}")
+    if not validation["passed"]:
+        raise typer.Exit(code=1)
+
+
+@validate_app.command("release-candidate")
+def validate_release_candidate(
+    outdir: Annotated[
+        Path,
+        typer.Option("--outdir", help="Output directory for release-candidate artifacts."),
+    ] = Path("outputs/validation/release_candidate"),
+    repo_root: Annotated[
+        Path,
+        typer.Option("--repo-root", help="Repository root to assess."),
+    ] = Path("."),
+    readiness: Annotated[
+        Path | None,
+        typer.Option(
+            "--readiness",
+            help="Optional readiness.json file or readiness-report directory.",
+        ),
+    ] = None,
+    require_readiness: Annotated[
+        bool,
+        typer.Option(
+            "--require-readiness/--no-require-readiness",
+            help="Require supplied readiness artifacts to be public-release ready.",
+        ),
+    ] = False,
+) -> None:
+    """Assess static public-release-candidate repository gates."""
+    diagnostics_path, validation = write_release_candidate_report(
+        outdir,
+        repo_root=repo_root,
+        readiness=readiness,
+        require_readiness=require_readiness,
+    )
     typer.echo(f"wrote {diagnostics_path}")
     if not validation["passed"]:
         raise typer.Exit(code=1)

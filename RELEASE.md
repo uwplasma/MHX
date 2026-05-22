@@ -30,6 +30,10 @@ python tools/check_legacy_imports.py
 python -m pytest --cov=mhx --cov-report=term-missing --cov-fail-under=95
 sphinx-build -W -b html docs docs/_build/html
 mhx validate all --outdir outputs/release/validation_suite
+mhx validate readiness --suite outputs/release/validation_suite --outdir outputs/release/readiness
+mhx validate release-candidate --outdir outputs/release/release_candidate \
+  --readiness outputs/release/readiness --require-readiness
+mhx validate paper-pipeline --outdir outputs/release/paper_pipeline
 mhx benchmark catalog --outdir outputs/release/catalog
 mhx artifact-manifest outputs/release
 python -m pip install --upgrade build twine
@@ -43,7 +47,9 @@ Before tagging:
 2. Update `CHANGELOG.md`.
 3. Regenerate validation/documentation figures if any plotted results changed.
 4. Confirm GitHub Actions is green on the release commit.
-5. Tag and push:
+5. Confirm `outputs/release/release_candidate/validation.json` has
+   `passed = true`.
+6. Tag and push:
 
 ```bash
 git tag v0.1.0a1

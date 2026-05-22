@@ -148,6 +148,13 @@ from mhx.benchmarks.readiness import (
     run_readiness_assessment,
     write_readiness_report,
 )
+from mhx.benchmarks.release_candidate import (
+    RELEASE_CANDIDATE_GATES_SCHEMA,
+    RELEASE_CANDIDATE_SCHEMA,
+    ReleaseCandidateAssessment,
+    run_release_candidate_assessment,
+    write_release_candidate_report,
+)
 from mhx.benchmarks.report import validate_run, write_run_report
 from mhx.benchmarks.scaling import (
     RECONNECTION_SCALING_SCHEMA,
@@ -280,6 +287,8 @@ __all__ = [
     "PaperPipelineResult",
     "REDUCED_MHD_LINEAR_EIGENMODE_SCHEMA",
     "READINESS_REPORT_SCHEMA",
+    "RELEASE_CANDIDATE_GATES_SCHEMA",
+    "RELEASE_CANDIDATE_SCHEMA",
     "LinearizedRHSResult",
     "LinearTearingDispersionResult",
     "LinearTearingEigenvalueResult",
@@ -317,6 +326,7 @@ __all__ = [
     "ReconnectionScalingResult",
     "ReducedMHDLinearEigenmodeResult",
     "ReadinessAssessment",
+    "ReleaseCandidateAssessment",
     "ResistiveDecayResult",
     "SeedRobustQIResult",
     "SeedRobustQISweepResult",
@@ -370,6 +380,7 @@ __all__ = [
     "assess_periodic_double_harris_promotion",
     "run_power_iteration_validation",
     "run_readiness_assessment",
+    "run_release_candidate_assessment",
     "run_reduced_mhd_linear_eigenmode_validation",
     "run_reconnection_scaling_validation",
     "run_resistive_decay_validation",
@@ -415,6 +426,7 @@ __all__ = [
     "write_periodic_double_harris_seeded_long_run_validation",
     "write_power_iteration_validation",
     "write_readiness_report",
+    "write_release_candidate_report",
     "write_reduced_mhd_linear_eigenmode_validation",
     "write_reconnection_scaling_validation",
     "write_resistive_decay_validation",

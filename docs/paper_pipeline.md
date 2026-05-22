@@ -50,6 +50,20 @@ recursive artifact manifests. It is a hash and traceability gate, not a physics
 promotion gate: a validation figure with matching checksums remains
 `validation` until the production evidence in the claim boundary below exists.
 
+For a release handoff, run the static repository gate against the generated
+readiness report:
+
+```bash
+mhx validate release-candidate \
+  --outdir outputs/release_candidate \
+  --readiness outputs/paper_pipeline/readiness \
+  --require-readiness
+```
+
+That command checks packaging, CI, ReadTheDocs, citation/version metadata,
+examples, docs, README claim boundaries, active legacy-import hygiene, and
+documentation figure hashes.
+
 ## Claim boundary
 
 The validation suite includes linear theory gates, manufactured linearized-RHS

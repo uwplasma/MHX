@@ -23,6 +23,11 @@ MHX uses semantic-versioned pre-releases while the rebuilt solver API matures.
   convergence, seed-QI, fixed-scale media, and tolerance evidence are attached.
 - Added optional sub-cell Newton refinement and deterministic frame-to-frame
   association for magnetic-flux X/O critical points.
+- Added `mhx validate release-candidate`, a static public-release gate that
+  checks packaging, CI, ReadTheDocs, citation/version metadata, examples, docs,
+  README claim boundaries, active legacy-import hygiene, and figure hashes.
+- Updated README/release double-Harris media policy to the `128×128`,
+  `t_end=160` residual-field GPU validation bundle and aligned duration labels.
 
 ## 0.1.0a0
 

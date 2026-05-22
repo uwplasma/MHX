@@ -26,8 +26,8 @@ jobs:
     name: FAST benchmark artifacts
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v6.0.2
+      - uses: actions/setup-python@v6.2.0
         with:
           python-version: "3.11"
       - name: Install package
@@ -40,7 +40,7 @@ jobs:
           mhx benchmark forced-turbulent-reconnection --outdir outputs/benchmark_smoke/forced_turbulent_reconnection --nx 16 --ny 16 --t-end 0.5 --save-every 2 --seed 1
           mhx artifact-manifest outputs/benchmark_smoke
       - name: Upload benchmark artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7.0.1
         with:
           name: mhx-benchmark-smoke
           path: outputs/benchmark_smoke
