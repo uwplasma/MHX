@@ -134,6 +134,12 @@ from mhx.benchmarks.orszag_tang import (
     run_orszag_tang_vortex_validation,
     write_orszag_tang_vortex_validation,
 )
+from mhx.benchmarks.paper_pipeline import (
+    PAPER_PIPELINE_GATES_SCHEMA,
+    PAPER_PIPELINE_SCHEMA,
+    PaperPipelineResult,
+    write_paper_pipeline,
+)
 from mhx.benchmarks.readiness import (
     PRODUCTION_PUBLICATION_GAPS,
     READINESS_REPORT_SCHEMA,
@@ -269,6 +275,9 @@ __all__ = [
     "PERIODIC_DOUBLE_HARRIS_PARAMETER_SWEEP_SCHEMA",
     "PERIODIC_DOUBLE_HARRIS_PROMOTION_SCHEMA",
     "PERIODIC_DOUBLE_HARRIS_SEEDED_LONG_RUN_SCHEMA",
+    "PAPER_PIPELINE_GATES_SCHEMA",
+    "PAPER_PIPELINE_SCHEMA",
+    "PaperPipelineResult",
     "REDUCED_MHD_LINEAR_EIGENMODE_SCHEMA",
     "READINESS_REPORT_SCHEMA",
     "LinearizedRHSResult",
@@ -395,6 +404,7 @@ __all__ = [
     "write_nonlinear_energy_budget_validation",
     "write_nonlinear_duration_audit",
     "write_orszag_tang_vortex_validation",
+    "write_paper_pipeline",
     "write_periodic_current_sheet_eigenvalue_validation",
     "write_periodic_current_sheet_nonlinear_bridge_validation",
     "write_periodic_current_sheet_timedomain_validation",

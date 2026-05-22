@@ -295,7 +295,6 @@ def write_validation_suite(
     manifest_path = output_dir / "manifest.json"
     summary_path.write_text(json.dumps(summary, indent=2, sort_keys=True), encoding="utf-8")
     markdown_path.write_text(_suite_markdown(summary), encoding="utf-8")
-    write_artifact_manifest(output_dir, path=artifact_manifest_path)
     write_manifest(
         manifest_path,
         config={"schema": VALIDATION_SUITE_SCHEMA},
@@ -307,6 +306,7 @@ def write_validation_suite(
         claim_level="validation",
         claim_scope="Aggregate reviewer-facing FAST validation-suite artifact.",
     )
+    write_artifact_manifest(output_dir, path=artifact_manifest_path)
     return summary_path, summary
 
 

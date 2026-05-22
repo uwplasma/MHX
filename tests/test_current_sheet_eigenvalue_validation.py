@@ -258,6 +258,7 @@ def test_periodic_double_harris_seeded_long_run_rejects_invalid_inputs() -> None
         )
 
 
+@pytest.mark.slow
 def test_periodic_double_harris_convergence_gate() -> None:
     result = run_periodic_double_harris_convergence_validation(
         resolutions=(16, 18),
@@ -384,6 +385,7 @@ def test_periodic_double_harris_convergence_rejects_invalid_inputs() -> None:
         )
 
 
+@pytest.mark.slow
 def test_periodic_double_harris_parameter_sweep_gate() -> None:
     result = run_periodic_double_harris_parameter_sweep_validation(
         sweep_axis="width",
@@ -416,6 +418,7 @@ def test_periodic_double_harris_parameter_sweep_gate() -> None:
     ]
 
 
+@pytest.mark.slow
 def test_periodic_double_harris_parameter_sweep_mode_and_resistivity_branches() -> None:
     mode_result = run_periodic_double_harris_parameter_sweep_validation(
         sweep_axis="mode",
@@ -573,6 +576,7 @@ def test_periodic_current_sheet_nonlinear_bridge_rejects_invalid_inputs() -> Non
         run_periodic_current_sheet_nonlinear_bridge_validation(max_finest_relative_error=0.0)
 
 
+@pytest.mark.slow
 def test_write_periodic_current_sheet_eigenvalue_artifacts_and_cli(tmp_path) -> None:
     manifest_path, validation = write_periodic_current_sheet_eigenvalue_validation(
         tmp_path,
@@ -608,6 +612,7 @@ def test_write_periodic_current_sheet_eigenvalue_artifacts_and_cli(tmp_path) -> 
     assert (outdir / "validation.json").exists()
 
 
+@pytest.mark.slow
 def test_write_periodic_double_harris_nonlinear_growth_artifacts_and_cli(tmp_path) -> None:
     manifest_path, validation = write_periodic_double_harris_nonlinear_growth_validation(
         tmp_path,
@@ -644,6 +649,7 @@ def test_write_periodic_double_harris_nonlinear_growth_artifacts_and_cli(tmp_pat
     assert (outdir / "validation.json").exists()
 
 
+@pytest.mark.slow
 def test_write_periodic_double_harris_seeded_long_run_artifacts_and_cli(tmp_path) -> None:
     manifest_path, validation = write_periodic_double_harris_seeded_long_run_validation(
         tmp_path,
@@ -706,6 +712,7 @@ def test_write_periodic_double_harris_seeded_long_run_artifacts_and_cli(tmp_path
     assert cli_diagnostics["t_end"] == pytest.approx(10.0)
 
 
+@pytest.mark.slow
 def test_write_periodic_double_harris_seeded_long_run_movies(tmp_path) -> None:
     manifest_path, validation = write_periodic_double_harris_seeded_long_run_validation(
         tmp_path,
@@ -724,6 +731,7 @@ def test_write_periodic_double_harris_seeded_long_run_movies(tmp_path) -> None:
     ).stat().st_size > 0
 
 
+@pytest.mark.slow
 def test_write_periodic_double_harris_convergence_artifacts_and_cli(tmp_path) -> None:
     manifest_path, validation = write_periodic_double_harris_convergence_validation(
         tmp_path,
@@ -781,6 +789,7 @@ def test_write_periodic_double_harris_convergence_artifacts_and_cli(tmp_path) ->
     assert (outdir / "validation.json").exists()
 
 
+@pytest.mark.slow
 def test_write_periodic_double_harris_parameter_sweep_artifacts_and_cli(tmp_path) -> None:
     manifest_path, validation = write_periodic_double_harris_parameter_sweep_validation(
         tmp_path,
@@ -834,6 +843,7 @@ def test_write_periodic_double_harris_parameter_sweep_artifacts_and_cli(tmp_path
     assert (outdir / "validation.json").exists()
 
 
+@pytest.mark.slow
 def test_write_periodic_double_harris_promotion_report_and_cli(tmp_path) -> None:
     run_dir = tmp_path / "long-run"
     convergence_dir = tmp_path / "convergence"
@@ -915,6 +925,7 @@ def test_write_periodic_double_harris_promotion_report_and_cli(tmp_path) -> None
     assert (outdir / "validation.json").exists()
 
 
+@pytest.mark.slow
 def test_write_periodic_current_sheet_timedomain_artifacts_and_cli(tmp_path) -> None:
     manifest_path, validation = write_periodic_current_sheet_timedomain_validation(
         tmp_path,
@@ -954,6 +965,7 @@ def test_write_periodic_current_sheet_timedomain_artifacts_and_cli(tmp_path) -> 
     assert (outdir / "validation.json").exists()
 
 
+@pytest.mark.slow
 def test_write_periodic_current_sheet_nonlinear_bridge_artifacts_and_cli(tmp_path) -> None:
     manifest_path, validation = write_periodic_current_sheet_nonlinear_bridge_validation(
         tmp_path,

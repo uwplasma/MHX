@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 
+import pytest
 from typer.testing import CliRunner
 
 from mhx.benchmarks import (
@@ -41,6 +42,7 @@ def test_validation_suite_cases_are_unique() -> None:
     assert "duration_policy" in names
 
 
+@pytest.mark.slow
 def test_write_validation_suite_artifacts_and_cli(tmp_path) -> None:
     summary_path, summary = write_validation_suite(tmp_path / "suite")
     assert summary_path == tmp_path / "suite" / "validation_suite.json"
@@ -211,6 +213,7 @@ def test_write_validation_suite_artifacts_and_cli(tmp_path) -> None:
         item["claim_level"] for item in persisted["cases"]
     } <= {"smoke", "validation"}
     artifact_manifest = json.loads((tmp_path / "suite" / "artifact_manifest.json").read_text())
+    assert artifact_manifest["claim_levels"]["manifest.json"] == "validation"
     assert artifact_manifest["claim_levels"]["linear_tearing_fast/manifest.json"] == "smoke"
 
     outdir = tmp_path / "cli-suite"

@@ -32,6 +32,7 @@ from mhx.benchmarks import (
     write_nonlinear_duration_audit,
     write_nonlinear_energy_budget_validation,
     write_orszag_tang_vortex_validation,
+    write_paper_pipeline,
     write_periodic_current_sheet_eigenvalue_validation,
     write_periodic_current_sheet_nonlinear_bridge_validation,
     write_periodic_current_sheet_timedomain_validation,
@@ -179,7 +180,7 @@ def api_deprecations() -> None:
     """Print active deprecation guidance for legacy entry points."""
     typer.echo("Legacy scripts live under legacy/old_mhx/ and are not imported by src/mhx.")
     typer.echo("Use mhx run, mhx benchmark, mhx validate, mhx figures, and mhx report instead.")
-    typer.echo("See docs/migration.md and RELEASE.md for the deprecation window.")
+    typer.echo("See docs/migration.md and docs/release.md for the deprecation window.")
 
 
 @app.command()
@@ -2127,6 +2128,42 @@ def validate_readiness(
         raise typer.Exit(code=1)
 
 
+@validate_app.command("paper-pipeline")
+def validate_paper_pipeline(
+    outdir: Annotated[
+        Path,
+        typer.Option("--outdir", help="Output directory for paper-pipeline artifacts."),
+    ] = Path("outputs/paper_pipeline"),
+    cases: Annotated[
+        str | None,
+        typer.Option(
+            "--cases",
+            help=(
+                "Optional comma-separated validation-suite case subset. "
+                "Omit for the full deterministic FAST pipeline."
+            ),
+        ),
+    ] = None,
+    require_release_ready: Annotated[
+        bool,
+        typer.Option(
+            "--require-release-ready/--no-require-release-ready",
+            help="Require the readiness report to pass public-release gates.",
+        ),
+    ] = True,
+) -> None:
+    """Generate figures, validation reports, readiness metadata, and checksums."""
+    selected_cases = None if cases is None else _parse_string_tuple(cases)
+    result = write_paper_pipeline(
+        outdir,
+        case_names=selected_cases,
+        require_release_ready=require_release_ready,
+    )
+    typer.echo(f"wrote {result.pipeline_path}")
+    if not result.validation["passed"]:
+        raise typer.Exit(code=1)
+
+
 def _configure_validation_precision() -> None:
     configure_jax(enable_x64=True)
 
@@ -2143,6 +2180,13 @@ def _parse_float_tuple(value: str) -> tuple[float, ...]:
         return tuple(float(part.strip()) for part in value.split(",") if part.strip())
     except ValueError as exc:
         raise typer.BadParameter("expected comma-separated floats") from exc
+
+
+def _parse_string_tuple(value: str) -> tuple[str, ...]:
+    parsed = tuple(part.strip() for part in value.split(",") if part.strip())
+    if not parsed:
+        raise typer.BadParameter("expected at least one comma-separated value")
+    return parsed
 
 
 def _parse_mode_tuple(value: str) -> tuple[tuple[int, int], ...]:

@@ -115,6 +115,28 @@ The reviewer-facing figure readiness table is maintained in
 place to decide whether a plot can be promoted from validation/demo status to
 paper evidence.
 
+## Reproducible paper pipeline
+
+The paper artifact lane is deliberately stricter than docs rendering. A figure
+is not considered reviewer-ready unless `docs/figures/manifest.toml` records
+its regeneration command, claim level, claim scope, source files, tests, and
+SHA-256 checksum. Before a paper or validation bundle is handed to a reviewer,
+run:
+
+```bash
+python examples/tools/verify_paper_artifacts.py \
+  --artifact-root docs/_static/validation
+```
+
+This verifier checks the documentation figure manifest, recomputes figure
+hashes, verifies source/test paths, and validates any recursive
+`artifact_manifest.json` files under the requested artifact root. A passing
+paper-pipeline check means the artifact is traceable and hash-stable; it does
+not upgrade a `validation` result to `production`. Production claims still
+require the long-run duration, convergence, seed-QI, geometry, response,
+energy, divergence, fixed-scale movie, and promotion-readiness gates listed
+below.
+
 ## Production nonlinear campaign checklist
 
 Every nonlinear island/plasmoid result should archive:

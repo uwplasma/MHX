@@ -61,6 +61,7 @@ def test_forced_turbulent_reconnection_validation_gate() -> None:
     assert result.diagnostics["reconnection_proxy_change"] > 0.0
 
 
+@pytest.mark.slow
 def test_turbulence_writers_and_cli(tmp_path) -> None:
     decay_manifest, decay_validation = write_decaying_mhd_turbulence_validation(
         tmp_path / "decay",

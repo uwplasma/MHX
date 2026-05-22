@@ -118,6 +118,7 @@ def test_metric_statistics_legacy_and_error_paths() -> None:
         compute_metric_statistics(np.ones((2, 2)), ("one",))
 
 
+@pytest.mark.slow
 def test_run_seed_robust_qi_validation_is_deterministic_and_physics_gated() -> None:
     result = run_seed_robust_qi_validation(
         shape=(8, 8),
@@ -217,6 +218,7 @@ def test_write_seed_robust_qi_validation_without_figures(tmp_path) -> None:
     assert "qi_summary" not in manifest["outputs"]
 
 
+@pytest.mark.slow
 def test_seed_robust_qi_sweep_is_deterministic_and_gated() -> None:
     result = run_seed_robust_qi_sweep(
         shape=(8, 8),

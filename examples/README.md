@@ -17,6 +17,7 @@ tree by default.
 | Latent-ODE FAST training | `python examples/train_latent_ode_fast.py --outdir outputs/examples/latent_ode_fast` |
 | Rutherford production plan | `python examples/make_rutherford_production_plan.py --outdir outputs/examples/rutherford_plan` |
 | Rutherford executor chunk | `python examples/run_rutherford_production_chunk.py --outdir outputs/examples/rutherford_chunk --movies` |
+| Paper artifact verifier | `python examples/tools/verify_paper_artifacts.py --artifact-root docs/_static/validation` |
 
 The package skeleton in `examples/plugin_template/` is the recommended layout
 for third-party physics and diagnostics plugins.

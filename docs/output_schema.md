@@ -132,6 +132,24 @@ mhx artifact-manifest outputs/smoke
 This writes `outputs/smoke/artifact_manifest.json` with schema
 `mhx.artifacts.v1`, API version, file paths, byte sizes, and SHA-256 hashes.
 
+## Paper-pipeline bundle
+
+`mhx validate paper-pipeline --outdir outputs/paper_pipeline` writes the
+reviewer-facing validation bundle:
+
+| File | Schema | Meaning |
+| --- | --- | --- |
+| `paper_pipeline.json` | `mhx.paper_pipeline.v1` | Included validation cases, readiness status, claim boundary, and API metadata. |
+| `validation.json` | `mhx.paper_pipeline.gates.v1` | Gate status for suite pass, readiness generation, and release-ready requirement. |
+| `paper_pipeline.md` | Markdown | Human-readable summary of gates and included cases. |
+| `validation_suite/validation_suite.json` | `mhx.validation.suite.v1` | Full or declared-subset validation-suite summary. |
+| `readiness/readiness.json` | `mhx.readiness_report.v1` | Public-release and publication-claim readiness status. |
+| `artifact_manifest.json` | `mhx.artifacts.v1` | Recursive SHA-256 hashes for the whole bundle. |
+| `manifest.json` | `mhx.manifest.v1` | Top-level claim metadata with `claim_level = "validation"`. |
+
+Subsets requested with `--cases` are command-validation artifacts, not full
+release evidence unless the readiness gate is also required and passing.
+
 ## Validation-suite outputs
 
 `mhx validate all --outdir outputs/validation_suite` executes the active FAST

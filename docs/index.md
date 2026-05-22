@@ -31,6 +31,9 @@ Start with these pages when checking validation evidence and scope boundaries:
   schematics and keeps the literature anchors next to the visuals.
 - [Publication checklist](publication_checklist.md) states which figures are
   ready as validation evidence and which remain roadmap or production-only.
+- [Nonlinear campaign evidence claims](nonlinear_campaign_evidence.md) is the
+  generated claim table for double-Harris, Rutherford, and forced
+  turbulent-reconnection long-run evidence.
 
 ```{toctree}
 :maxdepth: 2
@@ -47,6 +50,7 @@ diagnostics
 output_schema
 performance
 long_run_evidence
+nonlinear_campaign_evidence
 seed_robust_qi
 neural_ode_reproducibility
 time_windows
@@ -54,6 +58,7 @@ campaigns
 campaign_runner
 publication_checklist
 paper_plan
+paper_pipeline
 media
 audit
 api_policy

@@ -1,7 +1,7 @@
 # Reviewer evidence map
 
-This page is the reviewer-facing map from claims to evidence at commit
-`3f99c08`. It is designed to make MHX hard to overclaim: every scientific
+This page is the reviewer-facing map from claims to evidence on the current
+`main` branch. It is designed to make MHX hard to overclaim: every scientific
 statement should point to a command, artifact schema, validation gate, source
 implementation, and explicit claim boundary.
 
@@ -27,10 +27,12 @@ A result is reviewer-ready only when all of the following are true:
 2. The command sequence that generated the result is documented.
 3. The output directory contains checksummed artifacts through
    `mhx artifact-manifest`.
-4. The plotted quantity is defined in a public API page or source-linked
+4. Any documentation figure is listed in `docs/figures/manifest.toml` with a
+   matching SHA-256 hash, command, sources, tests, and claim scope.
+5. The plotted quantity is defined in a public API page or source-linked
    implementation.
-5. The validation gate has a numerical tolerance and a failing test.
-6. The limitation of the gate is written next to the result.
+6. The validation gate has a numerical tolerance and a failing test.
+7. The limitation of the gate is written next to the result.
 
 This is stricter than a passing smoke test. A smoke run can prove that IO,
 plotting, and diagnostics execute. It cannot prove nonlinear reconnection
@@ -52,6 +54,7 @@ manifest writer paths:
 - [Artifact manifest implementation](https://github.com/uwplasma/MHX/blob/main/src/mhx/io/manifest.py)
 - [Reduced-MHD run writer](https://github.com/uwplasma/MHX/blob/main/src/mhx/cli/main.py)
 - [Validation-suite writer](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/suite.py)
+- [Paper artifact verifier](https://github.com/uwplasma/MHX/blob/main/examples/tools/verify_paper_artifacts.py)
 
 ## Gate taxonomy
 
@@ -109,7 +112,11 @@ mhx neural-ode train --outdir outputs/reviewer/neural_ode_latent_fit
 mhx campaign rutherford-template --outdir outputs/reviewer/rutherford_template
 mhx campaign rutherford-run-fast --outdir outputs/reviewer/rutherford_fast
 mhx validate readiness --suite outputs/reviewer/validation_suite --outdir outputs/reviewer/readiness
+mhx validate paper-pipeline --outdir outputs/reviewer/paper_pipeline
 mhx artifact-manifest outputs/reviewer
+python examples/tools/verify_paper_artifacts.py \
+  --artifact-root docs/_static/validation \
+  --artifact-root outputs/reviewer
 sphinx-build -W -b html docs docs/_build/html
 ```
 
@@ -117,6 +124,8 @@ The resulting evidence bundle should contain:
 
 - `outputs/reviewer/validation_suite/validation_suite.json`
 - `outputs/reviewer/validation_suite/artifact_manifest.json`
+- `outputs/reviewer/paper_pipeline/paper_pipeline.json`
+- `outputs/reviewer/paper_pipeline/artifact_manifest.json`
 - `outputs/reviewer/timing/timing.json`
 - `outputs/reviewer/seed_robust_qi/validation.json`
 - `outputs/reviewer/seed_robust_qi_sweep/validation.json`

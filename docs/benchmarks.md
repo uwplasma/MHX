@@ -82,12 +82,16 @@ python examples/run_orszag_tang.py --outdir outputs/examples/orszag_tang --nx 64
 python examples/train_latent_ode_fast.py --outdir outputs/examples/latent_ode_fast
 mhx validate all --outdir outputs/validation_suite
 mhx validate readiness --suite outputs/validation_suite --outdir outputs/validation_readiness
+mhx validate paper-pipeline --outdir outputs/paper_pipeline
 ```
 
 `mhx validate all` includes the forced-turbulent-reconnection readiness check as
 a separate required public-release gate after generating a FAST forced run. This
 accounts for the validation-only claim boundary in release readiness while still
 leaving nonlinear publication claims blocked pending production evidence.
+`mhx validate paper-pipeline` wraps that suite, the readiness report, and a
+top-level recursive artifact manifest into the bundle documented in
+[paper_pipeline.md](paper_pipeline.md).
 
 The equation-heavy physics gates and still figures are on
 [validation.md](validation.md). Campaign scaffolds and restartable execution are

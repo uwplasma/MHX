@@ -1,0 +1,416 @@
+{
+  "cases": [
+    {
+      "artifacts": {
+        "diagnostics": "outputs/nonlinear_campaign_evidence_20260522/double_harris_convergence_n16_24_t8/diagnostics.json",
+        "manifest": "outputs/nonlinear_campaign_evidence_20260522/double_harris_convergence_n16_24_t8/manifest.json",
+        "promotion_readiness": null,
+        "validation": "outputs/nonlinear_campaign_evidence_20260522/double_harris_convergence_n16_24_t8/validation.json"
+      },
+      "blocker": "Small 16/24 grid and short t=8 validation sweep; production needs larger resolution, duration, seed, width/aspect, and Lundquist sweeps.",
+      "checks": {
+        "all_subcases_passed": true,
+        "early_growth_positive": true,
+        "energy_dissipative": true,
+        "finite_case_metrics": true,
+        "resolution_flux_amplification_spread_bounded": true,
+        "resolution_growth_rate_spread_bounded": true,
+        "resolution_max_growth_spread_bounded": true,
+        "resolution_width_amplification_spread_bounded": true,
+        "timestep_flux_amplification_spread_bounded": true,
+        "timestep_growth_rate_spread_bounded": true,
+        "timestep_max_growth_spread_bounded": true,
+        "timestep_width_amplification_spread_bounded": true
+      },
+      "claim_level": "validation",
+      "claim_scope": "Tiny deterministic resolution/time-step sweep for seeded periodic double-Harris replay; production claims require larger convergence and seed/aspect-ratio campaigns.",
+      "command": "python -m mhx.cli.main benchmark double-harris-convergence --outdir outputs/nonlinear_campaign_evidence_20260522/double_harris_convergence_n16_24_t8 --resolutions 16,24 --dt-values 0.02,0.01 --reference-resolution 16 --reference-dt 0.01 --t-end 8 --save-interval 1 --fit-stop 4",
+      "family": "periodic double-Harris",
+      "label": "2026-05-22 bounded double-Harris convergence",
+      "metrics": {
+        "case_count": 4,
+        "resolution_growth_rate_spread": 0.0897579,
+        "resolution_max_growth_spread": 0.500001,
+        "t_end": 8.0,
+        "timestep_growth_rate_spread": 1.84821e-10,
+        "timestep_max_growth_spread": 3.93251e-10
+      },
+      "present": true,
+      "production_claim_ready": false,
+      "promotion_checks": {},
+      "promotion_ready": false,
+      "run_dir": "outputs/nonlinear_campaign_evidence_20260522/double_harris_convergence_n16_24_t8",
+      "validation_passed": true
+    },
+    {
+      "artifacts": {
+        "diagnostics": "outputs/nonlinear_campaign_evidence_20260522/double_harris_long_n48_t24/diagnostics.json",
+        "manifest": "outputs/nonlinear_campaign_evidence_20260522/double_harris_long_n48_t24/manifest.json",
+        "promotion_readiness": null,
+        "validation": "outputs/nonlinear_campaign_evidence_20260522/double_harris_long_n48_t24/validation.json"
+      },
+      "blocker": "Positive response is validation evidence only; no production-duration convergence, seed-QI, aspect-ratio, or Lundquist sweep is attached.",
+      "checks": {
+        "early_difference_grows": true,
+        "early_growth_positive": true,
+        "enough_saved_samples": true,
+        "finite_histories": true,
+        "full_duration_reached": true,
+        "island_width_amplifies": true,
+        "nonlinear_difference_reaches_visible_growth": true,
+        "readme_release_media_duration_exceeds_documented_minimum": true,
+        "reconnected_flux_amplifies": true,
+        "short_duration_is_labeled_fast": true,
+        "total_energy_is_dissipative": true
+      },
+      "claim_level": "validation",
+      "claim_scope": "Seeded longer nonlinear periodic double-Harris replay with finite, dissipative histories; not yet a converged plasmoid/Rutherford claim.",
+      "command": "python -m mhx.cli.main benchmark double-harris-long-run --outdir outputs/nonlinear_campaign_evidence_20260522/double_harris_long_n48_t24 --nx 48 --ny 48 --t-end 24 --dt 0.02 --save-every 100 --fit-stop 8 --min-max-growth-factor 2 --no-movies",
+      "family": "periodic double-Harris",
+      "label": "2026-05-22 bounded double-Harris long replay",
+      "metrics": {
+        "fitted_early_growth_rate": 0.221796,
+        "island_width_amplification": 2.42757,
+        "max_growth_factor": 7.35302,
+        "reconnected_flux_amplification": 5.89309,
+        "relative_energy_increase": 0.0,
+        "samples": 13,
+        "shape": [
+          48,
+          48
+        ],
+        "t_end": 24.0
+      },
+      "present": true,
+      "production_claim_ready": false,
+      "promotion_checks": {},
+      "promotion_ready": false,
+      "run_dir": "outputs/nonlinear_campaign_evidence_20260522/double_harris_long_n48_t24",
+      "validation_passed": true
+    },
+    {
+      "artifacts": {
+        "diagnostics": "outputs/nonlinear_campaign_evidence_20260522/rutherford_fast_n24_t1/diagnostics.json",
+        "manifest": "outputs/nonlinear_campaign_evidence_20260522/rutherford_fast_n24_t1/manifest.json",
+        "promotion_readiness": null,
+        "validation": "outputs/nonlinear_campaign_evidence_20260522/rutherford_fast_n24_t1/validation.json"
+      },
+      "blocker": "FAST schema/diagnostic run is far shorter than Rutherford-duration requirements and cannot be promoted to nonlinear physics.",
+      "checks": {
+        "claim_level_is_not_production": true,
+        "duration_flagged_below_production_template": true,
+        "duration_within_fast_limit": true,
+        "energy_growth_within_tolerance": true,
+        "finite_histories": true,
+        "magnetic_divergence_within_tolerance": true,
+        "saved_initial_and_final_samples": true
+      },
+      "claim_level": "validation",
+      "claim_scope": "Deterministic FAST Rutherford-campaign smoke/validation run; not a production nonlinear reconnection claim.",
+      "command": "python -m mhx.cli.main campaign rutherford-run-fast --outdir outputs/nonlinear_campaign_evidence_20260522/rutherford_fast_n24_t1 --nx 24 --ny 24 --t-end 1.0 --dt 0.01 --save-every 5",
+      "family": "Rutherford executor",
+      "label": "2026-05-22 bounded Rutherford FAST run",
+      "metrics": {
+        "max_magnetic_divergence_linf": 0.0,
+        "max_relative_energy_growth": -9.98053e-05,
+        "samples": 21,
+        "shape": [
+          24,
+          24
+        ],
+        "steps": 100,
+        "t_end": 1.0
+      },
+      "present": true,
+      "production_claim_ready": false,
+      "promotion_checks": {},
+      "promotion_ready": false,
+      "run_dir": "outputs/nonlinear_campaign_evidence_20260522/rutherford_fast_n24_t1",
+      "validation_passed": true
+    },
+    {
+      "artifacts": {
+        "diagnostics": "outputs/nonlinear_campaign_evidence_20260522/forced_turbulent_reconnection_n24_t4/diagnostics.json",
+        "manifest": "outputs/nonlinear_campaign_evidence_20260522/forced_turbulent_reconnection_n24_t4/manifest.json",
+        "promotion_readiness": "outputs/nonlinear_campaign_evidence_20260522/forced_turbulent_reconnection_n24_t4/readiness/promotion_readiness.json",
+        "validation": "outputs/nonlinear_campaign_evidence_20260522/forced_turbulent_reconnection_n24_t4/validation.json"
+      },
+      "blocker": "2-D reduced-MHD proxy and single deterministic seed; no turbulent ensemble, 3-D physics, inertial range, or LV99 scaling evidence.",
+      "checks": {
+        "current_sheet_activity_observed": true,
+        "finite_histories": true,
+        "forced_energy_growth_bounded": true,
+        "magnetic_divergence_preserved": true,
+        "reconnection_proxy_changes": true
+      },
+      "claim_level": "validation",
+      "claim_scope": "Pedagogical forced-turbulence current-sheet replay with reconnection proxy and finite-energy gates; not a converged 3-D turbulent reconnection result.",
+      "command": "python -m mhx.cli.main benchmark forced-turbulent-reconnection --outdir outputs/nonlinear_campaign_evidence_20260522/forced_turbulent_reconnection_n24_t4 --nx 24 --ny 24 --t-end 4 --dt 0.02 --save-every 10 --no-movies",
+      "family": "forced turbulent reconnection",
+      "label": "2026-05-22 bounded forced turbulent reconnection",
+      "metrics": {
+        "current_linf_growth": 0.273459,
+        "history_sample_count": 21,
+        "max_abs_reconnection_rate_proxy": 3.56186,
+        "max_magnetic_divergence_linf": 0.0,
+        "max_relative_energy_growth": 0.0,
+        "promotion_ready": true,
+        "reconnection_proxy_change": 1.91639,
+        "samples": 21,
+        "shape": [
+          24,
+          24
+        ],
+        "t_end": 4.0
+      },
+      "present": true,
+      "production_claim_ready": false,
+      "promotion_checks": {
+        "energy_growth_within_tolerance": true,
+        "execution_diagnostics_present": true,
+        "execution_validation_passed": true,
+        "execution_validation_present": true,
+        "finite_history_arrays": true,
+        "history_schema_supported": true,
+        "minimum_duration_reached": true,
+        "minimum_history_samples": true,
+        "movies_present_or_not_required": true,
+        "nontrivial_reconnection_proxy_or_rate": true,
+        "positive_reconnection_proxy_or_rate": true,
+        "required_history_keys_present": true,
+        "run_manifest_present": true,
+        "summary_figure_present_or_not_required": true
+      },
+      "promotion_ready": true,
+      "run_dir": "outputs/nonlinear_campaign_evidence_20260522/forced_turbulent_reconnection_n24_t4",
+      "validation_passed": true
+    },
+    {
+      "artifacts": {
+        "diagnostics": "outputs/campaigns/double_harris_convergence_gpu_n32_48_64_t16_20260519_173637/diagnostics.json",
+        "manifest": "outputs/campaigns/double_harris_convergence_gpu_n32_48_64_t16_20260519_173637/manifest.json",
+        "promotion_readiness": null,
+        "validation": "outputs/campaigns/double_harris_convergence_gpu_n32_48_64_t16_20260519_173637/validation.json"
+      },
+      "blocker": "Medium validation sweep is not a production-scale duration, seed, aspect-ratio, or Lundquist campaign.",
+      "checks": {
+        "all_subcases_passed": true,
+        "early_growth_positive": true,
+        "energy_dissipative": true,
+        "finite_case_metrics": true,
+        "resolution_growth_rate_spread_bounded": true,
+        "resolution_max_growth_spread_bounded": true,
+        "timestep_growth_rate_spread_bounded": true,
+        "timestep_max_growth_spread_bounded": true
+      },
+      "claim_level": "validation",
+      "claim_scope": "Tiny deterministic resolution/time-step sweep for seeded periodic double-Harris replay; production claims require larger convergence and seed/aspect-ratio campaigns.",
+      "command": "Archived command recorded in docs/long_run_evidence.md.",
+      "family": "periodic double-Harris",
+      "label": "Archived GPU-assisted double-Harris convergence",
+      "metrics": {
+        "case_count": 5,
+        "resolution_growth_rate_spread": 0.00411786,
+        "resolution_max_growth_spread": 0.00162281,
+        "t_end": 16.0,
+        "timestep_growth_rate_spread": 1.96263e-10,
+        "timestep_max_growth_spread": 2.05568e-10
+      },
+      "present": true,
+      "production_claim_ready": false,
+      "promotion_checks": {},
+      "promotion_ready": false,
+      "run_dir": "outputs/campaigns/double_harris_convergence_gpu_n32_48_64_t16_20260519_173637",
+      "validation_passed": true
+    },
+    {
+      "artifacts": {
+        "diagnostics": "outputs/campaigns/growing_double_harris_gpu_96_t120_20260518_044120/diagnostics.json",
+        "manifest": "outputs/campaigns/growing_double_harris_gpu_96_t120_20260518_044120/manifest.json",
+        "promotion_readiness": "outputs/campaigns/growing_double_harris_gpu_96_t120_20260518_044120/promotion/promotion_readiness.json",
+        "validation": "outputs/campaigns/growing_double_harris_gpu_96_t120_20260518_044120/validation.json"
+      },
+      "blocker": "Convergence-backed validation media only; production claims still need larger seed, width/aspect, Lundquist, and duration sweeps.",
+      "checks": {
+        "early_difference_grows": true,
+        "early_growth_positive": true,
+        "enough_saved_samples": true,
+        "finite_histories": true,
+        "full_duration_reached": true,
+        "island_width_amplifies": true,
+        "nonlinear_difference_reaches_visible_growth": true,
+        "readme_release_media_duration_exceeds_documented_minimum": true,
+        "reconnected_flux_amplifies": true,
+        "short_duration_is_labeled_fast": true,
+        "total_energy_is_dissipative": true
+      },
+      "claim_level": "validation",
+      "claim_scope": "Seeded longer nonlinear periodic double-Harris replay with finite, dissipative histories; not yet a converged plasmoid/Rutherford claim.",
+      "command": "Archived command recorded in docs/long_run_evidence.md.",
+      "family": "periodic double-Harris",
+      "label": "Archived GPU-assisted double-Harris response",
+      "metrics": {
+        "fitted_early_growth_rate": 0.186895,
+        "history_sample_count": 41,
+        "island_width_amplification": 2.54386,
+        "max_growth_factor": 7.35301,
+        "max_o_point_count": 2,
+        "max_x_point_count": 4,
+        "promotion_ready": true,
+        "reconnected_flux_amplification": 6.47122,
+        "relative_energy_increase": 0.0,
+        "samples": 41,
+        "shape": [
+          96,
+          96
+        ],
+        "t_end": 120.0
+      },
+      "present": true,
+      "production_claim_ready": false,
+      "promotion_checks": {
+        "convergence_bundle_count": true,
+        "convergence_bundles_passed": true,
+        "critical_point_counts_present": true,
+        "energy_increase_within_tolerance": true,
+        "execution_diagnostics_present": true,
+        "execution_validation_passed": true,
+        "execution_validation_present": true,
+        "finite_history_arrays": true,
+        "fixed_scale_movies_present": true,
+        "history_schema_supported": true,
+        "island_width_amplifies": true,
+        "minimum_duration_reached": true,
+        "minimum_history_samples": true,
+        "o_critical_points_detected": true,
+        "reconnected_flux_amplifies": true,
+        "required_history_keys_present": true,
+        "run_manifest_present": true,
+        "x_critical_points_detected": true
+      },
+      "promotion_ready": true,
+      "run_dir": "outputs/campaigns/growing_double_harris_gpu_96_t120_20260518_044120",
+      "validation_passed": true
+    },
+    {
+      "artifacts": {
+        "diagnostics": "outputs/campaigns/rutherford_current_schema_96_dt005_20260517_161235/diagnostics.json",
+        "manifest": "outputs/campaigns/rutherford_current_schema_96_dt005_20260517_161235/manifest.json",
+        "promotion_readiness": "outputs/campaigns/rutherford_current_schema_96_dt005_20260517_161235/promotion/promotion_readiness.json",
+        "validation": "outputs/campaigns/rutherford_current_schema_96_dt005_20260517_161235/validation.json"
+      },
+      "blocker": "Duration target completed, but promotion failed because reconnecting-flux and island-width amplification remained 1.00.",
+      "checks": {
+        "campaign_plan_loaded": true,
+        "checkpoint_metadata_written": true,
+        "checkpoint_resume_contract_used": true,
+        "checkpoint_state_written": true,
+        "energy_growth_within_tolerance": true,
+        "executor_made_progress_or_target_already_complete": true,
+        "finite_histories": true,
+        "magnetic_divergence_within_tolerance": true,
+        "movies_written_when_requested": true,
+        "production_claim_has_promotion_report": true,
+        "production_claim_requires_explicit_completion": true
+      },
+      "claim_level": "validation",
+      "claim_scope": "Restartable Rutherford campaign execution using the production checkpoint/history schema. Partial chunks are validation artifacts; production claims require completing the target, enabling the explicit production-claim gate, and attaching a passing promotion readiness report.",
+      "command": "Archived command recorded in docs/long_run_evidence.md.",
+      "family": "Rutherford executor",
+      "label": "Archived current-schema Rutherford duration run",
+      "metrics": {
+        "end_step": 45802,
+        "final_magnetic_divergence_linf": 0.0,
+        "history_sample_count": 202,
+        "history_samples": 202,
+        "island_width_amplification": 1.0,
+        "max_o_point_count": 1,
+        "max_relative_energy_growth": -2.05077e-06,
+        "max_x_point_count": 2,
+        "promotion_ready": false,
+        "reconnected_flux_amplification": 1.0,
+        "shape": [
+          96,
+          96
+        ],
+        "target_step": 45802,
+        "terminal_step": 45802
+      },
+      "present": true,
+      "production_claim_ready": false,
+      "promotion_checks": {
+        "artifact_manifest_present": true,
+        "campaign_plan_present": true,
+        "completed_target": true,
+        "convergence_bundle_count": true,
+        "convergence_bundles_passed": true,
+        "critical_point_counts_present": true,
+        "current_sheet_geometry_positive": true,
+        "current_sheet_geometry_present": true,
+        "energy_budget_residual_within_tolerance": true,
+        "execution_diagnostics_present": true,
+        "execution_validation_passed": true,
+        "execution_validation_present": true,
+        "finite_history_arrays": true,
+        "fixed_scale_movies_present": true,
+        "history_schema_supported": true,
+        "island_width_amplifies": false,
+        "magnetic_divergence_within_tolerance": true,
+        "minimum_history_samples": true,
+        "reconnected_flux_amplifies": false,
+        "required_history_keys_present": true,
+        "run_manifest_present": true,
+        "seed_qi_bundle_passed": true,
+        "seed_qi_bundle_present": true,
+        "terminal_step_reaches_target": true,
+        "x_critical_points_detected": true
+      },
+      "promotion_ready": false,
+      "run_dir": "outputs/campaigns/rutherford_current_schema_96_dt005_20260517_161235",
+      "validation_passed": true
+    },
+    {
+      "artifacts": {
+        "diagnostics": "outputs/readme_media/forced_turbulent_reconnection_64_t80_wide/diagnostics.json",
+        "manifest": "outputs/readme_media/forced_turbulent_reconnection_64_t80_wide/manifest.json",
+        "promotion_readiness": null,
+        "validation": "outputs/readme_media/forced_turbulent_reconnection_64_t80_wide/validation.json"
+      },
+      "blocker": "Validation media only: single deterministic 2-D proxy run, no ensemble or 3-D turbulent-reconnection scaling.",
+      "checks": {
+        "current_sheet_activity_observed": true,
+        "finite_histories": true,
+        "forced_energy_growth_bounded": true,
+        "magnetic_divergence_preserved": true,
+        "reconnection_proxy_changes": true
+      },
+      "claim_level": "validation",
+      "claim_scope": "Pedagogical forced-turbulence current-sheet replay with reconnection proxy and finite-energy gates; not a converged 3-D turbulent reconnection result.",
+      "command": "Archived command recorded in docs/readme media QA artifacts.",
+      "family": "forced turbulent reconnection",
+      "label": "Archived forced turbulent reconnection README media",
+      "metrics": {
+        "current_linf_growth": 13.829,
+        "max_abs_reconnection_rate_proxy": 0.343463,
+        "max_magnetic_divergence_linf": 0.0,
+        "max_relative_energy_growth": 0.0,
+        "reconnection_proxy_change": 1.38249,
+        "samples": 41,
+        "shape": [
+          64,
+          64
+        ],
+        "t_end": 80.0
+      },
+      "present": true,
+      "production_claim_ready": false,
+      "promotion_checks": {},
+      "promotion_ready": false,
+      "run_dir": "outputs/readme_media/forced_turbulent_reconnection_64_t80_wide",
+      "validation_passed": true
+    }
+  ],
+  "claim_boundary": "All listed nonlinear campaign artifacts are validation evidence; none support production Rutherford, plasmoid, Sweet-Parker, or 3-D turbulent-reconnection claims.",
+  "refresh_date": "2026-05-22",
+  "schema": "mhx.docs.nonlinear_campaign_evidence.v1"
+}

@@ -24,6 +24,8 @@ REQUIRED_TOCTREE_ENTRIES = {
     "campaign_runner",
     "publication_checklist",
     "paper_plan",
+    "paper_pipeline",
+    "nonlinear_campaign_evidence",
     "media",
     "audit",
 }
@@ -78,10 +80,15 @@ REQUIRED_SOURCE_LINKS = {
         "tests/test_production_campaign.py",
     },
     "docs/publication_checklist.md": {
+        "examples/tools/verify_paper_artifacts.py",
         "examples/make_validation_media.py",
         "examples/make_readme_media.py",
         "src/mhx/plotting/reduced_mhd.py",
         "tests/test_readme_media.py",
+    },
+    "docs/paper_pipeline.md": {
+        "src/mhx/benchmarks/paper_pipeline.py",
+        "src/mhx/cli/main.py",
     },
     "docs/media.md": {
         "examples/make_readme_media.py",

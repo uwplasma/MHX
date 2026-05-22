@@ -253,6 +253,9 @@ class RunConfig:
 
     @classmethod
     def from_mapping(cls, mapping: dict[str, Any]) -> RunConfig:
+        require_supported_api_version(context="RunConfig loader")
+        if "api_version" in mapping:
+            require_supported_api_version(str(mapping["api_version"]), context="RunConfig loader")
         return cls(
             name=str(mapping.get("name", cls.name)),
             output_dir=Path(mapping.get("output_dir", cls.output_dir)),

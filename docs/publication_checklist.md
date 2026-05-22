@@ -16,7 +16,9 @@ Every figure included in the paper-style documentation should have:
 - a caption that states the claim level;
 - a limitation sentence when the result is analytic, FAST, or validation-only;
 - fixed color ranges for movies or multi-panel image comparisons;
-- a manifest entry with SHA-256 checksum.
+- a manifest entry with SHA-256 checksum;
+- a passing `python examples/tools/verify_paper_artifacts.py` check before
+  reviewer handoff.
 
 ## Current figure readiness
 
@@ -165,6 +167,7 @@ The README currently ships validation/theory movies only:
 
 ## Source map for publication plots
 
+- [Paper artifact verifier](https://github.com/uwplasma/MHX/blob/main/examples/tools/verify_paper_artifacts.py)
 - [Validation media generator](https://github.com/uwplasma/MHX/blob/main/examples/make_validation_media.py)
 - [README media generator](https://github.com/uwplasma/MHX/blob/main/examples/make_readme_media.py)
 - [Figure manifest](figures/manifest.toml)

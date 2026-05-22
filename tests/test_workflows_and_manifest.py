@@ -44,7 +44,16 @@ def test_required_workflows_exist() -> None:
     docs_workflow = (workflow_dir / "docs.yml").read_text(encoding="utf-8")
     assert "tests/test_docs_links.py tests/test_readme_media.py" in docs_workflow
     ci_workflow = (workflow_dir / "ci.yml").read_text(encoding="utf-8")
+    assert 'python -m pytest -m "not slow"' in ci_workflow
+    assert "python -m pytest -m slow" in ci_workflow
+    assert "release-tests:" in ci_workflow
+    assert "needs: [test, release-tests]" in ci_workflow
     assert "mhx campaign rutherford-promotion-check" in ci_workflow
+    assert "mhx validate paper-pipeline" in ci_workflow
+    assert "python examples/tools/verify_paper_artifacts.py" in ci_workflow
+    assert "--artifact-root outputs/ci/paper_pipeline" in ci_workflow
+    assert "outputs/ci/paper_pipeline/paper_pipeline.json" in ci_workflow
+    assert "outputs/ci/paper_pipeline/artifact_manifest.json" in ci_workflow
     long_run_index = ci_workflow.index("mhx benchmark double-harris-long-run")
     convergence_index = ci_workflow.index("mhx benchmark double-harris-convergence")
     promotion_index = ci_workflow.index("mhx benchmark double-harris-promotion-check")
