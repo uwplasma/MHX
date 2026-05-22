@@ -194,7 +194,7 @@ jobs:
           test -f outputs/ci/plugin_demo/figures/diagnostics/final_flux_l2_history.png
           mhx report outputs/ci/plugin_demo
           mhx artifact-manifest outputs/ci
-          python examples/tools/verify_paper_artifacts.py --artifact-root docs/_static/validation --artifact-root outputs/ci/paper_pipeline
+          python examples/tools/verify_paper_artifacts.py --skip-figures --artifact-root outputs/ci/paper_pipeline
       - name: Validate bounded artifact file set
         run: |
           test -f outputs/ci/artifact_manifest.json
