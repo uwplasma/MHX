@@ -755,6 +755,10 @@ def test_write_periodic_double_harris_convergence_artifacts_and_cli(tmp_path) ->
     assert history["island_width_amplification"].shape == history["dt"].shape
     manifest = json.loads(manifest_path.read_text())
     assert manifest["claim_level"] == "validation"
+    assert manifest["outputs"]["artifact_manifest"] == "artifact_manifest.json"
+    artifact_manifest = json.loads((tmp_path / "artifact_manifest.json").read_text())
+    artifact_paths = {record["path"] for record in artifact_manifest["files"]}
+    assert {"manifest.json", "validation.json"}.issubset(artifact_paths)
     assert "production claims require" in manifest["claim_scope"]
     assert validation["diagnostics"]["resolution_growth_rate_spread"] <= validation[
         "thresholds"
@@ -816,6 +820,10 @@ def test_write_periodic_double_harris_parameter_sweep_artifacts_and_cli(tmp_path
     assert history["max_x_point_count"].shape == history["case_index"].shape
     manifest = json.loads(manifest_path.read_text())
     assert manifest["claim_level"] == "validation"
+    assert manifest["outputs"]["artifact_manifest"] == "artifact_manifest.json"
+    artifact_manifest = json.loads((tmp_path / "artifact_manifest.json").read_text())
+    artifact_paths = {record["path"] for record in artifact_manifest["files"]}
+    assert {"manifest.json", "validation.json"}.issubset(artifact_paths)
     assert "not a production" in manifest["claim_scope"]
     assert (
         tmp_path / "figures" / "periodic_double_harris_parameter_sweep.png"

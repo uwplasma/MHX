@@ -2380,6 +2380,7 @@ def write_periodic_double_harris_convergence_validation(
     validation_path = output_dir / "validation.json"
     history_path = output_dir / "periodic_double_harris_convergence.npz"
     manifest_path = output_dir / "manifest.json"
+    artifact_manifest_path = output_dir / "artifact_manifest.json"
     diagnostics_path.write_text(
         json.dumps(result.diagnostics, indent=2, sort_keys=True),
         encoding="utf-8",
@@ -2427,6 +2428,7 @@ def write_periodic_double_harris_convergence_validation(
             "diagnostics": diagnostics_path.name,
             "validation": validation_path.name,
             "history": history_path.name,
+            "artifact_manifest": artifact_manifest_path.name,
             "periodic_double_harris_convergence": str(
                 figure_path.relative_to(output_dir)
             ),
@@ -2438,6 +2440,7 @@ def write_periodic_double_harris_convergence_validation(
             "and seed/aspect-ratio campaigns."
         ),
     )
+    write_artifact_manifest(output_dir, path=artifact_manifest_path)
     return manifest_path, result.validation
 
 
@@ -2454,6 +2457,7 @@ def write_periodic_double_harris_parameter_sweep_validation(
     validation_path = output_dir / "validation.json"
     history_path = output_dir / "periodic_double_harris_parameter_sweep.npz"
     manifest_path = output_dir / "manifest.json"
+    artifact_manifest_path = output_dir / "artifact_manifest.json"
     diagnostics_path.write_text(
         json.dumps(result.diagnostics, indent=2, sort_keys=True),
         encoding="utf-8",
@@ -2505,6 +2509,7 @@ def write_periodic_double_harris_parameter_sweep_validation(
             "diagnostics": diagnostics_path.name,
             "validation": validation_path.name,
             "history": history_path.name,
+            "artifact_manifest": artifact_manifest_path.name,
             "periodic_double_harris_parameter_sweep": str(
                 figure_path.relative_to(output_dir)
             ),
@@ -2515,6 +2520,7 @@ def write_periodic_double_harris_parameter_sweep_validation(
             "response diagnostics; not a production FKR/Rutherford/plasmoid claim."
         ),
     )
+    write_artifact_manifest(output_dir, path=artifact_manifest_path)
     return manifest_path, result.validation
 
 
