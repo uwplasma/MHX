@@ -75,6 +75,41 @@ def test_production_campaign_manifest_schema_and_gates(tmp_path) -> None:
     assert gates["promotion"]["command_ids"][-1] == "rutherford_finalize_production_claim"
 
 
+def test_production_campaign_default_fit_stop_uses_growth_timescale(tmp_path) -> None:
+    module = _load_script_module()
+    options = module.CampaignOptions(
+        outdir=tmp_path / "lane",
+        python_executable="python",
+        harris_growth_rate=0.125,
+        nx=128,
+        ny=128,
+        target_saved_frames=121,
+        min_production_resolution=128,
+    )
+
+    assert options.t_end == pytest.approx(240.0)
+    assert options.resolved_save_interval == pytest.approx(options.t_end / 121)
+    assert options.resolved_fit_stop == pytest.approx(16.0)
+
+    manifest = module.build_manifest(options)
+    assert manifest["campaign"]["time"]["fit_stop"] == pytest.approx(16.0)
+
+
+def test_production_campaign_explicit_fit_stop_still_overrides(tmp_path) -> None:
+    module = _load_script_module()
+    options = module.CampaignOptions(
+        outdir=tmp_path / "lane",
+        python_executable="python",
+        harris_growth_rate=0.125,
+        nx=128,
+        ny=128,
+        fit_stop=24.0,
+        min_production_resolution=128,
+    )
+
+    assert options.resolved_fit_stop == pytest.approx(24.0)
+
+
 def test_production_campaign_command_generation_is_exact(tmp_path) -> None:
     module = _load_script_module()
     manifest = module.build_manifest(_options(module, tmp_path))

@@ -237,6 +237,12 @@ remain `claim_level = "validation"` unless the target duration completes, the
 promotion report passes with convergence/seed/movie/response evidence, and the
 final zero-step production-claim refresh succeeds.
 
+By default the campaign fits the early growth rate only through the larger of
+three saved samples or two declared Harris e-folding times,
+`fit_stop = min(t_end, max(3*save_interval, 2/gamma))`. This keeps the growth
+fit out of nonlinear saturation for bounded GPU campaigns. Use `--fit-stop`
+when a case-specific linear window is known from an eigenmode or pilot run.
+
 Execution is intentionally opt-in and bounded per command:
 
 ```bash

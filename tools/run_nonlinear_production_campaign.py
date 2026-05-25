@@ -114,10 +114,19 @@ class CampaignOptions:
 
     @property
     def resolved_fit_stop(self) -> float:
-        """Early growth-fit stop that remains safely inside the long duration."""
+        """Early growth-fit stop that remains inside the linear-growth window.
+
+        The campaign duration may be many e-folding times long.  Fitting through
+        the full nonlinear/saturated trajectory can make a physically growing
+        run fail the early-growth gate.  The default therefore uses the larger
+        of three saved samples or two declared Harris e-folding times, capped at
+        the total duration.  Users can still override this with ``--fit-stop``.
+        """
         if self.fit_stop is not None:
             return self.fit_stop
-        return min(self.t_end, max(3.0 * self.resolved_save_interval, 120.0))
+        minimum_sample_span = 3.0 * self.resolved_save_interval
+        two_efold_span = 2.0 / self.harris_growth_rate
+        return min(self.t_end, max(minimum_sample_span, two_efold_span))
 
     def validated(self) -> CampaignOptions:
         """Validate campaign options and return ``self`` for fluent construction."""
