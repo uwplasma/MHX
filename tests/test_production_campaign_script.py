@@ -88,7 +88,8 @@ def test_production_campaign_default_fit_stop_uses_growth_timescale(tmp_path) ->
     )
 
     assert options.t_end == pytest.approx(240.0)
-    assert options.resolved_save_interval == pytest.approx(options.t_end / 121)
+    assert options.resolved_save_every == 100
+    assert options.resolved_save_interval == pytest.approx(2.0)
     assert options.resolved_fit_stop == pytest.approx(16.0)
 
     manifest = module.build_manifest(options)

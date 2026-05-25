@@ -242,6 +242,10 @@ three saved samples or two declared Harris e-folding times,
 `fit_stop = min(t_end, max(3*save_interval, 2/gamma))`. This keeps the growth
 fit out of nonlinear saturation for bounded GPU campaigns. Use `--fit-stop`
 when a case-specific linear window is known from an eigenmode or pilot run.
+When `--save-interval` is omitted, the convergence and sweep stages inherit the
+long-run saved-frame cadence, `save_interval = save_every*dt`, so the default
+campaign uses the same physical sampling cadence across long-run and auxiliary
+gates.
 
 Execution is intentionally opt-in and bounded per command:
 

@@ -55,8 +55,8 @@ class CampaignOptions:
     seeds: tuple[int, ...] = (0, 1, 2, 3, 4, 5, 6, 7)
     convergence_resolutions: tuple[int, ...] = (128, 192, 256)
     crosscheck_resolutions: tuple[int, ...] = (160, 224, 256)
-    dt_values: tuple[float, ...] = (4.0e-2, 1.0e-2)
-    crosscheck_dt_values: tuple[float, ...] = (3.0e-2, 1.5e-2)
+    dt_values: tuple[float, ...] = (2.0e-2, 1.0e-2)
+    crosscheck_dt_values: tuple[float, ...] = (2.0e-2, 1.0e-2)
     max_walltime_hours: float = 12.0
     seconds_per_step_estimate: float = 0.5
     checkpoint_interval_minutes: float = 30.0
@@ -110,7 +110,7 @@ class CampaignOptions:
         """Physical save interval for convergence and parameter-sweep commands."""
         if self.save_interval is not None:
             return self.save_interval
-        return self.t_end / self.target_saved_frames
+        return self.resolved_save_every * self.dt
 
     @property
     def resolved_fit_stop(self) -> float:
@@ -1079,8 +1079,8 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser.add_argument("--seeds", default="0,1,2,3,4,5,6,7")
     parser.add_argument("--convergence-resolutions", default="128,192,256")
     parser.add_argument("--crosscheck-resolutions", default="160,224,256")
-    parser.add_argument("--dt-values", default="0.04,0.01")
-    parser.add_argument("--crosscheck-dt-values", default="0.03,0.015")
+    parser.add_argument("--dt-values", default="0.02,0.01")
+    parser.add_argument("--crosscheck-dt-values", default="0.02,0.01")
     parser.add_argument("--max-walltime-hours", type=float, default=12.0)
     parser.add_argument("--seconds-per-step-estimate", type=float, default=0.5)
     parser.add_argument("--checkpoint-interval-minutes", type=float, default=30.0)
