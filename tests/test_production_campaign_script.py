@@ -133,6 +133,12 @@ def test_production_campaign_command_generation_is_exact(tmp_path) -> None:
     assert "--seed-qi-dir" in rutherford_promotion
     assert "--min-convergence-dirs" in rutherford_promotion
 
+    seed_qi = commands["seed_qi"]["command"]
+    assert "--save-every" in seed_qi
+    assert int(seed_qi[seed_qi.index("--save-every") + 1]) == manifest["campaign"]["time"][
+        "save_every"
+    ]
+
     final_command = commands["rutherford_finalize_production_claim"]["command"]
     assert "--allow-production-claim" in final_command
     assert final_command[final_command.index("--max-steps") + 1] == "0"

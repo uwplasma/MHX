@@ -245,7 +245,8 @@ when a case-specific linear window is known from an eigenmode or pilot run.
 When `--save-interval` is omitted, the convergence and sweep stages inherit the
 long-run saved-frame cadence, `save_interval = save_every*dt`, so the default
 campaign uses the same physical sampling cadence across long-run and auxiliary
-gates.
+gates. The seed-QI command also receives the same `--save-every` stride; this
+keeps long seed ensembles from storing every RK4 step on GPU.
 
 Execution is intentionally opt-in and bounded per command:
 

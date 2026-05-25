@@ -799,6 +799,8 @@ def _seed_qi_command(options: CampaignOptions, outdir: Path) -> CommandSpec:
         options.t_end,
         "--dt",
         options.dt,
+        "--save-every",
+        options.resolved_save_every,
         "--eta",
         options.eta,
         "--nu",

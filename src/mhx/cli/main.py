@@ -1825,6 +1825,7 @@ def benchmark_seed_robust_qi(
     ny: Annotated[int, typer.Option("--ny", help="Grid points in y.")] = 16,
     t_end: Annotated[float, typer.Option("--t-end", help="Final ensemble time.")] = 0.12,
     dt: Annotated[float, typer.Option("--dt", help="RK4 time step.")] = 1.0e-2,
+    save_every: Annotated[int, typer.Option("--save-every", help="Saved-step stride.")] = 1,
     eta: Annotated[float, typer.Option("--eta", help="Resistivity.")] = 1.0e-3,
     nu: Annotated[float, typer.Option("--nu", help="Viscosity.")] = 1.0e-3,
     noise_amplitude: Annotated[
@@ -1840,6 +1841,7 @@ def benchmark_seed_robust_qi(
         shape=(nx, ny),
         steps=max(1, round(t_end / dt)),
         dt=dt,
+        save_every=save_every,
         resistivity=eta,
         viscosity=nu,
         psi_noise_amplitude=noise_amplitude,
