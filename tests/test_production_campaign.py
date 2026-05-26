@@ -192,10 +192,28 @@ def test_production_campaign_cli_plan_and_resume(tmp_path) -> None:
             "10.0",
             "--preemption-margin-minutes",
             "5.0",
+            "--equilibrium",
+            "periodic_double_harris",
+            "--width",
+            "0.36",
+            "--perturbation-amplitude",
+            "0.004",
+            "--mode-x",
+            "2",
+            "--mode-y",
+            "1",
+            "--eta",
+            "0.0045",
+            "--nu",
+            "0.0045",
         ],
     )
     assert result.exit_code == 0, result.output
     assert (tmp_path / "manifest.json").exists()
+    plan = json.loads((tmp_path / "campaign_plan.json").read_text())
+    assert plan["config"]["physics"]["equilibrium"] == "periodic_double_harris"
+    assert plan["config"]["diagnostics"]["mode"] == [2, 1]
+    assert plan["config"]["physics"]["resistivity"] == pytest.approx(0.0045)
 
     resume = runner.invoke(
         app,
@@ -480,6 +498,80 @@ def test_production_promotion_requires_nonlinear_response(tmp_path) -> None:
     assert assessment.diagnostics["island_width_amplification"] == pytest.approx(1.0)
     assert assessment.validation["checks"]["reconnected_flux_amplifies"] is False
     assert assessment.validation["checks"]["island_width_amplifies"] is False
+
+
+def test_periodic_double_harris_rutherford_executor_passes_response_gates(tmp_path) -> None:
+    write_rutherford_production_plan(
+        tmp_path,
+        shape=(24, 24),
+        dt=2.0e-2,
+        target_saved_frames=20,
+        harris_growth_rate=0.5,
+        production_efolds=1.0,
+        safety_factor=1.0,
+        min_production_resolution=24,
+        equilibrium="periodic_double_harris",
+        width=0.36,
+        perturbation_amplitude=4.0e-3,
+        perturbation_mode=(2, 1),
+        resistivity=4.5e-3,
+        viscosity=4.5e-3,
+    )
+    execution = execute_rutherford_production_campaign(
+        tmp_path,
+        seed=0,
+        write_movies=False,
+        max_relative_energy_growth=1.0,
+        max_divergence_linf=1.0e-8,
+    )
+    assert execution.validation["passed"] is True
+    assert execution.completed_target is True
+
+    with np.load(tmp_path / "production_history.npz") as history:
+        flux = np.asarray(history["reconnected_flux"])
+        width = np.asarray(history["rutherford_island_width"])
+        assert np.max(flux) / flux[0] > 1.01
+        assert np.max(width) / width[0] > 1.01
+
+    convergence_dirs = []
+    for name in ("resolution_sweep", "time_step_sweep"):
+        evidence_dir = tmp_path / "evidence" / name
+        evidence_dir.mkdir(parents=True)
+        (evidence_dir / "validation.json").write_text(
+            json.dumps({"schema": f"mhx.test.{name}.gates.v1", "passed": True}),
+            encoding="utf-8",
+        )
+        (evidence_dir / "manifest.json").write_text(
+            json.dumps({"claim_level": "validation"}),
+            encoding="utf-8",
+        )
+        write_artifact_manifest(evidence_dir)
+        convergence_dirs.append(evidence_dir)
+    seed_qi_dir = tmp_path / "evidence" / "seed_qi"
+    seed_qi_dir.mkdir(parents=True)
+    (seed_qi_dir / "validation.json").write_text(
+        json.dumps({"schema": "mhx.test.seed_qi.gates.v1", "passed": True}),
+        encoding="utf-8",
+    )
+    (seed_qi_dir / "manifest.json").write_text(
+        json.dumps({"claim_level": "validation"}),
+        encoding="utf-8",
+    )
+
+    assessment = assess_rutherford_production_promotion(
+        tmp_path,
+        convergence_dirs=tuple(convergence_dirs),
+        seed_qi_dir=seed_qi_dir,
+        require_movies=False,
+        min_history_samples=2,
+        max_energy_budget_residual=1.0,
+        min_reconnected_flux_amplification=1.01,
+        min_island_width_amplification=1.01,
+    )
+
+    assert assessment.promotion_ready is True
+    assert assessment.validation["checks"]["reconnected_flux_amplifies"] is True
+    assert assessment.validation["checks"]["island_width_amplifies"] is True
 
 
 def test_cli_validation_failure_reports_failed_checks(capsys) -> None:

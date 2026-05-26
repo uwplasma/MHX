@@ -391,6 +391,41 @@ def campaign_rutherford_plan_production(
         int,
         typer.Option("--min-production-resolution", help="Minimum reviewer-facing grid size."),
     ] = 96,
+    equilibrium: Annotated[
+        str,
+        typer.Option(
+            "--equilibrium",
+            help="Production initial condition: cosine_tearing or periodic_double_harris.",
+        ),
+    ] = "cosine_tearing",
+    width: Annotated[
+        float,
+        typer.Option("--width", help="Double-Harris half-width when equilibrium is periodic."),
+    ] = 0.4,
+    amplitude: Annotated[
+        float,
+        typer.Option("--amplitude", help="Double-Harris reconnecting-field amplitude."),
+    ] = 1.0,
+    perturbation_amplitude: Annotated[
+        float,
+        typer.Option("--perturbation-amplitude", help="Coherent tearing seed amplitude."),
+    ] = 1.0e-3,
+    mode_x: Annotated[
+        int,
+        typer.Option("--mode-x", help="Seed and diagnostic Fourier mode in x."),
+    ] = 1,
+    mode_y: Annotated[
+        int,
+        typer.Option("--mode-y", help="Seed and diagnostic Fourier mode in y."),
+    ] = 1,
+    eta: Annotated[
+        float,
+        typer.Option("--eta", help="Resistivity for the production executor."),
+    ] = 1.0e-3,
+    nu: Annotated[
+        float,
+        typer.Option("--nu", help="Viscosity for the production executor."),
+    ] = 1.0e-3,
 ) -> None:
     """Write production Rutherford planning, walltime, and checkpoint artifacts."""
     manifest_path, validation = write_rutherford_production_plan(
@@ -408,6 +443,13 @@ def campaign_rutherford_plan_production(
             checkpoint_interval_minutes=checkpoint_interval_minutes,
             preemption_margin_minutes=preemption_margin_minutes,
         ),
+        equilibrium=equilibrium,
+        width=width,
+        amplitude=amplitude,
+        perturbation_amplitude=perturbation_amplitude,
+        perturbation_mode=(mode_x, mode_y),
+        resistivity=eta,
+        viscosity=nu,
     )
     typer.echo(f"wrote {manifest_path}")
     if not validation["passed"]:

@@ -128,6 +128,22 @@ def test_production_campaign_command_generation_is_exact(tmp_path) -> None:
     assert "--movies" in rutherford_execute
     assert "--allow-production-claim" not in rutherford_execute
 
+    rutherford_plan = commands["rutherford_plan"]["command"]
+    assert rutherford_plan[rutherford_plan.index("--equilibrium") + 1] == (
+        "periodic_double_harris"
+    )
+    assert float(rutherford_plan[rutherford_plan.index("--width") + 1]) == pytest.approx(
+        0.36
+    )
+    assert float(rutherford_plan[rutherford_plan.index("--eta") + 1]) == pytest.approx(
+        4.5e-3
+    )
+    assert float(rutherford_plan[rutherford_plan.index("--nu") + 1]) == pytest.approx(
+        4.5e-3
+    )
+    assert int(rutherford_plan[rutherford_plan.index("--mode-x") + 1]) == 2
+    assert int(rutherford_plan[rutherford_plan.index("--mode-y") + 1]) == 1
+
     rutherford_promotion = commands["rutherford_promotion_check"]["command"]
     assert rutherford_promotion.count("--convergence-dir") == 2
     assert "--seed-qi-dir" in rutherford_promotion

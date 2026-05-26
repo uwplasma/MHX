@@ -144,6 +144,23 @@ the peak/initial Rutherford-width amplification must exceed `1.05`. These
 thresholds are configurable with
 `--min-reconnected-flux-amplification` and
 `--min-island-width-amplification` on `mhx campaign rutherford-promotion-check`.
+For production-candidate Rutherford/island runs, plan the executor with the same
+unstable periodic double-Harris equilibrium used by the nonlinear validation
+lane:
+
+```bash
+mhx campaign rutherford-plan-production \
+  --outdir outputs/campaigns/rutherford_production \
+  --equilibrium periodic_double_harris \
+  --width 0.36 --perturbation-amplitude 0.004 \
+  --mode-x 2 --mode-y 1 --eta 0.0045 --nu 0.0045 \
+  --nx 128 --ny 128 --dt 0.02 --target-saved-frames 121
+```
+
+The older `cosine_tearing` default is retained as a decaying
+executor/checkpoint schema sanity path. It is not sufficient for a nonlinear
+response promotion because its reconnecting-flux and island-width histories are
+expected to fail the amplification gates.
 
 For a laptop-safe closed-lane example:
 
