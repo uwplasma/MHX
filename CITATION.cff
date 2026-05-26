@@ -7,7 +7,7 @@ authors:
 repository-code: "https://github.com/uwplasma/MHX"
 url: "https://github.com/uwplasma/MHX"
 license: MIT
-version: "0.1.0a0"
+version: "0.1.0a1"
 keywords:
   - magnetohydrodynamics
   - magnetic reconnection
