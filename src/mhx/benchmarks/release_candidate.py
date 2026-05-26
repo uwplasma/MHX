@@ -72,9 +72,9 @@ README_REQUIRED_MARKERS = (
 )
 
 RELEASE_CANDIDATE_PRODUCTION_GAPS = (
-    "production nonlinear Rutherford/plasmoid claims remain blocked until a "
-    "duration-complete campaign passes convergence, seed-QI, X/O, flux, width, "
-    "movie, manifest, and explicit production-claim gates",
+    "publication Rutherford-scaling and plasmoid-chain claims remain blocked "
+    "until algebraic-growth, Lundquist/aspect-ratio, and secondary-island "
+    "convergence evidence is attached",
     "README and docs media are validation-level communication artifacts, not "
     "production reconnection-rate or plasmoid-chain measurements",
 )

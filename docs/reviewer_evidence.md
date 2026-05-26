@@ -312,8 +312,9 @@ The current repository should not claim:
 - Rutherford algebraic island growth;
 - Sweet-Parker plasmoid-chain formation;
 - production scaling on large grids;
-- production promotion from the latest GPU double-Harris gate, because its
-  promotion report explicitly declares `claim_level_if_passed = "validation"`;
+- Rutherford algebraic scaling from the latest production-promotion run, because
+  the passing `adcc714` GPU bundle promotes positive response rather than a
+  multi-amplitude Rutherford scaling law;
 - neural-ODE predictive superiority;
 - inverse-design superiority over grid search.
 

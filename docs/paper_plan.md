@@ -106,7 +106,7 @@ mhx campaign rutherford-template \
 | 6 | Time-domain eigenmode replay and growth-fit recovery. | CI artifact exists. |
 | 7 | Nonlinear differentiability and energy-budget gates. | CI artifact exists. |
 | 8 | Nonlinear duration audit and production-run requirements. | CI artifact exists. |
-| 9 | Rutherford island growth campaign. | Duration-complete validation run with attached convergence and seed-QI evidence exists; production promotion remains blocked by the positive reconnecting-flux/island-width response gate. |
+| 9 | Rutherford island growth campaign. | `adcc714` GPU campaign passes duration, convergence and seed-QI evidence, X/O, flux, width, media, manifest, and production-promotion response gates; remaining paper work is algebraic Rutherford scaling across amplitudes/equilibria. |
 | 10 | Sweet-Parker/plasmoid nonlinear campaign. | Planned. |
 | 11 | Neural-ODE dataset/baselines/calibration/failure cases. | Implemented as a deterministic no-training reproducibility lane in [neural_ode_reproducibility.md](neural_ode_reproducibility.md). |
 

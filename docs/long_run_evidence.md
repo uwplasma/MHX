@@ -1,11 +1,12 @@
 # Long-run evidence
 
-This page records nonlinear evidence available at commit `3f99c08`, including
+This page records nonlinear evidence available through commit `adcc714`, including
 30-minute-budget long runs, double-Harris validation promotion/convergence
 bundles, and deliberately skeptical interpretation. These runs validate long
 integration, checkpointing, media, nonlinear budget gates, and bounded
-current-sheet response diagnostics; they do **not** yet demonstrate Rutherford
-growth or plasmoid onset.
+current-sheet response diagnostics. The latest GPU campaign closes the
+Rutherford production-promotion response gate, but it does **not** yet
+demonstrate Rutherford algebraic scaling across amplitudes or plasmoid onset.
 
 ## Production automation lane
 
@@ -22,9 +23,26 @@ Rutherford and double-Harris commands for the duration, convergence, seed-QI,
 sheet-width/aspect, eta/Lundquist, fixed-scale movie, and promotion gates. The
 manifest itself is validation-level planning evidence only. Running the lane
 requires the explicit `--execute` flag plus timeout controls, and production
-wording remains blocked until the Rutherford target completes, the promotion
+wording remains blocked unless the Rutherford target completes, the promotion
 report passes, and the final `--allow-production-claim --max-steps 0` refresh
-command succeeds.
+command succeeds. The 2026-05-25 GPU campaign satisfied those Rutherford
+promotion gates for commit `adcc714`.
+
+Latest passing Rutherford production-promotion run:
+
+```text
+outputs/campaigns/release_long_gpu_20260525_203421_n128_t240_periodic_rutherford_adcc714
+```
+
+Key promotion metrics from the run:
+
+- target duration: `t_end = 240.0`, `terminal_step = 12000`, `target_step = 12000`;
+- history samples: `123`;
+- reconnecting-flux amplification: `8.359281934515764`;
+- Rutherford-width amplification: `2.8912422822232937`;
+- promotion reports: `rutherford/validation.json`,
+  `rutherford/promotion/validation.json`, and
+  `production_campaign_manifest.json` all pass.
 
 ## Reproducible command sequence
 
@@ -323,6 +341,8 @@ These runs support:
 - production-executor artifact correctness under a completed duration target;
 - nonlinear energy/dissipation-budget correctness for an active nonlinear state;
 - early seeded-growth response for a periodic double-Harris current-sheet replay;
+- duration-complete Rutherford production-promotion response at `128×128`,
+  `t_end=240`;
 - double-Harris promotion and convergence reports as validation-only claim
   boundaries.
 - forced turbulent-reconnection readiness reports as validation-only proxy
@@ -332,7 +352,7 @@ These runs support:
 
 These runs do not yet support:
 
-- Rutherford island-growth scaling;
+- Rutherford algebraic island-growth scaling across amplitudes;
 - plasmoid onset statistics;
 - Sweet-Parker reconnection-rate scaling;
 - publication-grade reconnection claims.

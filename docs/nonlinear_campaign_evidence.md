@@ -151,12 +151,13 @@ python3 -m mhx.cli.main artifact-manifest "$RUN_DIR"
 | periodic double-Harris | `outputs/campaigns/gpu_nonlinear_20260522_085049/double_harris_long_n128_t160` | pass | gate-ready; production false | `shape`=[128, 128], `width`=0.36, `resistivity`=0.0045, `viscosity`=0.0045, `t_end`=160.0, `samples`=81, `fitted_early_growth_rate`=0.0716284, `max_growth_factor`=8.62337, `reconnected_flux_amplification`=8.35649, `island_width_amplification`=2.89076, `max_x_point_count`=4, `max_o_point_count`=2, `relative_energy_increase`=0.0, `promotion_ready`=True, `history_sample_count`=81 | Convergence-backed validation media passes duration, X/O, flux, width, movie, and manifest gates, but the attached promotion report declares claim_level_if_passed=validation; it is not a production Rutherford, Sweet-Parker, or plasmoid-chain claim. |
 | periodic double-Harris | `outputs/campaigns/growing_double_harris_gpu_96_t120_20260518_044120` | pass | validation-ready | `shape`=[96, 96], `t_end`=120.0, `samples`=41, `fitted_early_growth_rate`=0.186895, `max_growth_factor`=7.35301, `reconnected_flux_amplification`=6.47122, `island_width_amplification`=2.54386, `max_x_point_count`=4, `max_o_point_count`=2, `relative_energy_increase`=0.0, `promotion_ready`=True, `history_sample_count`=41 | Convergence-backed validation media only; production claims still need larger seed, width/aspect, Lundquist, and duration sweeps. |
 | Rutherford executor | `outputs/campaigns/rutherford_current_schema_96_dt005_20260517_161235` | pass | not production-ready | `shape`=[96, 96], `end_step`=45802, `target_step`=45802, `history_samples`=202, `max_relative_energy_growth`=-2.05077e-06, `final_magnetic_divergence_linf`=0.0, `promotion_ready`=False, `reconnected_flux_amplification`=1.0, `island_width_amplification`=1.0, `max_x_point_count`=2, `max_o_point_count`=1, `terminal_step`=45802, `history_sample_count`=202 | Duration target completed, but promotion failed because reconnecting-flux and island-width amplification remained 1.00. |
+| Rutherford executor | `outputs/campaigns/release_long_gpu_20260525_203421_n128_t240_periodic_rutherford_adcc714` | pass | production-ready Rutherford response gate | `shape`=[128, 128], `t_end`=240.0, `terminal_step`=12000, `target_step`=12000, `history_sample_count`=123, `reconnected_flux_amplification`=8.35928, `island_width_amplification`=2.89124, `promotion_ready`=True | Full periodic double-Harris Rutherford executor lane passed duration, convergence, seed-QI, X/O, flux, width, fixed-scale movie, manifest, and explicit production-claim gates. This promotes positive nonlinear response, not Rutherford algebraic scaling or plasmoid-chain statistics. |
 | forced turbulent reconnection | `outputs/readme_media/forced_turbulent_reconnection_64_t80_wide` | pass | not production-ready | `shape`=[64, 64], `t_end`=80.0, `samples`=41, `reconnection_proxy_change`=1.38249, `max_abs_reconnection_rate_proxy`=0.343463, `current_linf_growth`=13.829, `max_relative_energy_growth`=0.0, `max_magnetic_divergence_linf`=0.0 | Validation media only: single deterministic 2-D proxy run, no ensemble or 3-D turbulent-reconnection scaling. |
 
 ## Claim boundary
 
 - Passing double-Harris rows support validation-level nonlinear response and convergence scaffolding, not Rutherford/plasmoid production physics.
-- Passing Rutherford rows support executor/schema/duration mechanics unless the promotion report passes with positive response, convergence, seed-QI, geometry, and media gates.
+- Passing Rutherford production rows support positive-response nonlinear production claims only when the promotion report passes with duration, convergence, seed-QI, geometry, X/O, media, manifest, and response gates.
 - Passing forced turbulent-reconnection rows support 2-D reduced-MHD proxy-media readiness only, not 3-D turbulent-reconnection or LV99 scaling claims.
 - Large binary outputs remain under `outputs/`, which is git-ignored; this page and the JSON summary are the small review artifacts.
 
@@ -165,9 +166,10 @@ python3 -m mhx.cli.main artifact-manifest "$RUN_DIR"
 - Latest GPU double-Harris gate: production remains blocked by
   `claim_level_if_passed = "validation"`, no production Rutherford or plasmoid
   target, and missing production-scale seed/aspect/Lundquist/duration sweeps.
-- Rutherford duration-complete executor: production remains blocked by
-  reconnecting-flux and island-width amplification both staying at `1.00`, even
-  though duration, convergence, seed-QI, movies, and manifests are present.
+- Rutherford positive-response production: the latest `adcc714` GPU run passes.
+  Remaining Rutherford publication work is algebraic island-growth scaling
+  across amplitudes/equilibria and tighter production-resolution sweeps, not the
+  response-promotion gate itself.
 - Forced turbulent reconnection: production remains blocked by the 2-D
   reduced-MHD proxy setup, single deterministic seed, no ensemble, no 3-D
   turbulent-reconnection physics, and no LV99 scaling evidence.
