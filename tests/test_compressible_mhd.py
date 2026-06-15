@@ -4,6 +4,7 @@ import math
 
 import jax.numpy as jnp
 import numpy as np
+import pytest
 
 from mhx.benchmarks.kelvin_helmholtz import (
     CompressibleKelvinHelmholtzConfig,
@@ -90,3 +91,27 @@ def test_compressible_kelvin_helmholtz_fast_run_is_finite() -> None:
     assert float(jnp.min(result.density_min)) > 0.0
     assert float(jnp.min(result.pressure_min)) > 0.0
     assert all(math.isfinite(float(value)) for value in result.dye_entropy)
+
+
+@pytest.mark.parametrize(
+    ("overrides", "message"),
+    [
+        ({"gamma": 1.0}, "gamma"),
+        ({"dt": 0.0}, "dt"),
+        ({"t_end": 0.0}, "t_end"),
+        ({"save_every": 0}, "save_every"),
+        ({"dt": 1.0, "t_end": 0.1}, "advance at least one step"),
+        ({"density": 0.0}, "density"),
+        ({"pressure": 0.0}, "pressure"),
+        ({"shear_width": 0.0}, "shear_width"),
+        ({"perturbation_width": 0.0}, "perturbation_width"),
+    ],
+)
+def test_compressible_kelvin_helmholtz_config_rejects_invalid_controls(
+    overrides: dict[str, float | int],
+    message: str,
+) -> None:
+    config = CompressibleKelvinHelmholtzConfig(**overrides)
+
+    with pytest.raises(ValueError, match=message):
+        config.validated()

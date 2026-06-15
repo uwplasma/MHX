@@ -117,3 +117,27 @@ def test_kelvin_helmholtz_one_gradient_step_changes_parameter() -> None:
     assert math.isfinite(float(loss_gradient))
     assert float(updated_amplitude) != pytest.approx(float(initial_amplitude))
     assert math.isfinite(float(updated_loss))
+
+
+@pytest.mark.parametrize(
+    ("overrides", "message"),
+    [
+        ({"viscosity": -1.0}, "viscosity"),
+        ({"resistivity": -1.0}, "resistivity"),
+        ({"dt": 0.0}, "dt"),
+        ({"t_end": 0.0}, "t_end"),
+        ({"save_every": 0}, "save_every"),
+        ({"dt": 1.0, "t_end": 0.1}, "advance at least one step"),
+        ({"shear_width": 0.0}, "shear_width"),
+        ({"perturbation_width": 0.0}, "perturbation_width"),
+        ({"flow_speed": 0.0}, "flow_speed"),
+    ],
+)
+def test_kelvin_helmholtz_config_rejects_invalid_controls(
+    overrides: dict[str, float | int],
+    message: str,
+) -> None:
+    config = KelvinHelmholtzConfig(**overrides)
+
+    with pytest.raises(ValueError, match=message):
+        config.validated()
