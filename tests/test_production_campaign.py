@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 
-import click
+import typer
 import numpy as np
 import pytest
 from typer.testing import CliRunner
@@ -588,7 +588,7 @@ def test_cli_validation_failure_reports_failed_checks(capsys) -> None:
         },
     }
 
-    with pytest.raises(click.exceptions.Exit):
+    with pytest.raises(typer.Exit):
         _exit_if_validation_failed(validation, context="unit")
 
     captured = capsys.readouterr()
