@@ -28,7 +28,7 @@ from mhx.benchmarks.duration_policy import (
     DEFAULT_PRODUCTION_EFOLDS,
     HARRIS_REFERENCE_GROWTH_RATE,
 )
-from mhx.benchmarks.seed_robust_qi import seeded_tearing_initial_state
+from mhx.benchmarks.seed_robust_qi import seeded_perturbation, seeded_tearing_initial_state
 from mhx.config import RunConfig
 from mhx.diagnostics import (
     critical_points_by_kind,
@@ -36,11 +36,13 @@ from mhx.diagnostics import (
     island_width_from_mode,
     magnetic_divergence_linf,
     reconnected_flux_amplitude,
+    rutherford_island_full_width,
     trajectory_energies,
 )
 from mhx.equations.reduced_mhd import current_density, reduced_mhd_rhs
 from mhx.grids import CartesianGrid
 from mhx.io import write_artifact_manifest, write_manifest
+from mhx.physics import build_equilibrium
 from mhx.plotting import plot_current_density_gif, plot_flux_gif
 from mhx.state import ReducedMHDParams, ReducedMHDState, ReducedMHDTrajectory
 from mhx.time_integrators import rk4_step
@@ -196,6 +198,13 @@ def plan_rutherford_production_campaign(
     run_output_dir: str | Path = "outputs/production/rutherford_island",
     min_production_resolution: int = 96,
     walltime_policy: WalltimePolicy | None = None,
+    equilibrium: str = "cosine_tearing",
+    width: float = 0.4,
+    amplitude: float = 1.0,
+    perturbation_amplitude: float = 1.0e-3,
+    perturbation_mode: tuple[int, int] = (1, 1),
+    resistivity: float = 1.0e-3,
+    viscosity: float = 1.0e-3,
 ) -> ProductionCampaignPlan:
     """Build a production Rutherford campaign plan without advancing the PDE."""
     policy = (walltime_policy or WalltimePolicy()).validated()
@@ -207,6 +216,13 @@ def plan_rutherford_production_campaign(
         dt=dt,
         target_saved_frames=target_saved_frames,
         run_output_dir=run_output_dir,
+        equilibrium=equilibrium,
+        width=width,
+        amplitude=amplitude,
+        perturbation_amplitude=perturbation_amplitude,
+        perturbation_mode=perturbation_mode,
+        resistivity=resistivity,
+        viscosity=viscosity,
     )
     estimated_steps = int(template.estimated_steps)
     checkpoint_every = min(policy.checkpoint_every_steps(), estimated_steps)
@@ -299,6 +315,13 @@ def write_rutherford_production_plan(
     run_output_dir: str | Path | None = None,
     min_production_resolution: int = 96,
     walltime_policy: WalltimePolicy | None = None,
+    equilibrium: str = "cosine_tearing",
+    width: float = 0.4,
+    amplitude: float = 1.0,
+    perturbation_amplitude: float = 1.0e-3,
+    perturbation_mode: tuple[int, int] = (1, 1),
+    resistivity: float = 1.0e-3,
+    viscosity: float = 1.0e-3,
 ) -> tuple[Path, dict[str, Any]]:
     """Write production-plan artifacts and an initialized checkpoint index."""
     output_dir = Path(outdir)
@@ -314,6 +337,13 @@ def write_rutherford_production_plan(
         run_output_dir=embedded_run_dir,
         min_production_resolution=min_production_resolution,
         walltime_policy=walltime_policy,
+        equilibrium=equilibrium,
+        width=width,
+        amplitude=amplitude,
+        perturbation_amplitude=perturbation_amplitude,
+        perturbation_mode=perturbation_mode,
+        resistivity=resistivity,
+        viscosity=viscosity,
     )
     checkpoints_dir = output_dir / "checkpoints"
     checkpoints_dir.mkdir(parents=True, exist_ok=True)
@@ -871,6 +901,8 @@ def execute_rutherford_production_campaign(
     time_config = config["time"]
     physics = config["physics"]
     diagnostics_config = config["diagnostics"]
+    equilibrium = str(physics.get("equilibrium", "cosine_tearing"))
+    equilibrium_parameters = physics.get("equilibrium_parameters", {})
     shape = tuple(int(item) for item in mesh["shape"])
     grid = CartesianGrid(
         shape=shape,
@@ -881,9 +913,7 @@ def execute_rutherford_production_campaign(
     save_every = int(time_config["save_every"])
     target_step = int(plan["estimated_steps"])
     mode = tuple(int(item) for item in diagnostics_config.get("mode", (1, 1)))
-    magnetic_shear = float(
-        physics.get("equilibrium_parameters", {}).get("magnetic_shear", 1.0)
-    )
+    magnetic_shear = _magnetic_shear_from_physics(physics)
     resistivity = float(physics["resistivity"])
     viscosity = float(physics["viscosity"])
     params = ReducedMHDParams(resistivity=resistivity, viscosity=viscosity)
@@ -892,15 +922,10 @@ def execute_rutherford_production_campaign(
     initial_state = (
         _load_checkpoint_state(root, resume_plan.checkpoint)
         if resume_plan.checkpoint is not None
-        else seeded_tearing_initial_state(
+        else _initial_state_from_physics(
             grid,
+            physics=physics,
             seed=seed,
-            perturbation_amplitude=float(
-                physics.get("equilibrium_parameters", {}).get(
-                    "perturbation_amplitude",
-                    1.0e-3,
-                )
-            ),
             noise_amplitude=noise_amplitude,
         )
     )
@@ -925,6 +950,7 @@ def execute_rutherford_production_campaign(
         lengths=grid.lengths,
         mode=mode,
         magnetic_shear=magnetic_shear,
+        use_dominant_nonzero_y_flux=equilibrium == "periodic_double_harris",
     )
     history = _append_history(root / "production_history.npz", history)
 
@@ -1008,6 +1034,8 @@ def execute_rutherford_production_campaign(
         "noise_amplitude": float(noise_amplitude),
         "resistivity": resistivity,
         "viscosity": viscosity,
+        "equilibrium": equilibrium,
+        "equilibrium_parameters": equilibrium_parameters,
         "mode": list(mode),
         "max_relative_energy_growth": max_growth,
         "final_magnetic_divergence_linf": divergence,
@@ -1153,6 +1181,43 @@ def _load_checkpoint_state(
         )
 
 
+def _initial_state_from_physics(
+    grid: CartesianGrid,
+    *,
+    physics: dict[str, Any],
+    seed: int,
+    noise_amplitude: float,
+) -> ReducedMHDState:
+    equilibrium = str(physics.get("equilibrium", "cosine_tearing"))
+    parameters = physics.get("equilibrium_parameters", {})
+    if equilibrium == "cosine_tearing":
+        return seeded_tearing_initial_state(
+            grid,
+            seed=seed,
+            perturbation_amplitude=float(parameters.get("perturbation_amplitude", 1.0e-3)),
+            noise_amplitude=noise_amplitude,
+        )
+    state = build_equilibrium(equilibrium, parameters).initial_state(grid)
+    if noise_amplitude <= 0.0:
+        return state
+    noise = seeded_perturbation(grid, seed=seed, amplitude=noise_amplitude)
+    return ReducedMHDState(psi=state.psi + jnp.asarray(noise), omega=state.omega)
+
+
+def _magnetic_shear_from_physics(physics: dict[str, Any]) -> float:
+    parameters = physics.get("equilibrium_parameters", {})
+    if "magnetic_shear" in parameters:
+        return float(parameters["magnetic_shear"])
+    equilibrium = str(physics.get("equilibrium", "cosine_tearing"))
+    if equilibrium == "periodic_double_harris":
+        width = float(parameters.get("width", 0.4))
+        amplitude = float(parameters.get("amplitude", 1.0))
+        if width <= 0.0:
+            raise ValueError("periodic_double_harris width must be positive")
+        return abs(amplitude) / width
+    return 1.0
+
+
 def _advance_campaign_chunk(
     state0: ReducedMHDState,
     *,
@@ -1201,20 +1266,40 @@ def _history_from_saved_states(
     lengths: tuple[float, float],
     mode: tuple[int, int],
     magnetic_shear: float,
+    use_dominant_nonzero_y_flux: bool = False,
 ) -> dict[str, np.ndarray]:
     trajectory = _trajectory_from_saved_states(saved_times, saved_states)
     energies = trajectory_energies(trajectory, lengths=lengths)
-    reconnected_flux = np.asarray(
-        [float(reconnected_flux_amplitude(state, mode=mode)) for state in saved_states],
-        dtype=np.float64,
-    )
-    island_width = np.asarray(
-        [
-            float(island_width_from_mode(state, mode=mode, magnetic_shear=magnetic_shear))
+    if use_dominant_nonzero_y_flux:
+        dominant = tuple(
+            _dominant_low_mode_flux_amplitude(state, require_nonzero_y=True)
             for state in saved_states
-        ],
-        dtype=np.float64,
-    )
+        )
+        reconnected_flux = np.asarray([item[0] for item in dominant], dtype=np.float64)
+        island_width = np.asarray(
+            [
+                float(
+                    rutherford_island_full_width(
+                        flux,
+                        magnetic_shear=magnetic_shear,
+                    )
+                )
+                for flux in reconnected_flux
+            ],
+            dtype=np.float64,
+        )
+    else:
+        reconnected_flux = np.asarray(
+            [float(reconnected_flux_amplitude(state, mode=mode)) for state in saved_states],
+            dtype=np.float64,
+        )
+        island_width = np.asarray(
+            [
+                float(island_width_from_mode(state, mode=mode, magnetic_shear=magnetic_shear))
+                for state in saved_states
+            ],
+            dtype=np.float64,
+        )
     current_linf = np.asarray(
         [
             float(jnp.max(jnp.abs(current_density(state.psi, lengths=lengths))))
@@ -1274,6 +1359,32 @@ def _history_from_saved_states(
         "x_point_count": x_point_count,
         "o_point_count": o_point_count,
     }
+
+
+def _dominant_low_mode_flux_amplitude(
+    state: ReducedMHDState,
+    *,
+    require_nonzero_y: bool,
+    max_mode_x: int = 4,
+    max_mode_y: int = 4,
+) -> tuple[float, tuple[int, int]]:
+    """Return the largest real-harmonic flux amplitude among low Fourier modes."""
+    psi = np.asarray(state.psi, dtype=np.float64)
+    psi_hat = np.fft.fftn(psi) / psi.size
+    nx, ny = psi.shape
+    best_flux = 0.0
+    best_mode = (0, 0)
+    for mode_x in range(0, min(max_mode_x, nx - 1) + 1):
+        for mode_y in range(0, min(max_mode_y, ny - 1) + 1):
+            if mode_x == 0 and mode_y == 0:
+                continue
+            if require_nonzero_y and mode_y == 0:
+                continue
+            flux = float(2.0 * abs(psi_hat[mode_x % nx, mode_y % ny]))
+            if flux > best_flux:
+                best_flux = flux
+                best_mode = (mode_x, mode_y)
+    return best_flux, best_mode
 
 
 def _append_history(path: Path, new_history: dict[str, np.ndarray]) -> dict[str, np.ndarray]:

@@ -48,12 +48,31 @@ def build_rutherford_campaign_template(
     dt: float = 0.1,
     target_saved_frames: int = 400,
     run_output_dir: str | Path = "outputs/production/rutherford_island",
+    equilibrium: str = "cosine_tearing",
+    width: float = 0.4,
+    amplitude: float = 1.0,
+    perturbation_amplitude: float = 1.0e-3,
+    perturbation_mode: tuple[int, int] = (1, 1),
+    resistivity: float = 1.0e-3,
+    viscosity: float = 1.0e-3,
 ) -> RutherfordCampaignTemplate:
     """Build a long nonlinear-island campaign template without running it."""
     if dt <= 0.0:
         raise ValueError("dt must be positive")
     if target_saved_frames < 10:
         raise ValueError("target_saved_frames must be >= 10")
+    if equilibrium not in {"cosine_tearing", "periodic_double_harris"}:
+        raise ValueError("equilibrium must be cosine_tearing or periodic_double_harris")
+    if width <= 0.0:
+        raise ValueError("width must be positive")
+    if amplitude == 0.0:
+        raise ValueError("amplitude must be nonzero")
+    if perturbation_amplitude <= 0.0:
+        raise ValueError("perturbation_amplitude must be positive")
+    if perturbation_mode == (0, 0):
+        raise ValueError("perturbation_mode must be nonzero")
+    if resistivity < 0.0 or viscosity < 0.0:
+        raise ValueError("resistivity and viscosity must be non-negative")
     t_end = required_time_for_efolds(
         harris_growth_rate,
         required_efolds=production_efolds,
@@ -74,6 +93,19 @@ def build_rutherford_campaign_template(
         harris_growth_rate,
         required_efolds=production_efolds,
     )
+    equilibrium_parameters: dict[str, float] = {
+        "perturbation_amplitude": float(perturbation_amplitude),
+    }
+    if equilibrium == "periodic_double_harris":
+        equilibrium_parameters.update(
+            {
+                "width": float(width),
+                "amplitude": float(amplitude),
+                "magnetic_shear": float(abs(amplitude) / width),
+                "perturbation_mode_x": float(perturbation_mode[0]),
+                "perturbation_mode_y": float(perturbation_mode[1]),
+            }
+        )
     config = RunConfig(
         name="rutherford_island_production_template",
         output_dir=Path(run_output_dir),
@@ -85,15 +117,15 @@ def build_rutherford_campaign_template(
         time=TimeConfig(t0=0.0, t1=t_end, dt=dt, save_every=save_every),
         physics=PhysicsConfig(
             model="reduced_mhd_nonlinear_tearing_campaign",
-            equilibrium="cosine_tearing",
-            equilibrium_parameters={"perturbation_amplitude": 1.0e-3},
-            resistivity=1.0e-3,
-            viscosity=1.0e-3,
+            equilibrium=equilibrium,
+            equilibrium_parameters=equilibrium_parameters,
+            resistivity=resistivity,
+            viscosity=viscosity,
         ),
         numerics=NumericsConfig(method="spectral", enable_x64=True, enable_jit=True),
         diagnostics=DiagnosticsConfig(
             quantities=("energy", "mode_growth", "divergence_error"),
-            mode=(1, 1),
+            mode=perturbation_mode,
             fit_time_window=(0.0, linear_fit_end),
         ),
     )

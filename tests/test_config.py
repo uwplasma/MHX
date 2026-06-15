@@ -42,6 +42,22 @@ def test_config_roundtrip_dict_and_toml() -> None:
     assert cfg.with_output_dir("outputs/other").output_dir.as_posix() == "outputs/other"
 
 
+def test_load_config_enforces_public_api_version(tmp_path, monkeypatch) -> None:
+    config_path = tmp_path / "config.toml"
+    config_path.write_text('api_version = "v2"\n', encoding="utf-8")
+
+    with pytest.raises(ValueError, match="unsupported API version"):
+        load_config(config_path)
+
+    config_path.write_text('api_version = "v1"\n', encoding="utf-8")
+    assert load_config(config_path).to_dict()["api_version"] == "v1"
+
+    config_path.write_text('name = "implicit_v1"\n', encoding="utf-8")
+    monkeypatch.setenv("MHX_API_VERSION", "v2")
+    with pytest.raises(ValueError, match="unsupported API version"):
+        load_config(config_path)
+
+
 def test_config_validation_errors() -> None:
     with pytest.raises(ValueError, match="mesh.shape"):
         MeshConfig(shape=(2, 32)).validated()

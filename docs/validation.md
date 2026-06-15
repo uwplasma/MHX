@@ -4,8 +4,9 @@ MHX validation tests have explicit physics gates, not just smoke-run
 assertions. The suite starts from exact resistive diffusion of a single Fourier
 mode and now includes Harris tearing eigenvalue checks, nonlinear
 energy-budget identities, duration guards, Orszag--Tang morphology, decaying
-turbulence, forced turbulent-reconnection media, seed-QI, neural-ODE
-reproducibility, and restartable campaign-executor artifacts.
+turbulence, forced turbulent-reconnection media with a validation-only
+readiness gate, double-Harris promotion/convergence evidence, seed-QI,
+neural-ODE reproducibility, and restartable campaign-executor artifacts.
 
 ## Exact resistive decay
 
@@ -132,6 +133,7 @@ Run the validations:
 ```bash
 mhx benchmark decaying-turbulence --outdir outputs/benchmarks/decaying_mhd_turbulence --movies
 mhx benchmark forced-turbulent-reconnection --outdir outputs/benchmarks/forced_turbulent_reconnection --movies
+mhx benchmark forced-turbulent-reconnection-readiness-check outputs/benchmarks/forced_turbulent_reconnection
 ```
 
 Expected files:
@@ -140,7 +142,16 @@ Expected files:
 - `outputs/benchmarks/decaying_mhd_turbulence/figures/decaying_mhd_turbulence_summary.png`
 - `outputs/benchmarks/forced_turbulent_reconnection/forced_turbulent_reconnection.npz`
 - `outputs/benchmarks/forced_turbulent_reconnection/figures/forced_turbulent_reconnection_summary.png`
+- `outputs/benchmarks/forced_turbulent_reconnection/readiness/promotion_readiness.json`
+- `outputs/benchmarks/forced_turbulent_reconnection/readiness/figures/promotion_matrix.png`
 - optional flux/current GIFs under each `figures/` directory
+
+The readiness matrix is a validation-only claim boundary for the forced
+current-sheet replay. It requires finite histories, enough saved samples,
+minimum duration, nontrivial reconnecting-flux or reconnection-rate proxy,
+bounded total-energy growth, and the expected summary/movie artifacts.
+
+![Forced turbulent reconnection readiness matrix](_static/validation/forced_turbulent_reconnection_readiness/figures/promotion_matrix.png)
 
 These examples are literature-anchored to 2-D MHD turbulence and
 turbulent-reconnection studies, including the current-sheet/turbulence
@@ -643,9 +654,9 @@ Expected files:
 
 ## Nonzero cosine-equilibrium linearization gate
 
-The next step toward a tearing eigenmode calculation is to validate the
-linearized operator on a nonzero current-sheet equilibrium. MHX uses the
-periodic equilibrium
+This gate validates the linearized operator on a nonzero current-sheet
+equilibrium before the tearing eigenmode checks below. MHX uses the periodic
+equilibrium
 
 $$
 \psi_0=A\cos(k_y y),\qquad \omega_0=0,
@@ -951,6 +962,19 @@ Expected files:
 - `outputs/benchmarks/periodic_double_harris_seeded_long_run/figures/periodic_double_harris_flux.gif`
 - `outputs/benchmarks/periodic_double_harris_seeded_long_run/figures/periodic_double_harris_current.gif`
 
+Once a convergence bundle exists, the promotion-boundary report is:
+
+```bash
+mhx benchmark double-harris-promotion-check \
+  outputs/benchmarks/periodic_double_harris_seeded_long_run \
+  --convergence-dir outputs/benchmarks/periodic_double_harris_convergence
+```
+
+This writes `promotion/promotion_readiness.json`,
+`promotion/validation.json`, and `promotion/figures/promotion_matrix.png`.
+Passing means the run is convergence-backed validation evidence; it still does
+not authorize Rutherford, Sweet--Parker, or plasmoid production claims.
+
 ![Seeded periodic double-Harris nonlinear long run](_static/validation/periodic_double_harris_seeded_long_run/figures/periodic_double_harris_seeded_long_run.png)
 
 ![Seeded double-Harris magnetic flux movie](_static/validation/periodic_double_harris_seeded_long_run/figures/periodic_double_harris_flux.gif)
@@ -963,10 +987,10 @@ Source anchors:
 - [growth and long-run benchmark implementation](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/current_sheet.py)
 - [growth benchmark tests](https://github.com/uwplasma/MHX/blob/main/tests/test_current_sheet_eigenvalue_validation.py)
 
-## Seeded double-Harris convergence scaffold
+## Seeded double-Harris convergence evidence
 
-The next gate asks whether the measured early growth and nonlinear
-amplification are artifacts of one tiny grid or one RK4 step size. The command
+This gate asks whether the measured early growth and nonlinear amplification
+are artifacts of one tiny grid or one RK4 step size. The command
 
 ```bash
 mhx benchmark double-harris-convergence \
@@ -987,9 +1011,11 @@ $$
 
 The gate requires finite metrics, positive early growth, dissipative total
 energy, successful subcase gates, and bounded relative spread in
-`gamma_fit`/`G_max`. This is still intentionally a **validation** scaffold, not
-a production claim: it is designed to prevent single-run overclaiming before
-larger aspect-ratio, Lundquist-number, seed, and duration sweeps are executed.
+`gamma_fit`/`G_max`. The same code path has also been exercised on a
+GPU-assisted medium sweep with resolutions `32,48,64`, `t_end=16`, and
+`0.41%` growth-rate spread. This is intentionally **validation** evidence, not
+a production claim: it prevents single-run overclaiming before larger
+aspect-ratio, Lundquist-number, seed, and duration sweeps are executed.
 
 Expected files:
 
@@ -998,7 +1024,49 @@ Expected files:
 - `outputs/benchmarks/periodic_double_harris_convergence/periodic_double_harris_convergence.npz`
 - `outputs/benchmarks/periodic_double_harris_convergence/figures/periodic_double_harris_convergence.png`
 
-![Seeded periodic double-Harris convergence scaffold](_static/validation/periodic_double_harris_convergence/periodic_double_harris_convergence.png)
+![Seeded periodic double-Harris convergence evidence](_static/validation/periodic_double_harris_convergence/periodic_double_harris_convergence.png)
+
+![Medium GPU-assisted double-Harris convergence sweep](_static/validation/long_runs/double_harris_convergence_gpu_n32_48_64_t16/periodic_double_harris_convergence.png)
+
+## Seeded double-Harris parameter sweeps
+
+Convergence sweeps ask whether one numerical setting dominates the result.
+Parameter sweeps ask a different question: do the nonlinear response
+diagnostics remain finite, dissipative, and visibly reconnecting when the seed
+mode, sheet width, or resistivity is changed? The command
+
+```bash
+mhx benchmark double-harris-parameter-sweep \
+  --outdir outputs/benchmarks/periodic_double_harris_parameter_sweep \
+  --sweep-axis width --widths 0.35,0.4,0.45 \
+  --t-end 6 --fit-stop 3
+```
+
+runs three seeded base-vs-perturbed replays and records
+
+$$
+\gamma_\mathrm{fit},\quad
+G_\mathrm{max},\quad
+G_\psi=\max_t \psi_\mathrm{rec}(t)/\psi_\mathrm{rec}(0),\quad
+G_W=\max_t W(t)/W(0),\quad
+\Delta E_+ .
+$$
+
+The gate requires all cases to pass the underlying seeded-long-run checks, and
+also requires finite per-case metrics, at least three cases, positive fitted
+growth, visible amplification, reconnecting-flux and island-width response,
+dissipative total energy, and bounded anomaly-scale spreads. The spread gates
+are deliberately loose because physically different sheets need not agree; they
+catch runaway or degenerate cases before figures are promoted.
+
+Expected files:
+
+- `outputs/benchmarks/periodic_double_harris_parameter_sweep/diagnostics.json`
+- `outputs/benchmarks/periodic_double_harris_parameter_sweep/validation.json`
+- `outputs/benchmarks/periodic_double_harris_parameter_sweep/periodic_double_harris_parameter_sweep.npz`
+- `outputs/benchmarks/periodic_double_harris_parameter_sweep/figures/periodic_double_harris_parameter_sweep.png`
+
+![Seeded periodic double-Harris parameter sweep](_static/validation/periodic_double_harris_parameter_sweep/periodic_double_harris_parameter_sweep.png)
 
 Source anchors:
 

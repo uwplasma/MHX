@@ -5548,3 +5548,41 @@ Every agent must append an entry here. Do not delete previous entries.
 - Repeat that campaign over at least two resolutions, two time steps, and a
   seed ensemble, then attach those matched evidence bundles to the promotion
   checker.
+
+### 2026-05-22 09:10 CDT — Agent: Codex, GPU validation campaign and publication examples
+
+**Steps taken**
+
+- Spawned parallel agents for publication examples, campaign evidence gates, CI/example tests, and remote GPU diagnostics.
+- Updated the `office` GPU checkout to current `main`, installed MHX editable with `python3`, confirmed JAX CUDA visibility on two RTX A4000 GPUs, and ran a bounded nonlinear campaign under a 30-minute timeout.
+- Ran a `128×128`, `t_end=160` periodic double-Harris replay with movies, plus matched convergence, width, resistivity, seed-QI, promotion, and artifact-manifest gates.
+- Added standalone `examples/publication_*.py` scripts with top-level parameters and `MHX_EXAMPLE_OUTDIR_ROOT` support for linear Harris tearing, double-Harris reconnection, Orszag--Tang/turbulence, Rutherford restart path, and neural ODE.
+- Added publication-example tests and nonlinear-campaign evidence tests, then regenerated the nonlinear evidence docs.
+
+**Results obtained**
+
+- The GPU double-Harris validation bundle passed duration, convergence, X/O, reconnected-flux, island-width, movie, and manifest gates: `t_end=160`, `81` samples, flux amplification `8.356`, island-width amplification `2.891`, `max_x_point_count=4`, and `max_o_point_count=2`.
+- The local promotion summary correctly reports `gate_ready=true` but `production_claim_ready=false`, because the attached report only authorizes validation media.
+- All publication example scripts run in `MHX_EXAMPLE_FAST=1` mode and emit manifests, figures, movies, and histories under a temporary output root.
+- Focused validation passes: `ruff` on new/changed files and `pytest tests/test_publication_examples.py tests/test_nonlinear_campaign_evidence.py`.
+
+**Design decisions**
+
+- Did not treat the visually static total-field GIFs as publication physics media. The examples now add a residual `perturbed - base` flux movie for double-Harris so users can see reconnecting dynamics instead of the static equilibrium field.
+- Kept binary campaign outputs under ignored `outputs/`; committed only code, tests, generated evidence summaries, and documentation.
+- Kept the Rutherford example as a restartable production-path demonstration rather than a Rutherford-growth claim.
+
+**Problems / blockers**
+
+- The latest double-Harris campaign is strong validation evidence but still not a production Rutherford, Sweet--Parker, or plasmoid-chain result.
+- Research-grade nonlinear claims still require longer production campaigns with matched seed ensembles, aspect/Lundquist sweeps, convergence, and calibrated reconnection-rate diagnostics.
+
+**Progress**
+
+- Estimated plan completion: 99.9% for repository/release engineering, 94% for publication-grade nonlinear validation evidence, 97% combined.
+
+**Next steps**
+
+- Use the residual-flux and reconnection-proxy visualization pattern for README/docs media refreshes.
+- Run a true production nonlinear campaign with claim-level set to production only after the promotion gate includes matched seed-QI and convergence evidence for the same diagnostic family.
+- Add quantitative image/movie QA for nonlinear media so visually static total-field movies are automatically rejected from README promotion.

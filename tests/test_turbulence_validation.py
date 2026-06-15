@@ -8,10 +8,13 @@ from typer.testing import CliRunner
 
 from mhx.benchmarks import (
     DECAYING_MHD_TURBULENCE_SCHEMA,
+    FORCED_TURBULENT_RECONNECTION_READINESS_SCHEMA,
     FORCED_TURBULENT_RECONNECTION_SCHEMA,
+    assess_forced_turbulent_reconnection_readiness,
     run_decaying_mhd_turbulence_validation,
     run_forced_turbulent_reconnection_validation,
     write_decaying_mhd_turbulence_validation,
+    write_forced_turbulent_reconnection_readiness_report,
     write_forced_turbulent_reconnection_validation,
 )
 from mhx.benchmarks.turbulence import (
@@ -58,6 +61,7 @@ def test_forced_turbulent_reconnection_validation_gate() -> None:
     assert result.diagnostics["reconnection_proxy_change"] > 0.0
 
 
+@pytest.mark.slow
 def test_turbulence_writers_and_cli(tmp_path) -> None:
     decay_manifest, decay_validation = write_decaying_mhd_turbulence_validation(
         tmp_path / "decay",
@@ -129,7 +133,85 @@ def test_turbulence_writers_and_cli(tmp_path) -> None:
     assert cli_forced.exit_code == 0, cli_forced.stdout
 
 
-def test_turbulence_rejects_invalid_inputs() -> None:
+def test_forced_turbulent_reconnection_readiness_report_and_cli(tmp_path) -> None:
+    run_dir = tmp_path / "forced"
+    write_forced_turbulent_reconnection_validation(
+        run_dir,
+        shape=(16, 16),
+        t_end=1.0,
+        save_every=10,
+        max_relative_energy_growth=10.0,
+        movies=True,
+    )
+
+    assessment = assess_forced_turbulent_reconnection_readiness(
+        run_dir,
+        require_movies=True,
+        min_history_samples=5,
+        min_t_end=1.0,
+        max_relative_energy_growth=10.0,
+    )
+    assert assessment.promotion_ready is True
+    assert assessment.diagnostics["schema"] == FORCED_TURBULENT_RECONNECTION_READINESS_SCHEMA
+    assert assessment.validation["checks"]["nontrivial_reconnection_proxy_or_rate"] is True
+
+    manifest_path, validation = write_forced_turbulent_reconnection_readiness_report(
+        run_dir,
+        require_movies=True,
+        min_history_samples=5,
+        min_t_end=1.0,
+        max_relative_energy_growth=10.0,
+    )
+    assert validation["passed"] is True
+    assert manifest_path == run_dir / "readiness" / "manifest.json"
+    assert (run_dir / "readiness" / "promotion_readiness.json").exists()
+    assert (run_dir / "readiness" / "validation.json").exists()
+    assert (run_dir / "readiness" / "figures" / "promotion_matrix.png").stat().st_size > 0
+    artifact_manifest = json.loads((run_dir / "readiness" / "artifact_manifest.json").read_text())
+    assert {record["path"] for record in artifact_manifest["files"]} >= {
+        "manifest.json",
+        "validation.json",
+        "promotion_readiness.json",
+        "figures/promotion_matrix.png",
+    }
+
+    runner = CliRunner()
+    cli_ready = runner.invoke(
+        app,
+        [
+            "benchmark",
+            "forced-turbulent-reconnection-readiness-check",
+            str(run_dir),
+            "--require-movies",
+            "--min-history-samples",
+            "5",
+            "--min-t-end",
+            "1.0",
+            "--max-relative-energy-growth",
+            "10.0",
+        ],
+    )
+    assert cli_ready.exit_code == 0, cli_ready.stdout
+
+    cli_blocked = runner.invoke(
+        app,
+        [
+            "benchmark",
+            "forced-turbulent-reconnection-readiness-check",
+            str(run_dir),
+            "--min-history-samples",
+            "999",
+            "--min-t-end",
+            "1.0",
+            "--max-relative-energy-growth",
+            "10.0",
+        ],
+    )
+    assert cli_blocked.exit_code == 1
+    assert "forced-turbulent-reconnection-readiness-check failed" in cli_blocked.output
+
+
+def test_turbulence_rejects_invalid_inputs(tmp_path) -> None:
     with pytest.raises(ValueError, match="shape"):
         run_decaying_mhd_turbulence_validation(shape=(7, 8))
     with pytest.raises(ValueError, match="resistivity"):
@@ -162,6 +244,25 @@ def test_turbulence_rejects_invalid_inputs() -> None:
         run_forced_turbulent_reconnection_validation(turbulent_flux_amplitude=-1.0)
     with pytest.raises(ValueError, match="forcing_amplitude"):
         run_forced_turbulent_reconnection_validation(forcing_amplitude=-1.0)
+    with pytest.raises(ValueError, match="min_history_samples"):
+        assess_forced_turbulent_reconnection_readiness(tmp_path, min_history_samples=0)
+    with pytest.raises(ValueError, match="min_t_end"):
+        assess_forced_turbulent_reconnection_readiness(tmp_path, min_t_end=0.0)
+    with pytest.raises(ValueError, match="min_reconnection_proxy_change"):
+        assess_forced_turbulent_reconnection_readiness(
+            tmp_path,
+            min_reconnection_proxy_change=-1.0,
+        )
+    with pytest.raises(ValueError, match="min_abs_reconnection_rate_proxy"):
+        assess_forced_turbulent_reconnection_readiness(
+            tmp_path,
+            min_abs_reconnection_rate_proxy=-1.0,
+        )
+    with pytest.raises(ValueError, match="max_relative_energy_growth"):
+        assess_forced_turbulent_reconnection_readiness(
+            tmp_path,
+            max_relative_energy_growth=-1.0,
+        )
 
 
 def test_turbulence_helper_branches(tmp_path) -> None:

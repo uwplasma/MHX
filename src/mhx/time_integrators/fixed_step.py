@@ -49,7 +49,13 @@ def evolve_rk4(
     steps: int,
     save_every: int = 1,
 ) -> ReducedMHDTrajectory:
-    """Evolve a state with RK4 and save every ``save_every`` steps."""
+    """Evolve a state with RK4 and save every ``save_every`` steps.
+
+    The implementation advances ``save_every`` internal steps per saved sample,
+    so long runs store only the returned trajectory rather than every internal
+    RK4 step. If ``steps`` is not an exact multiple of ``save_every``, the
+    returned trajectory matches the historical API by omitting the unsaved tail.
+    """
     if steps < 1:
         raise ValueError("steps must be >= 1")
     if dt <= 0.0:
@@ -57,13 +63,17 @@ def evolve_rk4(
     if save_every < 1:
         raise ValueError("save_every must be >= 1")
     stride = min(save_every, steps)
+    saved_count = steps // stride
 
-    def scan_step(carry: StateT, step_index: Any) -> tuple[StateT, StateT]:
+    def inner_step(carry: StateT, step_index: Any) -> tuple[StateT, None]:
         del step_index
-        next_state = rk4_step(carry, rhs, dt)
+        return rk4_step(carry, rhs, dt), None
+
+    def saved_step(carry: StateT, save_index: Any) -> tuple[StateT, StateT]:
+        del save_index
+        next_state, _ = jax.lax.scan(inner_step, carry, None, length=stride)
         return next_state, next_state
 
-    _, states = jax.lax.scan(scan_step, state0, jnp.arange(steps))
-    saved_states = jax.tree_util.tree_map(lambda values: values[stride - 1 :: stride], states)
-    times = dt * jnp.arange(stride, steps + 1, stride)
+    _, saved_states = jax.lax.scan(saved_step, state0, jnp.arange(saved_count))
+    times = dt * stride * jnp.arange(1, saved_count + 1)
     return ReducedMHDTrajectory(times=times, states=saved_states)

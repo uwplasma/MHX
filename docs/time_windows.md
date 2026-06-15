@@ -70,6 +70,73 @@ require $10/0.0131\approx763.4$. This is why the default FAST nonlinear budget
 run is explicitly labeled a code-validity gate rather than a Rutherford or
 plasmoid simulation.
 
+## Promotion evidence lane
+
+Duration is the first gate in the promotion lane, but passing it never promotes
+a bundle by itself. A candidate campaign remains `claim_level = "validation"`
+until a local gate summary or `mhx campaign rutherford-promotion-check` shows
+all of the following evidence in the same campaign bundle:
+
+- completed target duration from `campaign_plan.json`, `diagnostics.json`, and
+  `production_history.npz`;
+- at least two passing convergence bundles with their manifests and artifact
+  hashes;
+- a passing seed-QI bundle for the same diagnostic family;
+- finite X/O critical-point histories with both detected X points and detected
+  O points;
+- reconnecting-flux and Rutherford island-width histories that exceed their
+  amplification thresholds;
+- fixed-scale flux and current-density movies;
+- `manifest.json`, `validation.json`, `diagnostics.json`,
+  `production_history.npz`, and `artifact_manifest.json` with hashes.
+
+For a local evidence audit:
+
+```bash
+python tools/nonlinear_campaign_evidence.py \
+  --campaign-dir outputs/campaigns/rutherford_production \
+  --output-json outputs/campaigns/rutherford_production/promotion_gate_summary.json \
+  --output-md outputs/campaigns/rutherford_production/promotion_gate_summary.md \
+  --require-production-ready
+```
+
+The command exits nonzero with `--require-production-ready` unless every gate
+passes, so short runs, missing movies, missing seed-QI evidence, or flux/width
+non-response cannot be promoted by documentation alone.
+
+Seeded double-Harris validation-media bundles use the same local summary, but
+with their native artifact names:
+`periodic_double_harris_seeded_long_run.npz`,
+`figures/periodic_double_harris_flux.gif`, and
+`figures/periodic_double_harris_current.gif`. If the attached promotion report
+declares `claim_level_if_passed = "validation"`, the summary can mark the
+validation gate as ready while still keeping `production_claim_ready = false`.
+
+## Latest bounded GPU validation campaign
+
+On 2026-05-22 a bounded `office` GPU campaign ran under a 30-minute timeout and
+completed in about three minutes of wall time. The promoted validation bundle is
+
+`outputs/campaigns/gpu_nonlinear_20260522_085049/double_harris_long_n128_t160`.
+
+It used a `128×128` periodic double-Harris replay to `t_end=160` with fixed
+flux/current movies, one `64/96/128` convergence bundle, width and resistivity
+sweeps, seed-QI evidence, artifact manifests, and a double-Harris promotion
+check. The local gate summary reports:
+
+- `gate_ready = true`, because duration, convergence, X/O, flux, width, movies,
+  and manifest gates passed;
+- `production_claim_ready = false`, because the attached promotion report
+  explicitly declares `claim_level_if_passed = "validation"`;
+- `reconnected_flux_amplification = 8.356`, `island_width_amplification = 2.891`,
+  `max_x_point_count = 4`, and `max_o_point_count = 2`.
+
+Visual audit matters: the raw total-flux/current GIFs remain dominated by the
+static equilibrium sheet, so public-facing media should show residual flux
+`perturbed - base`, reconnection proxies, and gate summaries alongside any raw
+field movie. These outputs are suitable for validation-media evidence, not for a
+Rutherford, Sweet--Parker, or plasmoid-chain production claim.
+
 ## Python guard for future workflows
 
 Future production runners should call the guard before launching expensive jobs:
@@ -111,7 +178,7 @@ Use these labels consistently in docs, figures, and manifests:
 | `short_validation` | Shorter than the relevant e-fold window. | Operator, IO, schema, differentiability, and energy-budget checks. |
 | `fast_validation` | A short non-CI validation run below the README media minimum. | Local smoke/plotting checks only; not README or release media. |
 | `ci_fast` | Explicitly bounded CI run, currently `t_end=10` for double-Harris media plumbing. | CI artifact generation and schema/movie checks. |
-| `readme_release_media` | Longer validation media run, currently `t_end=120` for the Harris-sheet README contour movies and at least `t_end=100` for the validation preset. | README/release morphology media with validation claim level, not production physics. |
+| `readme_release_media` | Longer validation media run, currently `t_end=160` for the Harris-sheet README residual-field movies and validation preset. | README/release morphology media with validation claim level, not production physics. |
 | `linear_window` | At least $N_e/\gamma$. | Linear growth-rate measurement if the mode remains in the linear regime. |
 | `nonlinear_window` | At least $s_fN_e/\gamma$ with $s_f>1$. | Candidate island-growth or plasmoid campaign, still subject to convergence. |
 | `overresolved_window` | Longer than the nonlinear window and accompanied by convergence checks. | Preferred for production paper figures. |

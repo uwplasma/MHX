@@ -4,6 +4,8 @@ MHX uses semantic-versioned pre-releases while the rebuilt solver API matures.
 
 ## Unreleased
 
+## 0.1.0a1 - 2026-05-25
+
 - Declared the rebuilt public API as `v1` with `MHX_API_VERSION` compatibility checks.
 - Added stable schema metadata for trajectory NPZ files, run manifests, artifact manifests, and validation suites.
 - Added a CI legacy-import guard so active package paths cannot depend on archived scripts.
@@ -23,6 +25,16 @@ MHX uses semantic-versioned pre-releases while the rebuilt solver API matures.
   convergence, seed-QI, fixed-scale media, and tolerance evidence are attached.
 - Added optional sub-cell Newton refinement and deterministic frame-to-frame
   association for magnetic-flux X/O critical points.
+- Added `mhx validate release-candidate`, a static public-release gate that
+  checks packaging, CI, ReadTheDocs, citation/version metadata, examples, docs,
+  README claim boundaries, active legacy-import hygiene, and figure hashes.
+- Updated README/release double-Harris media policy to the `128×128`,
+  `t_end=160` residual-field GPU validation bundle and aligned duration labels.
+- Closed the Rutherford production-promotion blocker with the `adcc714`
+  periodic double-Harris GPU campaign: `128×128`, `t_end=240`, 123 history
+  samples, reconnecting-flux amplification `8.3593`, Rutherford-width
+  amplification `2.8912`, and passing duration/convergence/seed-QI/X-O/media
+  promotion gates.
 
 ## 0.1.0a0
 

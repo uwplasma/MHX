@@ -109,6 +109,9 @@ exclude = [
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-ra"
+markers = [
+  "slow: validation/artifact tests that exercise heavier release-gate paths",
+]
 
 [tool.coverage.run]
 branch = true

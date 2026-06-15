@@ -159,6 +159,7 @@ def test_linear_tearing_layer_rejects_invalid_inputs() -> None:
         run_linear_tearing_layer_validation(growth_rate_slope_bounds=(-0.1, -0.8))
 
 
+@pytest.mark.slow
 def test_write_linear_tearing_eigenvalue_artifacts_and_cli(tmp_path) -> None:
     manifest_path, validation = write_linear_tearing_eigenvalue_validation(tmp_path)
     assert manifest_path == tmp_path / "manifest.json"
@@ -219,6 +220,7 @@ def test_write_linear_tearing_layer_artifacts_and_cli(tmp_path) -> None:
     assert (outdir / "validation.json").exists()
 
 
+@pytest.mark.slow
 def test_write_linear_tearing_timedomain_artifacts_and_cli(tmp_path) -> None:
     manifest_path, validation = write_linear_tearing_timedomain_validation(
         tmp_path,
@@ -253,6 +255,7 @@ def test_write_linear_tearing_timedomain_artifacts_and_cli(tmp_path) -> None:
     assert (outdir / "validation.json").exists()
 
 
+@pytest.mark.slow
 def test_write_linear_tearing_dispersion_artifacts_and_cli(tmp_path) -> None:
     manifest_path, validation = write_linear_tearing_dispersion_validation(tmp_path)
     assert manifest_path == tmp_path / "manifest.json"

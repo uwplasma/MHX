@@ -109,6 +109,38 @@ def test_rk4_diffusion_gradient_matches_finite_difference() -> None:
     assert float(total_energy(state0, lengths=grid.lengths)) > 0.0
 
 
+def test_rk4_save_stride_matches_subsampled_unit_stride() -> None:
+    grid = CartesianGrid.from_mesh_config(MeshConfig(shape=(16, 16)))
+    psi = grid.sinusoid(mode=(1, 0))
+    state0 = ReducedMHDState(psi=psi, omega=jnp.zeros_like(psi))
+    params = ReducedMHDParams(resistivity=0.01, viscosity=0.0)
+
+    def rhs(state: ReducedMHDState) -> ReducedMHDState:
+        return reduced_mhd_rhs(state, params, lengths=grid.lengths)
+
+    unit_stride = evolve_rk4(state0, rhs, dt=0.01, steps=9, save_every=1)
+    sparse = evolve_rk4(state0, rhs, dt=0.01, steps=9, save_every=3)
+
+    assert sparse.times.shape == (3,)
+    assert jnp.allclose(sparse.times, unit_stride.times[2::3])
+    assert jnp.allclose(sparse.states.psi, unit_stride.states.psi[2::3])
+    assert jnp.allclose(sparse.states.omega, unit_stride.states.omega[2::3])
+
+
+def test_rk4_save_stride_omits_unsaved_tail_for_legacy_api() -> None:
+    grid = CartesianGrid.from_mesh_config(MeshConfig(shape=(8, 8)))
+    state0 = ReducedMHDState(psi=grid.sinusoid(mode=(1, 0)), omega=jnp.zeros(grid.shape))
+    params = ReducedMHDParams(resistivity=0.01, viscosity=0.0)
+
+    def rhs(state: ReducedMHDState) -> ReducedMHDState:
+        return reduced_mhd_rhs(state, params, lengths=grid.lengths)
+
+    trajectory = evolve_rk4(state0, rhs, dt=0.01, steps=10, save_every=4)
+
+    assert trajectory.times.shape == (2,)
+    assert jnp.allclose(trajectory.times, jnp.asarray([0.04, 0.08]))
+
+
 def test_mode_amplitude_and_growth_fit() -> None:
     grid = CartesianGrid.from_mesh_config(MeshConfig(shape=(16, 16)))
     x_mode = grid.cosinusoid(mode=(1, 0))

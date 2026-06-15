@@ -14,17 +14,18 @@ API for reproducible reduced-MHD studies.
 
 ## MHD at a Glance
 
-These previews keep the README visual and short. The first row shows longer
-Harris-sheet and forced turbulent current-sheet replays with magnetic-flux
-(`Az`/`ψ`) contours; the second row shows nonlinear reduced-MHD turbulence,
-Orszag--Tang roll-up, and a Harris tearing layer sweep. See
+These previews keep the README visual and short. The first row shows residual
+double-Harris reconnecting fields, a forced turbulent current-sheet replay with
+magnetic-flux (`Az`/`ψ`) contours, and Orszag--Tang current sheets; the second
+row shows nonlinear reduced-MHD turbulence, Orszag--Tang roll-up, and a Harris
+tearing layer sweep. See
 [docs/media.md](docs/media.md) for source commands, visual QA, and claim
 boundaries.
 
-| Harris-sheet validation (`Az` contours) | Forced turbulent-reconnection proxy | Orszag--Tang current sheets |
+| Residual double-Harris reconnection | Forced turbulent-reconnection proxy | Orszag--Tang current sheets |
 | --- | --- | --- |
 | ![Double-Harris reconnection replay](docs/_static/readme/double_harris_reconnection.gif) | ![Forced turbulent reconnection](docs/_static/readme/forced_turbulent_reconnection.gif) | ![Orszag-Tang current sheets](docs/_static/readme/orszag_tang_current.gif) |
-| Single-sheet zoom from a `96×96`, `t=120` validation run: `j_z` background plus `Az` contours and refined diagnostic X/O annotations, not separatrix-event labels. | `64×64`, `t=80` forced-turbulence current sheet with reconnection-rate proxy diagnostics. | Solver-generated Orszag--Tang current-density morphology and high-$k$ transfer over a `96×96`, `t=10` validation run. |
+| Single-sheet zoom from a `128×128`, `t=160` GPU validation bundle: residual reconnecting flux `Δψ` with total `Az` contours and diagnostic X/O markers; not separatrix-event, Rutherford, or plasmoid-production evidence. | `64×64`, `t=80` forced-turbulence current sheet with reconnection-rate proxy diagnostics. | Solver-generated Orszag--Tang current-density morphology and high-$k$ transfer over a `96×96`, `t=10` validation run. |
 
 | Decaying MHD turbulence | Orszag--Tang vorticity | Harris tearing layer |
 | --- | --- | --- |
@@ -35,9 +36,10 @@ boundaries.
 
 MHX currently supports deterministic reduced-MHD validation for spectral
 operators, resistive decay, finite-domain Harris tearing checks, nonlinear
-energy/dissipation budgets, Orszag--Tang vortex media, bounded double-Harris
-and Rutherford execution-path checks, and seed-robust QI plus latent-ODE
-workflow tests on small datasets.
+energy/dissipation budgets, Orszag--Tang vortex media, forced
+turbulent-reconnection readiness checks, bounded double-Harris promotion and
+convergence evidence, Rutherford execution-path checks, and seed-robust QI plus
+latent-ODE workflow tests on small datasets.
 
 Current results should be read at their manifest claim level. MHX does **not**
 yet claim converged Rutherford island growth, Sweet-Parker plasmoid chains,
@@ -65,7 +67,7 @@ Run a deterministic reduced-MHD smoke workflow:
 
 ```bash
 mhx init outputs/tutorial/linear_tearing.toml
-mhx run examples/linear_tearing.toml --outdir outputs/smoke
+mhx run outputs/tutorial/linear_tearing.toml --outdir outputs/smoke
 mhx figures outputs/smoke --gif
 mhx report outputs/smoke
 mhx artifact-manifest outputs/smoke
@@ -97,6 +99,7 @@ print(manifest, cfg.physics.model)
 | Guided tutorial | [docs/tutorial.md](docs/tutorial.md) |
 | Media sources and claim boundaries | [docs/media.md](docs/media.md) |
 | Physics validation details | [docs/validation.md](docs/validation.md) |
+| Reviewer evidence and claim boundaries | [docs/reviewer_evidence.md](docs/reviewer_evidence.md), [docs/publication_checklist.md](docs/publication_checklist.md) |
 | Benchmark commands and expected artifacts | [docs/benchmarks.md](docs/benchmarks.md) |
 | Diagnostics and output schemas | [docs/diagnostics.md](docs/diagnostics.md), [docs/output_schema.md](docs/output_schema.md) |
 | Neural-ODE reproducibility | [docs/neural_ode_reproducibility.md](docs/neural_ode_reproducibility.md) |
@@ -110,11 +113,17 @@ Common entry points:
 ```bash
 mhx validate all --outdir outputs/validation_suite
 mhx benchmark catalog --outdir outputs/benchmarks/catalog
+mhx benchmark double-harris-promotion-check \
+  outputs/benchmarks/periodic_double_harris_seeded_long_run \
+  --convergence-dir outputs/benchmarks/periodic_double_harris_convergence
+mhx benchmark forced-turbulent-reconnection-readiness-check \
+  outputs/benchmarks/forced_turbulent_reconnection
 mhx campaign rutherford-plan-production --outdir outputs/campaigns/rutherford_production_plan
 # Run restartable chunks until the target completes; then attach convergence and seed-QI evidence:
 mhx campaign rutherford-execute outputs/campaigns/rutherford_production_plan --movies
 mhx campaign rutherford-promotion-check outputs/campaigns/rutherford_production_plan
 mhx validate readiness --suite outputs/validation_suite --outdir outputs/validation_readiness
+mhx validate release-candidate --outdir outputs/release_candidate
 mhx api deprecations
 mhx physics list
 mhx diagnostics list
@@ -122,6 +131,5 @@ mhx diagnostics list
 
 ## Citation
 
-MHX is not yet publication-release-citable. Until a tagged release and DOI are
-created, cite the repository URL and commit SHA, or use the provisional metadata
-in `CITATION.cff`.
+Until a DOI is minted, cite the repository URL plus release tag or commit SHA,
+or use the provisional metadata in `CITATION.cff`.

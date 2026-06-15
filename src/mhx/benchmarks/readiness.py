@@ -36,6 +36,7 @@ REQUIRED_PUBLIC_RELEASE_CASES = (
     "orszag_tang_vortex",
     "decaying_mhd_turbulence",
     "forced_turbulent_reconnection",
+    "forced_turbulent_reconnection_readiness",
     "nonlinear_duration_audit",
     "seed_robust_qi",
     "seed_robust_qi_sweep",
@@ -49,9 +50,8 @@ REQUIRED_PUBLIC_RELEASE_CASES = (
 )
 
 PRODUCTION_PUBLICATION_GAPS = (
-    "physically growing Rutherford/island campaign passing response, convergence, "
-    "seed-QI, geometry, movie, energy-budget, divergence, checkpoint/resume, and "
-    "duration gates",
+    "Rutherford algebraic island-growth scaling across amplitudes and equilibria "
+    "beyond the positive-response production-promotion gate",
     "long plasmoid-chain campaign with Lundquist/aspect-ratio convergence",
     "medium/production resolution sweeps with documented tolerance budgets",
     "neural-ODE train/validation/test experiment linked to production-quality data",

@@ -180,7 +180,13 @@ def _cosine_tearing_factory(parameters: Mapping[str, Any]) -> CosineTearingEquil
 def _periodic_double_harris_factory(
     parameters: Mapping[str, Any],
 ) -> PeriodicDoubleHarrisEquilibrium:
-    mode = parameters.get("perturbation_mode", (0, 1))
+    mode = parameters.get(
+        "perturbation_mode",
+        (
+            parameters.get("perturbation_mode_x", 0),
+            parameters.get("perturbation_mode_y", 1),
+        ),
+    )
     return PeriodicDoubleHarrisEquilibrium(
         width=float(parameters.get("width", 0.4)),
         amplitude=float(parameters.get("amplitude", 1.0)),

@@ -29,6 +29,11 @@ Any unsupported value fails early. This is intentionally strict: a reviewer or
 workflow runner should not silently read an artifact produced under an
 unrecognized API contract.
 
+TOML configs may also include `api_version = "v1"`. `mhx.config.load_config`
+rejects unsupported config API values, and also rejects an unsupported
+`MHX_API_VERSION` override even when the config omits the field. Configs without
+`api_version` are treated as v1 while v1 is the only supported public API.
+
 ## Stable v1 interfaces
 
 The following names are part of the rebuilt v1 public surface:

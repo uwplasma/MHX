@@ -132,6 +132,24 @@ mhx artifact-manifest outputs/smoke
 This writes `outputs/smoke/artifact_manifest.json` with schema
 `mhx.artifacts.v1`, API version, file paths, byte sizes, and SHA-256 hashes.
 
+## Paper-pipeline bundle
+
+`mhx validate paper-pipeline --outdir outputs/paper_pipeline` writes the
+reviewer-facing validation bundle:
+
+| File | Schema | Meaning |
+| --- | --- | --- |
+| `paper_pipeline.json` | `mhx.paper_pipeline.v1` | Included validation cases, readiness status, claim boundary, and API metadata. |
+| `validation.json` | `mhx.paper_pipeline.gates.v1` | Gate status for suite pass, readiness generation, and release-ready requirement. |
+| `paper_pipeline.md` | Markdown | Human-readable summary of gates and included cases. |
+| `validation_suite/validation_suite.json` | `mhx.validation.suite.v1` | Full or declared-subset validation-suite summary. |
+| `readiness/readiness.json` | `mhx.readiness_report.v1` | Public-release and publication-claim readiness status. |
+| `artifact_manifest.json` | `mhx.artifacts.v1` | Recursive SHA-256 hashes for the whole bundle. |
+| `manifest.json` | `mhx.manifest.v1` | Top-level claim metadata with `claim_level = "validation"`. |
+
+Subsets requested with `--cases` are command-validation artifacts, not full
+release evidence unless the readiness gate is also required and passing.
+
 ## Validation-suite outputs
 
 `mhx validate all --outdir outputs/validation_suite` executes the active FAST
@@ -166,7 +184,22 @@ write:
 | `diagnostics.json` | Scalar controls, energy/current diagnostics, high-$k$ summaries, and reconnection-proxy statistics. |
 | `validation.json` | Finite-array, energy, current, high-$k$, and reconnection-proxy gates. |
 | `figures/*_summary.png` | Energy, current/reconnection, final current, and final flux summary. |
-| `figures/*_flux.gif`, `figures/*_current.gif` | Optional fixed-scale movies when `--movies` is set. |
+| `figures/*_flux_contours.gif`, `figures/*_current.gif` | Optional fixed-scale movies when `--movies` is set. |
+
+`mhx benchmark forced-turbulent-reconnection-readiness-check <run-dir>` writes
+`<run-dir>/readiness/` by default:
+
+| File | Schema / contents |
+| --- | --- |
+| `promotion_readiness.json` | `mhx.validation.forced_turbulent_reconnection.readiness.v1`; validation-only claim boundary, terminal time, sample count, reconnecting-flux/rate proxy changes, energy growth, thresholds, and pass/fail checks. |
+| `validation.json` | `mhx.validation.forced_turbulent_reconnection.readiness.gates.v1`; finite-history, schema, duration, reconnection-proxy, energy, summary, and optional movie checks. |
+| `figures/promotion_matrix.png` | Reviewer-readable pass/fail readiness matrix. |
+| `artifact_manifest.json` | Recursive hashes for the readiness bundle. |
+| `manifest.json` | `claim_level = validation`; this command deliberately cannot promote the artifact to 3-D LV99 or production turbulent-reconnection evidence. |
+
+The validation suite records this readiness check as its own required
+public-release case (`forced_turbulent_reconnection_readiness`) so release
+readiness cannot pass on the trajectory artifact alone.
 
 ### Rutherford production execution
 
@@ -576,13 +609,57 @@ writes:
   statistics.
 - `validation.json`: pass/fail gates for finite case metrics, successful
   subcases, positive early growth, dissipative energy, and bounded
-  resolution/time-step spread.
+  resolution/time-step spread in growth rate, maximum amplification,
+  reconnecting-flux amplification, and Rutherford-width amplification.
 - `periodic_double_harris_convergence.npz`: stable keys `schema`, `case_kind`,
   `resolution`, `dt`, `samples`, `fitted_early_growth_rate`,
-  `early_growth_factor`, `max_growth_factor`, `relative_energy_increase`,
-  `max_current_density_linf`, and `max_kinetic_energy`.
+  `early_growth_factor`, `max_growth_factor`,
+  `reconnected_flux_amplification`, `island_width_amplification`,
+  `relative_energy_increase`, `max_current_density_linf`, and
+  `max_kinetic_energy`.
 - `figures/periodic_double_harris_convergence.png`: resolution/time-step
   `gamma_fit`, nonlinear amplification, energy, and peak-current panels.
+
+## Periodic double-Harris parameter-sweep outputs
+
+`mhx benchmark double-harris-parameter-sweep --outdir outputs/benchmarks/periodic_double_harris_parameter_sweep`
+writes:
+
+- `diagnostics.json`: parameter-sweep diagnostics with schema
+  `mhx.validation.periodic_double_harris_parameter_sweep.v1`, including
+  `sweep_axis`, case labels, fixed baseline parameters, per-case response
+  metrics, and anomaly-scale spread statistics.
+- `validation.json`: pass/fail gates for finite case metrics, at least three
+  cases, successful subcase gates, positive early growth, visible nonlinear
+  response, reconnecting-flux amplification, island-width amplification,
+  dissipative energy, and bounded anomaly spreads.
+- `periodic_double_harris_parameter_sweep.npz`: stable keys `schema`,
+  `sweep_axis`, `case_index`, `case_label`, `mode_x`, `mode_y`, `width`,
+  `resistivity`, `viscosity`, `dt`, `t_end`, `save_every`, `samples`,
+  `passed`, `fitted_early_growth_rate`, `early_growth_factor`,
+  `max_growth_factor`, `reconnected_flux_amplification`,
+  `seed_mode_reconnected_flux_amplification`,
+  `island_width_amplification`, `relative_energy_increase`,
+  `max_current_density_linf`, `max_kinetic_energy`, `max_x_point_count`,
+  `max_o_point_count`, `growth_rate_spread`, and `max_growth_spread`.
+- `figures/periodic_double_harris_parameter_sweep.png`: fitted-growth,
+  amplification, energy, current-density, and X/O-count panels.
+
+## Periodic double-Harris promotion report
+
+`mhx benchmark double-harris-promotion-check <run-dir> --convergence-dir <dir>`
+writes `<run-dir>/promotion/` by default:
+
+- `promotion_readiness.json`: schema
+  `mhx.validation.periodic_double_harris_promotion.v1`; includes the long-run
+  history schema, terminal time, response amplifications, X/O counts,
+  convergence-evidence status, thresholds, and pass/fail checks.
+- `validation.json`: schema
+  `mhx.validation.periodic_double_harris_promotion.gates.v1`; this is a
+  promotion-to-validation gate, not a production Rutherford/plasmoid gate.
+- `figures/promotion_matrix.png`: reviewer-readable matrix of every promotion
+  check.
+- `manifest.json` and `artifact_manifest.json`: checksummed report metadata.
 
 ## Nonlinear energy-budget outputs
 

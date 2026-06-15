@@ -1,10 +1,11 @@
 schema = "mhx.docs.figures_manifest.v1"
-updated_utc = "2026-05-18T04:45:00Z"
+updated_utc = "2026-05-22T12:00:00Z"
 description = "Reviewer-facing map from documentation figures and movies to commands, claim levels, sources, and tests."
 
 [[figures]]
 id = "readme_double_harris_reconnection"
 path = "docs/_static/readme/double_harris_reconnection.gif"
+sha256 = "f54638f9907416d59499d75a0761dbf362c3e6f6f0936532bc8030a79ac808a2"
 command = "python examples/make_readme_media.py"
 claim_level = "validation"
 claim_scope = "Longer seeded double-Harris visual communication; not a converged Rutherford or plasmoid claim."
@@ -14,6 +15,7 @@ tests = ["tests/test_readme_media.py", "tests/test_critical_points.py", "tests/t
 [[figures]]
 id = "readme_forced_turbulent_reconnection"
 path = "docs/_static/readme/forced_turbulent_reconnection.gif"
+sha256 = "e3230bf19e2fdf89ae21856d9a0ff814aabbcb6c58c86c192a485f6abed50712"
 command = "python examples/make_readme_media.py"
 claim_level = "validation"
 claim_scope = "Forced reduced-MHD turbulent-reconnection proxy movie; not a production reconnection-rate measurement."
@@ -23,51 +25,67 @@ tests = ["tests/test_readme_media.py", "tests/test_turbulence_validation.py"]
 [[figures]]
 id = "readme_decaying_mhd_turbulence"
 path = "docs/_static/readme/decaying_mhd_turbulence_current.gif"
+sha256 = "81d11d1b3a0b5de385ef85f5eff5a02c635a5967133bbf1a49f2d28d12266d2d"
 command = "python examples/make_readme_media.py"
 claim_level = "validation"
-claim_scope = "Decaying reduced-MHD turbulence morphology and high-k transfer gate."
+claim_scope = "Decaying reduced-MHD turbulence morphology and high-k transfer gate; not converged turbulence statistics."
 sources = ["examples/make_readme_media.py", "src/mhx/benchmarks/turbulence.py"]
 tests = ["tests/test_readme_media.py", "tests/test_turbulence_validation.py"]
 
 [[figures]]
 id = "readme_orszag_tang_current"
 path = "docs/_static/readme/orszag_tang_current.gif"
+sha256 = "17c66b5a7e05814b488ae9363d7847376f7000474142c3bb48c8f8269a86e79a"
 command = "python examples/make_readme_media.py"
 claim_level = "validation"
-claim_scope = "Incompressible reduced-MHD Orszag-Tang morphology gate."
+claim_scope = "Incompressible reduced-MHD Orszag-Tang morphology gate; not compressible shock validation."
 sources = ["examples/make_readme_media.py", "src/mhx/benchmarks/orszag_tang.py"]
 tests = ["tests/test_readme_media.py", "tests/test_orszag_tang_validation.py"]
 
 [[figures]]
 id = "validation_linear_tearing_eigenvalue"
 path = "docs/_static/validation/linear_tearing_eigenvalue/linear_tearing_eigenvalue.png"
+sha256 = "3191b1ba8a4a00b1573eeb4e6c5477c599af3f41421e1e9f02348db851b6dc4a"
 command = "python examples/make_validation_media.py"
 claim_level = "validation"
-claim_scope = "Single Harris tearing eigenvalue anchor against a documented reference case."
+claim_scope = "Single Harris tearing eigenvalue anchor against a documented reference case; not nonlinear reconnection evidence."
 sources = ["src/mhx/benchmarks/tearing_eigen.py"]
 tests = ["tests/test_linear_tearing_eigenvalue_validation.py"]
 
 [[figures]]
 id = "validation_nonlinear_energy_budget"
 path = "docs/_static/validation/nonlinear_energy_budget/nonlinear_energy_budget.png"
+sha256 = "8f2d8fe51bb2ac4587a81fcc92a76157937befe5f1a5e7f84f8438d861bde2ec"
 command = "python examples/make_validation_media.py"
 claim_level = "validation"
-claim_scope = "Nonlinear reduced-MHD energy-dissipation identity gate."
+claim_scope = "Nonlinear reduced-MHD energy-dissipation identity gate; not a production reconnection claim."
 sources = ["src/mhx/benchmarks/nonlinear.py"]
 tests = ["tests/test_nonlinear_energy_budget_validation.py"]
 
 [[figures]]
 id = "validation_double_harris_convergence"
 path = "docs/_static/validation/periodic_double_harris_convergence/periodic_double_harris_convergence.png"
+sha256 = "3cb0cedc53d4e5965d0cc70bbc777cfa0814775b72ea5cf41f6865a9f9a5d66d"
 command = "python examples/make_validation_media.py"
 claim_level = "validation"
-claim_scope = "FAST resolution/time-step convergence scaffold for seeded periodic double-Harris replay."
+claim_scope = "FAST resolution/time-step convergence scaffold for seeded periodic double-Harris replay; not production scaling evidence."
+sources = ["src/mhx/benchmarks/current_sheet.py"]
+tests = ["tests/test_current_sheet_eigenvalue_validation.py"]
+
+[[figures]]
+id = "validation_double_harris_parameter_sweep"
+path = "docs/_static/validation/periodic_double_harris_parameter_sweep/periodic_double_harris_parameter_sweep.png"
+sha256 = "205983af8904ebb32ed7ee157208bf6a607fa79e3fa68421e5f1765007561e68"
+command = "mhx benchmark double-harris-parameter-sweep --sweep-axis width --widths 0.35,0.4,0.45 --t-end 6 --fit-stop 3"
+claim_level = "validation"
+claim_scope = "FAST mode/width/resistivity response sweep for seeded periodic double-Harris replay; not production scaling evidence."
 sources = ["src/mhx/benchmarks/current_sheet.py"]
 tests = ["tests/test_current_sheet_eigenvalue_validation.py"]
 
 [[figures]]
 id = "validation_double_harris_seeded_long_run_response"
 path = "docs/_static/validation/periodic_double_harris_seeded_long_run/figures/periodic_double_harris_seeded_long_run.png"
+sha256 = "540f34ba711b2eacfabf8cee3bdef41a1ec2536e3047a6c8dc3ff6eef39b46ad"
 command = "mhx benchmark double-harris-long-run --nx 64 --ny 64 --t-end 30 --save-every 100 --fit-stop 10 --movies"
 claim_level = "validation"
 claim_scope = "Seeded periodic double-Harris response history with dominant reconnecting-flux and Rutherford-width proxies; not a production Rutherford/plasmoid claim."
@@ -77,6 +95,7 @@ tests = ["tests/test_current_sheet_eigenvalue_validation.py", "tests/test_critic
 [[figures]]
 id = "validation_double_harris_gpu_96_t120"
 path = "docs/_static/validation/long_runs/growing_double_harris_96_t120/periodic_double_harris_seeded_long_run.png"
+sha256 = "ec5aa252f8387bb29f25c2c0d24cb753fd19d62527bc5be0b92dc8e016fc98a0"
 command = "ssh office 'mhx benchmark double-harris-long-run --nx 96 --ny 96 --t-end 120 --dt 0.01 --save-every 300 --fit-stop 10 --movies'"
 claim_level = "validation"
 claim_scope = "Longer GPU-assisted double-Harris response run with positive flux/width amplification and dissipative energy; still not convergence-promoted production physics."
@@ -84,8 +103,19 @@ sources = ["src/mhx/benchmarks/current_sheet.py", "docs/long_run_evidence.md"]
 tests = ["tests/test_current_sheet_eigenvalue_validation.py"]
 
 [[figures]]
+id = "validation_double_harris_gpu_96_t120_promotion"
+path = "docs/_static/validation/long_runs/growing_double_harris_96_t120/promotion_matrix.png"
+sha256 = "1052eaae2f5d290b2b9ba2bfdc06f99a72bcdeb37911ca868e18193ed728e6c7"
+command = "mhx benchmark double-harris-promotion-check outputs/campaigns/growing_double_harris_gpu_96_t120_20260518_044120 --convergence-dir outputs/docs_refresh/periodic_double_harris_convergence"
+claim_level = "validation"
+claim_scope = "Promotion-to-validation matrix for the GPU-assisted double-Harris response run; not a production Rutherford/plasmoid claim."
+sources = ["src/mhx/benchmarks/current_sheet.py", "docs/long_run_evidence.md"]
+tests = ["tests/test_current_sheet_eigenvalue_validation.py"]
+
+[[figures]]
 id = "validation_latent_ode_fit"
 path = "docs/_static/validation/neural_ode_latent_fit/latent_ode_predictions.png"
+sha256 = "ab7303a3ed88e5f32ebecef302fd4a57099520ee61ebad06d9b6a2ed788a5e8b"
 command = "python examples/train_latent_ode_fast.py --outdir outputs/examples/latent_ode_fast"
 claim_level = "validation"
 claim_scope = "Deterministic FAST latent-ODE train/test workflow; not production surrogate evidence."
@@ -95,6 +125,7 @@ tests = ["tests/test_neural_ode_reproducibility.py"]
 [[figures]]
 id = "validation_latent_ode_failure_modes"
 path = "docs/_static/validation/neural_ode_latent_fit/latent_ode_failure_modes.png"
+sha256 = "8cef0713d57f77a6bdaa82347c21919c63afc6cded9f82df1bddb6d480494c0c"
 command = "python examples/train_latent_ode_fast.py --outdir outputs/examples/latent_ode_fast"
 claim_level = "validation"
 claim_scope = "FAST latent-ODE seed-extrapolation and long-horizon drift probes; not production surrogate evidence."
@@ -104,6 +135,7 @@ tests = ["tests/test_neural_ode_reproducibility.py"]
 [[figures]]
 id = "validation_rutherford_executor"
 path = "docs/_static/validation/rutherford_production_execution/production_histories.png"
+sha256 = "6f53f0dea6072db78cbf618a7e05443b750fe31fa64ef18fb1e60d3528409c1c"
 command = "python examples/run_rutherford_production_chunk.py --movies"
 claim_level = "validation"
 claim_scope = "Restartable production-executor path on a short chunk; not a completed production nonlinear result."
@@ -113,6 +145,7 @@ tests = ["tests/test_production_campaign.py"]
 [[figures]]
 id = "validation_rutherford_response_gate"
 path = "docs/_static/validation/long_runs/current_schema_rutherford/promotion_matrix.png"
+sha256 = "fe0ef125267e55c4d3b1a5b5ae7b810e257715ef7a841b42b9307fc79a3e3c59"
 command = "mhx campaign rutherford-promotion-check outputs/campaigns/rutherford_current_schema_96_dt005_20260517_161235 --convergence-dir <bundle-a> --convergence-dir <bundle-b> --seed-qi-dir <seed-qi>"
 claim_level = "validation"
 claim_scope = "Duration-complete Rutherford executor bundle with convergence/QI evidence attached; promotion remains blocked because reconnecting-flux and island-width response do not amplify."
@@ -122,17 +155,19 @@ tests = ["tests/test_production_campaign.py", "tests/test_docs_links.py"]
 [[figures]]
 id = "validation_rutherford_attached_convergence"
 path = "docs/_static/validation/long_runs/current_schema_rutherford/evidence/convergence_n16_24.png"
+sha256 = "d85ad699d8665fc8d342a0358902e286f3eb9ffae0c5412f0139ebd13cfe010a"
 command = "mhx benchmark double-harris-convergence --resolutions 16,24 --dt-values 0.02,0.01 --reference-resolution 16 --t-end 6 --fit-stop 3"
 claim_level = "validation"
-claim_scope = "Small checksummed convergence evidence attached to the response-gated Rutherford promotion report."
+claim_scope = "Small checksummed convergence evidence attached to the response-gated Rutherford promotion report; not production convergence evidence."
 sources = ["src/mhx/benchmarks/current_sheet.py", "src/mhx/campaigns/production.py"]
 tests = ["tests/test_current_sheet_eigenvalue_validation.py", "tests/test_production_campaign.py"]
 
 [[figures]]
 id = "validation_rutherford_attached_seed_qi"
 path = "docs/_static/validation/long_runs/current_schema_rutherford/evidence/seed_qi_summary.png"
+sha256 = "8cb6fe56c2026d17e62b99c3b63b5575b1870d36cc025f1cc3c14e28dc14f966"
 command = "mhx benchmark seed-robust-qi --nx 16 --ny 16 --seeds 0,1,2,3 --t-end 0.12 --dt 0.01"
 claim_level = "validation"
-claim_scope = "Small seed-QI evidence attached to the response-gated Rutherford promotion report."
+claim_scope = "Small seed-QI evidence attached to the response-gated Rutherford promotion report; not production UQ."
 sources = ["src/mhx/benchmarks/seed_robust_qi.py", "src/mhx/campaigns/production.py"]
 tests = ["tests/test_seed_robust_qi.py", "tests/test_production_campaign.py"]

@@ -44,7 +44,65 @@ def test_required_workflows_exist() -> None:
     docs_workflow = (workflow_dir / "docs.yml").read_text(encoding="utf-8")
     assert "tests/test_docs_links.py tests/test_readme_media.py" in docs_workflow
     ci_workflow = (workflow_dir / "ci.yml").read_text(encoding="utf-8")
+    assert 'python -m pytest -m "not slow"' in ci_workflow
+    assert "python -m pytest -m slow" in ci_workflow
+    assert "release-tests:" in ci_workflow
+    assert "needs: [test, release-tests]" in ci_workflow
     assert "mhx campaign rutherford-promotion-check" in ci_workflow
+    assert "mhx validate paper-pipeline" in ci_workflow
+    assert "python examples/tools/verify_paper_artifacts.py" in ci_workflow
+    assert "--artifact-root outputs/ci/paper_pipeline" in ci_workflow
+    assert "outputs/ci/paper_pipeline/paper_pipeline.json" in ci_workflow
+    assert "outputs/ci/paper_pipeline/artifact_manifest.json" in ci_workflow
+    long_run_index = ci_workflow.index("mhx benchmark double-harris-long-run")
+    convergence_index = ci_workflow.index("mhx benchmark double-harris-convergence")
+    promotion_index = ci_workflow.index("mhx benchmark double-harris-promotion-check")
+    assert long_run_index < convergence_index < promotion_index
+    assert (
+        "--convergence-dir outputs/ci/periodic_double_harris_convergence"
+        in ci_workflow
+    )
+    assert (
+        "--outdir outputs/ci/periodic_double_harris_seeded_long_run/promotion"
+        in ci_workflow
+    )
+    assert (
+        "outputs/ci/periodic_double_harris_seeded_long_run/promotion/validation.json"
+        in ci_workflow
+    )
+    assert (
+        "outputs/ci/periodic_double_harris_seeded_long_run/promotion/promotion_readiness.json"
+        in ci_workflow
+    )
+    assert (
+        "outputs/ci/periodic_double_harris_seeded_long_run/promotion/figures/promotion_matrix.png"
+        in ci_workflow
+    )
+    assert (
+        "outputs/ci/periodic_double_harris_seeded_long_run/promotion/artifact_manifest.json"
+        in ci_workflow
+    )
+    forced_index = ci_workflow.index("mhx benchmark forced-turbulent-reconnection ")
+    forced_readiness_index = ci_workflow.index(
+        "mhx benchmark forced-turbulent-reconnection-readiness-check"
+    )
+    assert forced_index < forced_readiness_index
+    assert (
+        "outputs/ci/forced_turbulent_reconnection/readiness/validation.json"
+        in ci_workflow
+    )
+    assert (
+        "outputs/ci/forced_turbulent_reconnection/readiness/promotion_readiness.json"
+        in ci_workflow
+    )
+    assert (
+        "outputs/ci/forced_turbulent_reconnection/readiness/figures/promotion_matrix.png"
+        in ci_workflow
+    )
+    assert (
+        "outputs/ci/forced_turbulent_reconnection/readiness/artifact_manifest.json"
+        in ci_workflow
+    )
     assert "assert_validation_passed" in ci_workflow
     assert "if-no-files-found: error" in ci_workflow
     publish_workflow = (workflow_dir / "publish.yml").read_text(encoding="utf-8")

@@ -19,7 +19,7 @@ from mhx.diagnostics import (
 )
 from mhx.equations.reduced_mhd import current_density, reduced_mhd_rhs
 from mhx.grids import CartesianGrid
-from mhx.io import write_manifest
+from mhx.io import write_artifact_manifest, write_manifest
 from mhx.numerics.spectral import laplacian
 from mhx.physics import PeriodicDoubleHarrisEquilibrium
 from mhx.state import ReducedMHDParams, ReducedMHDState
@@ -28,6 +28,9 @@ from mhx.time_integrators import evolve_rk4
 TURBULENCE_DOMAIN = (2.0 * np.pi, 2.0 * np.pi)
 DECAYING_MHD_TURBULENCE_SCHEMA = "mhx.validation.decaying_mhd_turbulence.v1"
 FORCED_TURBULENT_RECONNECTION_SCHEMA = "mhx.validation.forced_turbulent_reconnection.v1"
+FORCED_TURBULENT_RECONNECTION_READINESS_SCHEMA = (
+    "mhx.validation.forced_turbulent_reconnection.readiness.v1"
+)
 
 
 @dataclass(frozen=True)
@@ -50,6 +53,16 @@ class TurbulenceResult:
     reconnection_rate_proxy: np.ndarray | None
     initial_state: ReducedMHDState
     final_state: ReducedMHDState
+    diagnostics: dict[str, Any]
+    validation: dict[str, Any]
+
+
+@dataclass(frozen=True)
+class ForcedTurbulentReconnectionReadinessAssessment:
+    """Readiness assessment for a forced turbulent reconnection artifact."""
+
+    run_dir: Path
+    promotion_ready: bool
     diagnostics: dict[str, Any]
     validation: dict[str, Any]
 
@@ -376,6 +389,218 @@ def write_forced_turbulent_reconnection_validation(
         ),
         movies=movies,
     )
+
+
+def assess_forced_turbulent_reconnection_readiness(
+    run_dir: str | Path,
+    *,
+    require_summary: bool = True,
+    require_movies: bool = False,
+    min_history_samples: int = 20,
+    min_t_end: float = 20.0,
+    min_reconnection_proxy_change: float = 1.0e-3,
+    min_abs_reconnection_rate_proxy: float = 1.0e-6,
+    max_relative_energy_growth: float = 2.0,
+) -> ForcedTurbulentReconnectionReadinessAssessment:
+    """Assess whether a forced turbulent reconnection artifact is doc-ready.
+
+    This is a validation-only promotion boundary for the existing forced
+    turbulent reconnection replay. Passing it does not promote the artifact to a
+    production turbulent-reconnection claim.
+    """
+    root = Path(run_dir)
+    if min_history_samples < 1:
+        raise ValueError("min_history_samples must be >= 1")
+    if min_t_end <= 0.0:
+        raise ValueError("min_t_end must be positive")
+    if min_reconnection_proxy_change < 0.0:
+        raise ValueError("min_reconnection_proxy_change must be non-negative")
+    if min_abs_reconnection_rate_proxy < 0.0:
+        raise ValueError("min_abs_reconnection_rate_proxy must be non-negative")
+    if max_relative_energy_growth < 0.0:
+        raise ValueError("max_relative_energy_growth must be non-negative")
+
+    diagnostics_json = _read_json_if_exists(root / "diagnostics.json")
+    run_validation = _read_json_if_exists(root / "validation.json")
+    run_manifest = _read_json_if_exists(root / "manifest.json")
+    history_path = root / "forced_turbulent_reconnection.npz"
+    history, history_schema = _load_npz_history(history_path)
+    required_history_keys = (
+        "time",
+        "psi",
+        "omega",
+        "current_density",
+        "magnetic_energy",
+        "kinetic_energy",
+        "total_energy",
+        "current_linf",
+        "vorticity_linf",
+        "current_high_k_fraction",
+        "magnetic_divergence_linf",
+        "reconnection_proxy",
+        "reconnection_rate_proxy",
+    )
+    history_keys_present = bool(history) and all(key in history for key in required_history_keys)
+    finite_histories = history_keys_present and all(
+        np.isfinite(np.asarray(history[key], dtype=np.float64)).all()
+        for key in required_history_keys
+    )
+    time_values = (
+        np.asarray(history.get("time", []), dtype=np.float64)
+        if history
+        else np.asarray([], dtype=np.float64)
+    )
+    history_sample_count = int(time_values.size)
+    terminal_time = float(time_values[-1]) if time_values.size else float("nan")
+    proxy = (
+        np.asarray(history["reconnection_proxy"], dtype=np.float64)
+        if history and "reconnection_proxy" in history
+        else np.asarray([], dtype=np.float64)
+    )
+    rate = (
+        np.asarray(history["reconnection_rate_proxy"], dtype=np.float64)
+        if history and "reconnection_rate_proxy" in history
+        else np.asarray([], dtype=np.float64)
+    )
+    proxy_change = float(np.max(proxy) - np.min(proxy)) if proxy.size else 0.0
+    max_proxy = float(np.max(proxy)) if proxy.size else 0.0
+    max_abs_rate = float(np.max(np.abs(rate))) if rate.size else 0.0
+    relative_energy_growth = (
+        _relative_energy_growth(np.asarray(history["total_energy"], dtype=np.float64))
+        if history and "total_energy" in history
+        else float("inf")
+    )
+    summary_path = root / "figures" / "forced_turbulent_reconnection_summary.png"
+    movie_paths = (
+        root / "figures" / "forced_turbulent_reconnection_current.gif",
+        root / "figures" / "forced_turbulent_reconnection_flux_contours.gif",
+    )
+    checks = {
+        "execution_diagnostics_present": diagnostics_json is not None,
+        "execution_validation_present": run_validation is not None,
+        "run_manifest_present": run_manifest is not None,
+        "execution_validation_passed": bool(run_validation and run_validation.get("passed")),
+        "history_schema_supported": history_schema == FORCED_TURBULENT_RECONNECTION_SCHEMA,
+        "required_history_keys_present": history_keys_present,
+        "finite_history_arrays": finite_histories,
+        "minimum_history_samples": history_sample_count >= min_history_samples,
+        "minimum_duration_reached": bool(np.isfinite(terminal_time) and terminal_time >= min_t_end),
+        "positive_reconnection_proxy_or_rate": bool(
+            max_proxy > 0.0 or max_abs_rate >= min_abs_reconnection_rate_proxy
+        ),
+        "nontrivial_reconnection_proxy_or_rate": bool(
+            proxy_change >= min_reconnection_proxy_change
+            or max_abs_rate >= min_abs_reconnection_rate_proxy
+        ),
+        "energy_growth_within_tolerance": relative_energy_growth <= max_relative_energy_growth,
+        "summary_figure_present_or_not_required": (not require_summary)
+        or (summary_path.exists() and summary_path.stat().st_size > 0),
+        "movies_present_or_not_required": (not require_movies)
+        or all(path.exists() and path.stat().st_size > 0 for path in movie_paths),
+    }
+    thresholds = {
+        "min_history_samples": int(min_history_samples),
+        "min_t_end": float(min_t_end),
+        "min_reconnection_proxy_change": float(min_reconnection_proxy_change),
+        "min_abs_reconnection_rate_proxy": float(min_abs_reconnection_rate_proxy),
+        "max_relative_energy_growth": float(max_relative_energy_growth),
+        "require_summary": bool(require_summary),
+        "require_movies": bool(require_movies),
+    }
+    diagnostics = {
+        "schema": FORCED_TURBULENT_RECONNECTION_READINESS_SCHEMA,
+        "run_dir": str(root),
+        "claim_level_if_passed": "validation",
+        "claim_boundary": (
+            "Readiness evidence for the existing forced turbulent reconnection "
+            "validation artifact only. Passing does not authorize production "
+            "3-D turbulent-reconnection or LV99 scaling claims."
+        ),
+        "history_schema": history_schema,
+        "history_sample_count": history_sample_count,
+        "terminal_time": terminal_time,
+        "reconnection_proxy_change": proxy_change,
+        "max_reconnection_proxy": max_proxy,
+        "max_abs_reconnection_rate_proxy": max_abs_rate,
+        "relative_energy_growth": relative_energy_growth,
+        "required_summary": str(summary_path),
+        "required_movies": [str(path) for path in movie_paths],
+        "thresholds": thresholds,
+    }
+    validation = {
+        "schema": "mhx.validation.forced_turbulent_reconnection.readiness.gates.v1",
+        "passed": all(checks.values()),
+        "checks": checks,
+        "thresholds": thresholds,
+        "diagnostics": diagnostics,
+    }
+    return ForcedTurbulentReconnectionReadinessAssessment(
+        run_dir=root,
+        promotion_ready=bool(validation["passed"]),
+        diagnostics=diagnostics,
+        validation=validation,
+    )
+
+
+def write_forced_turbulent_reconnection_readiness_report(
+    run_dir: str | Path,
+    *,
+    outdir: str | Path | None = None,
+    require_summary: bool = True,
+    require_movies: bool = False,
+    min_history_samples: int = 20,
+    min_t_end: float = 20.0,
+    min_reconnection_proxy_change: float = 1.0e-3,
+    min_abs_reconnection_rate_proxy: float = 1.0e-6,
+    max_relative_energy_growth: float = 2.0,
+) -> tuple[Path, dict[str, Any]]:
+    """Write a validation-only readiness report for forced turbulent reconnection."""
+    assessment = assess_forced_turbulent_reconnection_readiness(
+        run_dir,
+        require_summary=require_summary,
+        require_movies=require_movies,
+        min_history_samples=min_history_samples,
+        min_t_end=min_t_end,
+        min_reconnection_proxy_change=min_reconnection_proxy_change,
+        min_abs_reconnection_rate_proxy=min_abs_reconnection_rate_proxy,
+        max_relative_energy_growth=max_relative_energy_growth,
+    )
+    report_dir = Path(outdir) if outdir is not None else assessment.run_dir / "readiness"
+    figures_dir = report_dir / "figures"
+    report_dir.mkdir(parents=True, exist_ok=True)
+    readiness_path = report_dir / "promotion_readiness.json"
+    validation_path = report_dir / "validation.json"
+    matrix_path = _write_readiness_matrix(
+        figures_dir,
+        validation=assessment.validation,
+        title="Forced turbulent reconnection readiness checks",
+    )
+    readiness = {
+        **assessment.diagnostics,
+        "promotion_ready": assessment.promotion_ready,
+        "validation_schema": assessment.validation["schema"],
+        "checks": assessment.validation["checks"],
+    }
+    readiness_path.write_text(json.dumps(readiness, indent=2, sort_keys=True), encoding="utf-8")
+    validation_path.write_text(
+        json.dumps(assessment.validation, indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+    manifest_path = report_dir / "manifest.json"
+    write_manifest(
+        manifest_path,
+        config=readiness,
+        outputs={
+            "promotion_readiness": readiness_path.name,
+            "validation": validation_path.name,
+            "readiness_matrix": matrix_path.relative_to(report_dir).as_posix(),
+            "artifact_manifest": "artifact_manifest.json",
+        },
+        claim_level="validation",
+        claim_scope=assessment.diagnostics["claim_boundary"],
+    )
+    write_artifact_manifest(report_dir)
+    return manifest_path, assessment.validation
 
 
 def _run_turbulence_trajectory(
@@ -743,6 +968,39 @@ def _energy_drop_and_growth(total_energy: np.ndarray) -> tuple[float, float]:
     return relative_drop, max_growth
 
 
+def _relative_energy_growth(total_energy: np.ndarray) -> float:
+    if total_energy.size == 0 or not np.isfinite(total_energy).all():
+        return float("inf")
+    scale = max(abs(float(total_energy[0])), np.finfo(np.float64).tiny)
+    return float(max(0.0, np.max(total_energy) - total_energy[0]) / scale)
+
+
+def _read_json_if_exists(path: Path) -> dict[str, Any] | None:
+    if not path.exists():
+        return None
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+
+
+def _load_npz_history(path: Path) -> tuple[dict[str, np.ndarray], str | None]:
+    if not path.exists():
+        return {}, None
+    try:
+        with np.load(path, allow_pickle=False) as payload:
+            history = {key: np.asarray(payload[key]) for key in payload.files}
+    except (OSError, ValueError):
+        return {}, None
+    schema_array = history.get("schema")
+    schema = (
+        str(schema_array.item())
+        if schema_array is not None and schema_array.shape == ()
+        else None
+    )
+    return history, schema
+
+
 def _finite_result(result: TurbulenceResult) -> bool:
     arrays = [
         result.time,
@@ -781,6 +1039,49 @@ def _high_k_fraction(field: np.ndarray, *, cutoff: float = 4.0) -> float:
 def _figure_to_frame(fig: Any) -> np.ndarray:
     fig.canvas.draw()
     return np.asarray(fig.canvas.buffer_rgba())[..., :3].copy()
+
+
+def _write_readiness_matrix(
+    figure_dir: Path,
+    *,
+    validation: dict[str, Any],
+    title: str,
+) -> Path:
+    import matplotlib.pyplot as plt
+
+    figure_dir.mkdir(parents=True, exist_ok=True)
+    checks = validation.get("checks", {})
+    if not isinstance(checks, dict):
+        checks = {}
+    labels = list(checks)
+    values = np.asarray([[1.0 if bool(checks[label]) else 0.0] for label in labels])
+    path = figure_dir / "promotion_matrix.png"
+    fig_height = max(4.0, 0.28 * max(1, len(labels)))
+    fig, axis = plt.subplots(figsize=(8.8, fig_height), constrained_layout=True)
+    if labels:
+        axis.imshow(values, cmap="RdYlGn", vmin=0.0, vmax=1.0, aspect="auto")
+        axis.set_yticks(np.arange(len(labels)))
+        axis.set_yticklabels([label.replace("_", " ") for label in labels])
+        axis.set_xticks([0])
+        axis.set_xticklabels(["pass"])
+        for row, label in enumerate(labels):
+            axis.text(
+                0,
+                row,
+                "PASS" if bool(checks[label]) else "FAIL",
+                ha="center",
+                va="center",
+                color="black",
+                fontsize="small",
+                fontweight="bold",
+            )
+    else:
+        axis.text(0.5, 0.5, "no checks", ha="center", va="center")
+        axis.set_axis_off()
+    axis.set_title(title)
+    fig.savefig(path, dpi=180)
+    plt.close(fig)
+    return path
 
 
 def _validate_turbulence_inputs(

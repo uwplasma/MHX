@@ -36,6 +36,7 @@ def test_readiness_assessment_distinguishes_release_from_paper_claims() -> None:
     assessment = run_readiness_assessment(_suite_payload())
 
     assert assessment.diagnostics["schema"] == READINESS_REPORT_SCHEMA
+    assert "forced_turbulent_reconnection_readiness" in REQUIRED_PUBLIC_RELEASE_CASES
     assert assessment.public_release_ready is True
     assert assessment.publication_claim_ready is False
     assert assessment.validation["passed"] is True
@@ -54,6 +55,24 @@ def test_readiness_assessment_catches_missing_and_failed_cases() -> None:
     assert assessment.validation["passed"] is False
     assert assessment.diagnostics["missing_required_cases"] == [REQUIRED_PUBLIC_RELEASE_CASES[-1]]
     assert assessment.diagnostics["failed_required_cases"] == [REQUIRED_PUBLIC_RELEASE_CASES[0]]
+
+
+def test_forced_turbulent_readiness_gate_is_required_without_promoting_paper_claims() -> None:
+    payload = _suite_payload()
+    payload["cases"] = [
+        case
+        for case in payload["cases"]
+        if case["name"] != "forced_turbulent_reconnection_readiness"
+    ]
+    payload["case_count"] = len(payload["cases"])
+
+    assessment = run_readiness_assessment(payload)
+
+    assert assessment.public_release_ready is False
+    assert assessment.publication_claim_ready is False
+    assert assessment.diagnostics["missing_required_cases"] == [
+        "forced_turbulent_reconnection_readiness"
+    ]
 
 
 def test_write_readiness_report_and_cli(tmp_path) -> None:

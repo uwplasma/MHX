@@ -1,10 +1,48 @@
 # Long-run evidence
 
-This page records the first real nonlinear runs executed under a 30-minute
-single-run budget. The evidence is useful, but the interpretation is deliberately
-skeptical: these runs validate long integration, checkpointing, media, and
-nonlinear budget gates; they do **not** yet demonstrate Rutherford growth or
-plasmoid onset.
+This page records nonlinear evidence available through commit `adcc714`, including
+30-minute-budget long runs, double-Harris validation promotion/convergence
+bundles, and deliberately skeptical interpretation. These runs validate long
+integration, checkpointing, media, nonlinear budget gates, and bounded
+current-sheet response diagnostics. The latest GPU campaign closes the
+Rutherford production-promotion response gate, but it does **not** yet
+demonstrate Rutherford algebraic scaling across amplitudes or plasmoid onset.
+
+## Production automation lane
+
+The current production-campaign lane is generated, not launched, by default:
+
+```bash
+python tools/run_nonlinear_production_campaign.py \
+  --outdir outputs/campaigns/nonlinear_production_campaign \
+  --dry-run
+```
+
+This writes `production_campaign_manifest.json` and `run_commands.sh` with exact
+Rutherford and double-Harris commands for the duration, convergence, seed-QI,
+sheet-width/aspect, eta/Lundquist, fixed-scale movie, and promotion gates. The
+manifest itself is validation-level planning evidence only. Running the lane
+requires the explicit `--execute` flag plus timeout controls, and production
+wording remains blocked unless the Rutherford target completes, the promotion
+report passes, and the final `--allow-production-claim --max-steps 0` refresh
+command succeeds. The 2026-05-25 GPU campaign satisfied those Rutherford
+promotion gates for commit `adcc714`.
+
+Latest passing Rutherford production-promotion run:
+
+```text
+outputs/campaigns/release_long_gpu_20260525_203421_n128_t240_periodic_rutherford_adcc714
+```
+
+Key promotion metrics from the run:
+
+- target duration: `t_end = 240.0`, `terminal_step = 12000`, `target_step = 12000`;
+- history samples: `123`;
+- reconnecting-flux amplification: `8.359281934515764`;
+- Rutherford-width amplification: `2.8912422822232937`;
+- promotion reports: `rutherford/validation.json`,
+  `rutherford/promotion/validation.json`, and
+  `production_campaign_manifest.json` all pass.
 
 ## Reproducible command sequence
 
@@ -269,27 +307,66 @@ because the response gate is explicit and positive, but it remains below
 production claim level until larger convergence, seed, aspect-ratio, and
 Lundquist-number sweeps close.
 
+The new machine-readable promotion boundary for this lane is:
+
+```bash
+mhx benchmark double-harris-promotion-check \
+  outputs/campaigns/growing_double_harris_gpu_96_t120_20260518_044120 \
+  --convergence-dir outputs/benchmarks/periodic_double_harris_convergence
+```
+
+It writes `promotion/promotion_readiness.json`,
+`promotion/validation.json`, `promotion/figures/promotion_matrix.png`, and an
+artifact manifest. The report can promote a run to convergence-backed
+validation media only; it deliberately cannot promote a run to production
+Rutherford/plasmoid evidence.
+
+![GPU-assisted double-Harris promotion matrix](_static/validation/long_runs/growing_double_harris_96_t120/promotion_matrix.png)
+
+The same convergence code path was also run on a bounded GPU-assisted medium
+sweep (`32/48/64`, `t_end=16`, `dt=0.02/0.01`). It passed with fitted growth
+rates `0.1970–0.1978`, maximum amplification `7.886–7.899`, zero measured
+relative energy increase, `0.41%` resolution growth-rate spread, and
+effectively zero time-step spread. This is no longer just a placeholder for a
+future script: it is convergence-backed validation evidence while remaining
+below production claim level.
+
+![Medium GPU-assisted double-Harris convergence sweep](_static/validation/long_runs/double_harris_convergence_gpu_n32_48_64_t16/periodic_double_harris_convergence.png)
+
 ## Current claim boundary
 
 These runs support:
 
 - long-run stability of the current reduced-MHD code path;
 - production-executor artifact correctness under a completed duration target;
-- nonlinear energy/dissipation-budget correctness for an active nonlinear state.
-- early seeded-growth response for a periodic double-Harris current-sheet replay.
+- nonlinear energy/dissipation-budget correctness for an active nonlinear state;
+- early seeded-growth response for a periodic double-Harris current-sheet replay;
+- duration-complete Rutherford production-promotion response at `128×128`,
+  `t_end=240`;
+- double-Harris promotion and convergence reports as validation-only claim
+  boundaries.
+- forced turbulent-reconnection readiness reports as validation-only proxy
+  boundaries.
 - explicit evidence that execution-level validation and production promotion are
   separate gates.
 
 These runs do not yet support:
 
-- Rutherford island-growth scaling;
+- Rutherford algebraic island-growth scaling across amplitudes;
 - plasmoid onset statistics;
 - Sweet-Parker reconnection-rate scaling;
 - publication-grade reconnection claims.
 
-The next required physics step is no longer a single missing script: MHX now
-ships a FAST double-Harris convergence scaffold that sweeps tiny resolution and
-time-step cases and gates spread in early growth/amplification. To promote the
-result to production physics, extend that scaffold to larger resolution, seed
-amplitude/mode, sheet width/aspect ratio, Lundquist number, and duration sweeps,
-then promote only the figures whose scalings survive the full campaign.
+The next required physics step is no longer scaffolding. MHX now has
+double-Harris promotion/convergence validation evidence and a forced
+turbulent-reconnection readiness gate. To promote either family to production
+physics, extend the existing gates to larger resolution, seed amplitude/mode,
+sheet width/aspect ratio, Lundquist number, and duration sweeps, then promote
+only the figures whose scalings survive the full campaign.
+
+Source anchors:
+
+- [double-Harris and current-sheet validation](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/current_sheet.py)
+- [forced turbulent-reconnection readiness](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/turbulence.py)
+- [critical-point diagnostics](https://github.com/uwplasma/MHX/blob/main/src/mhx/diagnostics/critical_points.py)
+- [promotion CLI wiring](https://github.com/uwplasma/MHX/blob/main/src/mhx/cli/main.py)

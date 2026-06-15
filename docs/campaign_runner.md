@@ -144,6 +144,23 @@ the peak/initial Rutherford-width amplification must exceed `1.05`. These
 thresholds are configurable with
 `--min-reconnected-flux-amplification` and
 `--min-island-width-amplification` on `mhx campaign rutherford-promotion-check`.
+For production-candidate Rutherford/island runs, plan the executor with the same
+unstable periodic double-Harris equilibrium used by the nonlinear validation
+lane:
+
+```bash
+mhx campaign rutherford-plan-production \
+  --outdir outputs/campaigns/rutherford_production \
+  --equilibrium periodic_double_harris \
+  --width 0.36 --perturbation-amplitude 0.004 \
+  --mode-x 2 --mode-y 1 --eta 0.0045 --nu 0.0045 \
+  --nx 128 --ny 128 --dt 0.02 --target-saved-frames 121
+```
+
+The older `cosine_tearing` default is retained as a decaying
+executor/checkpoint schema sanity path. It is not sufficient for a nonlinear
+response promotion because its reconnecting-flux and island-width histories are
+expected to fail the amplification gates.
 
 For a laptop-safe closed-lane example:
 
@@ -213,6 +230,54 @@ A production Rutherford or plasmoid campaign should pass all of the following:
 | `mhx campaign rutherford-promotion-check` passes. | Blocks production claims until convergence, seed-QI, current-sheet geometry, X/O point counts, fixed-scale media, tolerances, and positive reconnecting-flux/island-width response are present. |
 | Flux/current movies use fixed color limits and include timestamps. | Makes visual comparisons honest across resolutions and seeds. |
 | Artifact manifests include hashes, config, git commit, API version, and dependencies. | Makes reviewer reruns and diffs possible. |
+
+## Dry-run production automation lane
+
+`tools/run_nonlinear_production_campaign.py` is the dry-run-first launcher for a
+true nonlinear production lane. By default it does not run the solver; it writes
+`production_campaign_manifest.json` and `run_commands.sh` with exact commands,
+timeouts, expected outputs, and claim boundaries:
+
+```bash
+python tools/run_nonlinear_production_campaign.py \
+  --outdir outputs/campaigns/nonlinear_production_campaign \
+  --dry-run
+```
+
+The manifest includes Rutherford duration planning/execution, a seeded
+double-Harris production-duration movie run, two convergence bundles, seed-QI,
+sheet-width plus aspect-ratio evidence, eta/Lundquist sweeps, fixed-scale movie
+gates, double-Harris validation promotion, Rutherford promotion, and a final
+`--allow-production-claim` refresh command. The double-Harris promotion command
+can only promote media to convergence-backed validation. Rutherford artifacts
+remain `claim_level = "validation"` unless the target duration completes, the
+promotion report passes with convergence/seed/movie/response evidence, and the
+final zero-step production-claim refresh succeeds.
+
+By default the campaign fits the early growth rate only through the larger of
+three saved samples or two declared Harris e-folding times,
+`fit_stop = min(t_end, max(3*save_interval, 2/gamma))`. This keeps the growth
+fit out of nonlinear saturation for bounded GPU campaigns. Use `--fit-stop`
+when a case-specific linear window is known from an eigenmode or pilot run.
+When `--save-interval` is omitted, the convergence and sweep stages inherit the
+long-run saved-frame cadence, `save_interval = save_every*dt`, so the default
+campaign uses the same physical sampling cadence across long-run and auxiliary
+gates. The seed-QI command also receives the same `--save-every` stride; this
+keeps long seed ensembles from storing every RK4 step on GPU.
+
+Execution is intentionally opt-in and bounded per command:
+
+```bash
+python tools/run_nonlinear_production_campaign.py \
+  --outdir outputs/campaigns/nonlinear_production_campaign \
+  --execute \
+  --timeout-seconds 43200 \
+  --gate-timeout-seconds 1800
+```
+
+Use the generated shell script only when an external scheduler owns walltime.
+The Python `--execute` path enforces portable subprocess timeouts and updates
+the manifest with pass/fail/timeout records after each command.
 
 ## Proposed production directory
 

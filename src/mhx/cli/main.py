@@ -21,6 +21,7 @@ from mhx.benchmarks import (
     write_duration_policy,
     write_fkr_growth_rate_validation,
     write_fkr_window_validation,
+    write_forced_turbulent_reconnection_readiness_report,
     write_forced_turbulent_reconnection_validation,
     write_harris_delta_prime_validation,
     write_linear_tearing_dispersion_validation,
@@ -31,16 +32,20 @@ from mhx.benchmarks import (
     write_nonlinear_duration_audit,
     write_nonlinear_energy_budget_validation,
     write_orszag_tang_vortex_validation,
+    write_paper_pipeline,
     write_periodic_current_sheet_eigenvalue_validation,
     write_periodic_current_sheet_nonlinear_bridge_validation,
     write_periodic_current_sheet_timedomain_validation,
     write_periodic_double_harris_convergence_validation,
     write_periodic_double_harris_nonlinear_growth_validation,
+    write_periodic_double_harris_parameter_sweep_validation,
+    write_periodic_double_harris_promotion_report,
     write_periodic_double_harris_seeded_long_run_validation,
     write_power_iteration_validation,
     write_readiness_report,
     write_reconnection_scaling_validation,
     write_reduced_mhd_linear_eigenmode_validation,
+    write_release_candidate_report,
     write_resistive_decay_validation,
     write_run_report,
     write_rutherford_campaign_fast,
@@ -176,7 +181,7 @@ def api_deprecations() -> None:
     """Print active deprecation guidance for legacy entry points."""
     typer.echo("Legacy scripts live under legacy/old_mhx/ and are not imported by src/mhx.")
     typer.echo("Use mhx run, mhx benchmark, mhx validate, mhx figures, and mhx report instead.")
-    typer.echo("See docs/migration.md and RELEASE.md for the deprecation window.")
+    typer.echo("See docs/migration.md and docs/release.md for the deprecation window.")
 
 
 @app.command()
@@ -386,6 +391,41 @@ def campaign_rutherford_plan_production(
         int,
         typer.Option("--min-production-resolution", help="Minimum reviewer-facing grid size."),
     ] = 96,
+    equilibrium: Annotated[
+        str,
+        typer.Option(
+            "--equilibrium",
+            help="Production initial condition: cosine_tearing or periodic_double_harris.",
+        ),
+    ] = "cosine_tearing",
+    width: Annotated[
+        float,
+        typer.Option("--width", help="Double-Harris half-width when equilibrium is periodic."),
+    ] = 0.4,
+    amplitude: Annotated[
+        float,
+        typer.Option("--amplitude", help="Double-Harris reconnecting-field amplitude."),
+    ] = 1.0,
+    perturbation_amplitude: Annotated[
+        float,
+        typer.Option("--perturbation-amplitude", help="Coherent tearing seed amplitude."),
+    ] = 1.0e-3,
+    mode_x: Annotated[
+        int,
+        typer.Option("--mode-x", help="Seed and diagnostic Fourier mode in x."),
+    ] = 1,
+    mode_y: Annotated[
+        int,
+        typer.Option("--mode-y", help="Seed and diagnostic Fourier mode in y."),
+    ] = 1,
+    eta: Annotated[
+        float,
+        typer.Option("--eta", help="Resistivity for the production executor."),
+    ] = 1.0e-3,
+    nu: Annotated[
+        float,
+        typer.Option("--nu", help="Viscosity for the production executor."),
+    ] = 1.0e-3,
 ) -> None:
     """Write production Rutherford planning, walltime, and checkpoint artifacts."""
     manifest_path, validation = write_rutherford_production_plan(
@@ -403,6 +443,13 @@ def campaign_rutherford_plan_production(
             checkpoint_interval_minutes=checkpoint_interval_minutes,
             preemption_margin_minutes=preemption_margin_minutes,
         ),
+        equilibrium=equilibrium,
+        width=width,
+        amplitude=amplitude,
+        perturbation_amplitude=perturbation_amplitude,
+        perturbation_mode=(mode_x, mode_y),
+        resistivity=eta,
+        viscosity=nu,
     )
     typer.echo(f"wrote {manifest_path}")
     if not validation["passed"]:
@@ -1275,6 +1322,79 @@ def benchmark_forced_turbulent_reconnection(
         raise typer.Exit(code=1)
 
 
+@benchmark_app.command("forced-turbulent-reconnection-readiness-check")
+def benchmark_forced_turbulent_reconnection_readiness_check(
+    run_dir: Annotated[
+        Path,
+        typer.Argument(help="Forced turbulent reconnection artifact directory."),
+    ],
+    outdir: Annotated[
+        Path | None,
+        typer.Option(
+            "--outdir",
+            help="Readiness-report directory; defaults to <run-dir>/readiness.",
+        ),
+    ] = None,
+    require_summary: Annotated[
+        bool,
+        typer.Option(
+            "--require-summary/--no-require-summary",
+            help="Require the summary PNG in the run bundle.",
+        ),
+    ] = True,
+    require_movies: Annotated[
+        bool,
+        typer.Option(
+            "--require-movies/--no-require-movies",
+            help="Require current/flux GIFs in the run bundle.",
+        ),
+    ] = False,
+    min_history_samples: Annotated[
+        int,
+        typer.Option("--min-history-samples", help="Minimum saved history samples."),
+    ] = 20,
+    min_t_end: Annotated[
+        float,
+        typer.Option("--min-t-end", help="Minimum terminal time for readiness."),
+    ] = 20.0,
+    min_reconnection_proxy_change: Annotated[
+        float,
+        typer.Option(
+            "--min-reconnection-proxy-change",
+            help="Minimum reconnecting-flux proxy range unless rate threshold passes.",
+        ),
+    ] = 1.0e-3,
+    min_abs_reconnection_rate_proxy: Annotated[
+        float,
+        typer.Option(
+            "--min-abs-reconnection-rate-proxy",
+            help="Minimum absolute reconnection-rate proxy unless flux-change threshold passes.",
+        ),
+    ] = 1.0e-6,
+    max_relative_energy_growth: Annotated[
+        float,
+        typer.Option(
+            "--max-relative-energy-growth",
+            help="Maximum relative total-energy growth allowed.",
+        ),
+    ] = 2.0,
+) -> None:
+    """Write a validation-only readiness report for forced turbulent reconnection."""
+    manifest_path, validation = write_forced_turbulent_reconnection_readiness_report(
+        run_dir,
+        outdir=outdir,
+        require_summary=require_summary,
+        require_movies=require_movies,
+        min_history_samples=min_history_samples,
+        min_t_end=min_t_end,
+        min_reconnection_proxy_change=min_reconnection_proxy_change,
+        min_abs_reconnection_rate_proxy=min_abs_reconnection_rate_proxy,
+        max_relative_energy_growth=max_relative_energy_growth,
+    )
+    typer.echo(f"wrote {manifest_path}")
+    _exit_if_validation_failed(validation, context="forced-turbulent-reconnection-readiness-check")
+
+
 @benchmark_app.command("double-harris-long-run")
 def benchmark_double_harris_long_run(
     outdir: Annotated[
@@ -1431,6 +1551,20 @@ def benchmark_double_harris_convergence(
             help="Maximum relative spread allowed in maximum amplification.",
         ),
     ] = 3.0,
+    max_relative_flux_amplification_spread: Annotated[
+        float,
+        typer.Option(
+            "--max-relative-flux-amplification-spread",
+            help="Maximum relative spread allowed in reconnecting-flux amplification.",
+        ),
+    ] = 3.0,
+    max_relative_width_amplification_spread: Annotated[
+        float,
+        typer.Option(
+            "--max-relative-width-amplification-spread",
+            help="Maximum relative spread allowed in Rutherford-width amplification.",
+        ),
+    ] = 3.0,
 ) -> None:
     """Run seeded double-Harris resolution/time-step convergence scaffold."""
     _configure_validation_precision()
@@ -1452,10 +1586,205 @@ def benchmark_double_harris_convergence(
         min_max_growth_factor=min_max_growth_factor,
         max_relative_growth_rate_spread=max_relative_growth_rate_spread,
         max_relative_max_growth_spread=max_relative_max_growth_spread,
+        max_relative_flux_amplification_spread=max_relative_flux_amplification_spread,
+        max_relative_width_amplification_spread=max_relative_width_amplification_spread,
     )
     typer.echo(f"wrote {manifest_path}")
     if not validation["passed"]:
         raise typer.Exit(code=1)
+
+
+@benchmark_app.command("double-harris-parameter-sweep")
+def benchmark_double_harris_parameter_sweep(
+    outdir: Annotated[
+        Path,
+        typer.Option(
+            "--outdir",
+            help="Output directory for seeded double-Harris parameter-sweep artifacts.",
+        ),
+    ] = Path("outputs/benchmarks/periodic_double_harris_parameter_sweep"),
+    sweep_axis: Annotated[
+        str,
+        typer.Option(
+            "--sweep-axis",
+            help="Parameter family to sweep: mode, width, or resistivity.",
+        ),
+    ] = "width",
+    modes: Annotated[
+        str,
+        typer.Option(
+            "--modes",
+            help="Comma-separated Fourier modes as mx:my entries, e.g. 1:1,2:1,3:1.",
+        ),
+    ] = "2:1,2:2,4:1",
+    widths: Annotated[
+        str,
+        typer.Option("--widths", help="Comma-separated sheet widths for width sweep."),
+    ] = "0.35,0.4,0.45",
+    etas: Annotated[
+        str,
+        typer.Option("--etas", help="Comma-separated resistivities for resistivity sweep."),
+    ] = "0.004,0.005,0.006",
+    viscosities: Annotated[
+        str | None,
+        typer.Option(
+            "--viscosities",
+            help="Optional comma-separated viscosities matching --etas; defaults to Pm=1.",
+        ),
+    ] = None,
+    nx: Annotated[int, typer.Option("--nx", help="Grid points in x.")] = 16,
+    ny: Annotated[int, typer.Option("--ny", help="Grid points in y.")] = 16,
+    width: Annotated[
+        float,
+        typer.Option("--width", help="Baseline current-sheet half-width proxy."),
+    ] = 0.4,
+    eta: Annotated[float, typer.Option("--eta", help="Baseline resistivity.")] = 5.0e-3,
+    nu: Annotated[float, typer.Option("--nu", help="Baseline viscosity.")] = 5.0e-3,
+    perturbation_amplitude: Annotated[
+        float,
+        typer.Option("--perturbation-amplitude", help="Seed flux perturbation amplitude."),
+    ] = 1.0e-3,
+    mode_x: Annotated[int, typer.Option("--mode-x", help="Baseline seed Fourier mode x.")] = 2,
+    mode_y: Annotated[int, typer.Option("--mode-y", help="Baseline seed Fourier mode y.")] = 1,
+    dt: Annotated[float, typer.Option("--dt", help="RK4 time step.")] = 1.0e-2,
+    t_end: Annotated[float, typer.Option("--t-end", help="Final nonlinear time.")] = 6.0,
+    save_interval: Annotated[
+        float,
+        typer.Option("--save-interval", help="Approximate physical interval between saves."),
+    ] = 1.0,
+    fit_start: Annotated[float, typer.Option("--fit-start", help="Early fit window start.")] = 0.0,
+    fit_stop: Annotated[float, typer.Option("--fit-stop", help="Early fit window stop.")] = 3.0,
+    min_early_growth_rate: Annotated[
+        float,
+        typer.Option("--min-early-growth-rate", help="Minimum fitted early growth rate."),
+    ] = 1.0e-3,
+    min_max_growth_factor: Annotated[
+        float,
+        typer.Option("--min-max-growth-factor", help="Minimum maximum normalized growth."),
+    ] = 1.05,
+    max_relative_growth_rate_spread: Annotated[
+        float,
+        typer.Option(
+            "--max-relative-growth-rate-spread",
+            help="Anomaly-check relative spread limit for fitted growth rates.",
+        ),
+    ] = 10.0,
+    max_relative_max_growth_spread: Annotated[
+        float,
+        typer.Option(
+            "--max-relative-max-growth-spread",
+            help="Anomaly-check relative spread limit for maximum amplification.",
+        ),
+    ] = 20.0,
+) -> None:
+    """Run seeded double-Harris mode/width/resistivity response sweep."""
+    _configure_validation_precision()
+    parsed_viscosities = (
+        _parse_float_tuple(viscosities) if viscosities is not None else None
+    )
+    manifest_path, validation = write_periodic_double_harris_parameter_sweep_validation(
+        outdir,
+        shape=(nx, ny),
+        sweep_axis=sweep_axis,
+        modes=_parse_mode_tuple(modes),
+        widths=_parse_float_tuple(widths),
+        resistivities=_parse_float_tuple(etas),
+        viscosity_values=parsed_viscosities,
+        width=width,
+        resistivity=eta,
+        viscosity=nu,
+        perturbation_amplitude=perturbation_amplitude,
+        perturbation_mode=(mode_x, mode_y),
+        dt=dt,
+        t_end=t_end,
+        save_interval=save_interval,
+        fit_window=(fit_start, fit_stop),
+        min_early_growth_rate=min_early_growth_rate,
+        min_max_growth_factor=min_max_growth_factor,
+        max_relative_growth_rate_spread=max_relative_growth_rate_spread,
+        max_relative_max_growth_spread=max_relative_max_growth_spread,
+    )
+    typer.echo(f"wrote {manifest_path}")
+    if not validation["passed"]:
+        raise typer.Exit(code=1)
+
+
+@benchmark_app.command("double-harris-promotion-check")
+def benchmark_double_harris_promotion_check(
+    run_dir: Annotated[
+        Path,
+        typer.Argument(help="Seeded double-Harris long-run directory."),
+    ],
+    outdir: Annotated[
+        Path | None,
+        typer.Option(
+            "--outdir",
+            help="Promotion-report directory; defaults to <run-dir>/promotion.",
+        ),
+    ] = None,
+    convergence_dirs: Annotated[
+        list[Path] | None,
+        typer.Option(
+            "--convergence-dir",
+            help="Double-Harris convergence evidence directory. Repeat for each sweep.",
+        ),
+    ] = None,
+    require_movies: Annotated[
+        bool,
+        typer.Option(
+            "--require-movies/--no-require-movies",
+            help="Require flux/current GIFs in the run bundle.",
+        ),
+    ] = True,
+    min_history_samples: Annotated[
+        int,
+        typer.Option("--min-history-samples", help="Minimum saved history samples."),
+    ] = 30,
+    min_convergence_dirs: Annotated[
+        int,
+        typer.Option("--min-convergence-dirs", help="Minimum convergence bundles."),
+    ] = 1,
+    min_t_end: Annotated[
+        float,
+        typer.Option("--min-t-end", help="Minimum terminal time for promotion."),
+    ] = 30.0,
+    min_reconnected_flux_amplification: Annotated[
+        float,
+        typer.Option(
+            "--min-reconnected-flux-amplification",
+            help="Minimum peak/initial reconnecting-flux response required.",
+        ),
+    ] = 1.05,
+    min_island_width_amplification: Annotated[
+        float,
+        typer.Option(
+            "--min-island-width-amplification",
+            help="Minimum peak/initial Rutherford island-width response required.",
+        ),
+    ] = 1.05,
+    max_relative_energy_increase: Annotated[
+        float,
+        typer.Option(
+            "--max-relative-energy-increase",
+            help="Maximum relative total-energy increase allowed.",
+        ),
+    ] = 1.0e-8,
+) -> None:
+    """Write a promotion-boundary report for seeded double-Harris evidence."""
+    manifest_path, validation = write_periodic_double_harris_promotion_report(
+        run_dir,
+        outdir=outdir,
+        convergence_dirs=tuple(convergence_dirs or ()),
+        require_movies=require_movies,
+        min_history_samples=min_history_samples,
+        min_convergence_dirs=min_convergence_dirs,
+        min_t_end=min_t_end,
+        min_reconnected_flux_amplification=min_reconnected_flux_amplification,
+        min_island_width_amplification=min_island_width_amplification,
+        max_relative_energy_increase=max_relative_energy_increase,
+    )
+    typer.echo(f"wrote {manifest_path}")
+    _exit_if_validation_failed(validation, context="double-harris-promotion-check")
 
 
 @benchmark_app.command("nonlinear-energy-budget")
@@ -1538,6 +1867,7 @@ def benchmark_seed_robust_qi(
     ny: Annotated[int, typer.Option("--ny", help="Grid points in y.")] = 16,
     t_end: Annotated[float, typer.Option("--t-end", help="Final ensemble time.")] = 0.12,
     dt: Annotated[float, typer.Option("--dt", help="RK4 time step.")] = 1.0e-2,
+    save_every: Annotated[int, typer.Option("--save-every", help="Saved-step stride.")] = 1,
     eta: Annotated[float, typer.Option("--eta", help="Resistivity.")] = 1.0e-3,
     nu: Annotated[float, typer.Option("--nu", help="Viscosity.")] = 1.0e-3,
     noise_amplitude: Annotated[
@@ -1553,6 +1883,7 @@ def benchmark_seed_robust_qi(
         shape=(nx, ny),
         steps=max(1, round(t_end / dt)),
         dt=dt,
+        save_every=save_every,
         resistivity=eta,
         viscosity=nu,
         psi_noise_amplitude=noise_amplitude,
@@ -1842,6 +2173,79 @@ def validate_readiness(
         raise typer.Exit(code=1)
 
 
+@validate_app.command("release-candidate")
+def validate_release_candidate(
+    outdir: Annotated[
+        Path,
+        typer.Option("--outdir", help="Output directory for release-candidate artifacts."),
+    ] = Path("outputs/validation/release_candidate"),
+    repo_root: Annotated[
+        Path,
+        typer.Option("--repo-root", help="Repository root to assess."),
+    ] = Path("."),
+    readiness: Annotated[
+        Path | None,
+        typer.Option(
+            "--readiness",
+            help="Optional readiness.json file or readiness-report directory.",
+        ),
+    ] = None,
+    require_readiness: Annotated[
+        bool,
+        typer.Option(
+            "--require-readiness/--no-require-readiness",
+            help="Require supplied readiness artifacts to be public-release ready.",
+        ),
+    ] = False,
+) -> None:
+    """Assess static public-release-candidate repository gates."""
+    diagnostics_path, validation = write_release_candidate_report(
+        outdir,
+        repo_root=repo_root,
+        readiness=readiness,
+        require_readiness=require_readiness,
+    )
+    typer.echo(f"wrote {diagnostics_path}")
+    if not validation["passed"]:
+        raise typer.Exit(code=1)
+
+
+@validate_app.command("paper-pipeline")
+def validate_paper_pipeline(
+    outdir: Annotated[
+        Path,
+        typer.Option("--outdir", help="Output directory for paper-pipeline artifacts."),
+    ] = Path("outputs/paper_pipeline"),
+    cases: Annotated[
+        str | None,
+        typer.Option(
+            "--cases",
+            help=(
+                "Optional comma-separated validation-suite case subset. "
+                "Omit for the full deterministic FAST pipeline."
+            ),
+        ),
+    ] = None,
+    require_release_ready: Annotated[
+        bool,
+        typer.Option(
+            "--require-release-ready/--no-require-release-ready",
+            help="Require the readiness report to pass public-release gates.",
+        ),
+    ] = True,
+) -> None:
+    """Generate figures, validation reports, readiness metadata, and checksums."""
+    selected_cases = None if cases is None else _parse_string_tuple(cases)
+    result = write_paper_pipeline(
+        outdir,
+        case_names=selected_cases,
+        require_release_ready=require_release_ready,
+    )
+    typer.echo(f"wrote {result.pipeline_path}")
+    if not result.validation["passed"]:
+        raise typer.Exit(code=1)
+
+
 def _configure_validation_precision() -> None:
     configure_jax(enable_x64=True)
 
@@ -1858,6 +2262,29 @@ def _parse_float_tuple(value: str) -> tuple[float, ...]:
         return tuple(float(part.strip()) for part in value.split(",") if part.strip())
     except ValueError as exc:
         raise typer.BadParameter("expected comma-separated floats") from exc
+
+
+def _parse_string_tuple(value: str) -> tuple[str, ...]:
+    parsed = tuple(part.strip() for part in value.split(",") if part.strip())
+    if not parsed:
+        raise typer.BadParameter("expected at least one comma-separated value")
+    return parsed
+
+
+def _parse_mode_tuple(value: str) -> tuple[tuple[int, int], ...]:
+    modes: list[tuple[int, int]] = []
+    try:
+        for part in value.split(","):
+            item = part.strip()
+            if not item:
+                continue
+            left, right = item.split(":", maxsplit=1)
+            modes.append((int(left.strip()), int(right.strip())))
+    except ValueError as exc:
+        raise typer.BadParameter("expected comma-separated modes like 1:1,2:1") from exc
+    if not modes:
+        raise typer.BadParameter("expected at least one mode")
+    return tuple(modes)
 
 
 @physics_app.command("list")

@@ -212,7 +212,7 @@ def duration_policy_assessments(
         assess_duration(
             name="double_harris_readme_release_media",
             purpose="README and release media generated from validation-grade run",
-            t_end=100.0,
+            t_end=160.0,
             growth_rate=harris_growth_rate,
             required_efolds=production_efolds,
             scope="validation_media",

@@ -59,6 +59,7 @@ mhx benchmark nonlinear-energy-budget --outdir outputs/benchmarks/nonlinear_ener
 mhx benchmark orszag-tang --outdir outputs/benchmarks/orszag_tang_vortex --movies
 mhx benchmark decaying-turbulence --outdir outputs/benchmarks/decaying_mhd_turbulence --movies
 mhx benchmark forced-turbulent-reconnection --outdir outputs/benchmarks/forced_turbulent_reconnection --movies
+mhx benchmark forced-turbulent-reconnection-readiness-check outputs/benchmarks/forced_turbulent_reconnection
 mhx benchmark nonlinear-duration-audit --outdir outputs/benchmarks/nonlinear_duration_audit
 mhx benchmark duration-policy --outdir outputs/benchmarks/duration_policy
 mhx benchmark diffusion-eigenvalue --outdir outputs/benchmarks/diffusion_eigenvalue
@@ -81,7 +82,16 @@ python examples/run_orszag_tang.py --outdir outputs/examples/orszag_tang --nx 64
 python examples/train_latent_ode_fast.py --outdir outputs/examples/latent_ode_fast
 mhx validate all --outdir outputs/validation_suite
 mhx validate readiness --suite outputs/validation_suite --outdir outputs/validation_readiness
+mhx validate paper-pipeline --outdir outputs/paper_pipeline
 ```
+
+`mhx validate all` includes the forced-turbulent-reconnection readiness check as
+a separate required public-release gate after generating a FAST forced run. This
+accounts for the validation-only claim boundary in release readiness while still
+leaving nonlinear publication claims blocked pending production evidence.
+`mhx validate paper-pipeline` wraps that suite, the readiness report, and a
+top-level recursive artifact manifest into the bundle documented in
+[paper_pipeline.md](paper_pipeline.md).
 
 The equation-heavy physics gates and still figures are on
 [validation.md](validation.md). Campaign scaffolds and restartable execution are
@@ -329,6 +339,20 @@ The periodic double-Harris convergence command writes:
 - `periodic_double_harris_convergence.npz`
 - `figures/periodic_double_harris_convergence.png`
 
+The periodic double-Harris parameter-sweep command writes:
+
+- `diagnostics.json`
+- `validation.json`
+- `periodic_double_harris_parameter_sweep.npz`
+- `figures/periodic_double_harris_parameter_sweep.png`
+
+The periodic double-Harris promotion checker writes:
+
+- `promotion_readiness.json`
+- `validation.json`
+- `figures/promotion_matrix.png`
+- `manifest.json` and `artifact_manifest.json`
+
 The nonlinear energy-budget command writes:
 
 - `diagnostics.json`
@@ -406,6 +430,7 @@ mhx benchmark nonlinear-energy-budget --outdir outputs/ci/nonlinear_energy_budge
 mhx benchmark orszag-tang --outdir outputs/ci/orszag_tang_vortex
 mhx benchmark decaying-turbulence --outdir outputs/ci/decaying_mhd_turbulence
 mhx benchmark forced-turbulent-reconnection --outdir outputs/ci/forced_turbulent_reconnection
+mhx benchmark forced-turbulent-reconnection-readiness-check outputs/ci/forced_turbulent_reconnection
 mhx benchmark nonlinear-duration-audit --outdir outputs/ci/nonlinear_duration_audit
 mhx benchmark duration-policy --outdir outputs/ci/duration_policy
 mhx benchmark diffusion-eigenvalue --outdir outputs/ci/diffusion_eigenvalue

@@ -1,5 +1,5 @@
 {
-  "generated_utc": "2026-05-16T23:05:34.581584+00:00",
+  "generated_utc": "2026-05-22T14:51:27.415461+00:00",
   "media": [
     {
       "duration_ms": 90,
@@ -9,27 +9,27 @@
         273,
         3
       ],
-      "notes": "Solver-generated Harris-sheet reconnection movie: out-of-plane current density with magnetic-flux/Az contours and detected X/O markers.",
+      "notes": "Solver-generated Harris-sheet reconnection movie: perturbed-minus-base residual flux \u0394\u03c8 background with total magnetic-flux/Az contours and detected diagnostic X/O markers.",
       "path": "docs/_static/readme/double_harris_reconnection.gif",
       "source": {
-        "source": "outputs/readme_media/periodic_double_harris_reconnection_96_t120/periodic_double_harris_seeded_long_run.npz",
-        "source_kind": "precomputed long-run artifact",
-        "source_samples": 61,
+        "source": "outputs/campaigns/gpu_nonlinear_20260522_085049/double_harris_long_n128_t160/periodic_double_harris_seeded_long_run.npz",
+        "source_kind": "GPU nonlinear campaign validation bundle",
+        "source_samples": 81,
         "source_shape": [
-          96,
-          96
+          128,
+          128
         ],
-        "t_end": 120.0,
+        "t_end": 160.0,
         "time_span": [
           0.0,
-          120.0
+          160.0
         ],
         "validation_passed": true
       },
-      "t_end": 120.0,
+      "t_end": 160.0,
       "time_span": [
         0.0,
-        120.0
+        160.0
       ]
     },
     {
@@ -40,27 +40,27 @@
         273,
         3
       ],
-      "notes": "Solver-generated full-domain periodic double-Harris movie: total current density with magnetic-flux/Az contours across both sheets.",
+      "notes": "Solver-generated full-domain periodic double-Harris movie: perturbed-minus-base residual current density \u0394j_z with total magnetic-flux/Az contours across both sheets.",
       "path": "docs/_static/readme/double_harris_current_sheet.gif",
       "source": {
-        "source": "outputs/readme_media/periodic_double_harris_reconnection_96_t120/periodic_double_harris_seeded_long_run.npz",
-        "source_kind": "precomputed long-run artifact",
-        "source_samples": 61,
+        "source": "outputs/campaigns/gpu_nonlinear_20260522_085049/double_harris_long_n128_t160/periodic_double_harris_seeded_long_run.npz",
+        "source_kind": "GPU nonlinear campaign validation bundle",
+        "source_samples": 81,
         "source_shape": [
-          96,
-          96
+          128,
+          128
         ],
-        "t_end": 120.0,
+        "t_end": 160.0,
         "time_span": [
           0.0,
-          120.0
+          160.0
         ],
         "validation_passed": true
       },
-      "t_end": 120.0,
+      "t_end": 160.0,
       "time_span": [
         0.0,
-        120.0
+        160.0
       ]
     },
     {
@@ -262,7 +262,7 @@
     }
   ],
   "schema": "mhx.readme_media_visual_qa.v1",
-  "source_policy": "README solver movies use the longest available matching nonlinear NPZ under outputs/readme_media, outputs/long_runs, outputs/docs_validation, or outputs/ci. Double-Harris fallback is a labeled 64\u00d764, t_end=60 replay; Orszag-Tang fallback is a labeled 48\u00d748, t_end=4 replay; turbulence fallbacks are labeled 32\u00d732 validation replays. Committed release media should be regenerated from longer precomputed artifacts before publication.",
+  "source_policy": "README solver movies prefer the GPU nonlinear campaign bundle under outputs/campaigns/gpu_nonlinear_20260522_085049 when it is present and validation-passing; otherwise they use the longest available matching nonlinear NPZ under outputs/readme_media, outputs/long_runs, outputs/docs_validation, or outputs/ci. Double-Harris README frames show perturbed-minus-base \u0394\u03c8/\u0394j_z residuals with total Az/\u03c8 contours, not static total-field movies. Double-Harris fallback is a labeled 64\u00d764, t_end=60 replay; Orszag-Tang fallback is a labeled 48\u00d748, t_end=4 replay; turbulence fallbacks are labeled 32\u00d732 validation replays. Committed release media should be regenerated from longer precomputed artifacts before publication.",
   "visual_qa": {
     "double_harris": {
       "inspected_frames": [
@@ -272,42 +272,49 @@
           "time": 0.0
         },
         {
-          "index": 30,
+          "index": 40,
           "label": "mid",
-          "time": 60.0
+          "time": 80.0
         },
         {
-          "index": 60,
+          "index": 80,
           "label": "final",
-          "time": 120.0
+          "time": 160.0
         }
       ],
       "metrics": {
-        "current_linf_final": 1.2358559370040894,
-        "current_linf_first": 3.1026158332824707,
-        "current_linf_mid": 1.9029256105422974,
-        "current_linf_peak": 3.402280807495117,
-        "current_linf_peak_time": 6.0,
-        "delta_current_linf_peak": 0.7577170729637146,
-        "delta_current_linf_peak_time": 8.0,
-        "flux_delta_growth_factor": 8.627864444391433,
-        "flux_delta_linf_final": 0.0862324497771575,
-        "flux_delta_linf_first": 0.00999464587476373,
-        "flux_delta_linf_mid": 0.07775180778852164,
-        "flux_delta_linf_peak": 0.0862324497771575
+        "current_linf_final": 0.6004542112350464,
+        "current_linf_first": 2.785196542739868,
+        "current_linf_mid": 0.8810439109802246,
+        "current_linf_peak": 2.785196542739868,
+        "current_linf_peak_time": 0.0,
+        "delta_current_linf_final": 0.012087824754416943,
+        "delta_current_linf_first": 0.019971264526247978,
+        "delta_current_linf_mid": 0.021667469292879105,
+        "delta_current_linf_peak": 0.11320323497056961,
+        "delta_current_linf_peak_time": 6.0,
+        "flux_delta_growth_factor": 4.311068768671826,
+        "flux_delta_linf_final": 0.011910369258228526,
+        "flux_delta_linf_first": 0.003993978550749899,
+        "flux_delta_linf_mid": 0.01640406611166223,
+        "flux_delta_linf_peak": 0.017218316192883054,
+        "reconnected_flux_amplification": 8.35648518036622,
+        "reconnected_flux_final": 0.011806003272567218,
+        "reconnected_flux_first": 0.0020000000000000018,
+        "reconnected_flux_peak": 0.016712970360732455
       },
       "observations": [
-        "The README Harris movie now shows the total out-of-plane current with magnetic-flux/Az contours, cropped around one current sheet so the automatically detected X/O topology is visible.",
-        "X/O markers are selected by local |grad(Az)| minima and Hessian classification; locations are grid-localized rather than sub-cell Newton-refined.",
-        "Flux contours evolve from a nearly straight Harris sheet into a single-island topology around the sheet, while total energy remains dissipative in the validation manifest.",
-        "Perturbed-minus-base flux remains tracked quantitatively: it grows from 9.995e-03 at t=0.0 to 8.623e-02 at t=120.0, with peak growth factor 8.63, consistent with a bounded nonlinear validation replay; this is not yet a production plasmoid/Rutherford claim."
+        "The README Harris movies now show perturbed-minus-base reconnecting fields: residual flux \u0394\u03c8 in the single-sheet zoom and residual current \u0394j_z in the full-domain view, both with total magnetic-flux/Az contours for equilibrium context rather than static total-field movies.",
+        "X/O markers are selected from the total Az field by local |grad(Az)| minima and Hessian classification; locations are grid-localized rather than sub-cell Newton-refined diagnostic event labels.",
+        "Total flux contours provide the two-sheet topology while residual color scales expose the seeded reconnecting response; total energy remains dissipative in the validation manifest.",
+        "Perturbed-minus-base flux remains tracked quantitatively: it grows from 3.994e-03 at t=0.0 to 1.191e-02 at t=160.0, with peak growth factor 4.31. The validation reconnected-flux proxy amplifies by 8.36. This is consistent with a bounded nonlinear validation replay; this is not yet a production plasmoid/Rutherford claim."
       ],
       "snapshot_contact_sheets": {
         "current_sheet": "docs/_static/readme/double_harris_current_sheet_snapshots.png",
         "full_domain_contours": "docs/_static/readme/double_harris_current_snapshots.png",
         "single_sheet_contours": "docs/_static/readme/double_harris_flux_snapshots.png"
       },
-      "source": "outputs/readme_media/periodic_double_harris_reconnection_96_t120/periodic_double_harris_seeded_long_run.npz"
+      "source": "outputs/campaigns/gpu_nonlinear_20260522_085049/double_harris_long_n128_t160/periodic_double_harris_seeded_long_run.npz"
     },
     "orszag_tang": {
       "inspected_frames": [
