@@ -130,6 +130,7 @@ exclude_lines = [
 target-version = "py310"
 line-length = 100
 src = ["src", "tests", "examples", "tools"]
+extend-exclude = ["examples/KelvinHelmholtz.ipynb"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "SIM"]

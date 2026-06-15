@@ -11,6 +11,8 @@ tree by default.
 | Local plugin demo | `mhx run examples/linear_tearing_plugin_demo.toml --outdir outputs/examples/plugin_demo` |
 | Python wrapper for linear tearing | `python examples/run_linear_tearing.py --outdir outputs/examples/linear_tearing_script` |
 | Orszag--Tang nonlinear media | `python examples/run_orszag_tang.py --outdir outputs/examples/orszag_tang --nx 64 --ny 64 --t-end 6` |
+| Clean Kelvin--Helmholtz incompressible notebook | `jupyter notebook examples/run_kelvin_helmholtz_incompressible.ipynb` |
+| Kelvin--Helmholtz backpropagation notebook | `jupyter notebook examples/run_kelvin_helmholtz_backpropagation.ipynb` |
 | Validation media refresh | `python examples/make_validation_media.py` |
 | README media refresh | `python examples/make_readme_media.py` |
 | Neural-ODE reproducibility figures | `python examples/make_neural_ode_reproducibility.py` |
