@@ -8,6 +8,7 @@ import pytest
 NOTEBOOKS = (
     "examples/run_kelvin_helmholtz_incompressible.ipynb",
     "examples/run_kelvin_helmholtz_backpropagation.ipynb",
+    "examples/run_kelvin_helmholtz_compressible_mhd.ipynb",
 )
 
 
@@ -28,7 +29,11 @@ def test_clean_kelvin_helmholtz_notebook_executes(
         source = "".join(cell.get("source", []))
         exec(compile(source, f"{notebook_path}:cell{index}", "exec"), namespace)
 
-    if "incompressible" in notebook_path:
+    if "compressible_mhd" in notebook_path:
+        output_dir = tmp_path / "kelvin_helmholtz_compressible_mhd"
+        assert (output_dir / "kh_compressible_mhd_snapshots.png").exists()
+        assert (output_dir / "kh_compressible_mhd_entropy.png").exists()
+    elif "incompressible" in notebook_path:
         output_dir = tmp_path / "kelvin_helmholtz_incompressible"
         assert (output_dir / "kh_incompressible_snapshots.png").exists()
         assert (output_dir / "kh_incompressible_entropy.png").exists()

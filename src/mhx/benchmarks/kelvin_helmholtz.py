@@ -19,10 +19,20 @@ import jax.numpy as jnp
 from jaxtyping import Array
 
 from mhx.config import MeshConfig
+from mhx.equations.compressible_mhd import compressible_mhd_rhs
 from mhx.equations.reduced_mhd import poisson_bracket, reduced_mhd_rhs, stream_function
 from mhx.grids import CartesianGrid
 from mhx.numerics.spectral import laplacian
-from mhx.state import ReducedMHDParams, ReducedMHDState
+from mhx.state import (
+    CompressibleMHDParams,
+    CompressibleMHDPrimitive,
+    CompressibleMHDState,
+    CompressibleMHDTrajectory,
+    ReducedMHDParams,
+    ReducedMHDState,
+    conservative_from_primitive,
+    primitive_from_conservative,
+)
 from mhx.time_integrators import evolve_rk4
 
 
@@ -102,6 +112,75 @@ class KelvinHelmholtzRunResult:
     @property
     def final_state(self) -> KelvinHelmholtzDyeState:
         """Final saved state."""
+        return jax.tree_util.tree_map(lambda leaf: leaf[-1], self.trajectory.states)
+
+
+@dataclass(frozen=True)
+class CompressibleKelvinHelmholtzConfig:
+    """Configuration for a smooth low-Mach compressible-MHD KH tutorial."""
+
+    shape: tuple[int, int] = (24, 48)
+    lower: tuple[float, float] = (0.0, 0.0)
+    upper: tuple[float, float] = (1.0, 2.0)
+    gamma: float = 5.0 / 3.0
+    dt: float = 5.0e-4
+    t_end: float = 1.0e-2
+    save_every: int = 10
+    density: float = 1.0
+    pressure: float = 10.0
+    magnetic_field: tuple[float, float] = (0.1, 0.0)
+    shear_width: float = 0.05
+    perturbation_width: float = 0.2
+    perturbation_amplitude: float = 1.0e-2
+    flow_speed: float = 0.2
+    y1: float = 0.5
+    y2: float = 1.5
+
+    @property
+    def steps(self) -> int:
+        """Number of RK4 steps implied by ``dt`` and ``t_end``."""
+        return int(round(self.t_end / self.dt))
+
+    def validated(self) -> CompressibleKelvinHelmholtzConfig:
+        """Return ``self`` after validating smooth tutorial controls."""
+        MeshConfig(shape=self.shape, lower=self.lower, upper=self.upper).validated()
+        if self.gamma <= 1.0:
+            raise ValueError("gamma must be greater than one")
+        if self.dt <= 0.0:
+            raise ValueError("dt must be positive")
+        if self.t_end <= 0.0:
+            raise ValueError("t_end must be positive")
+        if self.save_every < 1:
+            raise ValueError("save_every must be >= 1")
+        if self.steps < 1:
+            raise ValueError("configuration must advance at least one step")
+        if self.density <= 0.0:
+            raise ValueError("density must be positive")
+        if self.pressure <= 0.0:
+            raise ValueError("pressure must be positive")
+        if self.shear_width <= 0.0:
+            raise ValueError("shear_width must be positive")
+        if self.perturbation_width <= 0.0:
+            raise ValueError("perturbation_width must be positive")
+        return self
+
+
+@dataclass(frozen=True)
+class CompressibleKelvinHelmholtzRunResult:
+    """Result bundle for a smooth compressible-MHD Kelvin--Helmholtz run."""
+
+    config: CompressibleKelvinHelmholtzConfig
+    grid: CartesianGrid
+    params: CompressibleMHDParams
+    initial_state: CompressibleMHDState
+    trajectory: CompressibleMHDTrajectory
+    dye_entropy: Array
+    density_min: Array
+    pressure_min: Array
+
+    @property
+    def final_state(self) -> CompressibleMHDState:
+        """Final saved conservative state."""
         return jax.tree_util.tree_map(lambda leaf: leaf[-1], self.trajectory.states)
 
 
@@ -287,4 +366,102 @@ def kelvin_helmholtz_entropy_jvp(
         objective,
         (jnp.asarray(perturbation_amplitude),),
         (jnp.asarray(tangent),),
+    )
+
+
+def compressible_kelvin_helmholtz_grid(
+    config: CompressibleKelvinHelmholtzConfig,
+) -> CartesianGrid:
+    """Build the periodic grid for the compressible-MHD KH tutorial."""
+    cfg = config.validated()
+    return CartesianGrid.from_mesh_config(
+        MeshConfig(shape=cfg.shape, lower=cfg.lower, upper=cfg.upper)
+    )
+
+
+def compressible_kelvin_helmholtz_initial_state(
+    grid: CartesianGrid,
+    config: CompressibleKelvinHelmholtzConfig,
+) -> CompressibleMHDState:
+    """Return a smooth low-Mach compressible-MHD KH initial condition."""
+    cfg = config.validated()
+    x, y = grid.mesh()
+    length_x, _ = grid.lengths
+    wavenumber_x = 2.0 * jnp.pi / length_x
+    tanh1 = jnp.tanh((y - cfg.y1) / cfg.shear_width)
+    tanh2 = jnp.tanh((y - cfg.y2) / cfg.shear_width)
+    velocity_x = cfg.flow_speed * (tanh1 - tanh2 - 1.0)
+    envelope1 = jnp.exp(-((y - cfg.y1) ** 2) / (cfg.perturbation_width**2))
+    envelope2 = jnp.exp(-((y - cfg.y2) ** 2) / (cfg.perturbation_width**2))
+    velocity_y = (
+        cfg.perturbation_amplitude
+        * jnp.sin(wavenumber_x * x)
+        * (envelope1 + envelope2)
+    )
+    dye = 0.5 * (tanh2 - tanh1 + 2.0)
+    primitive = CompressibleMHDPrimitive(
+        density=jnp.full(grid.shape, cfg.density),
+        velocity_x=velocity_x,
+        velocity_y=velocity_y,
+        pressure=jnp.full(grid.shape, cfg.pressure),
+        magnetic_x=jnp.full(grid.shape, cfg.magnetic_field[0]),
+        magnetic_y=jnp.full(grid.shape, cfg.magnetic_field[1]),
+        dye=dye,
+    )
+    return conservative_from_primitive(
+        primitive,
+        CompressibleMHDParams(gamma=cfg.gamma),
+    )
+
+
+def compressible_kelvin_helmholtz_dye_entropy(
+    state: CompressibleMHDState,
+    grid: CartesianGrid,
+    params: CompressibleMHDParams,
+) -> Array:
+    """Return passive-dye entropy for a compressible-MHD state."""
+    primitive = primitive_from_conservative(state, params)
+    return dye_entropy(primitive.dye, grid)
+
+
+def run_compressible_kelvin_helmholtz(
+    config: CompressibleKelvinHelmholtzConfig | None = None,
+) -> CompressibleKelvinHelmholtzRunResult:
+    """Run a smooth low-Mach compressible-MHD Kelvin--Helmholtz tutorial case."""
+    cfg = (config or CompressibleKelvinHelmholtzConfig()).validated()
+    grid = compressible_kelvin_helmholtz_grid(cfg)
+    params = CompressibleMHDParams(gamma=cfg.gamma)
+    initial_state = compressible_kelvin_helmholtz_initial_state(grid, cfg)
+
+    def rhs(state: CompressibleMHDState) -> CompressibleMHDState:
+        return compressible_mhd_rhs(state, params, lengths=grid.lengths)
+
+    trajectory_raw = evolve_rk4(
+        initial_state,
+        rhs,
+        dt=cfg.dt,
+        steps=cfg.steps,
+        save_every=cfg.save_every,
+    )
+    trajectory = CompressibleMHDTrajectory(
+        times=trajectory_raw.times,
+        states=trajectory_raw.states,
+    )
+    primitives = jax.vmap(lambda state: primitive_from_conservative(state, params))(
+        trajectory.states
+    )
+    entropy_history = jax.vmap(lambda state: compressible_kelvin_helmholtz_dye_entropy(
+        state,
+        grid,
+        params,
+    ))(trajectory.states)
+    return CompressibleKelvinHelmholtzRunResult(
+        config=cfg,
+        grid=grid,
+        params=params,
+        initial_state=initial_state,
+        trajectory=trajectory,
+        dye_entropy=entropy_history,
+        density_min=jnp.min(primitives.density, axis=(1, 2)),
+        pressure_min=jnp.min(primitives.pressure, axis=(1, 2)),
     )
