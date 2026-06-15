@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import json
 
-import typer
 import numpy as np
 import pytest
+import typer
 from typer.testing import CliRunner
 
 from mhx.campaigns import (
