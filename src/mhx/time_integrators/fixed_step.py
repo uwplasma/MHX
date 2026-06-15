@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import Any, Generic, NamedTuple, TypeVar
+from typing import Any, NamedTuple, TypeVar
 
 import jax
 import jax.numpy as jnp
@@ -12,11 +12,11 @@ from jaxtyping import Array
 StateT = TypeVar("StateT")
 
 
-class Trajectory(NamedTuple, Generic[StateT]):
+class Trajectory(NamedTuple):
     """Saved samples for a fixed-step PyTree state trajectory."""
 
     times: Array
-    states: StateT
+    states: Any
 
 
 def _tree_add(left: StateT, right: StateT) -> StateT:
@@ -54,7 +54,7 @@ def evolve_rk4(
     dt: float,
     steps: int,
     save_every: int = 1,
-) -> Trajectory[StateT]:
+) -> Trajectory:
     """Evolve a state with RK4 and save every ``save_every`` steps.
 
     The implementation advances ``save_every`` internal steps per saved sample,
