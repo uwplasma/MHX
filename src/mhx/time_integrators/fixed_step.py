@@ -3,14 +3,20 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import Any, TypeVar
+from typing import Any, Generic, NamedTuple, TypeVar
 
 import jax
 import jax.numpy as jnp
-
-from mhx.state import ReducedMHDTrajectory
+from jaxtyping import Array
 
 StateT = TypeVar("StateT")
+
+
+class Trajectory(NamedTuple, Generic[StateT]):
+    """Saved samples for a fixed-step PyTree state trajectory."""
+
+    times: Array
+    states: StateT
 
 
 def _tree_add(left: StateT, right: StateT) -> StateT:
@@ -48,7 +54,7 @@ def evolve_rk4(
     dt: float,
     steps: int,
     save_every: int = 1,
-) -> ReducedMHDTrajectory:
+) -> Trajectory[StateT]:
     """Evolve a state with RK4 and save every ``save_every`` steps.
 
     The implementation advances ``save_every`` internal steps per saved sample,
@@ -76,4 +82,4 @@ def evolve_rk4(
 
     _, saved_states = jax.lax.scan(saved_step, state0, jnp.arange(saved_count))
     times = dt * stride * jnp.arange(1, saved_count + 1)
-    return ReducedMHDTrajectory(times=times, states=saved_states)
+    return Trajectory(times=times, states=saved_states)
