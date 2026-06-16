@@ -895,40 +895,52 @@ def _write_entropy_figure(
 
 
 def _write_incompressible_snapshot_figure(
-    history: dict[str, np.ndarray],
-    path: Path,
+        history: dict[str, np.ndarray],
+        path: Path,
 ) -> Path:
     import matplotlib.pyplot as plt
 
     path.parent.mkdir(parents=True, exist_ok=True)
     frame_indices = [0, history["dye"].shape[0] // 2, history["dye"].shape[0] - 1]
-    fig, axes = plt.subplots(2, 3, figsize=(10.8, 6.4), constrained_layout=True)
-    dye_min = float(np.min(history["dye"]))
-    dye_max = float(np.max(history["dye"]))
+    fig, axes = plt.subplots(2, 3, figsize=(12.0, 7.0), constrained_layout=True)
+
+    # Calculate physical aspect ratio assuming square grid cells (Ny / Nx)
+    # history["dye"] shape is (frames, nx, ny)
+    nx, ny = history["dye"].shape[1], history["dye"].shape[2]
+    aspect = ny / nx
+    extent = (0.0, 1.0, 0.0, 1.0)
+
     omega_max = max(float(np.max(np.abs(history["omega"]))), np.finfo(np.float64).eps)
+
     for column, frame_index in enumerate(frame_indices):
         dye_image = axes[0, column].imshow(
             history["dye"][frame_index].T,
             origin="lower",
-            cmap="viridis",
-            vmin=dye_min,
-            vmax=dye_max,
+            cmap="RdBu_r",
+            vmin=0.0,
+            vmax=1.0,
+            extent=extent,
+            aspect=aspect
         )
-        axes[0, column].set_title(f"dye, t={history['time'][frame_index]:.2f}")
-        axes[0, column].set_xlabel("grid x")
-        axes[0, column].set_ylabel("grid y")
-        fig.colorbar(dye_image, ax=axes[0, column], shrink=0.72)
+        axes[0, column].set_title(f"Dye Concentration (t={history['time'][frame_index]:.2f})")
+        axes[0, column].set_xlabel("x / Lx")
+        axes[0, column].set_ylabel("z / Lz")
+        fig.colorbar(dye_image, ax=axes[0, column], shrink=0.72, label="Concentration (c)")
+
         omega_image = axes[1, column].imshow(
             history["omega"][frame_index].T,
             origin="lower",
             cmap="RdBu_r",
             vmin=-omega_max,
             vmax=omega_max,
+            extent=extent,
+            aspect=aspect
         )
-        axes[1, column].set_title(f"vorticity, t={history['time'][frame_index]:.2f}")
-        axes[1, column].set_xlabel("grid x")
-        axes[1, column].set_ylabel("grid y")
-        fig.colorbar(omega_image, ax=axes[1, column], shrink=0.72)
+        axes[1, column].set_title(f"Vorticity (t={history['time'][frame_index]:.2f})")
+        axes[1, column].set_xlabel("x / Lx")
+        axes[1, column].set_ylabel("z / Lz")
+        fig.colorbar(omega_image, ax=axes[1, column], shrink=0.72, label="Vorticity")
+
     fig.suptitle("Smooth periodic Kelvin--Helmholtz validation snapshots")
     fig.savefig(path, dpi=220)
     plt.close(fig)
@@ -968,9 +980,9 @@ def _write_dye_movie(
     path.parent.mkdir(parents=True, exist_ok=True)
     indices = _sample_indices(history["dye"].shape[0], max_frames)
     values = history["dye"][indices]
-    vmin = float(np.percentile(values, 0.5))
-    vmax = float(np.percentile(values, 99.5))
-    colormap = colormaps["viridis"]
+    vmin = 0.0 # Force pure white bounds
+    vmax = 1.0 # Force pure red/blue bounds
+    colormap = colormaps["RdBu_r"]
     frames = []
     for field in values:
         normalized = np.clip((field.T - vmin) / (vmax - vmin), 0.0, 1.0)
