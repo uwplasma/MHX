@@ -14,6 +14,7 @@ tree by default.
 | Clean Kelvin--Helmholtz incompressible notebook | `jupyter notebook examples/run_kelvin_helmholtz_incompressible.ipynb` |
 | Smooth Kelvin--Helmholtz compressible-MHD notebook | `jupyter notebook examples/run_kelvin_helmholtz_compressible_mhd.ipynb` |
 | Kelvin--Helmholtz backpropagation notebook | `jupyter notebook examples/run_kelvin_helmholtz_backpropagation.ipynb` |
+| Kelvin--Helmholtz validation bundle | `MHX_EXAMPLE_FAST=1 python examples/publication_kelvin_helmholtz_validation.py` |
 | Validation media refresh | `python examples/make_validation_media.py` |
 | README media refresh | `python examples/make_readme_media.py` |
 | Neural-ODE reproducibility figures | `python examples/make_neural_ode_reproducibility.py` |
@@ -36,6 +37,7 @@ By default they write under `outputs/examples/publication`; set
 | --- | --- | --- |
 | Linear Harris tearing | `python examples/publication_linear_harris_tearing.py` | `$MHX_EXAMPLE_OUTDIR_ROOT/linear_harris_tearing/manifest.json`, `linear_tearing_timedomain.npz`, `figures/linear_tearing_timedomain.png`, `figures/publication_linear_harris_tearing_summary.png` |
 | Double-Harris nonlinear reconnection | `python examples/publication_double_harris_reconnection.py` | `$MHX_EXAMPLE_OUTDIR_ROOT/double_harris_reconnection/manifest.json`, `periodic_double_harris_seeded_long_run.npz`, `figures/periodic_double_harris_flux.gif`, `figures/periodic_double_harris_current.gif`, `figures/publication_double_harris_delta_flux.gif`, `figures/publication_double_harris_reconnection_summary.png` |
+| Kelvin--Helmholtz validation | `python examples/publication_kelvin_helmholtz_validation.py` | `$MHX_EXAMPLE_OUTDIR_ROOT/kelvin_helmholtz_validation/manifest.json`, `kelvin_helmholtz_incompressible.npz`, `kelvin_helmholtz_resolution_comparison.npz`, `kelvin_helmholtz_compressible_mhd.npz`, `figures/kelvin_helmholtz_dye.gif`, `figures/publication_kelvin_helmholtz_summary.png` |
 | Orszag--Tang plus turbulence | `python examples/publication_orszag_tang_turbulence.py` | `$MHX_EXAMPLE_OUTDIR_ROOT/orszag_tang_turbulence/orszag_tang/manifest.json`, `$MHX_EXAMPLE_OUTDIR_ROOT/orszag_tang_turbulence/forced_turbulent_reconnection/manifest.json`, `figures/publication_orszag_tang_turbulence_summary.png`, generated current/flux GIFs |
 | Rutherford production path | `python examples/publication_rutherford_production.py` | `$MHX_EXAMPLE_OUTDIR_ROOT/rutherford_production_path/campaign_plan.json`, `resume_plan.json`, `production_history.npz`, `checkpoints/state_step_000000000006.npz`, `figures/fixed_scale_flux_movie.gif`, `figures/publication_rutherford_production_summary.png` |
 | Neural ODE | `python examples/publication_neural_ode.py` | `$MHX_EXAMPLE_OUTDIR_ROOT/neural_ode/manifest.json`, `dataset.npz`, `latent_ode_predictions.npz`, `latent_ode_metrics.json`, `figures/latent_ode_predictions.png`, `figures/publication_neural_ode_summary.png` |

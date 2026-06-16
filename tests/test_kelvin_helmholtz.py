@@ -1,13 +1,18 @@
 from __future__ import annotations
 
+import json
 import math
+from pathlib import Path
 
 import jax
 import jax.numpy as jnp
 import numpy as np
 import pytest
+from typer.testing import CliRunner
 
 from mhx.benchmarks.kelvin_helmholtz import (
+    KELVIN_HELMHOLTZ_VALIDATION_SCHEMA,
+    CompressibleKelvinHelmholtzConfig,
     KelvinHelmholtzConfig,
     dye_entropy,
     kelvin_helmholtz_entropy_jvp,
@@ -16,7 +21,10 @@ from mhx.benchmarks.kelvin_helmholtz import (
     kelvin_helmholtz_grid,
     kelvin_helmholtz_initial_state_from_config,
     run_kelvin_helmholtz_dye,
+    run_kelvin_helmholtz_validation,
+    write_kelvin_helmholtz_validation,
 )
+from mhx.cli.main import app
 
 
 def test_kelvin_helmholtz_fast_run_is_finite() -> None:
@@ -117,6 +125,114 @@ def test_kelvin_helmholtz_one_gradient_step_changes_parameter() -> None:
     assert math.isfinite(float(loss_gradient))
     assert float(updated_amplitude) != pytest.approx(float(initial_amplitude))
     assert math.isfinite(float(updated_loss))
+
+
+def test_kelvin_helmholtz_validation_api_has_gated_schema() -> None:
+    result = run_kelvin_helmholtz_validation(
+        primary_config=KelvinHelmholtzConfig(
+            shape=(16, 32),
+            dt=2.0e-3,
+            t_end=0.12,
+            save_every=10,
+        ),
+        comparison_config=KelvinHelmholtzConfig(
+            shape=(12, 24),
+            dt=2.0e-3,
+            t_end=0.12,
+            save_every=10,
+        ),
+        compressible_config=CompressibleKelvinHelmholtzConfig(
+            shape=(12, 24),
+            t_end=0.01,
+        ),
+        min_saved_samples=3,
+        min_entropy_gain=1.0e-4,
+        max_resolution_entropy_rdiff=5.0e-2,
+    )
+
+    assert result.diagnostics["schema"] == KELVIN_HELMHOLTZ_VALIDATION_SCHEMA
+    assert result.validation["passed"] is True
+    assert result.validation["checks"]["entropy_gain_observed"] is True
+    assert result.validation["checks"]["resolution_entropy_consistent"] is True
+    assert result.diagnostics["primary_samples"] >= 3
+    assert result.diagnostics["primary_entropy_gain"] > 0.0
+    assert result.diagnostics["resolution_entropy_relative_difference"] < 5.0e-2
+
+
+def test_kelvin_helmholtz_validation_writes_manifest_and_npz(tmp_path: Path) -> None:
+    manifest_path, validation = write_kelvin_helmholtz_validation(
+        tmp_path,
+        movies=True,
+        primary_config=KelvinHelmholtzConfig(
+            shape=(16, 32),
+            dt=2.0e-3,
+            t_end=0.12,
+            save_every=10,
+        ),
+        comparison_config=KelvinHelmholtzConfig(
+            shape=(12, 24),
+            dt=2.0e-3,
+            t_end=0.12,
+            save_every=10,
+        ),
+        compressible_config=CompressibleKelvinHelmholtzConfig(
+            shape=(12, 24),
+            t_end=0.01,
+        ),
+        min_saved_samples=3,
+        min_entropy_gain=1.0e-4,
+        max_resolution_entropy_rdiff=5.0e-2,
+    )
+
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    assert validation["passed"] is True
+    assert manifest["claim_level"] == "validation"
+    assert manifest["config"]["schema"] == KELVIN_HELMHOLTZ_VALIDATION_SCHEMA
+    for relative_path in manifest["outputs"].values():
+        assert (tmp_path / relative_path).is_file(), relative_path
+
+    with np.load(tmp_path / "kelvin_helmholtz_incompressible.npz", allow_pickle=False) as data:
+        assert str(data["schema"]) == KELVIN_HELMHOLTZ_VALIDATION_SCHEMA
+        assert data["time"].shape == data["entropy"].shape
+        assert data["dye"].shape[0] == data["time"].shape[0]
+        assert data["omega"].shape == data["dye"].shape
+
+
+def test_kelvin_helmholtz_cli_writes_validation_bundle(tmp_path: Path) -> None:
+    result = CliRunner().invoke(
+        app,
+        [
+            "benchmark",
+            "kelvin-helmholtz",
+            "--outdir",
+            str(tmp_path),
+            "--nx",
+            "16",
+            "--ny",
+            "32",
+            "--comparison-nx",
+            "12",
+            "--comparison-ny",
+            "24",
+            "--compressible-nx",
+            "12",
+            "--compressible-ny",
+            "24",
+            "--t-end",
+            "0.12",
+            "--min-entropy-gain",
+            "1e-4",
+            "--min-saved-samples",
+            "3",
+            "--max-resolution-entropy-rdiff",
+            "5e-2",
+            "--movies",
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert (tmp_path / "manifest.json").is_file()
+    assert (tmp_path / "figures" / "kelvin_helmholtz_dye.gif").is_file()
 
 
 @pytest.mark.parametrize(

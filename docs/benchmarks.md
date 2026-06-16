@@ -55,6 +55,7 @@ mhx benchmark current-sheet-nonlinear-bridge --outdir outputs/benchmarks/periodi
 mhx benchmark double-harris-growth --outdir outputs/benchmarks/periodic_double_harris_nonlinear_growth
 mhx benchmark double-harris-long-run --outdir outputs/benchmarks/periodic_double_harris_seeded_long_run --movies
 mhx benchmark double-harris-convergence --outdir outputs/benchmarks/periodic_double_harris_convergence
+mhx benchmark kelvin-helmholtz --outdir outputs/benchmarks/kelvin_helmholtz --movies
 mhx benchmark nonlinear-energy-budget --outdir outputs/benchmarks/nonlinear_energy_budget
 mhx benchmark orszag-tang --outdir outputs/benchmarks/orszag_tang_vortex --movies
 mhx benchmark decaying-turbulence --outdir outputs/benchmarks/decaying_mhd_turbulence --movies
@@ -99,6 +100,36 @@ documented in [campaigns.md](campaigns.md) and
 [campaign_runner.md](campaign_runner.md). Neural-ODE baseline comparison and
 fitted latent-ODE outputs are documented in
 [neural_ode_reproducibility.md](neural_ode_reproducibility.md).
+
+## Kelvin--Helmholtz validation bundle
+
+```bash
+mhx benchmark kelvin-helmholtz \
+  --outdir outputs/benchmarks/kelvin_helmholtz \
+  --nx 64 --ny 128 \
+  --comparison-nx 32 --comparison-ny 64 \
+  --t-end 2.0 --save-every 50 \
+  --movies
+```
+
+Expected files include:
+
+- `manifest.json`
+- `diagnostics.json`
+- `validation.json`
+- `kelvin_helmholtz_incompressible.npz`
+- `kelvin_helmholtz_resolution_comparison.npz`
+- `kelvin_helmholtz_compressible_mhd.npz`
+- `figures/kelvin_helmholtz_entropy.png`
+- `figures/kelvin_helmholtz_snapshots.png`
+- `figures/kelvin_helmholtz_compressible_minima.png`
+- optional `figures/kelvin_helmholtz_dye.gif` with `--movies`
+
+This is the CLI equivalent of
+`examples/publication_kelvin_helmholtz_validation.py`. It gates smooth
+periodic KH morphology, passive-dye entropy response, a two-resolution final
+entropy comparison, and low-Mach compressible-MHD positivity. The claim level
+is `validation`, not production shock-capturing compressible-MHD evidence.
 
 ## Orszag--Tang nonlinear vortex example
 

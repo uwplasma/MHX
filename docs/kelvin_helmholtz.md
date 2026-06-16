@@ -36,6 +36,78 @@ Expected FAST output files are:
 - `kelvin_helmholtz_compressible_mhd/kh_compressible_mhd_snapshots.png`
 - `kelvin_helmholtz_compressible_mhd/kh_compressible_mhd_entropy.png`
 
+## Publication-style validation example
+
+The draft PR also includes a standalone validation script that mirrors the
+repository's publication-example conventions: user-editable all-caps
+parameters at the top, no hidden `main()` function, deterministic output paths,
+JSON gates, NPZ histories, manifest hashes, figures, and a compact GIF.
+
+Source links:
+
+- [`examples/publication_kelvin_helmholtz_validation.py`](https://github.com/uwplasma/MHX/blob/main/examples/publication_kelvin_helmholtz_validation.py)
+- [`src/mhx/benchmarks/kelvin_helmholtz.py`](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/kelvin_helmholtz.py)
+- [`tests/test_kelvin_helmholtz.py`](https://github.com/uwplasma/MHX/blob/main/tests/test_kelvin_helmholtz.py)
+
+Run the CI-sized version:
+
+```bash
+MHX_EXAMPLE_FAST=1 \
+MHX_EXAMPLE_OUTDIR_ROOT=outputs/examples/publication \
+python examples/publication_kelvin_helmholtz_validation.py
+```
+
+Run the default validation version, which uses `64×128`, `t_end=2.0`, a
+`32×64` resolution-comparison run, and a smooth low-Mach compressible-MHD
+positivity check:
+
+```bash
+MHX_EXAMPLE_OUTDIR_ROOT=outputs/examples/publication \
+python examples/publication_kelvin_helmholtz_validation.py
+```
+
+Expected files under
+`outputs/examples/publication/kelvin_helmholtz_validation/`:
+
+- `manifest.json`
+- `diagnostics.json`
+- `validation.json`
+- `kelvin_helmholtz_incompressible.npz`
+- `kelvin_helmholtz_resolution_comparison.npz`
+- `kelvin_helmholtz_compressible_mhd.npz`
+- `figures/publication_kelvin_helmholtz_summary.png`
+- `figures/kelvin_helmholtz_entropy.png`
+- `figures/kelvin_helmholtz_snapshots.png`
+- `figures/kelvin_helmholtz_compressible_minima.png`
+- `figures/kelvin_helmholtz_dye.gif`
+
+The validation gates require finite histories, a positive passive-dye entropy
+response, bounded spectral overshoot of the dye field, consistency of final
+entropy between the two resolutions, and positive density/pressure in the
+smooth compressible-MHD tutorial. The manifest records `claim_level =
+"validation"` by design. Passing this example is evidence that the examples,
+IO schema, AD-friendly RK4 path, and smooth tutorial equations are wired
+correctly; it is not a high-Reynolds-number KH convergence result and not a
+shock-capturing compressible-MHD claim.
+
+```{figure} _static/validation/kelvin_helmholtz/publication_kelvin_helmholtz_summary.png
+:alt: Kelvin--Helmholtz validation bundle summary
+:width: 95%
+
+Validation summary for the default Kelvin--Helmholtz example. The panels show
+entropy growth, compressible-MHD positivity checks, validation metadata, and
+dye snapshots with vorticity contours.
+```
+
+```{figure} _static/validation/kelvin_helmholtz/kelvin_helmholtz_dye.gif
+:alt: Kelvin--Helmholtz passive dye animation
+:width: 52%
+
+Compact passive-dye GIF from the default validation run. The animation is meant
+for documentation and reviewer orientation; the quantitative gates are in
+`validation.json` and `manifest.json`.
+```
+
 ## Incompressible passive-dye model
 
 The incompressible notebook uses the reduced-MHD hydrodynamic limit
@@ -143,9 +215,11 @@ The KH examples are covered by:
 ```bash
 python -m pytest tests/test_kelvin_helmholtz.py tests/test_compressible_mhd.py -q
 python -m pytest tests/test_kelvin_helmholtz_notebooks.py -q
+MHX_EXAMPLE_FAST=1 python examples/publication_kelvin_helmholtz_validation.py
 ```
 
 The notebook execution test is marked `slow` because it compiles and executes
 all clean notebook code cells. The non-slow unit tests still cover the reusable
 API, finite outputs, primitive/conservative roundtrips, uniform-state RHS
-zero, reverse-mode/JVP consistency, and finite-difference gradient agreement.
+zero, reverse-mode/JVP consistency, finite-difference gradient agreement, and
+the validation manifest/NPZ schema.
