@@ -5,8 +5,9 @@ assertions. The suite starts from exact resistive diffusion of a single Fourier
 mode and now includes Harris tearing eigenvalue checks, nonlinear
 energy-budget identities, duration guards, Orszag--Tang morphology, decaying
 turbulence, forced turbulent-reconnection media with a validation-only
-readiness gate, double-Harris promotion/convergence evidence, seed-QI,
-neural-ODE reproducibility, and restartable campaign-executor artifacts.
+readiness gate, Kelvin--Helmholtz passive-dye/compressible-MHD tutorial gates,
+double-Harris promotion/convergence evidence, seed-QI, neural-ODE
+reproducibility, and restartable campaign-executor artifacts.
 
 ## Exact resistive decay
 

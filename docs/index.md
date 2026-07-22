@@ -52,6 +52,7 @@ validation
 benchmarks
 architecture
 reduced_mhd
+kelvin_helmholtz
 diagnostics
 output_schema
 performance

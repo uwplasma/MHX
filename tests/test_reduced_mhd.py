@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import NamedTuple
+
 import jax
 import jax.numpy as jnp
 import pytest
@@ -31,7 +33,14 @@ from mhx.equations.reduced_mhd import (
 )
 from mhx.grids import CartesianGrid
 from mhx.state import ReducedMHDParams, ReducedMHDState
-from mhx.time_integrators import evolve_rk4
+from mhx.time_integrators import Trajectory, evolve_rk4
+
+
+class GenericRK4State(NamedTuple):
+    """Small non-MHD PyTree state for fixed-step integrator API tests."""
+
+    scalar_field: jax.Array
+    auxiliary: jax.Array
 
 
 def test_poisson_bracket_vanishes_for_identical_fields() -> None:
@@ -139,6 +148,26 @@ def test_rk4_save_stride_omits_unsaved_tail_for_legacy_api() -> None:
 
     assert trajectory.times.shape == (2,)
     assert jnp.allclose(trajectory.times, jnp.asarray([0.04, 0.08]))
+
+
+def test_rk4_returns_generic_pytree_trajectory() -> None:
+    state0 = GenericRK4State(
+        scalar_field=jnp.ones((2, 3)),
+        auxiliary=jnp.asarray([0.0, 1.0]),
+    )
+
+    def rhs(state: GenericRK4State) -> GenericRK4State:
+        return GenericRK4State(
+            scalar_field=-state.scalar_field,
+            auxiliary=2.0 * state.auxiliary,
+        )
+
+    trajectory = evolve_rk4(state0, rhs, dt=0.01, steps=4, save_every=2)
+
+    assert isinstance(trajectory, Trajectory)
+    assert trajectory.times.shape == (2,)
+    assert trajectory.states.scalar_field.shape == (2, 2, 3)
+    assert trajectory.states.auxiliary.shape == (2, 2)
 
 
 def test_mode_amplitude_and_growth_fit() -> None:

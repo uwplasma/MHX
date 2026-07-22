@@ -10,6 +10,8 @@ import typer
 
 from mhx._version import __version__
 from mhx.benchmarks import (
+    CompressibleKelvinHelmholtzConfig,
+    KelvinHelmholtzConfig,
     double_harris_seeded_long_run_presets,
     run_linear_tearing_smoke,
     validate_run,
@@ -24,6 +26,7 @@ from mhx.benchmarks import (
     write_forced_turbulent_reconnection_readiness_report,
     write_forced_turbulent_reconnection_validation,
     write_harris_delta_prime_validation,
+    write_kelvin_helmholtz_validation,
     write_linear_tearing_dispersion_validation,
     write_linear_tearing_eigenvalue_validation,
     write_linear_tearing_layer_validation,
@@ -1168,6 +1171,100 @@ def benchmark_double_harris_growth(
         dt=dt,
         t_end=t_end,
         save_every=save_every,
+    )
+    typer.echo(f"wrote {manifest_path}")
+    if not validation["passed"]:
+        raise typer.Exit(code=1)
+
+
+@benchmark_app.command("kelvin-helmholtz")
+def benchmark_kelvin_helmholtz(
+    outdir: Annotated[
+        Path,
+        typer.Option(
+            "--outdir",
+            help="Output directory for Kelvin-Helmholtz validation artifacts.",
+        ),
+    ] = Path("outputs/benchmarks/kelvin_helmholtz"),
+    nx: Annotated[int, typer.Option("--nx", help="Primary grid points in x.")] = 32,
+    ny: Annotated[int, typer.Option("--ny", help="Primary grid points in y.")] = 64,
+    comparison_nx: Annotated[
+        int,
+        typer.Option("--comparison-nx", help="Resolution-comparison grid points in x."),
+    ] = 16,
+    comparison_ny: Annotated[
+        int,
+        typer.Option("--comparison-ny", help="Resolution-comparison grid points in y."),
+    ] = 32,
+    compressible_nx: Annotated[
+        int,
+        typer.Option("--compressible-nx", help="Smooth compressible-MHD grid points in x."),
+    ] = 16,
+    compressible_ny: Annotated[
+        int,
+        typer.Option("--compressible-ny", help="Smooth compressible-MHD grid points in y."),
+    ] = 32,
+    dt: Annotated[float, typer.Option("--dt", help="Incompressible RK4 time step.")] = 2.0e-3,
+    t_end: Annotated[float, typer.Option("--t-end", help="Final incompressible time.")] = 0.4,
+    save_every: Annotated[int, typer.Option("--save-every", help="Saved-step stride.")] = 20,
+    compressible_dt: Annotated[
+        float,
+        typer.Option("--compressible-dt", help="Smooth compressible-MHD RK4 time step."),
+    ] = 5.0e-4,
+    compressible_t_end: Annotated[
+        float,
+        typer.Option("--compressible-t-end", help="Final smooth compressible-MHD time."),
+    ] = 0.02,
+    compressible_save_every: Annotated[
+        int,
+        typer.Option("--compressible-save-every", help="Compressible saved-step stride."),
+    ] = 10,
+    min_entropy_gain: Annotated[
+        float,
+        typer.Option("--min-entropy-gain", help="Minimum passive-dye entropy response."),
+    ] = 1.0e-3,
+    min_saved_samples: Annotated[
+        int,
+        typer.Option("--min-saved-samples", help="Minimum number of saved samples."),
+    ] = 5,
+    max_resolution_entropy_rdiff: Annotated[
+        float,
+        typer.Option(
+            "--max-resolution-entropy-rdiff",
+            help="Maximum final-entropy relative difference between resolutions.",
+        ),
+    ] = 5.0e-3,
+    movies: Annotated[
+        bool,
+        typer.Option("--movies/--no-movies", help="Write passive-dye GIF."),
+    ] = False,
+) -> None:
+    """Run the smooth Kelvin-Helmholtz validation bundle."""
+    _configure_validation_precision()
+    manifest_path, validation = write_kelvin_helmholtz_validation(
+        outdir,
+        movies=movies,
+        primary_config=KelvinHelmholtzConfig(
+            shape=(nx, ny),
+            dt=dt,
+            t_end=t_end,
+            save_every=save_every,
+        ),
+        comparison_config=KelvinHelmholtzConfig(
+            shape=(comparison_nx, comparison_ny),
+            dt=dt,
+            t_end=t_end,
+            save_every=save_every,
+        ),
+        compressible_config=CompressibleKelvinHelmholtzConfig(
+            shape=(compressible_nx, compressible_ny),
+            dt=compressible_dt,
+            t_end=compressible_t_end,
+            save_every=compressible_save_every,
+        ),
+        min_entropy_gain=min_entropy_gain,
+        min_saved_samples=min_saved_samples,
+        max_resolution_entropy_rdiff=max_resolution_entropy_rdiff,
     )
     typer.echo(f"wrote {manifest_path}")
     if not validation["passed"]:
