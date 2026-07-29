@@ -1,0 +1,50 @@
+{
+  "date": "2026-07-29",
+  "platform": "cpu",
+  "hardware": "Apple M4, 10-core host, four forced logical JAX devices",
+  "python_version": "3.14.6",
+  "jax_version": "0.11.0",
+  "solvax_version": "0.11.2",
+  "shape": [
+    256,
+    256
+  ],
+  "case_count": 4,
+  "parallel_axis": "independent_case",
+  "steps": 20,
+  "dt": 0.002,
+  "samples_per_count": 3,
+  "finite": true,
+  "device_counts": [
+    1,
+    2,
+    4
+  ],
+  "run_samples_seconds": [
+    [
+      0.655105709010968,
+      0.6969992499798536,
+      0.6682827080076095
+    ],
+    [
+      0.40061754200723954,
+      0.4041729580203537,
+      0.3712421669915784
+    ],
+    [
+      0.28056170800118707,
+      0.27647074998822063,
+      0.3419809589977376
+    ]
+  ],
+  "run_seconds": [
+    0.6682827080076095,
+    0.40061754200723954,
+    0.28056170800118707
+  ],
+  "speedup": [
+    1.0,
+    1.6681314169601016,
+    2.381945536219725
+  ]
+}

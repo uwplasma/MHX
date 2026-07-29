@@ -25,7 +25,7 @@ def test_gallery_has_one_level_and_uniform_scripts() -> None:
         assert "main" not in function_names
         assert "argparse" not in imports
         assert "Simulation(" in source
-        assert ".run()" in source
+        assert ".run()" in source or ".run_ensemble(" in source
         assert ".print_summary()" in source
         assert ".plot(" in source or script.name == "06_strong_scaling.py"
         assert ".save(" in source or script.name == "06_strong_scaling.py"

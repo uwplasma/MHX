@@ -11,7 +11,10 @@ Each script follows the same five steps:
 Start with `01_reconnection.py`. The first three scripts run on a normal CPU
 install. `04_cpu_parallel.py` creates four logical CPU devices before JAX
 starts. `05_gpu_parallel.py` uses every visible GPU. `06_strong_scaling.py`
-records run time after compilation and writes the values beside its plot.
+holds a four-case reconnection ensemble fixed, records run time after
+compilation, and writes the values beside its plot. `07_multi_process.py` uses
+the same ensemble API after JAX connects processes launched by Slurm or Open
+MPI.
 
 Run a script from the repository root:
 

@@ -1,4 +1,4 @@
-"""Plot the checked-in spatial-sharding measurements."""
+"""Plot the checked-in reconnection-ensemble measurements."""
 
 from __future__ import annotations
 
@@ -12,8 +12,12 @@ DATA_DIR = ROOT / "docs" / "_static" / "performance"
 OUTPUT = ROOT / "docs" / "_static" / "readme" / "strong_scaling.png"
 
 datasets = [
-    json.loads((DATA_DIR / "cpu_spatial_sharding.json").read_text(encoding="utf-8")),
-    json.loads((DATA_DIR / "gpu_spatial_sharding.json").read_text(encoding="utf-8")),
+    json.loads(
+        (DATA_DIR / "cpu_ensemble_strong_scaling.json").read_text(encoding="utf-8")
+    ),
+    json.loads(
+        (DATA_DIR / "gpu_ensemble_strong_scaling.json").read_text(encoding="utf-8")
+    ),
 ]
 
 figure, axes = plt.subplots(1, 2, figsize=(9.0, 3.8), constrained_layout=True)
@@ -29,11 +33,11 @@ for axis, data in zip(axes, datasets, strict=True):
     axis.set_xticks(counts)
     axis.set_xlabel("devices")
     axis.set_ylabel("speedup")
-    axis.set_title(f"{platform}, fixed {shape} x {shape} grid")
+    axis.set_title(f"{platform}, four fixed {shape} x {shape} cases")
     axis.grid(alpha=0.25)
     axis.legend(frameon=False)
 
-figure.suptitle("MHX spatial-sharding strong scaling")
+figure.suptitle("MHX reconnection-ensemble strong scaling")
 OUTPUT.parent.mkdir(parents=True, exist_ok=True)
 figure.savefig(OUTPUT, dpi=180)
 plt.close(figure)

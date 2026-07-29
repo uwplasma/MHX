@@ -76,7 +76,8 @@ the repository root.
 | [`03_implicit_step.py`](examples/gallery/03_implicit_step.py) | Use backward Euler with SOLVAX Newton--Krylov solves. |
 | [`04_cpu_parallel.py`](examples/gallery/04_cpu_parallel.py) | Split one field across four local CPU devices. |
 | [`05_gpu_parallel.py`](examples/gallery/05_gpu_parallel.py) | Split one field across all visible GPUs. |
-| [`06_strong_scaling.py`](examples/gallery/06_strong_scaling.py) | Measure fixed-size scaling after compilation. |
+| [`06_strong_scaling.py`](examples/gallery/06_strong_scaling.py) | Strong-scale one fixed reconnection ensemble. |
+| [`07_multi_process.py`](examples/gallery/07_multi_process.py) | Run one ensemble across JAX processes. |
 
 | Reconnection | Turbulence | Orszag--Tang |
 | --- | --- | --- |
@@ -106,8 +107,9 @@ groups: `dev` for repository work and `research` for neural-ODE experiments.
 
 ## Parallel runs
 
-Set `device_count` to split the first field axis across JAX devices. The first
-grid size must divide evenly by the device count.
+Set `device_count` to select a JAX device mesh. For one large trajectory, MHX
+can divide the field. For a seed or parameter study, divide independent cases;
+that avoids communication inside the time loop.
 
 Create four logical CPU devices:
 
@@ -126,10 +128,37 @@ times separately. The scaling example times the run after compilation.
 
 ![Strong-scaling measurements](docs/_static/readme/strong_scaling.png)
 
-The plot records fixed-size runs on the listed hardware. Its data and exact
-settings are in [`docs/_static/performance/`](docs/_static/performance/).
-Logical devices on one CPU share the same processor and memory system. They
-can run slower when Fourier communication costs more than the saved work.
+The plot holds four reconnection cases fixed. The measured speedup is 2.38x on
+four logical CPU devices and 1.95x on two PCIe-connected RTX A4000 GPUs. Its
+data and exact settings are in
+[`docs/_static/performance/`](docs/_static/performance/).
+
+```python
+equilibria = tuple(
+    mhx.PeriodicDoubleHarrisEquilibrium(
+        perturbation_amplitude=1.0e-3 * (1.0 + 0.05 * case)
+    )
+    for case in range(4)
+)
+
+result = mhx.Simulation(
+    shape=(1024, 1024),
+    device_count=2,
+).run_ensemble(equilibria)
+```
+
+One distributed two-dimensional FFT must exchange data. Independent cases do
+not. Use ensemble parallelism for scans and seed studies; use field sharding
+when one trajectory is too large for one device.
+
+On a scheduler or MPI installation, run one copy per process:
+
+```bash
+mpirun -np 2 python examples/gallery/07_multi_process.py
+```
+
+Every process runs the same script. `mhx.initialize_distributed()` must execute
+before any code queries JAX devices.
 
 ## Choose a time integrator
 

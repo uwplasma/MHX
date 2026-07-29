@@ -17,6 +17,7 @@ The package separates model code from general numerical algebra:
 | Layer | Responsibility |
 | --- | --- |
 | `simulation` | Public run and result API |
+| `ensemble` | Independent case batches and multi-process output |
 | `physics` | Equilibria and extra physical terms |
 | `equations` | Reduced-MHD right-hand side and residuals |
 | `numerics.spectral` | Fourier derivatives and dealiasing |
@@ -60,7 +61,10 @@ $$
 $$
 
 Configured runs use the two-thirds filter for nonlinear products. The
-inverse-Laplacian sets the mean Fourier mode to zero.
+inverse-Laplacian sets the mean Fourier mode to zero. RK4 keeps both evolving
+fields in Fourier space. One batched inverse transform produces the eight
+derivatives used by all three Poisson brackets; one batched forward transform
+returns those brackets to Fourier space.
 
 ## Time path
 
@@ -72,12 +76,14 @@ products with JAX and solves each linear update with GMRES.
 
 ## Device path
 
-`make_spatial_sharding` builds a one-dimensional JAX mesh. MHX splits the first
-field axis across that mesh. JAX compiles the Fourier operators and integrator
-as one SPMD program.
+`make_spatial_sharding` builds a one-dimensional JAX mesh. `Simulation.run`
+can split a field for one large trajectory. `Simulation.run_ensemble` splits
+the case axis and gives each device complete local trajectories.
 
-Distributed Fourier transforms require device communication. Check measured
-run time before you choose spatial sharding for a machine.
+Distributed Fourier transforms require device communication. Independent cases
+do not communicate inside the time loop, so case parallelism is the first
+choice for scans and seed ensembles. The checked CPU and GPU measurements are
+in {doc}`performance`.
 
 ## Current limit
 

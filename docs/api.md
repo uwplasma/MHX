@@ -28,6 +28,9 @@ The generated reference below lists public arguments and return values.
 .. automodule:: mhx.simulation
    :members:
 
+.. automodule:: mhx.ensemble
+   :members:
+
 .. automodule:: mhx.parallel
    :members:
 

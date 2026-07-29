@@ -1,6 +1,6 @@
 # Examples
 
-Start in `examples/gallery`. Those six scripts show the public Python API. Each
+Start in `examples/gallery`. Those seven scripts show the public Python API. Each
 script keeps its settings at the top and writes fields under `outputs/gallery`.
 
 | Script | What it shows |
@@ -10,7 +10,8 @@ script keeps its settings at the top and writes fields under `outputs/gallery`.
 | `gallery/03_implicit_step.py` | SOLVAX backward Euler |
 | `gallery/04_cpu_parallel.py` | Four-device CPU sharding |
 | `gallery/05_gpu_parallel.py` | Multi-GPU sharding |
-| `gallery/06_strong_scaling.py` | Measured fixed-grid scaling |
+| `gallery/06_strong_scaling.py` | Fixed-ensemble strong scaling |
+| `gallery/07_multi_process.py` | Multi-process ensemble |
 
 Run the first script from the repository root:
 

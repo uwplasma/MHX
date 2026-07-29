@@ -4,7 +4,14 @@ from pathlib import Path
 
 from mhx._version import __version__
 from mhx.config import RunConfig, load_config
-from mhx.parallel import SpatialSharding, available_devices, make_spatial_sharding
+from mhx.ensemble import EnsembleResult
+from mhx.parallel import (
+    SpatialSharding,
+    available_devices,
+    initialize_distributed,
+    make_device_mesh,
+    make_spatial_sharding,
+)
 from mhx.physics import (
     CosineTearingEquilibrium,
     PeriodicDoubleHarrisEquilibrium,
@@ -27,6 +34,7 @@ def run(config: str | Path, *, outdir: str | Path | None = None) -> Path:
 __all__ = [
     "MHX_PUBLIC_API_VERSION",
     "CosineTearingEquilibrium",
+    "EnsembleResult",
     "PeriodicDoubleHarrisEquilibrium",
     "RunConfig",
     "Simulation",
@@ -36,7 +44,9 @@ __all__ = [
     "__version__",
     "api_version_info",
     "available_devices",
+    "initialize_distributed",
     "load_config",
+    "make_device_mesh",
     "make_spatial_sharding",
     "run",
 ]

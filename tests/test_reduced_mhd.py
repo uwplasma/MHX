@@ -27,9 +27,13 @@ from mhx.equations.reduced_mhd import (
     current_density,
     poisson_bracket,
     reduced_mhd_rhs,
+    reduced_mhd_rhs_spectral,
     stream_function,
+    to_physical_state,
+    to_spectral_state,
 )
 from mhx.grids import CartesianGrid
+from mhx.numerics.spectral import laplacian
 from mhx.state import ReducedMHDParams, ReducedMHDState
 from mhx.time_integrators import evolve_rk4
 
@@ -58,6 +62,58 @@ def test_reduced_mhd_rhs_linear_diffusion_limit() -> None:
     rhs = reduced_mhd_rhs(state, params, lengths=grid.lengths)
     assert float(jnp.max(jnp.abs(rhs.psi + 0.1 * psi))) < 1.0e-10
     assert float(jnp.max(jnp.abs(rhs.omega))) < 1.0e-10
+
+
+@pytest.mark.parametrize("dealiasing", ["none", "two_thirds"])
+def test_fused_spectral_rhs_matches_direct_operator(dealiasing) -> None:
+    grid = CartesianGrid.from_mesh_config(MeshConfig(shape=(16, 16)))
+    key_psi, key_omega = jax.random.split(jax.random.key(4))
+    state = ReducedMHDState(
+        psi=jax.random.normal(key_psi, grid.shape),
+        omega=jax.random.normal(key_omega, grid.shape),
+    )
+    params = ReducedMHDParams(resistivity=0.03, viscosity=0.02)
+
+    phi = stream_function(state.omega, lengths=grid.lengths)
+    lap_psi = laplacian(state.psi, lengths=grid.lengths)
+    reference = ReducedMHDState(
+        psi=(
+            -poisson_bracket(
+                phi,
+                state.psi,
+                lengths=grid.lengths,
+                dealiasing=dealiasing,
+            )
+            + params.resistivity * lap_psi
+        ),
+        omega=(
+            -poisson_bracket(
+                phi,
+                state.omega,
+                lengths=grid.lengths,
+                dealiasing=dealiasing,
+            )
+            + poisson_bracket(
+                state.psi,
+                lap_psi,
+                lengths=grid.lengths,
+                dealiasing=dealiasing,
+            )
+            + params.viscosity * laplacian(state.omega, lengths=grid.lengths)
+        ),
+    )
+
+    state_hat = to_spectral_state(state)
+    spectral_rhs = reduced_mhd_rhs_spectral(
+        state_hat,
+        params,
+        lengths=grid.lengths,
+        dealiasing=dealiasing,
+    )
+    actual = to_physical_state(spectral_rhs)
+
+    assert jnp.allclose(actual.psi, reference.psi, rtol=1.0e-10, atol=1.0e-10)
+    assert jnp.allclose(actual.omega, reference.omega, rtol=1.0e-10, atol=1.0e-10)
 
 
 def test_linear_tearing_smoke_runs_and_reports_energy() -> None:

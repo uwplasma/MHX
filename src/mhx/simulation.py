@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import math
 import time
+from collections.abc import Sequence
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Literal
@@ -14,7 +15,14 @@ from rich.console import Console
 from rich.table import Table
 
 from mhx.diagnostics import compute_reduced_mhd_diagnostics, trajectory_energies
-from mhx.equations.reduced_mhd import current_density, reduced_mhd_rhs
+from mhx.ensemble import EnsembleResult, run_ensemble
+from mhx.equations.reduced_mhd import (
+    current_density,
+    reduced_mhd_rhs,
+    reduced_mhd_rhs_spectral,
+    to_physical_trajectory,
+    to_spectral_state,
+)
 from mhx.grids import CartesianGrid
 from mhx.io import write_reduced_mhd_trajectory_npz
 from mhx.numerics import spectral_diffusion_preconditioner
@@ -183,7 +191,7 @@ class Simulation:
         save_every: Save one state after this many steps.
         integrator: ``"rk4"`` or ``"backward_euler"``.
         dealiasing: Spectral product filter. Use ``"two_thirds"`` for runs.
-        device_count: Number of local JAX devices. Leave unset for one device.
+        device_count: Number of JAX devices. Leave unset for one device.
         verbose: Print configuration and timing information.
         terms: Extra MHX physics terms applied to the right-hand side.
     """
@@ -251,9 +259,9 @@ class Simulation:
         initial_state = self.equilibrium.initial_state(grid)
         effective_device_count = 1
         if self.device_count is not None:
-            plan = make_spatial_sharding(self.shape, self.device_count)
-            initial_state = shard_state(initial_state, plan)
-            effective_device_count = plan.device_count
+            sharding_plan = make_spatial_sharding(self.shape, self.device_count)
+            initial_state = shard_state(initial_state, sharding_plan)
+            effective_device_count = sharding_plan.device_count
 
         if self.verbose:
             self._print_setup(console, effective_device_count)
@@ -268,15 +276,26 @@ class Simulation:
             )
 
         if self.integrator == "rk4":
-
             def integrate(state: ReducedMHDState):
-                return evolve_rk4(
-                    state,
-                    rhs,
+                state_hat = to_spectral_state(state)
+
+                def spectral_rhs(active_state_hat: ReducedMHDState) -> ReducedMHDState:
+                    return reduced_mhd_rhs_spectral(
+                        active_state_hat,
+                        parameters,
+                        lengths=grid.lengths,
+                        terms=self.terms,
+                        dealiasing=self.dealiasing,
+                    )
+
+                trajectory_hat = evolve_rk4(
+                    state_hat,
+                    spectral_rhs,
                     dt=self.dt,
                     steps=self.steps,
                     save_every=self.save_every,
                 )
+                return to_physical_trajectory(trajectory_hat)
 
         else:
             preconditioner = spectral_diffusion_preconditioner(
@@ -306,8 +325,8 @@ class Simulation:
         run_start = time.perf_counter()
         raw_result = executable(initial_state)
         jax.block_until_ready(raw_result)
-        run_seconds = time.perf_counter() - run_start
         trajectory = raw_result if self.integrator == "rk4" else raw_result.trajectory
+        run_seconds = time.perf_counter() - run_start
         diagnostics = compute_reduced_mhd_diagnostics(
             trajectory,
             initial_state=initial_state,
@@ -349,6 +368,10 @@ class Simulation:
                 f"after {compile_seconds:.3f} s compilation"
             )
         return result
+
+    def run_ensemble(self, equilibria: Sequence[Equilibrium]) -> EnsembleResult:
+        """Run independent initial conditions in parallel over devices."""
+        return run_ensemble(self, equilibria)
 
     def _print_setup(self, console: Console, device_count: int) -> None:
         console.rule("[bold cyan]MHX reduced-MHD simulation")
