@@ -7,7 +7,7 @@ import jax.numpy as jnp
 from jaxtyping import Array
 
 from mhx.numerics import MatrixFreeOperator
-from mhx.numerics.spectral import gradient, inverse_laplacian, laplacian
+from mhx.numerics.spectral import dealiased_product, gradient, inverse_laplacian, laplacian
 from mhx.physics import PhysicsTerm, apply_physics_terms
 from mhx.state import (
     ReducedMHDParams,
@@ -18,11 +18,25 @@ from mhx.state import (
 )
 
 
-def poisson_bracket(a: Array, b: Array, *, lengths: tuple[float, float]) -> Array:
+def poisson_bracket(
+    a: Array,
+    b: Array,
+    *,
+    lengths: tuple[float, float],
+    dealiasing: str = "none",
+) -> Array:
     r"""Return the 2D Poisson bracket ``[a,b] = a_x b_y - a_y b_x``."""
     da_dx, da_dy = gradient(a, lengths=lengths)
     db_dx, db_dy = gradient(b, lengths=lengths)
-    return da_dx * db_dy - da_dy * db_dx
+    return dealiased_product(
+        da_dx,
+        db_dy,
+        dealiasing=dealiasing,
+    ) - dealiased_product(
+        da_dy,
+        db_dx,
+        dealiasing=dealiasing,
+    )
 
 
 def stream_function(omega: Array, *, lengths: tuple[float, float]) -> Array:
@@ -41,6 +55,7 @@ def reduced_mhd_rhs(
     *,
     lengths: tuple[float, float],
     terms: tuple[PhysicsTerm, ...] = (),
+    dealiasing: str = "none",
 ) -> ReducedMHDState:
     r"""Return the resistive-viscous reduced-MHD right-hand side.
 
@@ -55,10 +70,25 @@ def reduced_mhd_rhs(
     phi = stream_function(state.omega, lengths=lengths)
     lap_psi = laplacian(state.psi, lengths=lengths)
     lap_omega = laplacian(state.omega, lengths=lengths)
-    dpsi = -poisson_bracket(phi, state.psi, lengths=lengths) + params.resistivity * lap_psi
+    dpsi = -poisson_bracket(
+        phi,
+        state.psi,
+        lengths=lengths,
+        dealiasing=dealiasing,
+    ) + params.resistivity * lap_psi
     domega = (
-        -poisson_bracket(phi, state.omega, lengths=lengths)
-        + poisson_bracket(state.psi, lap_psi, lengths=lengths)
+        -poisson_bracket(
+            phi,
+            state.omega,
+            lengths=lengths,
+            dealiasing=dealiasing,
+        )
+        + poisson_bracket(
+            state.psi,
+            lap_psi,
+            lengths=lengths,
+            dealiasing=dealiasing,
+        )
         + params.viscosity * lap_omega
     )
     base_rhs = ReducedMHDState(psi=dpsi, omega=domega)
@@ -72,6 +102,7 @@ def linearized_reduced_mhd_rhs(
     *,
     lengths: tuple[float, float],
     terms: tuple[PhysicsTerm, ...] = (),
+    dealiasing: str = "none",
 ) -> ReducedMHDState:
     """Return the matrix-free Jacobian-vector product of the reduced-MHD RHS.
 
@@ -81,7 +112,13 @@ def linearized_reduced_mhd_rhs(
     """
 
     def rhs_for_jvp(active_state: ReducedMHDState) -> ReducedMHDState:
-        return reduced_mhd_rhs(active_state, params, lengths=lengths, terms=terms)
+        return reduced_mhd_rhs(
+            active_state,
+            params,
+            lengths=lengths,
+            terms=terms,
+            dealiasing=dealiasing,
+        )
 
     _, tangent = jax.jvp(rhs_for_jvp, (state,), (perturbation,))
     return tangent
@@ -95,6 +132,7 @@ def finite_difference_linearized_reduced_mhd_rhs(
     lengths: tuple[float, float],
     epsilon: float = 1.0e-4,
     terms: tuple[PhysicsTerm, ...] = (),
+    dealiasing: str = "none",
 ) -> ReducedMHDState:
     """Return a centered finite-difference approximation to the linearized RHS."""
     if epsilon <= 0.0:
@@ -107,8 +145,20 @@ def finite_difference_linearized_reduced_mhd_rhs(
         psi=state.psi - epsilon * perturbation.psi,
         omega=state.omega - epsilon * perturbation.omega,
     )
-    rhs_plus = reduced_mhd_rhs(plus, params, lengths=lengths, terms=terms)
-    rhs_minus = reduced_mhd_rhs(minus, params, lengths=lengths, terms=terms)
+    rhs_plus = reduced_mhd_rhs(
+        plus,
+        params,
+        lengths=lengths,
+        terms=terms,
+        dealiasing=dealiasing,
+    )
+    rhs_minus = reduced_mhd_rhs(
+        minus,
+        params,
+        lengths=lengths,
+        terms=terms,
+        dealiasing=dealiasing,
+    )
     scale = 0.5 / epsilon
     return ReducedMHDState(
         psi=scale * (rhs_plus.psi - rhs_minus.psi),
@@ -122,6 +172,7 @@ def linearized_reduced_mhd_operator(
     *,
     lengths: tuple[float, float],
     terms: tuple[PhysicsTerm, ...] = (),
+    dealiasing: str = "none",
 ) -> MatrixFreeOperator:
     """Return a flattened matrix-free linearized reduced-MHD operator."""
     shape = tuple(int(item) for item in state.psi.shape)
@@ -135,6 +186,7 @@ def linearized_reduced_mhd_operator(
             params,
             lengths=lengths,
             terms=terms,
+            dealiasing=dealiasing,
         )
         return flatten_reduced_mhd_state(tangent)
 

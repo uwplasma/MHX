@@ -127,7 +127,7 @@ def test_rk4_save_stride_matches_subsampled_unit_stride() -> None:
     assert jnp.allclose(sparse.states.omega, unit_stride.states.omega[2::3])
 
 
-def test_rk4_save_stride_omits_unsaved_tail_for_legacy_api() -> None:
+def test_rk4_save_stride_includes_final_tail_and_absolute_time() -> None:
     grid = CartesianGrid.from_mesh_config(MeshConfig(shape=(8, 8)))
     state0 = ReducedMHDState(psi=grid.sinusoid(mode=(1, 0)), omega=jnp.zeros(grid.shape))
     params = ReducedMHDParams(resistivity=0.01, viscosity=0.0)
@@ -135,10 +135,17 @@ def test_rk4_save_stride_omits_unsaved_tail_for_legacy_api() -> None:
     def rhs(state: ReducedMHDState) -> ReducedMHDState:
         return reduced_mhd_rhs(state, params, lengths=grid.lengths)
 
-    trajectory = evolve_rk4(state0, rhs, dt=0.01, steps=10, save_every=4)
+    trajectory = evolve_rk4(
+        state0,
+        rhs,
+        dt=0.01,
+        steps=10,
+        save_every=4,
+        t0=1.5,
+    )
 
-    assert trajectory.times.shape == (2,)
-    assert jnp.allclose(trajectory.times, jnp.asarray([0.04, 0.08]))
+    assert trajectory.times.shape == (3,)
+    assert jnp.allclose(trajectory.times, jnp.asarray([1.54, 1.58, 1.60]))
 
 
 def test_mode_amplitude_and_growth_fit() -> None:

@@ -2,13 +2,19 @@
 
 from __future__ import annotations
 
+from typing import Any
+
+import jax
+import jax.numpy as jnp
+
 from mhx.config import RunConfig
 from mhx.diagnostics import compute_reduced_mhd_diagnostics
 from mhx.equations.reduced_mhd import reduced_mhd_rhs
 from mhx.grids import CartesianGrid
+from mhx.numerics import spectral_diffusion_preconditioner
 from mhx.physics import CosineTearingEquilibrium, build_equilibrium, build_physics_terms
 from mhx.state import ReducedMHDParams, ReducedMHDState, ReducedMHDTrajectory
-from mhx.time_integrators import evolve_rk4
+from mhx.time_integrators import evolve_backward_euler, evolve_rk4
 
 
 def linear_tearing_initial_state(
@@ -31,8 +37,9 @@ def run_linear_tearing_smoke(
     config: RunConfig,
     *,
     perturbation_amplitude: float = 1.0e-3,
-) -> tuple[ReducedMHDTrajectory, dict[str, float]]:
+) -> tuple[ReducedMHDTrajectory, dict[str, Any]]:
     """Run the deterministic FAST reduced-MHD smoke benchmark."""
+    numerics = config.numerics.validated()
     grid = CartesianGrid.from_mesh_config(config.mesh)
     equilibrium_parameters = dict(config.physics.equilibrium_parameters)
     if not equilibrium_parameters and config.physics.equilibrium == "cosine_tearing":
@@ -49,20 +56,74 @@ def run_linear_tearing_smoke(
         plugin_modules=config.physics.plugin_modules,
         plugin_entry_point_groups=config.physics.plugin_entry_point_groups,
     )
-    steps = max(1, round((config.time.t1 - config.time.t0) / config.time.dt))
+    steps = config.time.steps
 
     def rhs(state: ReducedMHDState) -> ReducedMHDState:
-        return reduced_mhd_rhs(state, params, lengths=grid.lengths, terms=terms)
+        return reduced_mhd_rhs(
+            state,
+            params,
+            lengths=grid.lengths,
+            terms=terms,
+            dealiasing=numerics.dealiasing,
+        )
 
-    trajectory = evolve_rk4(
-        state0,
-        rhs,
-        dt=config.time.dt,
-        steps=steps,
-        save_every=config.time.save_every,
-    )
+    active_rhs = jax.jit(rhs) if numerics.enable_jit else rhs
+    solver_diagnostics: dict[str, Any] = {}
+    if numerics.time_integrator == "rk4":
+        trajectory = evolve_rk4(
+            state0,
+            active_rhs,
+            dt=config.time.dt,
+            steps=steps,
+            save_every=config.time.save_every,
+            t0=config.time.t0,
+        )
+    else:
+        preconditioner = (
+            None
+            if numerics.preconditioner == "none"
+            else spectral_diffusion_preconditioner(
+                params,
+                lengths=grid.lengths,
+                dt=config.time.dt,
+            )
+        )
+        implicit = evolve_backward_euler(
+            state0,
+            active_rhs,
+            dt=config.time.dt,
+            steps=steps,
+            save_every=config.time.save_every,
+            t0=config.time.t0,
+            preconditioner=preconditioner,
+            rtol=numerics.rtol,
+            atol=numerics.atol,
+            max_steps=numerics.nonlinear_max_steps,
+            linear_restart=numerics.linear_restart,
+            linear_max_restarts=numerics.linear_max_restarts,
+        )
+        trajectory = implicit.trajectory
+        solver_diagnostics = {
+            "implicit_converged": bool(jnp.all(implicit.converged)),
+            "implicit_linear_converged": bool(jnp.all(implicit.linear_converged)),
+            "implicit_max_residual_norm": float(jnp.max(implicit.residual_norms)),
+            "implicit_nonlinear_iterations": int(
+                jnp.sum(implicit.nonlinear_iterations)
+            ),
+            "implicit_linear_iterations": int(jnp.sum(implicit.linear_iterations)),
+        }
+        if not solver_diagnostics["implicit_converged"]:
+            raise RuntimeError("backward-Euler nonlinear solve did not converge")
+        if not solver_diagnostics["implicit_linear_converged"]:
+            raise RuntimeError("backward-Euler linear solve did not converge")
     diagnostics = {
         "n_steps": float(steps),
+        "spatial_method": numerics.spatial_method,
+        "dealiasing": numerics.dealiasing,
+        "time_integrator": numerics.time_integrator,
+        "linear_solver": numerics.linear_solver,
+        "nonlinear_solver": numerics.nonlinear_solver,
+        "preconditioner": numerics.preconditioner,
         "equilibrium": config.physics.equilibrium,
         "equilibrium_parameters": dict(equilibrium_parameters),
         "physics_plugin_modules": list(config.physics.plugin_modules),
@@ -74,6 +135,7 @@ def run_linear_tearing_smoke(
         ),
         "final_time": float(trajectory.times[-1]),
     }
+    diagnostics.update(solver_diagnostics)
     diagnostics.update(
         compute_reduced_mhd_diagnostics(
             trajectory,

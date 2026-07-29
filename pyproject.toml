@@ -25,47 +25,52 @@ classifiers = [
   "Topic :: Scientific/Engineering :: Physics",
 ]
 dependencies = [
-  "jax>=0.4",
-  "numpy>=1.24",
-  "rich>=13",
-  "typer>=0.12",
-  "tomli>=2; python_version < '3.11'",
-  "jaxtyping>=0.2",
+  "jax",
+  "numpy",
+  "rich",
+  "typer",
+  "tomli; python_version < '3.11'",
+  "jaxtyping",
 ]
 
 [project.optional-dependencies]
 research = [
-  "diffrax>=0.5",
-  "equinox>=0.11",
-  "lineax>=0.0.7",
-  "optimistix>=0.0.10",
-  "optax>=0.2",
-  "orbax-checkpoint>=0.5",
+  "diffrax",
+  "equinox",
+  "lineax",
+  "optimistix",
+  "optax",
+  "orbax-checkpoint",
+]
+solvers = [
+  "solvax",
 ]
 plotting = [
-  "imageio>=2",
-  "matplotlib>=3.8",
+  "imageio",
+  "matplotlib",
 ]
 docs = [
-  "sphinx>=7",
-  "myst-parser>=2",
-  "sphinx-autodoc-typehints>=2",
+  "sphinx",
+  "myst-parser",
+  "sphinx-autodoc-typehints",
 ]
 test = [
-  "imageio>=2",
-  "matplotlib>=3.8",
-  "pytest>=8",
-  "pytest-cov>=5",
+  "imageio",
+  "matplotlib",
+  "pytest",
+  "pytest-cov",
+  "solvax",
 ]
 dev = [
-  "imageio>=2",
-  "matplotlib>=3.8",
-  "myst-parser>=2",
-  "pytest>=8",
-  "pytest-cov>=5",
-  "sphinx>=7",
-  "sphinx-autodoc-typehints>=2",
-  "ruff>=0.5",
+  "imageio",
+  "matplotlib",
+  "myst-parser",
+  "pytest",
+  "pytest-cov",
+  "solvax",
+  "sphinx",
+  "sphinx-autodoc-typehints",
+  "ruff",
 ]
 
 [project.urls]
@@ -93,6 +98,8 @@ exclude = [
   "/.ruff_cache/**",
   "/.venv",
   "/.venv/**",
+  "/.venv-*",
+  "/.venv-*/**",
   "/docs/_build",
   "/docs/_build/**",
   "docs/_build/**",

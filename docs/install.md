@@ -18,6 +18,13 @@ For GPU or TPU work, install the platform-specific JAX wheel from the
 before installing MHX. The validation suite and CI use CPU-friendly FAST
 settings.
 
+The explicit RK4 path needs only the base installation. Install the optional
+SOLVAX backend to use backward Euler, FGMRES, or Newton--Krylov:
+
+```bash
+python -m pip install -e ".[solvers]"
+```
+
 Verify the install:
 
 ```bash

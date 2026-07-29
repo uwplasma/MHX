@@ -83,6 +83,12 @@ dt = 0.01
 save_every = 1
 
 [numerics]
+spatial_method = "fft_pseudospectral"
+dealiasing = "two_thirds"
+time_integrator = "rk4"
+linear_solver = "solvax_gmres"
+nonlinear_solver = "solvax_newton_krylov"
+preconditioner = "spectral_diffusion"
 enable_x64 = true
 enable_jit = true
 ```
@@ -92,6 +98,12 @@ Smaller `dt` improves temporal resolution but increases the number of RHS
 evaluations. Larger `save_every` reduces IO and plotting memory. X64 is used in
 physics validation gates; exploratory performance runs may use X32 after a
 regression check confirms diagnostics remain stable.
+
+Selecting `time_integrator = "backward_euler"` uses SOLVAX Newton--Krylov.
+Its cost is reported through nonlinear and linear iteration diagnostics.
+`spectral_diffusion` is normally the cheapest first preconditioner for the
+periodic reduced-MHD equations; it leaves nonlinear coupling to FGMRES while
+solving the stiff diffusion principal part exactly mode by mode.
 
 ## Long-run trajectory memory
 

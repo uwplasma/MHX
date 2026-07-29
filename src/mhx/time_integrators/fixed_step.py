@@ -48,13 +48,15 @@ def evolve_rk4(
     dt: float,
     steps: int,
     save_every: int = 1,
+    t0: float = 0.0,
 ) -> ReducedMHDTrajectory:
     """Evolve a state with RK4 and save every ``save_every`` steps.
 
     The implementation advances ``save_every`` internal steps per saved sample,
     so long runs store only the returned trajectory rather than every internal
-    RK4 step. If ``steps`` is not an exact multiple of ``save_every``, the
-    returned trajectory matches the historical API by omitting the unsaved tail.
+    RK4 step. The final state is always included, even when ``steps`` is not an
+    exact multiple of ``save_every``. Returned times are absolute and start
+    after ``t0``.
     """
     if steps < 1:
         raise ValueError("steps must be >= 1")
@@ -63,7 +65,8 @@ def evolve_rk4(
     if save_every < 1:
         raise ValueError("save_every must be >= 1")
     stride = min(save_every, steps)
-    saved_count = steps // stride
+    full_saved_count = steps // stride
+    remainder = steps % stride
 
     def inner_step(carry: StateT, step_index: Any) -> tuple[StateT, None]:
         del step_index
@@ -74,6 +77,21 @@ def evolve_rk4(
         next_state, _ = jax.lax.scan(inner_step, carry, None, length=stride)
         return next_state, next_state
 
-    _, saved_states = jax.lax.scan(saved_step, state0, jnp.arange(saved_count))
-    times = dt * stride * jnp.arange(1, saved_count + 1)
+    final_state, saved_states = jax.lax.scan(
+        saved_step,
+        state0,
+        jnp.arange(full_saved_count),
+    )
+    step_numbers = stride * jnp.arange(1, full_saved_count + 1)
+    if remainder:
+        final_state, _ = jax.lax.scan(inner_step, final_state, None, length=remainder)
+        saved_states = jax.tree.map(
+            lambda saved, final: jnp.concatenate((saved, final[None, ...]), axis=0),
+            saved_states,
+            final_state,
+        )
+        step_numbers = jnp.concatenate(
+            (step_numbers, jnp.asarray([steps], dtype=step_numbers.dtype))
+        )
+    times = t0 + dt * step_numbers
     return ReducedMHDTrajectory(times=times, states=saved_states)

@@ -35,7 +35,8 @@ boundaries.
 ## What Works Today
 
 MHX currently supports deterministic reduced-MHD validation for spectral
-operators, resistive decay, finite-domain Harris tearing checks, nonlinear
+operators, 2/3-rule de-aliased nonlinear products, resistive decay,
+SOLVAX-backed implicit stepping, finite-domain Harris tearing checks, nonlinear
 energy/dissipation budgets, Orszag--Tang vortex media, forced
 turbulent-reconnection readiness checks, bounded double-Harris promotion and
 convergence evidence, Rutherford execution-path checks, and seed-robust QI plus
