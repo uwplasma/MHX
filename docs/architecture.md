@@ -63,7 +63,7 @@ $$
 Configured runs use the two-thirds filter for nonlinear products. The
 inverse-Laplacian sets the mean Fourier mode to zero. RK4 keeps both evolving
 fields in Fourier space. One batched inverse transform produces the eight
-derivatives used by all three Poisson brackets; one batched forward transform
+derivatives used by all three Poisson brackets. One batched forward transform
 returns those brackets to Fourier space.
 
 ## Time path

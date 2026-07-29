@@ -108,8 +108,8 @@ groups: `dev` for repository work and `research` for neural-ODE experiments.
 ## Parallel runs
 
 Set `device_count` to select a JAX device mesh. For one large trajectory, MHX
-can divide the field. For a seed or parameter study, divide independent cases;
-that avoids communication inside the time loop.
+can divide the field. For a seed or parameter study, divide independent cases.
+This avoids communication inside the time loop.
 
 Create four logical CPU devices:
 
@@ -148,7 +148,7 @@ result = mhx.Simulation(
 ```
 
 One distributed two-dimensional FFT must exchange data. Independent cases do
-not. Use ensemble parallelism for scans and seed studies; use field sharding
+not. Use ensemble parallelism for scans and seed studies. Use field sharding
 when one trajectory is too large for one device.
 
 On a scheduler or MPI installation, run one copy per process:

@@ -112,7 +112,7 @@ For a manual launch, pass `coordinator_address`, `num_processes`, and the
 distinct `process_id` to `initialize_distributed`. A distributed ensemble uses
 every global device. Its case count must divide evenly over devices and
 processes. Every process must enter array-gathering calls such as
-`EnsembleResult.plot` and `EnsembleResult.save`; only process 0 writes files.
+`EnsembleResult.plot` and `EnsembleResult.save`. Only process 0 writes files.
 
 The benchmark command writes a larger timing record:
 
