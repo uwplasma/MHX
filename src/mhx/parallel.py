@@ -149,7 +149,10 @@ def shard_batch(
     input_spec = PartitionSpec("device", *([None] * (input_rank - 1)))
     output_axes = [None] * output_rank
     output_axes[output_batch_axis % output_rank] = "device"
-    return jax.shard_map(
+    shard_map = getattr(jax, "shard_map", None)
+    if shard_map is None:  # JAX 0.4
+        from jax.experimental.shard_map import shard_map
+    return shard_map(
         local_function,
         mesh=mesh,
         in_specs=input_spec,
