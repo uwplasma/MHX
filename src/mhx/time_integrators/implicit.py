@@ -1,4 +1,4 @@
-"""Implicit fixed-step integration through the optional SOLVAX backend."""
+"""Implicit fixed-step integration with SOLVAX."""
 
 from __future__ import annotations
 
@@ -7,9 +7,9 @@ from typing import NamedTuple, TypeVar
 
 import jax
 import jax.numpy as jnp
+import solvax
 from jaxtyping import Array
 
-from mhx.numerics.solvers import NonlinearSolveResult, newton_krylov_solve
 from mhx.state import ReducedMHDTrajectory
 
 StateT = TypeVar("StateT")
@@ -37,7 +37,7 @@ def backward_euler_step(
     max_steps: int = 20,
     linear_restart: int = 30,
     linear_max_restarts: int = 10,
-) -> NonlinearSolveResult:
+) -> solvax.NewtonKrylovSolution:
     """Advance one backward-Euler step with Jacobian-free Newton–Krylov."""
     if dt <= 0.0:
         raise ValueError("dt must be positive")
@@ -45,18 +45,16 @@ def backward_euler_step(
     def residual(candidate: StateT) -> StateT:
         candidate_rhs = rhs(candidate)
         return jax.tree.map(
-            lambda next_value, old_value, derivative: (
-                next_value - old_value - dt * derivative
-            ),
+            lambda next_value, old_value, derivative: next_value - old_value - dt * derivative,
             candidate,
             state,
             candidate_rhs,
         )
 
-    return newton_krylov_solve(
+    return solvax.newton_krylov(
         residual,
         state,
-        preconditioner=preconditioner,
+        precond=preconditioner,
         rtol=rtol,
         atol=atol,
         max_steps=max_steps,
@@ -91,7 +89,10 @@ def evolve_backward_euler(
     full_saved_count = steps // stride
     remainder = steps % stride
 
-    def inner_step(carry: StateT, step_index: Array) -> tuple[StateT, NonlinearSolveResult]:
+    def inner_step(
+        carry: StateT,
+        step_index: Array,
+    ) -> tuple[StateT, solvax.NewtonKrylovSolution]:
         del step_index
         solution = backward_euler_step(
             carry,
@@ -115,7 +116,7 @@ def evolve_backward_euler(
         return next_state, (
             next_state,
             jnp.max(interval.residual_norm),
-            jnp.sum(interval.nonlinear_iterations),
+            jnp.sum(interval.newton_iterations),
             jnp.sum(interval.linear_iterations),
             jnp.all(interval.converged),
             jnp.all(interval.linear_converged),
@@ -143,13 +144,11 @@ def evolve_backward_euler(
             saved_states,
             final_state,
         )
-        residual_norms = jnp.concatenate(
-            (residual_norms, jnp.max(interval.residual_norm)[None])
-        )
+        residual_norms = jnp.concatenate((residual_norms, jnp.max(interval.residual_norm)[None]))
         nonlinear_iterations = jnp.concatenate(
             (
                 nonlinear_iterations,
-                jnp.sum(interval.nonlinear_iterations)[None],
+                jnp.sum(interval.newton_iterations)[None],
             )
         )
         linear_iterations = jnp.concatenate(

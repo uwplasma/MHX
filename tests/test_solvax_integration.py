@@ -3,6 +3,7 @@ from __future__ import annotations
 import jax
 import jax.numpy as jnp
 import pytest
+import solvax
 
 from mhx.benchmarks import run_linear_tearing_smoke
 from mhx.config import MeshConfig, NumericsConfig, PhysicsConfig, RunConfig, TimeConfig
@@ -10,7 +11,6 @@ from mhx.numerics import (
     MatrixFreeOperator,
     as_solvax_operator,
     complex_linear_extension,
-    gmres_solve,
     spectral_diffusion_preconditioner,
 )
 from mhx.state import ReducedMHDParams, ReducedMHDState
@@ -28,16 +28,14 @@ def test_mhx_operator_and_gmres_adapters() -> None:
     adapted = as_solvax_operator(operator)
     rhs = jnp.arange(1.0, 7.0)
 
-    solution = gmres_solve(operator, rhs, restart=4, max_restarts=2)
+    solution = solvax.gmres(adapted, rhs, restart=4, max_restarts=2)
 
     assert adapted.shape == (6, 6)
     assert bool(solution.converged)
     assert jnp.allclose(solution.x, 0.5 * rhs)
 
     with pytest.raises(ValueError, match="flat MHX vector"):
-        as_solvax_operator(
-            MatrixFreeOperator(shape=(2, 3), matvec=lambda vector: vector)
-        )
+        as_solvax_operator(MatrixFreeOperator(shape=(2, 3), matvec=lambda vector: vector))
 
 
 def test_complex_linear_extension_applies_real_jvp_twice() -> None:

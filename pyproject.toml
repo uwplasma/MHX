@@ -25,12 +25,15 @@ classifiers = [
   "Topic :: Scientific/Engineering :: Physics",
 ]
 dependencies = [
+  "imageio",
   "jax",
+  "jaxtyping",
+  "matplotlib",
   "numpy",
   "rich",
+  "solvax",
   "typer",
   "tomli; python_version < '3.11'",
-  "jaxtyping",
 ]
 
 [project.optional-dependencies]
@@ -42,35 +45,13 @@ research = [
   "optax",
   "orbax-checkpoint",
 ]
-solvers = [
-  "solvax",
-]
-plotting = [
-  "imageio",
-  "matplotlib",
-]
-docs = [
-  "sphinx",
-  "myst-parser",
-  "sphinx-autodoc-typehints",
-]
-test = [
-  "imageio",
-  "matplotlib",
-  "pytest",
-  "pytest-cov",
-  "solvax",
-]
 dev = [
-  "imageio",
-  "matplotlib",
   "myst-parser",
   "pytest",
   "pytest-cov",
-  "solvax",
+  "ruff",
   "sphinx",
   "sphinx-autodoc-typehints",
-  "ruff",
 ]
 
 [project.urls]

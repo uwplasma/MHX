@@ -230,7 +230,10 @@ def test_readme_uses_only_landing_page_media() -> None:
     readme_path = ROOT / "README.md"
     local_targets = _local_image_targets(readme_path)
     assert all("docs/_static/readme/" in target for target in local_targets)
-    assert all(not target.endswith(".png") for target in local_targets)
+    assert all(
+        not target.endswith(".png") or target.endswith("/strong_scaling.png")
+        for target in local_targets
+    )
 
 
 def test_readme_excludes_internal_reviewer_sections() -> None:

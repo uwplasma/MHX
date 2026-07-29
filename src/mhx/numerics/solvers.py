@@ -1,54 +1,29 @@
-"""Optional SOLVAX-backed algebraic solvers and MHX adapters."""
+"""MHX adapters and preconditioners for SOLVAX."""
 
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import Any, NamedTuple, TypeVar
+from typing import Any
 
 import jax
 import jax.numpy as jnp
+import solvax
 from jaxtyping import Array
 
 from mhx.numerics.linear_operator import MatrixFreeOperator
 from mhx.numerics.spectral import spectral_wavenumbers
 from mhx.state import ReducedMHDParams, ReducedMHDState
 
-StateT = TypeVar("StateT")
-
-
-class LinearSolveResult(NamedTuple):
-    """Backend-independent linear solution and convergence diagnostics."""
-
-    x: Any
-    residual_norm: Array
-    iterations: Array
-    converged: Array
-
-
-class NonlinearSolveResult(NamedTuple):
-    """Backend-independent nonlinear solution and convergence diagnostics."""
-
-    x: Any
-    residual_norm: Array
-    nonlinear_iterations: Array
-    linear_iterations: Array
-    converged: Array
-    linear_converged: Array
-
-
-def _solvax() -> Any:
-    try:
-        import solvax
-    except ImportError as error:  # pragma: no cover - depends on optional environment.
-        raise ImportError(
-            "SOLVAX-backed methods require the optional solver dependencies; "
-            "install MHX with the 'solvers' extra"
-        ) from error
-    return solvax
-
 
 def as_solvax_operator(operator: MatrixFreeOperator) -> Any:
-    """Adapt an MHX flat matrix-free operator to SOLVAX's algebraic shape."""
+    """Adapt a flat MHX operator to :class:`solvax.MatrixFreeOperator`.
+
+    Args:
+        operator: MHX operator whose input and output are one-dimensional.
+
+    Returns:
+        A SOLVAX operator with a square matrix shape.
+    """
     size = 1
     for extent in operator.shape:
         size *= extent
@@ -57,7 +32,7 @@ def as_solvax_operator(operator: MatrixFreeOperator) -> Any:
             "SOLVAX's algebraic operator adapter requires a flat MHX vector shape, "
             f"got {operator.shape}"
         )
-    return _solvax().MatrixFreeOperator(operator, shape=(size, size))
+    return solvax.MatrixFreeOperator(operator, shape=(size, size))
 
 
 def complex_linear_extension(
@@ -71,79 +46,26 @@ def complex_linear_extension(
     return apply
 
 
-def gmres_solve(
-    matvec: Callable[[StateT], StateT],
-    rhs: StateT,
-    *,
-    x0: StateT | None = None,
-    preconditioner: Callable[[StateT], StateT] | None = None,
-    restart: int = 30,
-    rtol: float = 1.0e-9,
-    atol: float = 1.0e-11,
-    max_restarts: int = 10,
-) -> LinearSolveResult:
-    """Solve a matrix-free system with SOLVAX FGMRES."""
-    solution = _solvax().gmres(
-        matvec,
-        rhs,
-        x0=x0,
-        precond=preconditioner,
-        restart=restart,
-        rtol=rtol,
-        atol=atol,
-        max_restarts=max_restarts,
-    )
-    return LinearSolveResult(
-        x=solution.x,
-        residual_norm=solution.residual_norm,
-        iterations=solution.iterations,
-        converged=solution.converged,
-    )
-
-
-def newton_krylov_solve(
-    residual: Callable[[StateT], StateT],
-    x0: StateT,
-    *,
-    preconditioner: Callable[[StateT], StateT] | None = None,
-    rtol: float = 1.0e-9,
-    atol: float = 1.0e-11,
-    max_steps: int = 20,
-    linear_restart: int = 30,
-    linear_rtol: float = 0.1,
-    linear_atol: float = 0.0,
-    linear_max_restarts: int = 10,
-) -> NonlinearSolveResult:
-    """Solve a PyTree residual with SOLVAX Jacobian-free Newton–Krylov."""
-    solution = _solvax().newton_krylov(
-        residual,
-        x0,
-        precond=preconditioner,
-        rtol=rtol,
-        atol=atol,
-        max_steps=max_steps,
-        linear_restart=linear_restart,
-        linear_rtol=linear_rtol,
-        linear_atol=linear_atol,
-        linear_max_restarts=linear_max_restarts,
-    )
-    return NonlinearSolveResult(
-        x=solution.x,
-        residual_norm=solution.residual_norm,
-        nonlinear_iterations=solution.newton_iterations,
-        linear_iterations=solution.linear_iterations,
-        converged=solution.converged,
-        linear_converged=solution.linear_converged,
-    )
-
-
 def spectral_diffusion_preconditioner(
     params: ReducedMHDParams,
     *,
     lengths: tuple[float, float],
     dt: float,
 ) -> Callable[[ReducedMHDState], ReducedMHDState]:
-    """Return the exact inverse of the backward-Euler diffusion principal part."""
+    """Build an exact spectral inverse for the linear diffusion terms.
+
+    SOLVAX calls the returned function as a right preconditioner during each
+    Newton--Krylov step. MHX supplies the Fourier symbol because it follows
+    directly from the reduced-MHD equations.
+
+    Args:
+        params: Resistivity and viscosity.
+        lengths: Periodic domain length in each direction.
+        dt: Backward-Euler step size.
+
+    Returns:
+        A function that applies the inverse diffusion operator to a state.
+    """
     if dt <= 0.0:
         raise ValueError("dt must be positive")
     if len(lengths) != 2 or any(length <= 0.0 for length in lengths):

@@ -26,7 +26,16 @@ def _tree_add_scaled(left: StateT, scale: float, right: StateT) -> StateT:
 
 
 def rk4_step(state: StateT, rhs: Callable[[StateT], StateT], dt: float) -> StateT:
-    """Advance one Runge-Kutta 4 step for a PyTree state."""
+    """Advance one classical fourth-order Runge--Kutta step.
+
+    Args:
+        state: Current state as any JAX PyTree.
+        rhs: Function that returns the time derivative of ``state``.
+        dt: Positive time-step size.
+
+    Returns:
+        The state after one step.
+    """
     k1 = rhs(state)
     k2 = rhs(_tree_add_scaled(state, 0.5 * dt, k1))
     k3 = rhs(_tree_add_scaled(state, 0.5 * dt, k2))
@@ -50,13 +59,24 @@ def evolve_rk4(
     save_every: int = 1,
     t0: float = 0.0,
 ) -> ReducedMHDTrajectory:
-    """Evolve a state with RK4 and save every ``save_every`` steps.
+    """Evolve a state with RK4 and retain selected steps.
 
     The implementation advances ``save_every`` internal steps per saved sample,
     so long runs store only the returned trajectory rather than every internal
     RK4 step. The final state is always included, even when ``steps`` is not an
     exact multiple of ``save_every``. Returned times are absolute and start
     after ``t0``.
+
+    Args:
+        state0: State at ``t0``.
+        rhs: Function that returns the time derivative.
+        dt: Positive fixed step.
+        steps: Number of time steps.
+        save_every: Retain a state after this many steps.
+        t0: Initial time.
+
+    Returns:
+        Saved times and states.
     """
     if steps < 1:
         raise ValueError("steps must be >= 1")

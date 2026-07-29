@@ -30,6 +30,7 @@ jobs:
       - name: Lint
         run: |
           python -m ruff check src tests examples tools
+          python tools/check_prose.py
       - name: Legacy import guard
         run: |
           python tools/check_legacy_imports.py
@@ -112,7 +113,7 @@ jobs:
       - name: Install
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -e ".[docs,test]"
+          python -m pip install -e ".[dev]"
       - name: Check docs links and media
         run: |
           python -m pytest tests/test_docs_links.py tests/test_readme_media.py
