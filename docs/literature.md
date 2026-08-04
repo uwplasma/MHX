@@ -15,6 +15,38 @@ research workflows.
 - [JAX-Fluids](https://github.com/tumaer/JAXFLUIDS) is a current reference for
   differentiable CFD implementation and performance discipline in JAX.
 
+## Spectral and parallel implementation
+
+- [Orszag (1971)](https://doi.org/10.1175/1520-0469(1971)028%3C1074:OTEOAI%3E2.0.CO;2)
+  gives the high-wavenumber filtering rule used to remove quadratic aliasing.
+  MHX filters nonlinear inputs once in Fourier space and filters each bracket
+  output. Differentiation commutes with that mask.
+- [JAX-CFD's spectral equations](https://github.com/google/jax-cfd/blob/main/jax_cfd/spectral/equations.py)
+  keep the evolving vorticity in Fourier space and form all physical
+  derivatives from those coefficients. MHX uses the same transform-reuse
+  principle for magnetic flux and vorticity.
+- [JAX `shard_map`](https://docs.jax.dev/en/latest/notebooks/shard_map.html)
+  specifies the program seen by each device and exposes collectives such as
+  `all_to_all`. MHX uses an explicit map for independent cases because named
+  array placement alone did not prevent replicated batched FFT work.
+- [JAX multi-process documentation](https://docs.jax.dev/en/latest/multi_process.html)
+  defines global devices, process-spanning arrays, initialization order, and
+  the requirement that every process enter collectives in the same order.
+- [jaxDecomp](https://doi.org/10.21105/joss.08852) implements slab and pencil
+  decompositions with local FFTs and global transposes. Its strong-scaling
+  results use large three-dimensional grids on H100 GPUs.
+- [heFFTe](https://netlib.org/utk/people/JackDongarra/PAPERS/heffte.pdf)
+  shows why distributed FFT performance depends on the decomposition,
+  communication backend, message latency, and interconnect.
+- [NVIDIA cuFFT](https://docs.nvidia.com/cuda/cufft/#multiple-gpu-cufft-transforms)
+  notes that a multi-GPU transform is not guaranteed to beat one GPU and that
+  NVLink or GPUs under the same PCIe switch give the best results.
+
+These sources lead to two separate parallel paths. Field sharding helps when
+one state does not fit on one device, but a two-dimensional FFT must exchange
+data. Case sharding is collective-free inside a step and is the measured
+strong-scaling path for scans and seed ensembles.
+
 ## Plasma and MHD validation targets
 
 The first validation sequence will cover FKR/Coppi tearing growth, plasmoid

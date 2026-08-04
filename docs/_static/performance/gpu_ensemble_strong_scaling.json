@@ -1,0 +1,42 @@
+{
+  "date": "2026-07-29",
+  "platform": "gpu",
+  "hardware": "Two NVIDIA RTX A4000 16 GB GPUs across PCIe host bridges in one NUMA node; no NVLink",
+  "python_version": "3.10.12",
+  "jax_version": "0.6.2",
+  "solvax_version": "0.6.0",
+  "shape": [
+    1024,
+    1024
+  ],
+  "case_count": 4,
+  "parallel_axis": "independent_case",
+  "steps": 50,
+  "dt": 0.00005,
+  "samples_per_count": 3,
+  "finite": true,
+  "device_counts": [
+    1,
+    2
+  ],
+  "run_samples_seconds": [
+    [
+      2.104796529049054,
+      2.0893135210499167,
+      2.0887503719422966
+    ],
+    [
+      1.0868502480443567,
+      1.0547899820376188,
+      1.0700421440415084
+    ]
+  ],
+  "run_seconds": [
+    2.0893135210499167,
+    1.0700421440415084
+  ],
+  "speedup": [
+    1.0,
+    1.9525525538262065
+  ]
+}

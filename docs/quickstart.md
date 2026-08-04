@@ -1,124 +1,142 @@
-# Quickstart
+# Run your first model
 
-Install the active package in editable mode:
+This guide runs a seeded periodic current sheet. It prints the result, writes a
+figure, and saves each retained field.
 
-```bash
-python -m pip install -e ".[dev,docs]"
-```
+## 1. Install MHX
 
-Check the installed version:
-
-```bash
-mhx version
-```
-
-Run the first deterministic smoke workflow:
+From the repository root, run:
 
 ```bash
-mhx run examples/linear_tearing.toml --outdir outputs/smoke
+python -m pip install -e .
 ```
 
-Inspect the registered model pieces used by TOML configs:
+The base install includes SOLVAX and the plotting tools.
+
+## 2. Create the simulation
+
+Create a file named `first_run.py`:
+
+```python
+from pathlib import Path
+
+import mhx
+
+output = Path("outputs/first_run")
+
+simulation = mhx.Simulation(
+    shape=(64, 64),
+    equilibrium=mhx.PeriodicDoubleHarrisEquilibrium(
+        width=0.4,
+        perturbation_amplitude=4.0e-3,
+        perturbation_mode=(2, 1),
+    ),
+    resistivity=5.0e-3,
+    viscosity=5.0e-3,
+    dt=2.0e-2,
+    t_end=2.0,
+    save_every=10,
+)
+```
+
+`shape` sets the global periodic grid. Resistivity diffuses magnetic flux.
+Viscosity diffuses vorticity. The time settings produce 100 RK4 steps and save
+10 states.
+
+## 3. Run and inspect it
+
+Add these lines:
+
+```python
+result = simulation.run()
+result.print_summary()
+```
+
+The first call compiles and runs the JAX program. The second call prints timing,
+energy, and divergence data.
+
+Access the arrays directly when you need them:
+
+```python
+times = result.trajectory.times
+flux_history = result.trajectory.states.psi
+vorticity_history = result.trajectory.states.omega
+final_flux = result.final_state.psi
+```
+
+The field history uses the shape `(saved_time, nx, ny)`.
+
+## 4. Plot and save it
+
+Add these lines:
+
+```python
+figure = result.plot(output / "summary.png")
+data = result.save(output)
+
+print(f"Figure: {figure}")
+print(f"Data:   {data}")
+```
+
+The NPZ file contains time, flux, vorticity, settings, diagnostics, MHX
+version, and API version.
+
+## 5. Run the file
+
+Run:
 
 ```bash
-mhx physics equilibria
-mhx physics list
-mhx diagnostics list
+python first_run.py
 ```
 
-The command writes:
+Open `outputs/first_run/summary.png`. Load the saved fields with:
 
-- `config_effective.json`
-- `diagnostics.json`
-- `manifest.json`
-- `trajectory.npz`
+```python
+from mhx.io import read_reduced_mhd_trajectory_npz
 
-Regenerate figures from the saved run:
+trajectory, diagnostics = read_reduced_mhd_trajectory_npz(
+    "outputs/first_run/trajectory.npz"
+)
+```
+
+## Use an implicit step
+
+Set the integrator before you run:
+
+```python
+simulation = mhx.Simulation(
+    shape=(32, 32),
+    integrator="backward_euler",
+    dt=1.0e-2,
+    t_end=5.0e-2,
+)
+```
+
+SOLVAX does the Newton and GMRES work. After the run, check:
+
+```python
+print(result.diagnostics["implicit_converged"])
+print(result.diagnostics["implicit_linear_converged"])
+```
+
+Both values must be `True` before you use the result.
+
+## Use several CPU devices
+
+Run the CPU example:
 
 ```bash
-mhx figures outputs/smoke --gif
+python examples/gallery/04_cpu_parallel.py
 ```
 
-Expected figures:
+The script creates four logical CPU devices before JAX starts. It splits the
+first grid axis across those devices.
 
-- `outputs/smoke/figures/energy_history.png`
-- `outputs/smoke/figures/flux_final.png`
-- `outputs/smoke/figures/mode_amplitude.png`
-- `outputs/smoke/figures/flux_movie.gif`
+For other models, set `device_count` on `mhx.Simulation`. Make sure that
+`shape[0]` divides evenly by that count.
 
-Create a reviewer-readable summary:
+## Continue
 
-```bash
-mhx report outputs/smoke
-mhx artifact-manifest outputs/smoke
-```
-
-Run the same workflow through the benchmark command group:
-
-```bash
-mhx benchmark run --config examples/linear_tearing.toml --outdir outputs/benchmarks/linear_tearing_fast --gif
-mhx benchmark validate outputs/benchmarks/linear_tearing_fast
-mhx benchmark decay --outdir outputs/benchmarks/resistive_decay
-mhx benchmark scaling --outdir outputs/benchmarks/reconnection_scaling
-mhx benchmark fkr-window --outdir outputs/benchmarks/fkr_window
-mhx benchmark linearized-rhs --outdir outputs/benchmarks/linearized_rhs
-mhx benchmark reduced-mhd-eigenmode --outdir outputs/benchmarks/reduced_mhd_eigenmode
-mhx benchmark diffusion-eigenvalue --outdir outputs/benchmarks/diffusion_eigenvalue
-mhx benchmark power-iteration --outdir outputs/benchmarks/power_iteration
-mhx benchmark arnoldi --outdir outputs/benchmarks/arnoldi
-mhx benchmark timing --outdir outputs/benchmarks/timing --repeats 3 --warmups 1
-mhx benchmark catalog --outdir outputs/benchmarks/catalog
-```
-
-The smoke run validates the JAX spectral derivative path on a periodic
-Cartesian mesh. The exact-decay benchmark adds a physics gate for
-$\psi_k(t)=\psi_k(0)\exp(-\eta |k|^2t)$. These are deliberately small and
-deterministic; they are not yet the full tearing benchmark. The timing
-benchmark records wall-clock and Python-allocation summaries for comparing
-changes on the same machine or CI runner.
-
-Run a nonlinear reduced-MHD Orszag--Tang example with movies:
-
-```bash
-mhx benchmark orszag-tang --outdir outputs/examples/orszag_tang --nx 64 --ny 64 --t-end 6 --movies
-# equivalent thin Python wrapper
-python examples/run_orszag_tang.py --outdir outputs/examples/orszag_tang_script --nx 64 --ny 64 --t-end 6
-```
-
-The command writes `figures/orszag_tang_current.gif`,
-`figures/orszag_tang_vorticity.gif`, `figures/orszag_tang_flux.gif`, and a
-summary figure with energy and high-wavenumber diagnostics.
-
-Run the turbulence and forced-reconnection validation media used by the README:
-
-```bash
-mhx benchmark decaying-turbulence \
-  --outdir outputs/examples/decaying_mhd_turbulence \
-  --nx 64 --ny 64 --t-end 8 --save-every 20 --movies
-
-mhx benchmark forced-turbulent-reconnection \
-  --outdir outputs/examples/forced_turbulent_reconnection \
-  --nx 64 --ny 64 --t-end 80 --save-every 100 --movies
-```
-
-These commands write `diagnostics.json`, `validation.json`, an NPZ history,
-summary PNGs, optional GIFs, and a `manifest.json` with
-`claim_level = "validation"`.
-
-Try a local extension module without editing MHX source:
-
-```bash
-mhx run examples/linear_tearing_plugin_demo.toml --outdir outputs/plugin_demo
-mhx figures outputs/plugin_demo --gif
-mhx report outputs/plugin_demo
-mhx physics list-with-plugins --plugin-module examples.local_extension_plugin
-mhx diagnostics list-with-plugins --plugin-module examples.local_extension_plugin
-mhx physics lint example_flux_drive --plugin-module examples.local_extension_plugin
-mhx diagnostics lint final_flux_l2 --plugin-module examples.local_extension_plugin
-```
-
-This demo registers a toy flux-drive physics term and a `final_flux_l2`
-diagnostic from `examples/local_extension_plugin.py`. Installed plugin packages
-use the same registries through `--entry-point-group mhx.physics` and
-`--entry-point-group mhx.diagnostics`. The installable package skeleton in
-`examples/plugin_template/` shows the recommended external-repository layout.
+Use the [example gallery](https://github.com/uwplasma/MHX/tree/main/examples/gallery)
+for tearing, implicit steps, CPU sharding, GPU sharding, and scaling. Use
+[`mhx --help`](benchmarks.md) when you need validation or campaign commands.

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from dataclasses import asdict, dataclass, field, replace
 from pathlib import Path
 from typing import Any
@@ -98,6 +99,20 @@ class TimeConfig:
             raise ValueError("time.save_every must be >= 1")
         return self
 
+    @property
+    def steps(self) -> int:
+        """Return the validated number of fixed steps in ``[t0, t1]``."""
+        validated = self.validated()
+        step_count = (validated.t1 - validated.t0) / validated.dt
+        if not math.isclose(
+            step_count,
+            round(step_count),
+            rel_tol=1.0e-12,
+            abs_tol=1.0e-12,
+        ):
+            raise ValueError("time interval must contain an integer number of time.dt steps")
+        return int(round(step_count))
+
 
 @dataclass(frozen=True)
 class PhysicsConfig:
@@ -164,20 +179,84 @@ class PhysicsConfig:
 
 @dataclass(frozen=True)
 class NumericsConfig:
-    """Numerical method switches."""
+    """Spatial, temporal, and algebraic numerical controls."""
 
-    method: str = "spectral"
+    spatial_method: str = "fft_pseudospectral"
+    dealiasing: str = "two_thirds"
+    time_integrator: str = "rk4"
+    linear_solver: str = "solvax_gmres"
+    nonlinear_solver: str = "solvax_newton_krylov"
+    preconditioner: str = "spectral_diffusion"
+    rtol: float = 1.0e-9
+    atol: float = 1.0e-11
+    linear_restart: int = 30
+    linear_max_restarts: int = 10
+    nonlinear_max_steps: int = 20
     enable_x64: bool = True
     enable_jit: bool = True
 
     @classmethod
     def from_mapping(cls, mapping: dict[str, Any] | None) -> NumericsConfig:
         mapping = mapping or {}
+        legacy_method = mapping.get("method")
+        spatial_method = mapping.get("spatial_method")
+        if spatial_method is None and legacy_method is not None:
+            spatial_method = (
+                "fft_pseudospectral" if str(legacy_method) == "spectral" else legacy_method
+            )
         return cls(
-            method=str(mapping.get("method", cls.method)),
+            spatial_method=str(spatial_method or cls.spatial_method),
+            dealiasing=str(mapping.get("dealiasing", cls.dealiasing)),
+            time_integrator=str(mapping.get("time_integrator", cls.time_integrator)),
+            linear_solver=str(mapping.get("linear_solver", cls.linear_solver)),
+            nonlinear_solver=str(mapping.get("nonlinear_solver", cls.nonlinear_solver)),
+            preconditioner=str(mapping.get("preconditioner", cls.preconditioner)),
+            rtol=float(mapping.get("rtol", cls.rtol)),
+            atol=float(mapping.get("atol", cls.atol)),
+            linear_restart=int(mapping.get("linear_restart", cls.linear_restart)),
+            linear_max_restarts=int(
+                mapping.get("linear_max_restarts", cls.linear_max_restarts)
+            ),
+            nonlinear_max_steps=int(
+                mapping.get("nonlinear_max_steps", cls.nonlinear_max_steps)
+            ),
             enable_x64=bool(mapping.get("enable_x64", cls.enable_x64)),
             enable_jit=bool(mapping.get("enable_jit", cls.enable_jit)),
-        )
+        ).validated()
+
+    def validated(self) -> NumericsConfig:
+        if self.spatial_method != "fft_pseudospectral":
+            raise ValueError(
+                "numerics.spatial_method must be 'fft_pseudospectral', "
+                f"got {self.spatial_method!r}"
+            )
+        if self.dealiasing not in {"none", "two_thirds"}:
+            raise ValueError("numerics.dealiasing must be 'none' or 'two_thirds'")
+        if self.time_integrator not in {"rk4", "backward_euler"}:
+            raise ValueError(
+                "numerics.time_integrator must be 'rk4' or 'backward_euler'"
+            )
+        if self.linear_solver != "solvax_gmres":
+            raise ValueError("numerics.linear_solver must be 'solvax_gmres'")
+        if self.nonlinear_solver != "solvax_newton_krylov":
+            raise ValueError(
+                "numerics.nonlinear_solver must be 'solvax_newton_krylov'"
+            )
+        if self.preconditioner not in {"none", "spectral_diffusion"}:
+            raise ValueError(
+                "numerics.preconditioner must be 'none' or 'spectral_diffusion'"
+            )
+        if self.rtol <= 0.0:
+            raise ValueError("numerics.rtol must be positive")
+        if self.atol < 0.0:
+            raise ValueError("numerics.atol must be non-negative")
+        if self.linear_restart < 1:
+            raise ValueError("numerics.linear_restart must be >= 1")
+        if self.linear_max_restarts < 1:
+            raise ValueError("numerics.linear_max_restarts must be >= 1")
+        if self.nonlinear_max_steps < 1:
+            raise ValueError("numerics.nonlinear_max_steps must be >= 1")
+        return self
 
 
 @dataclass(frozen=True)
@@ -325,7 +404,17 @@ class RunConfig:
             f"{equilibrium_parameter_lines}"
             f"{term_parameter_lines}"
             "[numerics]\n"
-            f"method = \"{data['numerics']['method']}\"\n"
+            f"spatial_method = \"{data['numerics']['spatial_method']}\"\n"
+            f"dealiasing = \"{data['numerics']['dealiasing']}\"\n"
+            f"time_integrator = \"{data['numerics']['time_integrator']}\"\n"
+            f"linear_solver = \"{data['numerics']['linear_solver']}\"\n"
+            f"nonlinear_solver = \"{data['numerics']['nonlinear_solver']}\"\n"
+            f"preconditioner = \"{data['numerics']['preconditioner']}\"\n"
+            f"rtol = {data['numerics']['rtol']}\n"
+            f"atol = {data['numerics']['atol']}\n"
+            f"linear_restart = {data['numerics']['linear_restart']}\n"
+            f"linear_max_restarts = {data['numerics']['linear_max_restarts']}\n"
+            f"nonlinear_max_steps = {data['numerics']['nonlinear_max_steps']}\n"
             f"enable_x64 = {str(data['numerics']['enable_x64']).lower()}\n"
             f"enable_jit = {str(data['numerics']['enable_jit']).lower()}\n\n"
             "[diagnostics]\n"

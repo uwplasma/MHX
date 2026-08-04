@@ -61,14 +61,14 @@ REQUIRED_EXAMPLES = (
 README_REQUIRED_MARKERS = (
     "[![CI]",
     "[![Coverage]",
-    "[![Documentation Status]",
-    "MHD at a Glance",
-    "What Works Today",
-    "Install",
-    "Quickstart",
-    "Citation",
-    "does **not**",
-    "converged Rutherford island growth",
+    "[![Documentation]",
+    "First run",
+    "Example gallery",
+    "Physics and numerics",
+    "Parallel runs",
+    "Development",
+    "does not solve the full three-dimensional MHD",
+    "bounded validation runs",
 )
 
 RELEASE_CANDIDATE_PRODUCTION_GAPS = (

@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=42", "wheel"]
+requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -17,7 +17,7 @@ dependencies = [
   "matplotlib",
   "diffrax",
   "tqdm",
-  "typer>=0.9",
+  "typer",
 ]
 
 [project.scripts]
@@ -25,9 +25,9 @@ mhx = "mhx.cli.main:app"
 
 [project.optional-dependencies]
 ml = ["optax", "equinox"]
-dev = ["pytest>=7", "ruff>=0.1.0", "optax", "equinox", "imageio"]
+dev = ["pytest", "ruff", "optax", "equinox", "imageio"]
 
-docs = ["sphinx>=7", "sphinx-rtd-theme>=2", "pyyaml>=6"]
+docs = ["sphinx", "sphinx-rtd-theme", "pyyaml"]
 
 [tool.setuptools.packages.find]
 where = ["."]

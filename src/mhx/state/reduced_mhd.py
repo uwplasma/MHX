@@ -9,21 +9,37 @@ from jaxtyping import Array
 
 
 class ReducedMHDState(NamedTuple):
-    """2D reduced-MHD state using magnetic flux ``psi`` and vorticity ``omega``."""
+    """Two fields that define a reduced-MHD state.
+
+    Attributes:
+        psi: Magnetic flux function. Its in-plane curl gives the magnetic field.
+        omega: Out-of-plane vorticity. The stream function solves
+            ``laplacian(phi) = omega``.
+    """
 
     psi: Array
     omega: Array
 
 
 class ReducedMHDParams(NamedTuple):
-    """Diffusivities for resistive-viscous reduced MHD."""
+    """Physical diffusion coefficients.
+
+    Attributes:
+        resistivity: Magnetic diffusivity in the flux equation.
+        viscosity: Viscous diffusivity in the vorticity equation.
+    """
 
     resistivity: float
     viscosity: float
 
 
 class ReducedMHDTrajectory(NamedTuple):
-    """Saved reduced-MHD trajectory samples."""
+    """States retained during a simulation.
+
+    Attributes:
+        times: One-dimensional array of saved times.
+        states: Fields with a leading saved-time axis.
+    """
 
     times: Array
     states: ReducedMHDState

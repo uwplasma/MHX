@@ -1,45 +1,23 @@
 # MHX documentation
 
-MHX is a validation-first, differentiable JAX framework for magnetic
-reconnection and magnetohydrodynamics.
+MHX runs differentiable, two-dimensional reduced-MHD models in JAX. MHX owns
+the plasma model. SOLVAX owns the general numerical solvers.
 
-The active package is under `src/mhx/`.
+Start with these pages:
 
-## Active scope boundaries
+1. [Install MHX](install.md).
+2. [Run a model from Python](quickstart.md).
+3. [Read the reduced-MHD equations](reduced_mhd.md).
+4. [Check the output format](output_schema.md).
+5. [Check each validation limit](validation.md).
 
-The current repository supports deterministic FAST validation, seed-robust QI,
-fitted latent-ODE reproducibility, timing/readiness reports, nonlinear
-reduced-MHD media examples such as double-Harris, Orszag--Tang, decaying
-turbulence, and forced turbulent reconnection, plus short validation-grade
-Rutherford executor chunks. The latest bounded GPU double-Harris campaign
-(`outputs/campaigns/gpu_nonlinear_20260522_085049/double_harris_long_n128_t160`)
-is `gate_ready = true` for validation media and
-`production_claim_ready = false`; its promotion report explicitly permits only
-`claim_level_if_passed = "validation"`. Long nonlinear Rutherford/plasmoid
-production campaigns are still gated as future `production` claims and must
-pass duration, checkpoint-restart, convergence, seed/QI, positive
-reconnecting-flux and island-width response, artifact-hash, and explicit
-production-claim checks before being used as paper evidence.
+The package source is under `src/mhx/`. Beginner scripts are under
+`examples/gallery/`. Benchmark commands produce review records and publication
+checks.
 
-## Evidence guide
-
-Start with these pages when checking validation evidence and scope boundaries:
-
-- [Evidence map](reviewer_evidence.md) links claims to source files,
-  tests, reproduction commands, artifacts, and explicit limitations.
-- [Physics validation](validation.md) contains the equations, citations,
-  still-figure gallery, and numerical gates that are intentionally kept out of
-  the README.
-- [Benchmark command index](benchmarks.md) lists validation, scaffold,
-  comparison, campaign, and neural-ODE commands with expected output families.
-- [Validation movies](media.md) separates solver-generated movies from theory
-  schematics, documents the residual-flux media policy, and keeps the
-  literature anchors next to the visuals.
-- [Publication checklist](publication_checklist.md) states which figures are
-  ready as validation evidence and which remain roadmap or production-only.
-- [Nonlinear campaign evidence claims](nonlinear_campaign_evidence.md) is the
-  claim table plus reviewer commands for double-Harris, Rutherford, and forced
-  turbulent-reconnection long-run evidence.
+MHX currently supports periodic two-dimensional reduced MHD. It does not solve
+full three-dimensional MHD. Read each artifact manifest before you use a
+validation run as research evidence.
 
 ```{toctree}
 :maxdepth: 2
@@ -47,6 +25,7 @@ Start with these pages when checking validation evidence and scope boundaries:
 install
 tutorial
 quickstart
+writing_style
 reviewer_evidence
 validation
 benchmarks

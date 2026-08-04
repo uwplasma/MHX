@@ -1,0 +1,118 @@
+"""Check the first-read MHX documents for direct technical prose."""
+
+from __future__ import annotations
+
+import re
+from pathlib import Path
+
+ROOT = Path(__file__).parents[1]
+DOCUMENTS = (
+    ROOT / "README.md",
+    ROOT / "docs" / "index.md",
+    ROOT / "docs" / "api.md",
+    ROOT / "docs" / "architecture.md",
+    ROOT / "docs" / "install.md",
+    ROOT / "docs" / "performance.md",
+    ROOT / "docs" / "quickstart.md",
+    ROOT / "docs" / "writing_style.md",
+    ROOT / "examples" / "README.md",
+    ROOT / "examples" / "gallery" / "README.md",
+)
+
+BANNED_TERMS = (
+    "cutting-edge",
+    "delve",
+    "empower",
+    "facilitate",
+    "foster",
+    "game changer",
+    "harness",
+    "landscape",
+    "leverage",
+    "moreover",
+    "paradigm shift",
+    "realm",
+    "robust",
+    "streamline",
+    "tapestry",
+    "unlock",
+    "utilize",
+)
+
+
+def prose_without_code(text: str) -> str:
+    """Remove fenced code, inline code, links, and tables before checks."""
+    text = re.sub(r"```.*?```", "", text, flags=re.DOTALL)
+    text = re.sub(r"`[^`]+`", "", text)
+    text = re.sub(r"^\[!\[.*$", "", text, flags=re.MULTILINE)
+    text = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", text)
+    lines = [
+        line
+        for line in text.splitlines()
+        if not line.lstrip().startswith("|") and not line.lstrip().startswith("#")
+    ]
+    return "\n".join(lines)
+
+
+def check_document(path: Path) -> list[str]:
+    """Return actionable style errors for one Markdown file."""
+    prose = prose_without_code(path.read_text(encoding="utf-8"))
+    errors: list[str] = []
+    lowered = prose.lower()
+    for term in BANNED_TERMS:
+        if re.search(rf"\b{re.escape(term)}\b", lowered):
+            errors.append(f"replace filler term {term!r}")
+    if ";" in prose:
+        errors.append("replace semicolons with full stops or separate steps")
+    if "—" in prose:
+        errors.append("replace em dashes with commas or full stops")
+
+    # Find written contractions through their apostrophe forms.
+    apostrophe_forms = (
+        "aren't",
+        "can't",
+        "couldn't",
+        "didn't",
+        "doesn't",
+        "don't",
+        "hasn't",
+        "haven't",
+        "isn't",
+        "it's",
+        "shouldn't",
+        "that's",
+        "they're",
+        "wasn't",
+        "we're",
+        "won't",
+        "wouldn't",
+    )
+    for contraction in apostrophe_forms:
+        if re.search(rf"\b{re.escape(contraction)}\b", lowered):
+            errors.append(f"expand contraction {contraction!r}")
+
+    sentences = re.split(r"(?<=[.!?])\s+|\n\s*\n", prose.strip())
+    for sentence in sentences:
+        sentence = re.sub(r"\s+", " ", sentence)
+        words = re.findall(r"[A-Za-z0-9]+(?:[-'][A-Za-z0-9]+)*", sentence)
+        if len(words) > 25:
+            preview = " ".join(words[:8])
+            errors.append(f"shorten {len(words)}-word sentence starting {preview!r}")
+    return errors
+
+
+def main() -> int:
+    """Print all prose errors and return a shell status."""
+    failures = []
+    for document in DOCUMENTS:
+        for error in check_document(document):
+            failures.append(f"{document.relative_to(ROOT)}: {error}")
+    if failures:
+        print("\n".join(failures))
+        return 1
+    print(f"Prose check passed for {len(DOCUMENTS)} documents.")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

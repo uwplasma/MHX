@@ -31,7 +31,17 @@ nu4 = 1e-5
 rate = 0.01
 
 [numerics]
-method = "spectral"
+spatial_method = "fft_pseudospectral"
+dealiasing = "two_thirds"
+time_integrator = "rk4"
+linear_solver = "solvax_gmres"
+nonlinear_solver = "solvax_newton_krylov"
+preconditioner = "spectral_diffusion"
+rtol = 1.0e-9
+atol = 1.0e-11
+linear_restart = 30
+linear_max_restarts = 10
+nonlinear_max_steps = 20
 enable_x64 = true
 enable_jit = true
 

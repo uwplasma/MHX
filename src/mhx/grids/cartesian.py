@@ -12,7 +12,14 @@ from mhx.config import MeshConfig
 
 @dataclass(frozen=True)
 class CartesianGrid:
-    """Uniform Cartesian grid with cell-centered coordinates."""
+    """Uniform, cell-centered grid for a periodic two-dimensional domain.
+
+    Args:
+        shape: Grid points in each direction.
+        lower: Lower coordinate bounds.
+        upper: Upper coordinate bounds.
+        periodic: Periodic flags. The active spectral solver requires both.
+    """
 
     shape: tuple[int, int]
     lower: tuple[float, float]
@@ -51,8 +58,7 @@ class CartesianGrid:
     def spacing(self) -> tuple[float, float]:
         """Cell spacings."""
         return tuple(
-            length / points
-            for length, points in zip(self.lengths, self.shape, strict=True)
+            length / points for length, points in zip(self.lengths, self.shape, strict=True)
         )
 
     @property

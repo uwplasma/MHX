@@ -33,7 +33,13 @@ class EquilibriumMetadata:
 
 @dataclass(frozen=True)
 class CosineTearingEquilibrium:
-    r"""Periodic current-sheet-like equilibrium ``ψ₀=cos(y)+ε cos(x)cos(y)``."""
+    r"""Periodic cosine current sheet with one seeded Fourier mode.
+
+    The initial flux is ``ψ₀=cos(y)+ε cos(x)cos(y)`` after coordinate scaling.
+
+    Args:
+        perturbation_amplitude: Seed amplitude ``ε``.
+    """
 
     perturbation_amplitude: float = 1.0e-3
 
@@ -44,9 +50,11 @@ class CosineTearingEquilibrium:
         x, y = grid.mesh()
         length_x, length_y = grid.lengths
         psi_equilibrium = jnp.cos(2.0 * jnp.pi * y / length_y)
-        perturbation = self.perturbation_amplitude * jnp.cos(
-            2.0 * jnp.pi * x / length_x
-        ) * jnp.cos(2.0 * jnp.pi * y / length_y)
+        perturbation = (
+            self.perturbation_amplitude
+            * jnp.cos(2.0 * jnp.pi * x / length_x)
+            * jnp.cos(2.0 * jnp.pi * y / length_y)
+        )
         omega = jnp.zeros_like(psi_equilibrium)
         return ReducedMHDState(psi=psi_equilibrium + perturbation, omega=omega)
 
@@ -59,12 +67,15 @@ class PeriodicDoubleHarrisEquilibrium:
 
     ``B_y = A[tanh((x-L_x/4)/a) - tanh((x-3L_x/4)/a) - 1]``.
 
-    The corresponding flux is shifted to zero mean and remains periodic to
-    exponentially small boundary error when ``a << L_x``.  This is the
-    periodic spectral analogue of the Harris-sheet geometry used by the direct
-    tearing eigenvalue benchmarks; it is intended for nonlinear growth gates and
-    production-campaign initial data, not as a replacement for the finite-domain
-    FKR/Harris eigenproblem.
+    The flux has zero mean. It is periodic to exponentially small boundary
+    error when ``a << L_x``.
+
+    Args:
+        width: Current-sheet half-width ``a``.
+        amplitude: Reconnecting-field scale ``A``.
+        perturbation_amplitude: Seeded flux amplitude. Set it to zero for the
+            unperturbed equilibrium.
+        perturbation_mode: Fourier indices of the seed in ``(x, y)`` order.
     """
 
     width: float = 0.4
@@ -84,16 +95,23 @@ class PeriodicDoubleHarrisEquilibrium:
         length_x, length_y = grid.lengths
         sheet_left = 0.25 * length_x
         sheet_right = 0.75 * length_x
-        flux = self.amplitude * self.width * (
-            jnp.log(jnp.cosh((x - sheet_left) / self.width))
-            - jnp.log(jnp.cosh((x - sheet_right) / self.width))
-        ) - self.amplitude * x
+        flux = (
+            self.amplitude
+            * self.width
+            * (
+                jnp.log(jnp.cosh((x - sheet_left) / self.width))
+                - jnp.log(jnp.cosh((x - sheet_right) / self.width))
+            )
+            - self.amplitude * x
+        )
         flux = flux - jnp.mean(flux)
         if self.perturbation_amplitude != 0.0:
             mode_x, mode_y = self.perturbation_mode
-            perturbation = self.perturbation_amplitude * jnp.cos(
-                2.0 * jnp.pi * mode_x * x / length_x
-            ) * jnp.cos(2.0 * jnp.pi * mode_y * y / length_y)
+            perturbation = (
+                self.perturbation_amplitude
+                * jnp.cos(2.0 * jnp.pi * mode_x * x / length_x)
+                * jnp.cos(2.0 * jnp.pi * mode_y * y / length_y)
+            )
             flux = flux + perturbation
         return ReducedMHDState(psi=flux, omega=jnp.zeros_like(flux))
 
