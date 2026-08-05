@@ -613,3 +613,17 @@ can trail the rest of P3 by one PR if the machines are busy.
   citations resolving, 282 fast tests pass, `ruff` passes.
 - Remaining in P2: light passes over how_to/run_from_toml, extend_physics,
   add_diagnostics, reference/cli intro, and a develop/architecture trim.
+
+### 2026-08-05 — P2 batch 2: how-to titles and architecture trim
+
+- Retitled and reframed the moved pages for their new roles:
+  `how_to/run_from_toml.md` (was the tutorial page),
+  `how_to/extend_physics.md`, `how_to/add_diagnostics.md`, and
+  `reference/cli.md`.
+- Trimmed `develop/architecture.md`: the spectral, time, and SOLVAX sections
+  now point to the physics pages instead of duplicating them. Added the four
+  JAX design rules. Kept the layering table and device path.
+- Checks: `check_prose` passes, `sphinx-build -W` passes, docs and release
+  gates pass. P2 is complete except for content that P3 and P4 own, movie
+  embeds and tutorials.
+- Next: verify the ReadTheDocs build of the new theme, then P3 media.

@@ -30,49 +30,17 @@ The package separates model code from general numerical algebra:
 The config and command-line modules support recorded benchmark campaigns. New
 users can start with `mhx.Simulation` and ignore those modules.
 
-## MHX and SOLVAX
+## Where the numerics are documented
 
-MHX owns calculations that carry physical meaning:
+The physics section documents each numerical layer beside its equations:
 
-- state variables and signs
-- boundary and gauge rules
-- spatial discretization
-- time-discrete physical residuals
-- physics-based preconditioners
-- diagnostics and validation gates
-
-SOLVAX owns calculations that apply to many models:
-
-- matrix-free operator containers
-- GMRES and recycled Krylov methods
-- Newton--Krylov solves
-- general preconditioner composition
-- implicit differentiation
-
-Backward Euler forms its reduced-MHD residual in MHX. It passes that residual
-and the spectral diffusion preconditioner to `solvax.newton_krylov`.
-
-## Spectral path
-
-The current solver uses periodic Fourier derivatives:
-
-$$
-\partial_x f = \mathcal{F}^{-1}\left[i k_x \mathcal{F}(f)\right].
-$$
-
-Configured runs use the two-thirds filter for nonlinear products. The
-inverse-Laplacian sets the mean Fourier mode to zero. RK4 keeps both evolving
-fields in Fourier space. One batched inverse transform produces the eight
-derivatives used by all three Poisson brackets. One batched forward transform
-returns those brackets to Fourier space.
-
-## Time path
-
-RK4 uses `jax.lax.scan`. It stores only the requested states. The last state is
-always present, even when `save_every` does not divide the step count.
-
-Backward Euler uses a matrix-free Jacobian. SOLVAX computes Jacobian-vector
-products with JAX and solves each linear update with GMRES.
+- [The reduced-MHD model](../physics/reduced_mhd.md) for `equations` and
+  `physics`.
+- [Spectral method](../physics/spectral_method.md) for `numerics.spectral`.
+- [Time integration](../physics/time_integration.md) for `time_integrators`.
+- [MHX and SOLVAX](../physics/solvax_boundary.md) for the solver contract.
+- [Differentiability](../physics/differentiability.md) for the pure
+  functional layer that JAX transformations require.
 
 ## Device path
 
@@ -80,10 +48,19 @@ products with JAX and solves each linear update with GMRES.
 can split a field for one large trajectory. `Simulation.run_ensemble` splits
 the case axis and gives each device complete local trajectories.
 
-Distributed Fourier transforms require device communication. Independent cases
-do not communicate inside the time loop, so case parallelism is the first
-choice for scans and seed ensembles. The checked CPU and GPU measurements are
-in {doc}`../reference/performance`.
+Distributed Fourier transforms require device communication. Independent
+cases do not communicate inside the time loop, so case parallelism is the
+first choice for scans and seed ensembles. The checked CPU and GPU
+measurements are in {doc}`../reference/performance`.
+
+## Design rules
+
+1. Solver state never mutates inside JIT. Steps are pure functions.
+2. Time loops run under `jax.lax.scan`, never Python loops.
+3. Differentiable values live in parameter PyTrees. Static choices live in
+   config objects.
+4. Every run artifact records schema and API versions through
+   `mhx.versioning`.
 
 ## Current limit
 

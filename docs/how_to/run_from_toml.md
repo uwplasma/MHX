@@ -1,7 +1,10 @@
-# Tutorial: from first run to validation media
+# Run from a TOML config
 
-This tutorial keeps the first-pass path short while pointing to the evidence
-pages that carry the full reviewer context.
+The TOML path turns a run into a recorded, auditable workflow: one config
+file in, one run directory out, with manifests and reports beside the data.
+Use it for benchmarks, campaigns, and anything a reviewer will read. The
+[configuration reference](../reference/config_schema.md) documents every
+field.
 
 ## 1. Create and run a config
 

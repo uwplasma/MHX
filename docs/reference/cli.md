@@ -1,4 +1,7 @@
-# Benchmarks
+# Benchmark commands
+
+Run `mhx --help` for the full command tree. This page documents the
+benchmark and validation workflows, which are the largest command group.
 
 MHX benchmark workflows are intentionally command-line reproducible. The active
 catalog now includes a FAST reduced-MHD smoke run, exact linear physics gates,

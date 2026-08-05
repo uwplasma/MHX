@@ -1,5 +1,6 @@
-# Physics plugins
+# Extend the physics
 
+Add an equilibrium or a right-hand-side term without editing MHX source.
 MHX exposes two small composability layers:
 
 - named equilibria that build initial reduced-MHD states;

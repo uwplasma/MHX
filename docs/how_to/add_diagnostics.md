@@ -1,4 +1,4 @@
-# Diagnostics registry
+# Add diagnostics
 
 MHX diagnostics are centralized in `mhx.diagnostics` so runs, reports,
 benchmarks, and future scan/inverse-design workflows use the same definitions.
