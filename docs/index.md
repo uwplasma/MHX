@@ -40,7 +40,7 @@ simulation = mhx.Simulation(
     resistivity=5.0e-3,
     viscosity=5.0e-3,
     dt=2.0e-2,
-    t_end=2.0,
+    t_end=40.0,
 )
 result = simulation.run()
 result.print_summary()

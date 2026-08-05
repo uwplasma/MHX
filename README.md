@@ -12,6 +12,8 @@ Use MHX to study periodic current sheets, tearing modes, reconnection, and
 reduced-MHD turbulence. MHX does not solve the full three-dimensional MHD
 equations.
 
+![Double-Harris reconnection: residual flux with flux contours and X/O markers](docs/_static/readme/double_harris_reconnection.gif)
+
 ## First run
 
 Install the current source:
@@ -43,8 +45,8 @@ simulation = mhx.Simulation(
     resistivity=5.0e-3,
     viscosity=5.0e-3,
     dt=2.0e-2,
-    t_end=2.0,
-    save_every=10,
+    t_end=40.0,
+    save_every=100,
 )
 
 result = simulation.run()
@@ -59,15 +61,20 @@ Run it:
 python reconnection.py
 ```
 
-MHX prints the grid, physics settings, device count, compile time, run time,
-energy, and divergence error. It writes a four-panel summary and a compressed
-field history.
+The run takes seconds on a laptop CPU. MHX prints the grid, physics settings,
+device count, compile time, run time, energy, and divergence error. The
+summary figure includes the island flux, the view that shows the growing
+tearing mode. The saved NPZ file holds the full field history.
+
+The documentation walks through every step:
+[run your first model](https://mhx.readthedocs.io/en/latest/getting_started/first_run.html),
+then [make your first movie](https://mhx.readthedocs.io/en/latest/getting_started/first_movie.html).
 
 ## Example gallery
 
-The scripts in [`examples/gallery/`](examples/gallery/) use the same sequence
-as the first run. Edit the settings at the top of a script, then run it from
-the repository root.
+The scripts in [`examples/gallery/`](examples/gallery/) use the same
+structure as the first run. Edit the settings at the top of a script, then
+run it from the repository root.
 
 | Script | Purpose |
 | --- | --- |
@@ -78,13 +85,17 @@ the repository root.
 | [`05_gpu_parallel.py`](examples/gallery/05_gpu_parallel.py) | Split one field across all visible GPUs. |
 | [`06_strong_scaling.py`](examples/gallery/06_strong_scaling.py) | Strong-scale one fixed reconnection ensemble. |
 | [`07_multi_process.py`](examples/gallery/07_multi_process.py) | Run one ensemble across JAX processes. |
+| [`08_gradient.py`](examples/gallery/08_gradient.py) | Differentiate a solve and check the gradient numerically. |
 
 | Reconnection | Turbulence | Orszag--Tang |
 | --- | --- | --- |
-| ![Double-Harris reconnection](docs/_static/readme/double_harris_reconnection.gif) | ![Decaying reduced-MHD turbulence](docs/_static/readme/decaying_mhd_turbulence_current.gif) | ![Orszag-Tang current density](docs/_static/readme/orszag_tang_current.gif) |
+| ![Double-Harris current sheet](docs/_static/readme/double_harris_current_sheet.gif) | ![Decaying reduced-MHD turbulence](docs/_static/readme/decaying_mhd_turbulence_current.gif) | ![Orszag-Tang current density](docs/_static/readme/orszag_tang_current.gif) |
 
-These images show bounded validation runs. See
-[`docs/project/media_inventory.md`](docs/project/media_inventory.md) for their settings and claim limits.
+These images show bounded validation runs. The
+[gallery](https://mhx.readthedocs.io/en/latest/gallery.html) plays them as
+movies, and the
+[media inventory](docs/project/media_inventory.md) records their settings and
+claim limits.
 
 ## Physics and numerics
 
@@ -102,104 +113,44 @@ SOLVAX owns general numerical algebra:
 - Newton--Krylov root solves
 - preconditioners and implicit differentiation
 
-The base MHX install always includes SOLVAX. MHX has two optional dependency
-groups: `dev` for repository work and `research` for neural-ODE experiments.
+The documentation states the
+[equations and their derivation](https://mhx.readthedocs.io/en/latest/physics/reduced_mhd.html),
+the [spectral method](https://mhx.readthedocs.io/en/latest/physics/spectral_method.html),
+and [what differentiates](https://mhx.readthedocs.io/en/latest/physics/differentiability.html).
 
 ## Parallel runs
 
-Set `device_count` to select a JAX device mesh. For one large trajectory, MHX
-can divide the field. For a seed or parameter study, divide independent cases.
-This avoids communication inside the time loop.
-
-Create four logical CPU devices:
+Set `device_count` to shard one large field, or run independent cases as an
+ensemble. Ensembles avoid communication inside the time loop, so prefer them
+for scans and seed studies.
 
 ```bash
 python examples/gallery/04_cpu_parallel.py
-```
-
-Run on every visible GPU:
-
-```bash
 JAX_PLATFORM_NAME=gpu python examples/gallery/05_gpu_parallel.py
 ```
 
-JAX compiles one SPMD program for the device mesh. MHX reports compile and run
-times separately. The scaling example times the run after compilation.
-
 ![Strong-scaling measurements](docs/_static/readme/strong_scaling.png)
 
-The plot holds four reconnection cases fixed. The measured speedup is 2.38x on
-four logical CPU devices and 1.95x on two PCIe-connected RTX A4000 GPUs. Its
-data and exact settings are in
-[`docs/_static/performance/`](docs/_static/performance/).
-
-```python
-equilibria = tuple(
-    mhx.PeriodicDoubleHarrisEquilibrium(
-        perturbation_amplitude=1.0e-3 * (1.0 + 0.05 * case)
-    )
-    for case in range(4)
-)
-
-result = mhx.Simulation(
-    shape=(1024, 1024),
-    device_count=2,
-).run_ensemble(equilibria)
-```
-
-One distributed two-dimensional FFT must exchange data. Independent cases do
-not. Use ensemble parallelism for scans and seed studies. Use field sharding
-when one trajectory is too large for one device.
-
-On a scheduler or MPI installation, run one copy per process:
-
-```bash
-mpirun -np 2 python examples/gallery/07_multi_process.py
-```
-
-Every process runs the same script. `mhx.initialize_distributed()` must execute
-before any code queries JAX devices.
-
-## Choose a time integrator
-
-RK4 is the default:
-
-```python
-simulation = mhx.Simulation(integrator="rk4")
-```
-
-Backward Euler uses SOLVAX for each nonlinear step:
-
-```python
-simulation = mhx.Simulation(
-    integrator="backward_euler",
-    dt=1.0e-2,
-    t_end=1.0e-1,
-)
-```
-
-Use backward Euler when a larger stable time step offsets the cost of its
-Newton and GMRES iterations. Check the convergence fields in
-`result.diagnostics` before you use the output.
+The measured speedup is 2.38x on four logical CPU devices and 1.95x on two
+PCIe-connected RTX A4000 GPUs, for four fixed reconnection cases. The
+[device guide](https://mhx.readthedocs.io/en/latest/how_to/run_on_gpus.html)
+and [performance page](docs/reference/performance.md) hold the settings and
+data.
 
 ## Documentation
 
 | Need | Read |
 | --- | --- |
-| Installation | [`docs/getting_started/install.md`](docs/getting_started/install.md) |
-| Guided first model | [`docs/getting_started/first_run.md`](docs/getting_started/first_run.md) |
-| Equations and model | [`docs/physics/reduced_mhd.md`](docs/physics/reduced_mhd.md) |
+| Install and first steps | [Get started](https://mhx.readthedocs.io/en/latest/getting_started/install.html) |
+| Equations and derivation | [`docs/physics/reduced_mhd.md`](docs/physics/reduced_mhd.md) |
+| Gradients | [`docs/physics/differentiability.md`](docs/physics/differentiability.md) |
+| Validation gates and limits | [`docs/validation/index.md`](docs/validation/index.md) |
 | TOML configuration | [`docs/reference/config_schema.md`](docs/reference/config_schema.md) |
 | Output files | [`docs/reference/output_schema.md`](docs/reference/output_schema.md) |
-| Validation limits | [`docs/validation/index.md`](docs/validation/index.md) |
-| Performance tests | [`docs/reference/performance.md`](docs/reference/performance.md) |
-| Benchmark commands | [`docs/reference/cli.md`](docs/reference/cli.md) |
-| Long-run evidence | [`docs/project/long_run_evidence.md`](docs/project/long_run_evidence.md) |
-| Campaign runner | [`docs/project/campaign_runner.md`](docs/project/campaign_runner.md) |
-| Writing rules | [`docs/develop/style.md`](docs/develop/style.md) |
+| Movie gallery | [`docs/gallery.md`](docs/gallery.md) |
 
-The command-line benchmark and campaign tools remain available for validation
-and long production runs. Run `mhx --help` to list them.
+The benchmark and campaign tools remain available for validation and long
+production runs. Run `mhx --help` to list them.
 
 ## Development
 

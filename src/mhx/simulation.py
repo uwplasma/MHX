@@ -106,13 +106,19 @@ class SimulationResult:
         )
 
     def plot(self, path: str | Path) -> Path:
-        """Write a four-panel summary of the fields and energy history."""
+        """Write a four-panel summary of the fields and energy history.
+
+        The second panel shows the island flux, the deviation of the final
+        flux from its y average. The total flux is visually dominated by the
+        equilibrium, so the island view is the one that shows reconnection.
+        """
         import matplotlib.pyplot as plt
 
         output = Path(path)
         output.parent.mkdir(parents=True, exist_ok=True)
         initial_flux = np.asarray(self.initial_state.psi)
         final_flux = np.asarray(self.final_state.psi)
+        island_flux = final_flux - final_flux.mean(axis=1, keepdims=True)
         final_current = np.asarray(current_density(self.final_state.psi, lengths=self.grid.lengths))
         energies = trajectory_energies(self.trajectory, lengths=self.grid.lengths)
         extent = (
@@ -133,15 +139,26 @@ class SimulationResult:
         axes[0, 0].set_title("Initial magnetic flux")
         figure.colorbar(initial_image, ax=axes[0, 0], shrink=0.8)
 
-        final_image = axes[0, 1].imshow(
-            final_flux.T,
+        island_limit = max(float(np.max(np.abs(island_flux))), np.finfo(float).eps)
+        island_image = axes[0, 1].imshow(
+            island_flux.T,
             origin="lower",
             extent=extent,
             aspect="auto",
-            cmap="viridis",
+            cmap="RdBu_r",
+            vmin=-island_limit,
+            vmax=island_limit,
         )
-        axes[0, 1].set_title(f"Magnetic flux at t = {self.final_time:.3g}")
-        figure.colorbar(final_image, ax=axes[0, 1], shrink=0.8)
+        axes[0, 1].contour(
+            np.linspace(extent[0], extent[1], final_flux.shape[0]),
+            np.linspace(extent[2], extent[3], final_flux.shape[1]),
+            final_flux.T,
+            colors="black",
+            linewidths=0.4,
+            levels=12,
+        )
+        axes[0, 1].set_title(f"Island flux at t = {self.final_time:.3g}")
+        figure.colorbar(island_image, ax=axes[0, 1], shrink=0.8)
 
         current_limit = max(float(np.max(np.abs(final_current))), np.finfo(float).eps)
         current_image = axes[1, 0].imshow(

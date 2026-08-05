@@ -683,3 +683,27 @@ can trail the rest of P3 by one PR if the machines are busy.
   gallery and docs gates pass, fast suite 296 passed, `ruff` clean.
 - Remaining in P4: tutorials 01, 02, 04, 05, 06 following the same recipe.
 - Next: P5 README rewrite.
+
+### 2026-08-05 — P5: README rewrite and the first-run engagement fix
+
+- Closed plan item 7.2. The default `SimulationResult.plot` second panel now
+  shows the island flux, the deviation of the final flux from its y average,
+  with total-flux contours overlaid. Before this change the panel showed the
+  total final flux, which is visually identical to the initial condition
+  even at `t_end=40`. No test pinned the panel titles.
+- The README, landing page, and `first_run.md` example moved from
+  `t_end=2.0, save_every=10` to `t_end=40.0, save_every=100`: 2000 RK4
+  steps, 1.3 s run time on a laptop CPU, and a clearly grown island in the
+  produced figure. Documented output numbers were re-measured (final energy
+  2.389953e-01). `first_run.md` section 4 now quantifies the island growth
+  instead of working around a static figure.
+- Rewrote the README per plan 5.2: badges, mission, hero movie, first run,
+  gallery table with `08_gradient.py`, the three-movie validation row,
+  short physics and parallel sections, a trimmed documentation table, and
+  development commands. The integrator guide and the long parallel guide
+  are now links into the docs. All release-candidate README markers and
+  the media-test constraints kept passing without gate edits.
+- Checks: `check_prose` 21 documents, `sphinx-build -W`, fast suite 296
+  passed, `ruff` clean.
+- Remaining: P4 tutorials 01, 02, 04, 05, 06. P6 release polish. Office-GPU
+  media pass.
