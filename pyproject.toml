@@ -45,13 +45,22 @@ research = [
   "optax",
   "orbax-checkpoint",
 ]
+docs = [
+  "myst-nb",
+  "sphinx",
+  "sphinx-autodoc-typehints",
+  "sphinx-book-theme",
+  "sphinx-copybutton",
+  "sphinx-design",
+  "sphinxcontrib-bibtex",
+  "sphinxcontrib-video",
+  "sphinxext-opengraph",
+]
 dev = [
-  "myst-parser",
+  "mhx[docs]",
   "pytest",
   "pytest-cov",
   "ruff",
-  "sphinx",
-  "sphinx-autodoc-typehints",
 ]
 
 [project.urls]

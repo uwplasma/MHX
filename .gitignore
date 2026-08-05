@@ -19,12 +19,12 @@ outputs/
 *.npy
 *.mp4
 
-# Do not ignore documentation figures.
+# Do not ignore documentation figures and movies.
 !docs/**/*.png
 !docs/**/*.jpg
 !docs/**/*.jpeg
 !docs/**/*.svg
-*.mp4
+!docs/_static/**/*.mp4
 
 # Sphinx build outputs
 docs/_build/

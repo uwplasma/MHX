@@ -522,3 +522,28 @@ can trail the rest of P3 by one PR if the machines are busy.
   the tree to Diataxis; merged the no-ai-slop rule set into the prose gate
   plan.
 - Next: execute P0.
+
+### 2026-08-05 — P0 complete: toolchain
+
+- Switched the theme to `sphinx-book-theme` and rewrote `docs/conf.py`:
+  `myst_nb` replaces plain `myst_parser` with `nb_execution_mode = "off"`,
+  plus `sphinx_design`, `sphinx_copybutton`, `sphinxcontrib.video`,
+  `sphinxcontrib.bibtex`, `sphinx.ext.intersphinx` (JAX, NumPy, Python), and
+  `sphinxext.opengraph`. Heading anchors on to depth 3.
+- Added a real `docs` extra to `pyproject.toml`; `dev` now includes
+  `mhx[docs]`, so `pip install -e ".[dev]"` keeps covering CI and
+  ReadTheDocs keeps requesting `docs`. Set `fail_on_warning: true` in
+  `readthedocs.yaml`.
+- Seeded `docs/references.bib` with the citations the physics and validation
+  pages will use (FKR, Rutherford, Strauss, Sweet, Parker, Loureiro,
+  Pucci--Velli, Orszag--Tang, Biskamp, Orszag 2/3 rule, Canuto, JAX,
+  Knoll--Keyes, Saad--Schultz GMRES, White).
+- Fixed `.gitignore`: the docs allowlist now un-ignores
+  `docs/_static/**/*.mp4`; the stray second global `*.mp4` line is gone.
+- Updated `tests/test_packaging.py` to expect the three extras and to pin
+  the dev-includes-docs contract.
+- Checks: `sphinx-build -W` passes on the new toolchain with all 32 pages,
+  `check_prose.py` passes, docs/link/media/packaging tests pass, `ruff`
+  passes. Deviation from the plan: phases land as direct commits to `main`
+  rather than PRs, recorded here once instead of per phase.
+- Next: P1 restructure.

@@ -23,7 +23,11 @@ def test_runtime_dependencies_are_unpinned_and_solvax_is_required() -> None:
         assert not re.search(r"[<>=!~]", package), dependency
 
 
-def test_optional_dependencies_have_two_clear_groups() -> None:
+def test_optional_dependencies_have_three_clear_groups() -> None:
     project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))["project"]
+    extras = project["optional-dependencies"]
 
-    assert set(project["optional-dependencies"]) == {"dev", "research"}
+    assert set(extras) == {"dev", "docs", "research"}
+    # The dev group must pull the docs toolchain so one install covers CI.
+    assert "mhx[docs]" in extras["dev"]
+    assert "sphinx-book-theme" in extras["docs"]
