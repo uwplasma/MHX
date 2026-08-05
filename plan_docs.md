@@ -658,3 +658,28 @@ can trail the rest of P3 by one PR if the machines are busy.
   Orszag--Tang set at 256 x 256, refresh `strong_scaling.png` styling, and
   regenerate the README GIF hero from the new render.
 - Next: P4 tutorials.
+
+### 2026-08-05 — P4 slice: gradient script and gradients tutorial
+
+- Added `examples/gallery/08_gradient.py`: value-and-grad of a final
+  magnetic-energy proxy with respect to resistivity through a 20-step RK4
+  solve, under forced float64, with central-difference checks at two step
+  sizes. Measured agreement: relative error 3.7e-11 at eps=1e-5. The float32
+  run of the same check earlier in this log disagreed at the percent level,
+  which confirms the x64 policy. `tests/test_gallery.py` now admits the
+  functional-core script shape and requires its self-check.
+- Added `docs/tutorials/03_gradients.ipynb`, executed locally with committed
+  outputs: the loss over a solve, the gradient, the finite-difference table,
+  and a resistivity scan with the tangent line drawn from `value_and_grad`.
+  MyST-NB renders it without executing. Tutorials group added to the
+  navigation.
+- Added `tools/execute_tutorials.py` and a monthly plus on-demand
+  `Tutorials` workflow that re-executes every notebook and fails on
+  execution errors. Output drift shows in the job log as a diffstat. Exact
+  output comparison is deliberately not enforced yet: timings and float
+  last digits differ across machines. Revisit after the first scheduled
+  runs.
+- Checks: `sphinx-build -W` renders the notebook with outputs, prose and
+  gallery and docs gates pass, fast suite 296 passed, `ruff` clean.
+- Remaining in P4: tutorials 01, 02, 04, 05, 06 following the same recipe.
+- Next: P5 README rewrite.

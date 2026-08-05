@@ -24,6 +24,13 @@ def test_gallery_has_one_level_and_uniform_scripts() -> None:
 
         assert "main" not in function_names
         assert "argparse" not in imports
+        if script.name == "08_gradient.py":
+            # The gradient script uses the functional core, not Simulation,
+            # and must validate itself against finite differences.
+            assert "value_and_grad" in source
+            assert "jax_enable_x64" in source
+            assert "finite_difference" in source
+            continue
         assert "Simulation(" in source
         assert ".run()" in source or ".run_ensemble(" in source
         assert ".print_summary()" in source

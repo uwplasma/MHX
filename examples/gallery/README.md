@@ -14,7 +14,8 @@ starts. `05_gpu_parallel.py` uses every visible GPU. `06_strong_scaling.py`
 holds a four-case reconnection ensemble fixed, records run time after
 compilation, and writes the values beside its plot. `07_multi_process.py` uses
 the same ensemble API after JAX connects processes launched by Slurm or Open
-MPI.
+MPI. `08_gradient.py` differentiates a solve with respect to resistivity and
+proves the gradient against central differences under float64.
 
 Run a script from the repository root:
 

@@ -1,0 +1,29 @@
+name: Tutorials
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Monthly drift check. Docs builds never execute notebooks, so this job
+    # is the only thing that catches a solver change breaking a tutorial.
+    - cron: "0 6 1 * *"
+
+permissions:
+  contents: read
+
+jobs:
+  execute:
+    name: Re-execute tutorial notebooks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6.0.2
+      - uses: actions/setup-python@v6.2.0
+        with:
+          python-version: "3.11"
+      - name: Install MHX with tutorial tools
+        run: |
+          python -m pip install -e ".[dev]"
+          python -m pip install ipykernel
+      - name: Execute notebooks
+        run: python tools/execute_tutorials.py
+      - name: Show output drift
+        run: git diff --stat docs/tutorials

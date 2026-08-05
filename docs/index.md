@@ -99,6 +99,13 @@ getting_started/troubleshooting
 
 ```{toctree}
 :hidden:
+:caption: Tutorials
+
+tutorials/03_gradients
+```
+
+```{toctree}
+:hidden:
 :caption: How-to guides
 
 how_to/run_from_toml
