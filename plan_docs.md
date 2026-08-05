@@ -707,3 +707,16 @@ can trail the rest of P3 by one PR if the machines are busy.
   passed, `ruff` clean.
 - Remaining: P4 tutorials 01, 02, 04, 05, 06. P6 release polish. Office-GPU
   media pass.
+
+### 2026-08-05 — CI fix: movie claim scopes
+
+- The `docs` job in `ci.yml` failed on the P3 manifest entries. The
+  `verify_paper_artifacts.py` gate requires every `validation` claim scope
+  to state an explicit limitation, and "same claim boundary" wording does
+  not. Each movie entry now names its actual limit, for example the
+  Orszag--Tang movies are "not a compressible shock-capturing result".
+- Note for future passes: this verifier runs only in the `ci.yml` docs job,
+  not in the standalone Docs workflow and not in any `tests/test_docs_*`
+  file. Run `python examples/tools/verify_paper_artifacts.py` locally after
+  any figure-manifest edit.
+- CI, Docs, and Benchmark Smoke are green on `55cb0a0`.
