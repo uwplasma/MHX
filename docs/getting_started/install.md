@@ -1,36 +1,64 @@
 # Installation
 
-Install the current source in an isolated environment:
+MHX needs Python 3.10 or newer. Install the current source in an isolated
+environment:
 
 ```bash
 git clone https://github.com/uwplasma/MHX.git
 cd MHX
 python -m venv .venv
 source .venv/bin/activate
-python -m pip install --upgrade pip
-python -m pip install -e ".[dev]"
+python -m pip install .
 mhx version
 ```
 
-The base install includes SOLVAX, Matplotlib, and the command-line tools. The
-`dev` extra adds test, documentation, and lint tools.
+The base install includes JAX for CPU, SOLVAX, Matplotlib, and the `mhx`
+command-line tools.
 
-For GPU work, install the correct JAX wheel from the
-[JAX installation guide](https://docs.jax.dev/en/latest/installation.html)
-before you install MHX.
+## GPU install
 
-Verify the install:
+Install the accelerator-specific JAX wheel before MHX, following the
+[JAX installation guide](https://docs.jax.dev/en/latest/installation.html).
+For a CUDA machine:
+
+```bash
+python -m pip install -U "jax[cuda13]"
+python -m pip install .
+```
+
+MHX never pins `jaxlib`. The JAX wheel you install decides the backend.
+
+## Precision
+
+JAX computes in float32 by default. Validation work and gradient checks
+should enable float64:
+
+```bash
+export JAX_ENABLE_X64=1
+```
+
+The [differentiability page](../physics/differentiability.md) explains why
+this matters for gradient validation.
+
+## Developer install
+
+The `dev` extra adds the test, lint, and documentation tools:
+
+```bash
+python -m pip install -e ".[dev]"
+python -m pytest -m "not slow"
+```
+
+## Verify the install
 
 ```bash
 mhx api status
 mhx benchmark decay --outdir outputs/install_check/resistive_decay
-.venv/bin/sphinx-build -W -b html docs docs/_build/html
 ```
 
-Expected files:
+The decay command runs an exact physics check and writes
+`diagnostics.json`, `validation.json`, and `manifest.json` under
+`outputs/install_check/resistive_decay/`. If it passes, the solver, the
+spectral operators, and the output stack all work.
 
-- `outputs/install_check/resistive_decay/diagnostics.json`
-- `outputs/install_check/resistive_decay/validation.json`
-- `outputs/install_check/resistive_decay/manifest.json`
-
-Set `MHX_API_VERSION=v1` when an artifact reader must reject a future API.
+If anything fails, check [troubleshooting](troubleshooting.md).

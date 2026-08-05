@@ -11,7 +11,17 @@ DOCUMENTS = (
     ROOT / "docs" / "index.md",
     ROOT / "docs" / "getting_started" / "install.md",
     ROOT / "docs" / "getting_started" / "first_run.md",
+    ROOT / "docs" / "getting_started" / "first_movie.md",
+    ROOT / "docs" / "getting_started" / "troubleshooting.md",
+    ROOT / "docs" / "how_to" / "run_on_gpus.md",
+    ROOT / "docs" / "physics" / "reduced_mhd.md",
+    ROOT / "docs" / "physics" / "spectral_method.md",
+    ROOT / "docs" / "physics" / "time_integration.md",
+    ROOT / "docs" / "physics" / "differentiability.md",
+    ROOT / "docs" / "physics" / "solvax_boundary.md",
+    ROOT / "docs" / "validation" / "index.md",
     ROOT / "docs" / "reference" / "api" / "index.md",
+    ROOT / "docs" / "reference" / "config_schema.md",
     ROOT / "docs" / "reference" / "performance.md",
     ROOT / "docs" / "develop" / "architecture.md",
     ROOT / "docs" / "develop" / "style.md",
@@ -20,29 +30,51 @@ DOCUMENTS = (
 )
 
 BANNED_TERMS = (
+    "beacon",
+    "blazingly",
     "cutting-edge",
     "delve",
+    "effortless",
+    "elevate",
+    "embark",
     "empower",
+    "ever-evolving",
     "facilitate",
     "foster",
     "game changer",
     "harness",
+    "in conclusion",
+    "in order to",
+    "intricate",
+    "it is worth noting",
     "landscape",
     "leverage",
+    "meticulous",
     "moreover",
+    "multifaceted",
     "paradigm shift",
+    "paramount",
+    "pivotal",
+    "powerful",
     "realm",
     "robust",
+    "seamless",
+    "state-of-the-art",
     "streamline",
+    "supercharge",
     "tapestry",
+    "transformative",
     "unlock",
     "utilize",
+    "vital role",
 )
 
 
 def prose_without_code(text: str) -> str:
-    """Remove fenced code, inline code, links, and tables before checks."""
+    """Remove code, math, inline code, links, and tables before checks."""
     text = re.sub(r"```.*?```", "", text, flags=re.DOTALL)
+    text = re.sub(r"\$\$.*?\$\$", "", text, flags=re.DOTALL)
+    text = re.sub(r"\$[^$\n]+\$", "", text)
     text = re.sub(r"`[^`]+`", "", text)
     text = re.sub(r"^\[!\[.*$", "", text, flags=re.MULTILINE)
     text = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", text)

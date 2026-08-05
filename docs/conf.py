@@ -54,7 +54,7 @@ html_theme_options = {
 autodoc_typehints = "description"
 
 bibtex_bibfiles = ["references.bib"]
-bibtex_default_style = "unsrt"
+bibtex_default_style = "alpha"
 
 copybutton_prompt_text = r">>> |\.\.\. |\$ "
 copybutton_prompt_is_regexp = True

@@ -83,6 +83,8 @@ Use the release tag or commit SHA when you cite a run. Citation metadata is in
 
 getting_started/install
 getting_started/first_run
+getting_started/first_movie
+getting_started/troubleshooting
 ```
 
 ```{toctree}
@@ -90,6 +92,7 @@ getting_started/first_run
 :caption: How-to guides
 
 how_to/run_from_toml
+how_to/run_on_gpus
 how_to/extend_physics
 how_to/add_diagnostics
 ```
@@ -99,7 +102,10 @@ how_to/add_diagnostics
 :caption: Physics
 
 physics/reduced_mhd
-physics/model_assembly
+physics/spectral_method
+physics/time_integration
+physics/differentiability
+physics/solvax_boundary
 ```
 
 ```{toctree}
@@ -120,8 +126,10 @@ validation/scaling_theory
 
 reference/api/index
 reference/cli
+reference/config_schema
 reference/output_schema
 reference/performance
+reference/bibliography
 ```
 
 ```{toctree}

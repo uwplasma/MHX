@@ -575,3 +575,41 @@ can trail the rest of P3 by one PR if the machines are busy.
 - Checks: `sphinx-build -W` passes, `check_prose.py` passes, full fast suite
   282 passed, `ruff` passes.
 - Next: P2 content rewrite with equations, derivations, and citations.
+
+### 2026-08-05 — P2 batch 1: physics, getting started, validation index
+
+- Rewrote `physics/reduced_mhd.md` as the model centerpiece: the equations
+  exactly as coded, the symbol table, the derivation from incompressible
+  visco-resistive MHD through the bracket identities, Alfvén-unit
+  normalization with S, Re, and Pm, conservation laws with the exact
+  dissipation balance, all three equilibrium formulas, the physics-term
+  table, and explicit assumptions and limits. Citations: Strauss 1976,
+  Biskamp 2000/2003, FKR 1963, Harris 1962, Sweet, Parker, Loureiro 2007,
+  Pucci--Velli 2014.
+- Added `physics/spectral_method.md` (Fourier operators, zero-mode gauge,
+  Orszag two-thirds rule, batched transforms), `physics/time_integration.md`
+  (RK4 formulas, step-choice limits with the RK4 stability bound, backward
+  Euler with Newton--Krylov and GMRES citations),
+  `physics/differentiability.md` (worked value-and-grad example, gradient
+  validation checklist, nondifferentiable diagnostics list, checkpointing
+  note), and `physics/solvax_boundary.md` (ownership table and the residual
+  seam).
+- Rewrote `getting_started/install.md` (GPU wheel, x64 policy, verify path)
+  and `getting_started/first_run.md` (per-setting physics meaning, real
+  output excerpt, island-flux view). Added `first_movie.md` (CLI route and a
+  tested imageio loop) and `troubleshooting.md` (six first-contact
+  failures). The island visualization subtracts the y-averaged profile,
+  which isolates the growing mode. Subtracting the initial state instead
+  shows mostly resistive background diffusion. Both scripts were executed:
+  the island amplitude grows from 0.006 to 0.013 over t_end=40 at 64x64.
+- Rewrote `validation/index.md` around how to read a gate and the claim
+  levels table. Added `how_to/run_on_gpus.md` and `reference/config_schema.md`
+  (assembly TOML from the old model_assembly page). Removed
+  `physics/model_assembly.md` after redistributing its content. Added
+  `reference/bibliography.md` backed by `references.bib`, alpha labels.
+- Extended `tools/check_prose.py`: strips display and inline math, covers 20
+  documents, and bans the remaining no-ai-slop terms.
+- Checks: `check_prose` 20 documents pass, `sphinx-build -W` passes with all
+  citations resolving, 282 fast tests pass, `ruff` passes.
+- Remaining in P2: light passes over how_to/run_from_toml, extend_physics,
+  add_diagnostics, reference/cli intro, and a develop/architecture trim.

@@ -188,7 +188,8 @@ Newton and GMRES iterations. Check the convergence fields in
 | --- | --- |
 | Installation | [`docs/getting_started/install.md`](docs/getting_started/install.md) |
 | Guided first model | [`docs/getting_started/first_run.md`](docs/getting_started/first_run.md) |
-| Equations and assembly | [`docs/physics/model_assembly.md`](docs/physics/model_assembly.md) |
+| Equations and model | [`docs/physics/reduced_mhd.md`](docs/physics/reduced_mhd.md) |
+| TOML configuration | [`docs/reference/config_schema.md`](docs/reference/config_schema.md) |
 | Output files | [`docs/reference/output_schema.md`](docs/reference/output_schema.md) |
 | Validation limits | [`docs/validation/index.md`](docs/validation/index.md) |
 | Performance tests | [`docs/reference/performance.md`](docs/reference/performance.md) |
