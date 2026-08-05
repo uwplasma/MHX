@@ -54,7 +54,7 @@ Three validation lanes have been added with explicit claim boundaries:
 Both lanes are exposed through the CLI in
 [main.py](https://github.com/uwplasma/MHX/blob/main/src/mhx/cli/main.py).
 
-The production operations guide now exists as [campaign_runner.md](campaign_runner.md).
+The production operations guide now exists as [campaign_runner.md](../project/campaign_runner.md).
 It documents the FAST runner, production plan, duration gate, checkpoint/resume
 metadata, required production artifacts, restartable executor chunks, and review
 questions. Paper text should still say "FAST campaign validation",
@@ -92,7 +92,7 @@ mhx campaign rutherford-template \
   --outdir outputs/campaigns/rutherford_template
 ```
 
-![Nonlinear duration audit](_static/validation/nonlinear_duration_audit/nonlinear_duration_audit.png)
+![Nonlinear duration audit](../_static/validation/nonlinear_duration_audit/nonlinear_duration_audit.png)
 
 ## Proposed figure set
 
@@ -108,10 +108,10 @@ mhx campaign rutherford-template \
 | 8 | Nonlinear duration audit and production-run requirements. | CI artifact exists. |
 | 9 | Rutherford island growth campaign. | `adcc714` GPU campaign passes duration, convergence and seed-QI evidence, X/O, flux, width, media, manifest, and production-promotion response gates; remaining paper work is algebraic Rutherford scaling across amplitudes/equilibria. |
 | 10 | Sweet-Parker/plasmoid nonlinear campaign. | Planned. |
-| 11 | Neural-ODE dataset/baselines/calibration/failure cases. | Implemented as a deterministic no-training reproducibility lane in [neural_ode_reproducibility.md](neural_ode_reproducibility.md). |
+| 11 | Neural-ODE dataset/baselines/calibration/failure cases. | Implemented as a deterministic no-training reproducibility lane in [neural_ode_reproducibility.md](../project/neural_ode_reproducibility.md). |
 
 The reviewer-facing figure readiness table is maintained in
-[publication_checklist.md](publication_checklist.md). That page is the preferred
+[publication_checklist.md](../project/publication_checklist.md). That page is the preferred
 place to decide whether a plot can be promoted from validation/demo status to
 paper evidence.
 

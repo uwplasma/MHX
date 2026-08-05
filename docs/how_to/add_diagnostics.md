@@ -65,7 +65,7 @@ $$
 This scalar is a reproducibility diagnostic for individual saved trajectories.
 It is not, by itself, a calibrated FKR eigenmode claim. Calibrated tearing
 checks live in the separate Harris eigenvalue, dispersion, layer, and
-time-domain replay gates documented on [validation.md](validation.md).
+time-domain replay gates documented on [validation.md](../validation/index.md).
 
 ## Reconnected flux and island-width proxies
 

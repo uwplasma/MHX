@@ -139,4 +139,4 @@ For other models, set `device_count` on `mhx.Simulation`. Make sure that
 
 Use the [example gallery](https://github.com/uwplasma/MHX/tree/main/examples/gallery)
 for tearing, implicit steps, CPU sharding, GPU sharding, and scaling. Use
-[`mhx --help`](benchmarks.md) when you need validation or campaign commands.
+[`mhx --help`](../reference/cli.md) when you need validation or campaign commands.

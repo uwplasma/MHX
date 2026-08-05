@@ -184,11 +184,11 @@ not complete and no convergence/seed-QI bundles are attached. The purpose is to
 write `promotion/figures/promotion_matrix.png` so the missing evidence is
 explicit rather than implicit.
 
-![Restartable Rutherford production histories](_static/validation/rutherford_production_execution/production_histories.png)
+![Restartable Rutherford production histories](../_static/validation/rutherford_production_execution/production_histories.png)
 
-![Fixed-scale flux movie](_static/validation/rutherford_production_execution/fixed_scale_flux_movie.gif)
+![Fixed-scale flux movie](../_static/validation/rutherford_production_execution/fixed_scale_flux_movie.gif)
 
-![Fixed-scale current-density movie](_static/validation/rutherford_production_execution/fixed_scale_current_density_movie.gif)
+![Fixed-scale current-density movie](../_static/validation/rutherford_production_execution/fixed_scale_current_density_movie.gif)
 
 The checkpoint index starts empty. Long-run executors register restartable state
 files with:

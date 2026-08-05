@@ -16,7 +16,7 @@ the case axis, runs three samples for each device count, and records the median
 execution time. This is strong scaling: the total numerical workload does not
 grow with the device count.
 
-```{image} _static/readme/strong_scaling.png
+```{image} ../_static/readme/strong_scaling.png
 :alt: MHX CPU and GPU reconnection-ensemble strong scaling
 :width: 900px
 ```
@@ -42,8 +42,8 @@ work in a local audit, while the explicit map divided it.
 
 Read the full settings:
 
-- [`cpu_ensemble_strong_scaling.json`](_static/performance/cpu_ensemble_strong_scaling.json)
-- [`gpu_ensemble_strong_scaling.json`](_static/performance/gpu_ensemble_strong_scaling.json)
+- [`cpu_ensemble_strong_scaling.json`](../_static/performance/cpu_ensemble_strong_scaling.json)
+- [`gpu_ensemble_strong_scaling.json`](../_static/performance/gpu_ensemble_strong_scaling.json)
 
 Regenerate the README plot after a measurement update:
 

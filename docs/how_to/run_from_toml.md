@@ -30,7 +30,7 @@ mhx benchmark decay --outdir outputs/tutorial/resistive_decay
 
 This checks the exact reduced-MHD induction limit
 $\psi_k(t)=\psi_k(0)\exp(-\eta k^2t)$ and writes the amplitude, energy, and
-relative-error plots documented on [validation.md](validation.md).
+relative-error plots documented on [validation.md](../validation/index.md).
 
 ## 3. Generate nonlinear validation media
 
@@ -54,5 +54,5 @@ mhx report outputs/tutorial/plugin_demo
 ```
 
 The plugin demo shows how to register a local RHS term and diagnostic without
-editing MHX source. See [plugins.md](plugins.md) for the external package
+editing MHX source. See [plugins.md](../how_to/extend_physics.md) for the external package
 template and testing checklist.

@@ -547,3 +547,31 @@ can trail the rest of P3 by one PR if the machines are busy.
   passes. Deviation from the plan: phases land as direct commits to `main`
   rather than PRs, recorded here once instead of per phase.
 - Next: P1 restructure.
+
+### 2026-08-05 — P1 complete: structure
+
+- Moved every page into the section 3 tree with `git mv`: getting_started,
+  how_to, physics, validation, reference (with `reference/api/`), develop,
+  and project. Merged `release.md`, `migration.md`, and `api_policy.md` into
+  `develop/release.md` with demoted headings.
+- Split `validation.md` into `validation/{index,exact_limits,linear_tearing,
+  nonlinear,reconnection_campaigns,scaling_theory}.md` by section, content
+  unchanged. Split `api.md` into seven `reference/api/` pages with short
+  layer introductions, and added `mhx.time_integrators` to the reference.
+- Rewrote `docs/index.md` as the landing page: hero movie, install, runnable
+  example, four sphinx-design cards, grouped hidden toctrees with captions.
+  `docs/project/` renders as a collapsed "Project records" sidebar group.
+- Rewrote link targets mechanically (script): page-to-page links through an
+  old-to-new map with relative-path computation, `_static` and data-file
+  links by depth, `{image}` directives and one `{doc}` role by hand.
+- Gates moved in lockstep: `tests/test_docs_links.py` rewritten (toctree
+  coverage, orphan check, area-level source links, image existence, claim
+  levels, split-page heading preservation; verbatim sentence pins dropped),
+  `tools/check_prose.py` path list updated and directive-option lines now
+  stripped before checks, `tests/test_readme_media.py` media page path
+  updated, `src/mhx/benchmarks/release_candidate.py` REQUIRED_DOCS updated,
+  `tools/nonlinear_campaign_evidence.py` output defaults moved to
+  `docs/project/`, `docs/figures/manifest.toml` source paths updated.
+- Checks: `sphinx-build -W` passes, `check_prose.py` passes, full fast suite
+  282 passed, `ruff` passes.
+- Next: P2 content rewrite with equations, derivations, and citations.

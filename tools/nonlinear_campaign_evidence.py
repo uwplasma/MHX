@@ -157,7 +157,7 @@ CASES = (
         run_dir=Path(
             "outputs/campaigns/double_harris_convergence_gpu_n32_48_64_t16_20260519_173637"
         ),
-        command="Archived command recorded in docs/long_run_evidence.md.",
+        command="Archived command recorded in docs/project/long_run_evidence.md.",
         metric_keys=(
             "case_count",
             "t_end",
@@ -212,7 +212,7 @@ CASES = (
         label="Archived GPU-assisted double-Harris response",
         family="periodic double-Harris",
         run_dir=Path("outputs/campaigns/growing_double_harris_gpu_96_t120_20260518_044120"),
-        command="Archived command recorded in docs/long_run_evidence.md.",
+        command="Archived command recorded in docs/project/long_run_evidence.md.",
         metric_keys=(
             "shape",
             "t_end",
@@ -235,7 +235,7 @@ CASES = (
         label="Archived current-schema Rutherford duration run",
         family="Rutherford executor",
         run_dir=Path("outputs/campaigns/rutherford_current_schema_96_dt005_20260517_161235"),
-        command="Archived command recorded in docs/long_run_evidence.md.",
+        command="Archived command recorded in docs/project/long_run_evidence.md.",
         metric_keys=(
             "shape",
             "end_step",
@@ -1013,8 +1013,8 @@ def write_markdown(report: dict[str, Any], output_path: Path) -> None:
         "",
         "```bash",
         "python tools/nonlinear_campaign_evidence.py \\",
-        "  --output-json docs/nonlinear_campaign_evidence.json \\",
-        "  --output-md docs/nonlinear_campaign_evidence.md",
+        "  --output-json docs/project/nonlinear_campaign_evidence.json \\",
+        "  --output-md docs/project/nonlinear_campaign_evidence.md",
         "```",
         "",
         "Summarize one candidate campaign bundle with:",
@@ -1099,8 +1099,8 @@ def build_report() -> dict[str, Any]:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    default_output_json = "docs/nonlinear_campaign_evidence.json"
-    default_output_md = "docs/nonlinear_campaign_evidence.md"
+    default_output_json = "docs/project/nonlinear_campaign_evidence.json"
+    default_output_md = "docs/project/nonlinear_campaign_evidence.md"
     parser.add_argument("--campaign-dir", type=Path, help="Summarize one campaign directory.")
     parser.add_argument("--output-json", default=default_output_json)
     parser.add_argument("--output-md", default=default_output_md)

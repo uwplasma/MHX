@@ -84,7 +84,7 @@ the repository root.
 | ![Double-Harris reconnection](docs/_static/readme/double_harris_reconnection.gif) | ![Decaying reduced-MHD turbulence](docs/_static/readme/decaying_mhd_turbulence_current.gif) | ![Orszag-Tang current density](docs/_static/readme/orszag_tang_current.gif) |
 
 These images show bounded validation runs. See
-[`docs/media.md`](docs/media.md) for their settings and claim limits.
+[`docs/project/media_inventory.md`](docs/project/media_inventory.md) for their settings and claim limits.
 
 ## Physics and numerics
 
@@ -186,16 +186,16 @@ Newton and GMRES iterations. Check the convergence fields in
 
 | Need | Read |
 | --- | --- |
-| Installation | [`docs/install.md`](docs/install.md) |
-| Guided first model | [`docs/quickstart.md`](docs/quickstart.md) |
-| Equations and assembly | [`docs/model_assembly.md`](docs/model_assembly.md) |
-| Output files | [`docs/output_schema.md`](docs/output_schema.md) |
-| Validation limits | [`docs/validation.md`](docs/validation.md) |
-| Performance tests | [`docs/performance.md`](docs/performance.md) |
-| Benchmark commands | [`docs/benchmarks.md`](docs/benchmarks.md) |
-| Long-run evidence | [`docs/long_run_evidence.md`](docs/long_run_evidence.md) |
-| Campaign runner | [`docs/campaign_runner.md`](docs/campaign_runner.md) |
-| Writing rules | [`docs/writing_style.md`](docs/writing_style.md) |
+| Installation | [`docs/getting_started/install.md`](docs/getting_started/install.md) |
+| Guided first model | [`docs/getting_started/first_run.md`](docs/getting_started/first_run.md) |
+| Equations and assembly | [`docs/physics/model_assembly.md`](docs/physics/model_assembly.md) |
+| Output files | [`docs/reference/output_schema.md`](docs/reference/output_schema.md) |
+| Validation limits | [`docs/validation/index.md`](docs/validation/index.md) |
+| Performance tests | [`docs/reference/performance.md`](docs/reference/performance.md) |
+| Benchmark commands | [`docs/reference/cli.md`](docs/reference/cli.md) |
+| Long-run evidence | [`docs/project/long_run_evidence.md`](docs/project/long_run_evidence.md) |
+| Campaign runner | [`docs/project/campaign_runner.md`](docs/project/campaign_runner.md) |
+| Writing rules | [`docs/develop/style.md`](docs/develop/style.md) |
 
 The command-line benchmark and campaign tools remain available for validation
 and long production runs. Run `mhx --help` to list them.

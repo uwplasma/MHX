@@ -83,7 +83,7 @@ the case axis and gives each device complete local trajectories.
 Distributed Fourier transforms require device communication. Independent cases
 do not communicate inside the time loop, so case parallelism is the first
 choice for scans and seed ensembles. The checked CPU and GPU measurements are
-in {doc}`performance`.
+in {doc}`../reference/performance`.
 
 ## Current limit
 

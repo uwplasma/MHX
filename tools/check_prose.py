@@ -9,12 +9,12 @@ ROOT = Path(__file__).parents[1]
 DOCUMENTS = (
     ROOT / "README.md",
     ROOT / "docs" / "index.md",
-    ROOT / "docs" / "api.md",
-    ROOT / "docs" / "architecture.md",
-    ROOT / "docs" / "install.md",
-    ROOT / "docs" / "performance.md",
-    ROOT / "docs" / "quickstart.md",
-    ROOT / "docs" / "writing_style.md",
+    ROOT / "docs" / "getting_started" / "install.md",
+    ROOT / "docs" / "getting_started" / "first_run.md",
+    ROOT / "docs" / "reference" / "api" / "index.md",
+    ROOT / "docs" / "reference" / "performance.md",
+    ROOT / "docs" / "develop" / "architecture.md",
+    ROOT / "docs" / "develop" / "style.md",
     ROOT / "examples" / "README.md",
     ROOT / "examples" / "gallery" / "README.md",
 )
@@ -49,7 +49,9 @@ def prose_without_code(text: str) -> str:
     lines = [
         line
         for line in text.splitlines()
-        if not line.lstrip().startswith("|") and not line.lstrip().startswith("#")
+        if not line.lstrip().startswith("|")
+        and not line.lstrip().startswith("#")
+        and not line.lstrip().startswith(":")
     ]
     return "\n".join(lines)
 

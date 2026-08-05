@@ -91,14 +91,14 @@ accounts for the validation-only claim boundary in release readiness while still
 leaving nonlinear publication claims blocked pending production evidence.
 `mhx validate paper-pipeline` wraps that suite, the readiness report, and a
 top-level recursive artifact manifest into the bundle documented in
-[paper_pipeline.md](paper_pipeline.md).
+[paper_pipeline.md](../project/paper_pipeline.md).
 
 The equation-heavy physics gates and still figures are on
-[validation.md](validation.md). Campaign scaffolds and restartable execution are
-documented in [campaigns.md](campaigns.md) and
-[campaign_runner.md](campaign_runner.md). Neural-ODE baseline comparison and
+[validation.md](../validation/index.md). Campaign scaffolds and restartable execution are
+documented in [campaigns.md](../project/campaigns.md) and
+[campaign_runner.md](../project/campaign_runner.md). Neural-ODE baseline comparison and
 fitted latent-ODE outputs are documented in
-[neural_ode_reproducibility.md](neural_ode_reproducibility.md).
+[neural_ode_reproducibility.md](../project/neural_ode_reproducibility.md).
 
 ## Orszag--Tang nonlinear vortex example
 
@@ -178,7 +178,7 @@ $E_B(t)=E_B(0)\exp(-2\eta |k|^2t)$. It writes:
 - `figures/decay_relative_error.png`
 
 The same benchmark is documented with figures on the
-[validation page](validation.md).
+[validation page](../validation/index.md).
 
 ## Reconnection and linear-operator gates
 

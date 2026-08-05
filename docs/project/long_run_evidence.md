@@ -114,14 +114,14 @@ passing promotion-readiness report.
 | final/initial total energy | `1.03e-2` |
 | max kinetic energy | `5.85e-9` |
 
-![Rutherford duration histories](_static/validation/long_runs/rutherford_96_production_histories.png)
+![Rutherford duration histories](../_static/validation/long_runs/rutherford_96_production_histories.png)
 
 The fixed-scale movies show the same conclusion visually: the periodic cosine
 field diffuses away rather than forming growing islands.
 
-![Long-run flux preview](_static/validation/long_runs/rutherford_96_flux_preview.gif)
+![Long-run flux preview](../_static/validation/long_runs/rutherford_96_flux_preview.gif)
 
-![Long-run current-density preview](_static/validation/long_runs/rutherford_96_current_preview.gif)
+![Long-run current-density preview](../_static/validation/long_runs/rutherford_96_current_preview.gif)
 
 ### Skeptical interpretation
 
@@ -185,17 +185,17 @@ mhx campaign rutherford-promotion-check \
 | final/initial total energy | `1.03e-2` |
 | max energy-budget residual | `0` |
 
-![Current-schema Rutherford histories](_static/validation/long_runs/current_schema_rutherford/production_histories.png)
+![Current-schema Rutherford histories](../_static/validation/long_runs/current_schema_rutherford/production_histories.png)
 
-![Current-schema current-sheet aspect ratio](_static/validation/long_runs/current_schema_rutherford/current_sheet_aspect_ratio.png)
+![Current-schema current-sheet aspect ratio](../_static/validation/long_runs/current_schema_rutherford/current_sheet_aspect_ratio.png)
 
-![Current-schema promotion matrix](_static/validation/long_runs/current_schema_rutherford/promotion_matrix.png)
+![Current-schema promotion matrix](../_static/validation/long_runs/current_schema_rutherford/promotion_matrix.png)
 
-![Current-schema convergence evidence, n16/n24](_static/validation/long_runs/current_schema_rutherford/evidence/convergence_n16_24.png)
+![Current-schema convergence evidence, n16/n24](../_static/validation/long_runs/current_schema_rutherford/evidence/convergence_n16_24.png)
 
-![Current-schema convergence evidence, n18/n26](_static/validation/long_runs/current_schema_rutherford/evidence/convergence_n18_26.png)
+![Current-schema convergence evidence, n18/n26](../_static/validation/long_runs/current_schema_rutherford/evidence/convergence_n18_26.png)
 
-![Current-schema seed-QI evidence](_static/validation/long_runs/current_schema_rutherford/evidence/seed_qi_summary.png)
+![Current-schema seed-QI evidence](../_static/validation/long_runs/current_schema_rutherford/evidence/seed_qi_summary.png)
 
 The important result is negative but useful: the executor now writes every
 history key required by the current promotion gate. The promotion gate also
@@ -225,7 +225,7 @@ $$
 | max relative budget residual | `3.65e-5` |
 | gates | passed |
 
-![Long nonlinear energy budget](_static/validation/long_runs/nonlinear_budget_96_long.png)
+![Long nonlinear energy budget](../_static/validation/long_runs/nonlinear_budget_96_long.png)
 
 This is good evidence that nonlinear Poisson brackets, spectral current,
 dissipation signs, and RK4 integration remain coherent over a substantially
@@ -256,7 +256,7 @@ $$
 | elapsed walltime | `61.9 s` |
 | gates | passed |
 
-![Seeded double-Harris 128x128 long replay](_static/validation/long_runs/double_harris_seeded_128_t100.png)
+![Seeded double-Harris 128x128 long replay](../_static/validation/long_runs/double_harris_seeded_128_t100.png)
 
 ### Skeptical interpretation
 
@@ -296,11 +296,11 @@ mhx benchmark double-harris-long-run \
 | relative total-energy increase | `0.0` |
 | gates | passed |
 
-![GPU-assisted double-Harris response](_static/validation/long_runs/growing_double_harris_96_t120/periodic_double_harris_seeded_long_run.png)
+![GPU-assisted double-Harris response](../_static/validation/long_runs/growing_double_harris_96_t120/periodic_double_harris_seeded_long_run.png)
 
-![GPU-assisted double-Harris flux movie](_static/validation/long_runs/growing_double_harris_96_t120/periodic_double_harris_flux.gif)
+![GPU-assisted double-Harris flux movie](../_static/validation/long_runs/growing_double_harris_96_t120/periodic_double_harris_flux.gif)
 
-![GPU-assisted double-Harris current movie](_static/validation/long_runs/growing_double_harris_96_t120/periodic_double_harris_current.gif)
+![GPU-assisted double-Harris current movie](../_static/validation/long_runs/growing_double_harris_96_t120/periodic_double_harris_current.gif)
 
 The skeptical read is unchanged: this is now stronger validation evidence
 because the response gate is explicit and positive, but it remains below
@@ -321,7 +321,7 @@ artifact manifest. The report can promote a run to convergence-backed
 validation media only; it deliberately cannot promote a run to production
 Rutherford/plasmoid evidence.
 
-![GPU-assisted double-Harris promotion matrix](_static/validation/long_runs/growing_double_harris_96_t120/promotion_matrix.png)
+![GPU-assisted double-Harris promotion matrix](../_static/validation/long_runs/growing_double_harris_96_t120/promotion_matrix.png)
 
 The same convergence code path was also run on a bounded GPU-assisted medium
 sweep (`32/48/64`, `t_end=16`, `dt=0.02/0.01`). It passed with fitted growth
@@ -331,7 +331,7 @@ effectively zero time-step spread. This is no longer just a placeholder for a
 future script: it is convergence-backed validation evidence while remaining
 below production claim level.
 
-![Medium GPU-assisted double-Harris convergence sweep](_static/validation/long_runs/double_harris_convergence_gpu_n32_48_64_t16/periodic_double_harris_convergence.png)
+![Medium GPU-assisted double-Harris convergence sweep](../_static/validation/long_runs/double_harris_convergence_gpu_n32_48_64_t16/periodic_double_harris_convergence.png)
 
 ## Current claim boundary
 

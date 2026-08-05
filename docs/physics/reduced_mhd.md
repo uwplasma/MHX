@@ -86,7 +86,7 @@ $$
 A_{k_x,k_y}(t) = |\hat{\psi}_{k_x,k_y}(t)|
 $$
 
-for a configured mode through the [diagnostics registry](diagnostics.md),
+for a configured mode through the [diagnostics registry](../how_to/add_diagnostics.md),
 currently `(1, 1)` in the FAST smoke benchmark. MHX fits
 
 $$

@@ -1,56 +1,154 @@
-# MHX documentation
+# MHX
 
-MHX runs differentiable, two-dimensional reduced-MHD models in JAX. MHX owns
-the plasma model. SOLVAX owns the general numerical solvers.
+MHX runs differentiable, two-dimensional reduced-MHD models in JAX. It builds
+the plasma equations and diagnostics. [SOLVAX](https://github.com/uwplasma/SOLVAX)
+supplies the linear, Krylov, and nonlinear solvers.
 
-Start with these pages:
+Use MHX to study periodic current sheets, tearing modes, magnetic
+reconnection, and reduced-MHD turbulence. MHX does not solve full
+three-dimensional MHD.
 
-1. [Install MHX](install.md).
-2. [Run a model from Python](quickstart.md).
-3. [Read the reduced-MHD equations](reduced_mhd.md).
-4. [Check the output format](output_schema.md).
-5. [Check each validation limit](validation.md).
+![Double-Harris reconnection: residual flux with flux contours and X/O markers](_static/readme/double_harris_reconnection.gif)
 
-The package source is under `src/mhx/`. Beginner scripts are under
-`examples/gallery/`. Benchmark commands produce review records and publication
-checks.
+## Install and run
 
-MHX currently supports periodic two-dimensional reduced MHD. It does not solve
-full three-dimensional MHD. Read each artifact manifest before you use a
-validation run as research evidence.
+```bash
+git clone https://github.com/uwplasma/MHX.git
+cd MHX
+python -m pip install .
+```
+
+```python
+import mhx
+
+simulation = mhx.Simulation(
+    shape=(64, 64),
+    equilibrium=mhx.PeriodicDoubleHarrisEquilibrium(
+        perturbation_amplitude=4.0e-3,
+        perturbation_mode=(2, 1),
+    ),
+    resistivity=5.0e-3,
+    viscosity=5.0e-3,
+    dt=2.0e-2,
+    t_end=2.0,
+)
+result = simulation.run()
+result.print_summary()
+result.plot("summary.png")
+```
+
+The run prints grid, timing, energy, and divergence data, then writes a
+four-panel figure. [Run your first model](getting_started/first_run.md) walks
+through every line.
+
+## Find your path
+
+::::{grid} 1 2 2 2
+:gutter: 3
+
+:::{grid-item-card} Get started
+:link: getting_started/install
+:link-type: doc
+Install MHX and run a first reconnection model in minutes.
+:::
+
+:::{grid-item-card} Physics
+:link: physics/reduced_mhd
+:link-type: doc
+Read the reduced-MHD equations, assumptions, and model limits.
+:::
+
+:::{grid-item-card} Validation
+:link: validation/index
+:link-type: doc
+Check every physics gate, tolerance, and claim boundary.
+:::
+
+:::{grid-item-card} API reference
+:link: reference/api/index
+:link-type: doc
+Look up every public class, function, and CLI command.
+:::
+
+::::
+
+## Cite
+
+Use the release tag or commit SHA when you cite a run. Citation metadata is in
+[`CITATION.cff`](https://github.com/uwplasma/MHX/blob/main/CITATION.cff).
 
 ```{toctree}
-:maxdepth: 2
+:hidden:
+:caption: Get started
 
-install
-tutorial
-quickstart
-writing_style
-reviewer_evidence
-validation
-benchmarks
-architecture
-reduced_mhd
-diagnostics
-output_schema
-performance
-long_run_evidence
-nonlinear_campaign_evidence
-seed_robust_qi
-neural_ode_reproducibility
-time_windows
-campaigns
-campaign_runner
-publication_checklist
-paper_plan
-paper_pipeline
-media
-audit
-api_policy
-model_assembly
-plugins
-release
-migration
-literature
-api
+getting_started/install
+getting_started/first_run
+```
+
+```{toctree}
+:hidden:
+:caption: How-to guides
+
+how_to/run_from_toml
+how_to/extend_physics
+how_to/add_diagnostics
+```
+
+```{toctree}
+:hidden:
+:caption: Physics
+
+physics/reduced_mhd
+physics/model_assembly
+```
+
+```{toctree}
+:hidden:
+:caption: Validation
+
+validation/index
+validation/exact_limits
+validation/linear_tearing
+validation/nonlinear
+validation/reconnection_campaigns
+validation/scaling_theory
+```
+
+```{toctree}
+:hidden:
+:caption: Reference
+
+reference/api/index
+reference/cli
+reference/output_schema
+reference/performance
+```
+
+```{toctree}
+:hidden:
+:caption: Development
+
+develop/architecture
+develop/style
+develop/release
+```
+
+```{toctree}
+:hidden:
+:caption: Project records
+
+project/media_inventory
+project/literature
+project/audit
+project/paper_plan
+project/paper_pipeline
+project/publication_checklist
+project/reviewer_evidence
+project/campaigns
+project/campaign_runner
+project/long_run_evidence
+project/nonlinear_campaign_evidence
+project/seed_robust_qi
+project/time_windows
+project/neural_ode_reproducibility
 ```

@@ -8,8 +8,8 @@ Regenerate with:
 
 ```bash
 python tools/nonlinear_campaign_evidence.py \
-  --output-json docs/nonlinear_campaign_evidence.json \
-  --output-md docs/nonlinear_campaign_evidence.md
+  --output-json docs/project/nonlinear_campaign_evidence.json \
+  --output-md docs/project/nonlinear_campaign_evidence.md
 ```
 
 Summarize one candidate campaign bundle with:

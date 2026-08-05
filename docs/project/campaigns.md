@@ -92,7 +92,7 @@ within tolerance, magnetic divergence is bounded, and the manifest uses
 evidence of production Rutherford island growth.
 
 The operational details and production acceptance criteria are documented in
-[campaign_runner.md](campaign_runner.md). In short: the FAST runner proves the
+[campaign_runner.md](../project/campaign_runner.md). In short: the FAST runner proves the
 schema, diagnostic names, plot path, and seed determinism. The production
 executor now proves restartable chunk execution, checkpoint metadata, history
 schemas, resume plans, optional fixed-scale GIFs, and artifact hashes. A paper

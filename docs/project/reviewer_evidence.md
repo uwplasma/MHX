@@ -7,18 +7,18 @@ implementation, and explicit claim boundary.
 
 ## Fast entry points
 
-- [Physics validation](validation.md) is the primary figure gallery: it keeps
+- [Physics validation](../validation/index.md) is the primary figure gallery: it keeps
   the equations, citations, tolerances, expected files, source links, and still
   figures for each validation gate.
-- [Benchmarks](benchmarks.md) is the command index for tests, validation
+- [Benchmarks](../reference/cli.md) is the command index for tests, validation
   scaffolds, comparison lanes, neural-ODE bundles, and campaign examples.
-- [Validation media](media.md) carries literature-anchored GIFs and separates
+- [Validation media](../project/media_inventory.md) carries literature-anchored GIFs and separates
   solver output from schematic targets.
-- [Long-run evidence](long_run_evidence.md) records longer nonlinear runs with
+- [Long-run evidence](../project/long_run_evidence.md) records longer nonlinear runs with
   skeptical interpretations and explicit non-claims.
-- [Publication checklist](publication_checklist.md) states which still figures
+- [Publication checklist](../project/publication_checklist.md) states which still figures
   and movies are ready as validation evidence and which are production-only.
-- [Nonlinear campaign evidence](nonlinear_campaign_evidence.md) records the
+- [Nonlinear campaign evidence](../project/nonlinear_campaign_evidence.md) records the
   latest local gate summaries, including the bounded GPU validation lane where
   `gate_ready = true` and `production_claim_ready = false`.
 
@@ -53,7 +53,7 @@ physics.
 The source of truth for these labels is the output schema documentation and the
 manifest writer paths:
 
-- [Output schema](output_schema.md)
+- [Output schema](../reference/output_schema.md)
 - [Artifact manifest implementation](https://github.com/uwplasma/MHX/blob/main/src/mhx/io/manifest.py)
 - [Reduced-MHD run writer](https://github.com/uwplasma/MHX/blob/main/src/mhx/cli/main.py)
 - [Validation-suite writer](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/suite.py)
@@ -336,6 +336,6 @@ checklist in order:
    convergence, seed-QI, geometry, movie, energy, and divergence gates to pass.
 7. Generate flux/current movies with fixed color limits.
 8. Write a recursive artifact manifest and include the git commit.
-9. Update the claim table in this page and in [paper_plan.md](paper_plan.md).
+9. Update the claim table in this page and in [paper_plan.md](../project/paper_plan.md).
 
 If any step fails, the claim remains `validation` or `production_template`.

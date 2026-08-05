@@ -56,14 +56,14 @@ Every figure included in the paper-style documentation should have:
 The strongest current tearing-specific result is the direct Harris-sheet
 eigenvalue gate:
 
-```{image} _static/validation/linear_tearing_eigenvalue/linear_tearing_eigenvalue.png
+```{image} ../_static/validation/linear_tearing_eigenvalue/linear_tearing_eigenvalue.png
 :alt: Direct Harris-sheet tearing eigenvalue gate
 :width: 760px
 ```
 
 The strongest current nonlinear code-validity result is the energy-budget gate:
 
-```{image} _static/validation/nonlinear_energy_budget/nonlinear_energy_budget.png
+```{image} ../_static/validation/nonlinear_energy_budget/nonlinear_energy_budget.png
 :alt: Nonlinear reduced-MHD energy budget gate
 :width: 760px
 ```
@@ -71,7 +71,7 @@ The strongest current nonlinear code-validity result is the energy-budget gate:
 The strongest current nonlinear instability-path result is the double-Harris
 growth gate:
 
-```{image} _static/validation/periodic_double_harris_nonlinear_growth/periodic_double_harris_nonlinear_growth.png
+```{image} ../_static/validation/periodic_double_harris_nonlinear_growth/periodic_double_harris_nonlinear_growth.png
 :alt: Periodic double-Harris nonlinear growth gate
 :width: 760px
 ```
@@ -79,7 +79,7 @@ growth gate:
 The strongest current scalable nonlinear replay is the seeded double-Harris
 long-run gate:
 
-```{image} _static/validation/periodic_double_harris_seeded_long_run/figures/periodic_double_harris_seeded_long_run.png
+```{image} ../_static/validation/periodic_double_harris_seeded_long_run/figures/periodic_double_harris_seeded_long_run.png
 :alt: Seeded periodic double-Harris nonlinear long run
 :width: 760px
 ```
@@ -88,19 +88,19 @@ The current nonlinear evidence boundary is the double-Harris promotion report,
 the medium GPU-assisted resolution/time-step validation sweep, and the latest
 bounded GPU validation gate:
 
-```{image} _static/validation/periodic_double_harris_convergence/periodic_double_harris_convergence.png
+```{image} ../_static/validation/periodic_double_harris_convergence/periodic_double_harris_convergence.png
 :alt: Seeded periodic double-Harris convergence evidence
 :width: 760px
 ```
 
-```{image} _static/validation/long_runs/double_harris_convergence_gpu_n32_48_64_t16/periodic_double_harris_convergence.png
+```{image} ../_static/validation/long_runs/double_harris_convergence_gpu_n32_48_64_t16/periodic_double_harris_convergence.png
 :alt: Medium GPU-assisted double-Harris convergence sweep
 :width: 760px
 ```
 
 The most important claim-boundary figure is the nonlinear duration audit:
 
-```{image} _static/validation/nonlinear_duration_audit/nonlinear_duration_audit.png
+```{image} ../_static/validation/nonlinear_duration_audit/nonlinear_duration_audit.png
 :alt: Nonlinear duration audit
 :width: 760px
 ```
@@ -185,7 +185,7 @@ validation promotion into a production claim.
 
 The README currently ships validation/theory movies only:
 
-- [README media docs](media.md)
+- [README media docs](../project/media_inventory.md)
 - [media generator](https://github.com/uwplasma/MHX/blob/main/examples/make_readme_media.py)
 - [media tests](https://github.com/uwplasma/MHX/blob/main/tests/test_readme_media.py)
 
@@ -194,7 +194,7 @@ The README currently ships validation/theory movies only:
 - [Paper artifact verifier](https://github.com/uwplasma/MHX/blob/main/examples/tools/verify_paper_artifacts.py)
 - [Validation media generator](https://github.com/uwplasma/MHX/blob/main/examples/make_validation_media.py)
 - [README media generator](https://github.com/uwplasma/MHX/blob/main/examples/make_readme_media.py)
-- [Figure manifest](figures/manifest.toml)
+- [Figure manifest](../figures/manifest.toml)
 - [Double-Harris validation and promotion checks](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/current_sheet.py)
 - [Forced turbulent-reconnection readiness](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/turbulence.py)
 - [Reduced-MHD plotting helpers](https://github.com/uwplasma/MHX/blob/main/src/mhx/plotting/reduced_mhd.py)

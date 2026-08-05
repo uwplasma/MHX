@@ -181,7 +181,7 @@ def api_deprecations() -> None:
     """Print active deprecation guidance for legacy entry points."""
     typer.echo("Legacy scripts live under legacy/old_mhx/ and are not imported by src/mhx.")
     typer.echo("Use mhx run, mhx benchmark, mhx validate, mhx figures, and mhx report instead.")
-    typer.echo("See docs/migration.md and docs/release.md for the deprecation window.")
+    typer.echo("See docs/develop/release.md for the deprecation window.")
 
 
 @app.command()

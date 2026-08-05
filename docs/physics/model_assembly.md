@@ -61,7 +61,7 @@ fit_time_window = [0.02, 0.1]
 ```
 
 Use `mhx diagnostics list` to inspect names and output keys. The built-in
-registry is documented in [Diagnostics registry](diagnostics.md).
+registry is documented in [Diagnostics registry](../how_to/add_diagnostics.md).
 
 `plugin_modules` accepts importable Python modules exposing
 `register_physics(registry)` or `register_diagnostics(registry)`. The demo

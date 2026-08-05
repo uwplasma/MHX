@@ -115,9 +115,9 @@ the best baseline test RMSE, and the latent-ODE test-RMSE ratio to that
 baseline. The ratio is reported rather than hidden; this keeps the current
 model honest and makes future neural-ODE improvements directly comparable.
 
-![Latent-ODE predictions](_static/validation/neural_ode_latent_fit/latent_ode_predictions.png)
+![Latent-ODE predictions](../_static/validation/neural_ode_latent_fit/latent_ode_predictions.png)
 
-![Latent-ODE RMSE comparison](_static/validation/neural_ode_latent_fit/latent_ode_rmse_comparison.png)
+![Latent-ODE RMSE comparison](../_static/validation/neural_ode_latent_fit/latent_ode_rmse_comparison.png)
 
 The failure-mode report is a deliberately skeptical artifact, not a pass/fail
 claim that the latent ODE is production-ready. It records train-vs-test RMSE,
@@ -135,7 +135,7 @@ R_\mathrm{seed}
 {\max(\mathrm{RMSE}_\mathrm{train},\epsilon)} .
 $$
 
-![Latent-ODE failure-mode probes](_static/validation/neural_ode_latent_fit/latent_ode_failure_modes.png)
+![Latent-ODE failure-mode probes](../_static/validation/neural_ode_latent_fit/latent_ode_failure_modes.png)
 
 ## Claim boundary
 
