@@ -720,3 +720,25 @@ can trail the rest of P3 by one PR if the machines are busy.
   file. Run `python examples/tools/verify_paper_artifacts.py` locally after
   any figure-manifest edit.
 - CI, Docs, and Benchmark Smoke are green on `55cb0a0`.
+
+### 2026-08-05 — P4 complete: tutorials 01 through 06
+
+- Added the five remaining executed notebooks with committed outputs:
+  01 tearing mode (island isolation and a gamma fit, measured 0.0084
+  inverse Alfvén times with an explicit demonstration-fit caveat),
+  02 reconnection (X/O detection finds two X and two O points, island
+  figure with markers, energy budget), 04 inverse problem (six
+  gradient-descent steps recover the seed amplitude exactly, using a
+  response-scaled step), 05 ensembles and devices (four logical CPU
+  devices, four-case seed scan on one runner), 06 implicit stepping
+  (RK4 versus backward Euler, convergence flags, 2e-6 relative agreement).
+- Tutorial 06 surfaced a real trap: the Newton tolerances near 1e-9 are
+  unreachable under default float32, so `implicit_converged` reports False
+  on every step and only an x64 run reports True. The notebook now teaches
+  float64-first, and the time-integration and troubleshooting pages state
+  the requirement. A follow-up task proposes a runtime warning or
+  dtype-aware tolerances in the solver itself.
+- All six tutorials are in the navigation. Checks: prose, `sphinx-build
+  -W`, fast suite 296 passed, `ruff`, and the paper-artifact verifier are
+  green.
+- Remaining: P6 release polish and the office-GPU media pass.

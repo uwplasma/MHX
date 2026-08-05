@@ -42,8 +42,9 @@ with `JAX_ENABLE_X64=1` for validation and gradient work. The
 
 ## Implicit runs report `implicit_converged: False`
 
-The Newton or GMRES tolerances were not met. Reduce `dt`, or loosen the
-problem by lowering resolution, and rerun. Do not use a non-converged
+Check precision first. The Newton tolerances sit near $10^{-9}$, which
+float32 cannot reach, so implicit runs need `JAX_ENABLE_X64=1`. If the flag
+still fails under float64, reduce `dt` and rerun. Do not use a non-converged
 trajectory as evidence. The [time integration page](../physics/time_integration.md)
 explains the solver.
 

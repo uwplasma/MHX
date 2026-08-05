@@ -59,6 +59,10 @@ products by forward-mode differentiation of $F$, so MHX never forms a matrix.
 A spectral diffusion preconditioner inverts the stiff $\eta\nabla^2$ and
 $\nu\nabla^2$ parts exactly in Fourier space.
 
+The Newton solve targets tolerances near $10^{-9}$, which float32 cannot
+reach. Enable float64 with `JAX_ENABLE_X64=1` for every implicit run, or the
+convergence flags report failure on each step.
+
 Backward Euler is first order in time and damps unresolved transients. Use it
 when the diffusive step limit, not accuracy, binds the explicit choice:
 

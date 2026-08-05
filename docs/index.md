@@ -101,7 +101,12 @@ getting_started/troubleshooting
 :hidden:
 :caption: Tutorials
 
+tutorials/01_tearing_mode
+tutorials/02_reconnection
 tutorials/03_gradients
+tutorials/04_inverse_problem
+tutorials/05_ensembles_and_devices
+tutorials/06_implicit_stepping
 ```
 
 ```{toctree}
