@@ -8,7 +8,17 @@ Use MHX to study periodic current sheets, tearing modes, magnetic
 reconnection, and reduced-MHD turbulence. MHX does not solve full
 three-dimensional MHD.
 
-![Double-Harris reconnection: residual flux with flux contours and X/O markers](_static/readme/double_harris_reconnection.gif)
+```{video} _static/movies/double_harris_reconnection.mp4
+:autoplay:
+:loop:
+:muted:
+:nocontrols:
+:width: 100%
+```
+
+The movie shows Harris-sheet reconnection: residual reconnecting flux with
+total-flux contours and X/O point markers, from a 128 x 128 validation run to
+$t = 160$. The [gallery](gallery.md) has more.
 
 ## Install and run
 
@@ -106,6 +116,13 @@ physics/spectral_method
 physics/time_integration
 physics/differentiability
 physics/solvax_boundary
+```
+
+```{toctree}
+:hidden:
+:caption: Gallery
+
+gallery
 ```
 
 ```{toctree}

@@ -57,6 +57,7 @@ docs = [
   "sphinxext-opengraph",
 ]
 dev = [
+  "imageio-ffmpeg",
   "mhx[docs]",
   "pytest",
   "pytest-cov",

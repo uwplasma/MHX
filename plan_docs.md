@@ -627,3 +627,34 @@ can trail the rest of P3 by one PR if the machines are busy.
   gates pass. P2 is complete except for content that P3 and P4 own, movie
   embeds and tutorials.
 - Next: verify the ReadTheDocs build of the new theme, then P3 media.
+
+### 2026-08-05 — P3 CPU slice: mp4 embeds, gallery, motion gate
+
+- Verified the ReadTheDocs deployment renders sphinx-book-theme with the
+  landing cards and hero before starting P3.
+- Added `examples/make_docs_movies.py`: transcodes the committed validated
+  GIF movies to H.264 mp4 under `docs/_static/movies/` (frames and claim
+  levels unchanged, sizes drop about 4x) and renders the island movie at the
+  exact `first_movie.md` settings. Ten movies, 780 KiB total. Added
+  `imageio-ffmpeg` to the dev extra so CI carries its own ffmpeg.
+- Docs pages now embed mp4 through `sphinxcontrib-video`: the landing hero
+  autoplays muted in a loop, the gallery page (`docs/gallery.md`) shows all
+  ten movies with commands, claim boundaries, and citations, and
+  `first_movie.md` shows the expected output of its own script.
+- Added `tests/test_docs_movies.py`: video targets resolve, movies stay
+  under 6 MB, docs pages outside `project/` embed no GIFs, every committed
+  movie has a figure-manifest entry, and a motion gate rejects visually
+  static movies. The gate immediately rejected the historical seeded
+  double-Harris total-flux movie (mean inter-frame motion 0.44 against the
+  0.5 floor), which is the media policy working. That movie stays in the
+  project records; the validation page embeds the current-density view with
+  a note. Wired the test into the docs workflow.
+- Manifest: eleven new figure entries with sha256, command, claim level,
+  sources, and tests. The island render is labeled `smoke` because it is a
+  real solver run without validation gates.
+- Checks: `check_prose` 21 documents, `sphinx-build -W`, `ruff`, and the
+  fast suite (296 passed) are green.
+- Remaining in P3, office-GPU pass: re-render the double-Harris hero and the
+  Orszag--Tang set at 256 x 256, refresh `strong_scaling.png` styling, and
+  regenerate the README GIF hero from the new render.
+- Next: P4 tutorials.

@@ -20,6 +20,7 @@ DOCUMENTS = (
     ROOT / "docs" / "physics" / "differentiability.md",
     ROOT / "docs" / "physics" / "solvax_boundary.md",
     ROOT / "docs" / "validation" / "index.md",
+    ROOT / "docs" / "gallery.md",
     ROOT / "docs" / "reference" / "api" / "index.md",
     ROOT / "docs" / "reference" / "config_schema.md",
     ROOT / "docs" / "reference" / "performance.md",

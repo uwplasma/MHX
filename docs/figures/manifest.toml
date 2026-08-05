@@ -1,5 +1,5 @@
 schema = "mhx.docs.figures_manifest.v1"
-updated_utc = "2026-05-22T12:00:00Z"
+updated_utc = "2026-08-05T12:00:00Z"
 description = "Reviewer-facing map from documentation figures and movies to commands, claim levels, sources, and tests."
 
 [[figures]]
@@ -171,3 +171,103 @@ claim_level = "validation"
 claim_scope = "Small seed-QI evidence attached to the response-gated Rutherford promotion report; not production UQ."
 sources = ["src/mhx/benchmarks/seed_robust_qi.py", "src/mhx/campaigns/production.py"]
 tests = ["tests/test_seed_robust_qi.py", "tests/test_production_campaign.py"]
+
+[[figures]]
+id = "movie_double_harris_reconnection"
+path = "docs/_static/movies/double_harris_reconnection.mp4"
+sha256 = "f8a9b7d8431243cf223ca40ffaf14fb02d0729ccddebcb0936cbccfb2540ae46"
+command = "python examples/make_docs_movies.py"
+claim_level = "validation"
+claim_scope = "Transcode of the README double-Harris residual-flux movie. Same frames, same claim boundary."
+sources = ["docs/_static/readme/double_harris_reconnection.gif", "examples/make_docs_movies.py"]
+tests = ["tests/test_docs_movies.py"]
+
+[[figures]]
+id = "movie_double_harris_current_sheet"
+path = "docs/_static/movies/double_harris_current_sheet.mp4"
+sha256 = "642e5c5dcb203259bb617253c7e35eed028e483bbc63967c1a1ce6c256e1be0e"
+command = "python examples/make_docs_movies.py"
+claim_level = "validation"
+claim_scope = "Transcode of the README full-domain double-Harris residual-current movie."
+sources = ["docs/_static/readme/double_harris_current_sheet.gif", "examples/make_docs_movies.py"]
+tests = ["tests/test_docs_movies.py"]
+
+[[figures]]
+id = "movie_orszag_tang_current"
+path = "docs/_static/movies/orszag_tang_current.mp4"
+sha256 = "e71c35f63475a8bc965c87ddac37a9f3fe4ccd468573438e5aa3f354b6996f78"
+command = "python examples/make_docs_movies.py"
+claim_level = "validation"
+claim_scope = "Transcode of the README Orszag-Tang current-density movie."
+sources = ["docs/_static/readme/orszag_tang_current.gif", "examples/make_docs_movies.py"]
+tests = ["tests/test_docs_movies.py"]
+
+[[figures]]
+id = "movie_orszag_tang_vorticity"
+path = "docs/_static/movies/orszag_tang_vorticity.mp4"
+sha256 = "301dd3499d9a61f8f3c29055170e435df05ca8d3413d2d02ff962209fed56526"
+command = "python examples/make_docs_movies.py"
+claim_level = "validation"
+claim_scope = "Transcode of the README Orszag-Tang vorticity movie."
+sources = ["docs/_static/readme/orszag_tang_vorticity.gif", "examples/make_docs_movies.py"]
+tests = ["tests/test_docs_movies.py"]
+
+[[figures]]
+id = "movie_orszag_tang_flux"
+path = "docs/_static/movies/orszag_tang_flux.mp4"
+sha256 = "4a3ee6fee4c2163307e7720cfbbfba60e274f46b783a5af44096f1f2dc6d2976"
+command = "python examples/make_docs_movies.py"
+claim_level = "validation"
+claim_scope = "Transcode of the README Orszag-Tang flux movie."
+sources = ["docs/_static/readme/orszag_tang_flux.gif", "examples/make_docs_movies.py"]
+tests = ["tests/test_docs_movies.py"]
+
+[[figures]]
+id = "movie_decaying_mhd_turbulence_current"
+path = "docs/_static/movies/decaying_mhd_turbulence_current.mp4"
+sha256 = "258b6b4472b342822ce67482f17d3a7bb9309700e578588bd947b630accb2817"
+command = "python examples/make_docs_movies.py"
+claim_level = "validation"
+claim_scope = "Transcode of the README decaying-turbulence current movie."
+sources = ["docs/_static/readme/decaying_mhd_turbulence_current.gif", "examples/make_docs_movies.py"]
+tests = ["tests/test_docs_movies.py"]
+
+[[figures]]
+id = "movie_forced_turbulent_reconnection"
+path = "docs/_static/movies/forced_turbulent_reconnection.mp4"
+sha256 = "5e55cf90a220c5148679beb7d6804319df228eedde2c329adab85fc4f589a9f2"
+command = "python examples/make_docs_movies.py"
+claim_level = "validation"
+claim_scope = "Transcode of the README forced turbulent-reconnection movie."
+sources = ["docs/_static/readme/forced_turbulent_reconnection.gif", "examples/make_docs_movies.py"]
+tests = ["tests/test_docs_movies.py"]
+
+[[figures]]
+id = "movie_harris_layer_sweep"
+path = "docs/_static/movies/harris_layer_sweep.mp4"
+sha256 = "e28f34468bf333387cabc81df2a8c2c3012250d1145542b4376ddabc93c22392"
+command = "python examples/make_docs_movies.py"
+claim_level = "validation"
+claim_scope = "Transcode of the Harris tearing layer sweep movie."
+sources = ["docs/_static/readme/harris_layer_sweep.gif", "examples/make_docs_movies.py"]
+tests = ["tests/test_docs_movies.py"]
+
+[[figures]]
+id = "movie_periodic_double_harris_current"
+path = "docs/_static/movies/periodic_double_harris_current.mp4"
+sha256 = "3c0d6a8e17ec71098700fee43ddc9d93f7740dc0e5798d96080c03a209020f7e"
+command = "python examples/make_docs_movies.py"
+claim_level = "validation"
+claim_scope = "Transcode of the committed seeded double-Harris current validation movie."
+sources = ["docs/_static/validation/periodic_double_harris_seeded_long_run/figures/periodic_double_harris_current.gif", "examples/make_docs_movies.py"]
+tests = ["tests/test_docs_movies.py"]
+
+[[figures]]
+id = "movie_double_harris_island_64"
+path = "docs/_static/movies/double_harris_island_64.mp4"
+sha256 = "eda57b2973861e25d3f312cfde05ea2477060d0c5523aa798f242f7edac07d96"
+command = "python examples/make_docs_movies.py"
+claim_level = "smoke"
+claim_scope = "Documentation illustration rendered at the exact first_movie.md settings: 64x64, t_end=40, S=200. A real solver run without validation gates."
+sources = ["examples/make_docs_movies.py"]
+tests = ["tests/test_docs_movies.py"]

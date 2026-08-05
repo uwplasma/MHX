@@ -18,6 +18,8 @@ REQUIRED_TOCTREE_ENTRIES = {
     "how_to/extend_physics",
     "how_to/add_diagnostics",
     "physics/reduced_mhd",
+    "physics/differentiability",
+    "gallery",
     "validation/index",
     "validation/exact_limits",
     "validation/linear_tearing",

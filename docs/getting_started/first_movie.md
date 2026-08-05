@@ -79,6 +79,14 @@ for index, time in enumerate(times):
 imageio.mimsave(output / "island_flux.gif", frames, duration=200, loop=0)
 ```
 
+The result looks like this:
+
+```{video} ../_static/movies/double_harris_island_64.mp4
+:loop:
+:muted:
+:width: 60%
+```
+
 Three rules keep a movie honest:
 
 1. **Fix the color scale across frames.** A per-frame scale hides growth and
