@@ -4,6 +4,31 @@ MHX uses semantic-versioned pre-releases while the rebuilt solver API matures.
 
 ## Unreleased
 
+- Rebuilt the documentation: sphinx-book-theme with dark mode, a landing
+  page with an autoplaying hero movie and section cards, and a Diataxis
+  structure with getting-started, tutorial, how-to, physics, validation,
+  reference, and development sections. Internal evidence pages moved to a
+  collapsed project-records group.
+- Documented the reduced-MHD model end to end: equations as implemented,
+  derivation from visco-resistive MHD, normalization, conservation laws,
+  equilibrium formulas, and model limits, with BibTeX citations rendered on
+  a bibliography page.
+- Added six executed tutorial notebooks (tearing mode, reconnection
+  topology, gradients, inverse problem, ensembles and devices, implicit
+  stepping) with committed outputs, plus a monthly workflow that
+  re-executes them against the current solver.
+- Added `examples/gallery/08_gradient.py` with a float64 finite-difference
+  gradient check, and documented that implicit runs require
+  `JAX_ENABLE_X64=1` to reach their Newton tolerances.
+- Replaced GIF embeds in documentation pages with H.264 movies, added a
+  movie gallery page with claim boundaries, and added a motion quality gate
+  that rejects visually static movies.
+- `SimulationResult.plot` now shows the island flux in its second panel,
+  and the quickstart runs to `t_end=40` so the first figure shows a grown
+  tearing mode.
+- Split the docs toolchain into a `docs` extra, made `dev` include it, and
+  turned on `fail_on_warning` for ReadTheDocs.
+
 ## 0.1.0a1 - 2026-05-25
 
 - Declared the rebuilt public API as `v1` with `MHX_API_VERSION` compatibility checks.

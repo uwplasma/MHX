@@ -7,17 +7,29 @@ settings, and quality checks for each source.
 
 ## Harris-sheet reconnection
 
+```{video} _static/movies/double_harris_reconnection_256.mp4
+:loop:
+:muted:
+:width: 100%
+```
+
+Island flux on the right current sheet of a seeded double-Harris
+configuration at 256 x 256, with total-flux contours and X/O markers, to
+$t=160$. The frames replay the exact settings of a gate-passing validation
+run. Its evidence is committed under
+[`_static/validation/double_harris_256_t160/`](https://github.com/uwplasma/MHX/tree/main/docs/_static/validation/double_harris_256_t160).
+Anchored to the Harris and FKR tearing picture {cite}`harris1962,furth1963`.
+The markers are diagnostic annotations, not converged Rutherford or plasmoid
+evidence.
+
 ```{video} _static/movies/double_harris_reconnection.mp4
 :loop:
 :muted:
 :width: 100%
 ```
 
-Residual reconnecting flux $\Delta\psi$ in a seeded double-Harris sheet, with
-total-flux contours and X/O markers, from a 128 x 128 run to $t=160$.
-Validation media anchored to the Harris and FKR tearing picture
-{cite}`harris1962,furth1963`. The markers are diagnostic annotations, not
-converged Rutherford or plasmoid evidence.
+The earlier 128 x 128 view of the same configuration: residual reconnecting
+flux with contours and markers, from the committed GPU validation bundle.
 
 ```{video} _static/movies/double_harris_current_sheet.mp4
 :loop:

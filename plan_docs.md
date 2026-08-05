@@ -742,3 +742,32 @@ can trail the rest of P3 by one PR if the machines are busy.
   -W`, fast suite 296 passed, `ruff`, and the paper-artifact verifier are
   green.
 - Remaining: P6 release polish and the office-GPU media pass.
+
+### 2026-08-05 — GPU media pass and P6 progress
+
+- Ran `mhx benchmark double-harris-long-run --nx 256 --ny 256 --t-end 160
+  --movies` under x64 on one office RTX A4000. Every gate passed:
+  reconnected-flux amplification 6.478, island-width amplification 2.545,
+  fitted early growth rate 0.141, four X points and two O points. The
+  bundle's `validation.json`, `diagnostics.json`, `manifest.json`, and
+  summary figure are committed under
+  `docs/_static/validation/double_harris_256_t160/`.
+- The benchmark's own movies are total-field views, which the motion gate
+  exists to reject. The new landing hero renders instead from a replay of
+  the gate run's exact settings: a right-sheet zoom of the island flux with
+  total-flux contours and X/O markers, where the closed island separatrix
+  is visible. `render_hero_movie` in `examples/make_docs_movies.py` does
+  the render from a trajectory NPZ named by `MHX_HERO_BUNDLE`; the 42 MB
+  bundle itself stays out of the repository. Hero: 80 frames, 2.0 MB,
+  passes the motion gate. The 128 x 128 view stays in the gallery.
+- Office setup for future renders: clone `~/mhx_docs_gpu`, uv venv
+  `~/venvs/mhx_gpu` with `jax[cuda12]` 0.11 on Python 3.12. Run with
+  `XLA_PYTHON_CLIENT_PREALLOCATE=false` and `CUDA_VISIBLE_DEVICES` set, and
+  never touch other tenants' processes.
+- P6 progress: CHANGELOG entry for the whole docs rebuild written.
+  Remaining P6 items that need the ReadTheDocs dashboard or a release
+  decision: set the default version, add an `/en/latest/` to `/en/stable/`
+  redirect once a stable build exists, and cut the version tag. Tagging
+  triggers the PyPI publish workflow, so it stays a maintainer decision.
+- Checks: prose 21 documents, `sphinx-build -W`, fast suite 297 passed,
+  `ruff`, paper-artifact verifier, and the movie gates are green.

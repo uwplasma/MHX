@@ -1,0 +1,82 @@
+{
+  "checks": {
+    "early_difference_grows": true,
+    "early_growth_positive": true,
+    "enough_saved_samples": true,
+    "finite_histories": true,
+    "full_duration_reached": true,
+    "island_width_amplifies": true,
+    "nonlinear_difference_reaches_visible_growth": true,
+    "readme_release_media_duration_exceeds_documented_minimum": true,
+    "reconnected_flux_amplifies": true,
+    "short_duration_is_labeled_fast": true,
+    "total_energy_is_dissipative": true
+  },
+  "diagnostics": {
+    "amplitude": 1.0,
+    "ci_fast_duration": false,
+    "documented_readme_media_min_t_end": 30.0,
+    "dt": 0.01,
+    "duration_label": "readme_release_media",
+    "early_growth_factor": 5.270783039633931,
+    "equilibrium": "periodic_double_harris",
+    "final_total_energy": 0.07185710530908813,
+    "fit_window": [
+      0.0,
+      10.0
+    ],
+    "fitted_early_growth_rate": 0.14115974345207072,
+    "initial_reconnected_flux": 0.0004999999999999988,
+    "initial_rutherford_island_width": 0.05656854249492373,
+    "initial_total_energy": 0.37267743126381836,
+    "island_width_amplification": 2.545250649230218,
+    "magnetic_shear_proxy": 2.5,
+    "max_current_density_linf": 2.502801939934958,
+    "max_growth_factor": 7.353013989978905,
+    "max_kinetic_energy": 6.129347425745462e-07,
+    "max_o_point_count": 2,
+    "max_reconnected_flux": 0.003239150433703414,
+    "max_rutherford_island_width": 0.14398111951121179,
+    "max_x_point_count": 4,
+    "perturbation_amplitude": 0.001,
+    "perturbation_mode": [
+      2,
+      1
+    ],
+    "readme_release_media_grade": true,
+    "reconnected_flux_amplification": 6.478300867406843,
+    "reconnected_flux_proxy": "2 max|FFT(delta psi)_(m,n)| over low nonzero modes, where delta psi is seeded minus base flux",
+    "references": {
+      "literature": "Anchored to Harris-sheet tearing and plasmoid-current-sheet validation practice; the command supplies histories and movies needed before FKR/Coppi or Sweet-Parker/plasmoid claims.",
+      "scope": "Longer seeded nonlinear reduced-MHD replay at scalable grid size. This is stronger than a dense tiny-grid eigenmode replay, but it is still a validation artifact until duration, resolution, seed, and aspect-ratio sweeps are completed."
+    },
+    "relative_energy_increase": 0.0,
+    "resistivity": 0.005,
+    "rutherford_island_width_proxy": "W=4 sqrt(|psi_1|/|B_y'|) with |B_y'| approximated by |A|/a for the periodic double-Harris sheet",
+    "samples": 81,
+    "save_every": 200,
+    "schema": "mhx.validation.periodic_double_harris_seeded_long_run.v1",
+    "seed_mode_reconnected_flux_amplification": 1.0,
+    "seed_mode_reconnected_flux_proxy": "2|FFT(delta psi)_(m,n)| at the configured perturbation mode",
+    "shape": [
+      256,
+      256
+    ],
+    "steps": 16000,
+    "t_end": 160.0,
+    "viscosity": 0.005,
+    "width": 0.4
+  },
+  "passed": true,
+  "schema": "mhx.validation.periodic_double_harris_seeded_long_run.gates.v1",
+  "thresholds": {
+    "documented_readme_media_min_t_end": 30.0,
+    "max_relative_energy_increase": 1e-08,
+    "min_early_growth_factor": 1.5,
+    "min_early_growth_rate": 0.05,
+    "min_island_width_amplification": 1.05,
+    "min_max_growth_factor": 2.0,
+    "min_reconnected_flux_amplification": 1.05,
+    "min_saved_samples": 8
+  }
+}
