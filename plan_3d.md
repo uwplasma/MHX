@@ -421,7 +421,59 @@ The first code phase, P3D-0 plus P3D-1, can start immediately.
 
 ---
 
-## 13. Log
+## 13. Delivery model and solver-pass amendments (2026-08-05)
+
+The program delivers through **one major pull request per repository**:
+
+- **MHX `feature/mhd3d`**: the entire 3D program lands on this branch and
+  merges once through its PR. Phases P3D-0 to P3D-7 become commits and
+  checklist items on the PR, not separate PRs.
+- **SOLVAX `feature/spectral-mhd-interop`**: all section 7 solver work
+  lands on this branch and merges once through its PR.
+
+A final solver-methods literature pass amends the architecture:
+
+1. **Preconditioner upgrade.** The Fourier-diagonal helper becomes a
+   per-mode 2x2 wave-block inverse for the coupled $(v, b)$ implicit
+   system, $\alpha_{v,b} = 1 + \{\nu,\eta\} k^2 \Delta t$ off-diagonally
+   coupled by $i k_\parallel v_A \Delta t$. This is Chacón's
+   Schur-complement JFNK preconditioning (Phys. Plasmas 15, 056103, 2008)
+   specialized to Fourier, where the Schur solve is exact. Without it,
+   implicit iteration counts scale with $B_0 \Delta t k_\parallel$ and the
+   strong-guide-field G12 implicit runs crawl. Diffusion-only is the
+   special case $B_0 = 0$.
+2. **ETDRK4 as the validation stepper.** Montanelli--Bootland (2020) find
+   ETDRK4 hard to beat for periodic stiff PDEs; for a diagonal operator
+   the phi functions are elementwise. It cross-checks the production
+   IF-RK3 on gates G2/G3 and guards the Lawson error-constant penalty of
+   the $B_0$ phase rotation at strong guide field, which is an accuracy
+   risk to G12, not a stability risk.
+3. **Interop contract** (PETSc/SUNDIALS split in the Lineax idiom): MHX
+   owns operators and preconditioners with an amortized setup hook;
+   SOLVAX owns iteration and reporting; solvers accept `inner=` for
+   axis-aware sharded inner products, `fixed_work=` for scan-embedded
+   masked-convergence iteration, Eisenstat--Walker forcing for Newton,
+   and return `SolveStats` pytrees with flags instead of raising inside
+   jit. Right preconditioning is the default so reported residuals are
+   true residuals.
+4. **Krylov priorities.** FGMRES and GCRO-DR-grade harmonic-Ritz
+   recycling rank directly after the sharded-operand pass; pipelined and
+   s-step GMRES are explicitly deprioritized at NCCL workstation scale,
+   and randomized sketching moves into the device-resident eigensolver
+   item with a basis-condition monitor.
+5. **Determinism policy.** Cross-device-count parity checks are
+   toleranced (about $10^{-12}$ relative in x64), never bitwise; bitwise
+   is asserted only for same-device-count reruns under deterministic-ops
+   flags.
+6. **Verification additions**: Taylor-remainder rate-2 gradient tests
+   (dolfin-adjoint style), band-limited manufactured solutions to isolate
+   temporal order, dot-product adjoint tests at 100 eps for every linear
+   operator, GMRES residual-monotonicity property tests, and an embedded
+   step-doubling error monitor as a diagnostic mode. Complex-step
+   differentiation is documented as unusable on the non-holomorphic main
+   path.
+
+## 14. Log
 
 ### 2026-08-05 — Plan created
 
@@ -432,3 +484,37 @@ The first code phase, P3D-0 plus P3D-1, can start immediately.
   and jaxDecomp, plus the JAX distributed-FFT and checkpointing state of
   the art.
 - Next: P3D-0.
+
+### 2026-08-05 — Core lands on feature/mhd3d: P3D-1 and most of P3D-2
+
+- Implemented and tested on the branch, delivery per section 13:
+  `numerics/spectral/pfft.py` (rfftn-convention slab transforms through
+  `shard_map` with one `all_to_all`, single-device passthrough),
+  `state/mhd3d.py`, `equations/mhd3d.py` (projector, curl, dealiasing,
+  rotational-form nonlinear RHS with the guide field folded into the
+  real-space product, Parseval-weighted energies and helicities),
+  `time_integrators/low_storage.py` (Williamson 2N RK3 on the
+  integrating-factor transformed variable, exact for pure dissipation),
+  and `physics/equilibria3d.py` (single mode, CP Alfvén, the exact
+  PPS95 beta 0.8 Orszag--Tang fields, ABC, Taylor--Green class I).
+- Gates passing in `tests/test_mhd3d.py`: G1 exact decay at 1e-12,
+  projector idempotency and gradient annihilation, divergence at
+  round-off through nonlinear steps, G2 damped-Alfvén dispersion at 1e-3
+  against the exact complex frequency using the exact damped eigenvector
+  (a naive standing-wave start mixes both branches and fails: recorded
+  here so it stays a test comment), G3 CP Alfvén with third-order
+  temporal convergence, G4 ideal-invariant drift below 1e-6 and
+  convergent, Orszag--Tang initial energies exact (E_V = 2, E_M = 1.92:
+  the beta 0.8 fields are near, not exact, equipartition), and
+  d(energy)/d(viscosity) against finite differences at 1e-6.
+- Parallel contract in `tests/test_mhd3d_parallel.py` (subprocess with
+  four host devices): sharded-versus-single forward parity at 1e-12,
+  distributed gradient parity at 1e-10, and compiled HLO for forward and
+  backward containing `all-to-all` and no `all-gather`. Plain
+  differentiation through `shard_map` stays distributed, so the
+  defensive custom adjoint is not needed yet; the HLO gate pins the
+  property.
+- Full suite: 308 fast tests green including the untouched 2D suite.
+- Remaining on this PR: Simulation/TOML/output dispatch, ETDRK4
+  validation stepper and rotation-accuracy gate, G5/G6 linear-physics
+  gates, docs pages, then the campaign phases per section 8.

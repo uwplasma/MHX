@@ -14,3 +14,7 @@ __all__ = [
     "evolve_rk4",
     "rk4_step",
 ]
+
+from mhx.time_integrators.low_storage import evolve_if_rk3, if_rk3_step
+
+__all__ += ["evolve_if_rk3", "if_rk3_step"]
