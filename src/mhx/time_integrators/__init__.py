@@ -1,20 +1,22 @@
 """Time integration helpers."""
 
+from mhx.time_integrators.exponential import etdrk4_step, evolve_etdrk4
 from mhx.time_integrators.fixed_step import evolve_rk4, rk4_step
 from mhx.time_integrators.implicit import (
     ImplicitTrajectoryResult,
     backward_euler_step,
     evolve_backward_euler,
 )
+from mhx.time_integrators.low_storage import evolve_if_rk3, if_rk3_step
 
 __all__ = [
     "ImplicitTrajectoryResult",
     "backward_euler_step",
+    "etdrk4_step",
     "evolve_backward_euler",
+    "evolve_etdrk4",
+    "evolve_if_rk3",
     "evolve_rk4",
+    "if_rk3_step",
     "rk4_step",
 ]
-
-from mhx.time_integrators.low_storage import evolve_if_rk3, if_rk3_step
-
-__all__ += ["evolve_if_rk3", "if_rk3_step"]

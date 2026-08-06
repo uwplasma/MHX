@@ -518,3 +518,28 @@ A final solver-methods literature pass amends the architecture:
 - Remaining on this PR: Simulation/TOML/output dispatch, ETDRK4
   validation stepper and rotation-accuracy gate, G5/G6 linear-physics
   gates, docs pages, then the campaign phases per section 8.
+
+### 2026-08-05 — Dispatch, ETDRK4, and the G5 dynamo gate
+
+- `mhx.Simulation` now dispatches on `equations="mhd3d"`: three-entry
+  shapes validate, the integrator upgrades to `if_rk3` (or `etdrk4`), and
+  the run returns an `MHD3DResult` with the same `print_summary`, `plot`
+  (midplane |j| and |v| slices, energy and cross-helicity histories), and
+  compressed-NPZ `save` contract as 2D. A 2D script becomes 3D by
+  changing `shape`, `equations`, and the equilibrium.
+- Added the ETDRK4 validation stepper. The first implementation hit the
+  classic phi-function catastrophic cancellation (an O(eps) numerator
+  over z cubed): fixed with the Kassam--Trefethen contour mean, which is
+  exact for these entire functions at any z. The cross-check gate now
+  shows ETDRK4 beating IF-RK3 by more than 5x on the CP Alfvén wave, with
+  both landing on the analytic state.
+- Gate G5 passes: with a broadband random solenoidal seed the 1:1:1 ABC
+  kinematic dynamo reproduces the Galloway--Frisch window structure at
+  `Rm = 1/eta`: growth 0.0025 at Rm 12 (first window), marginal decay at
+  Rm 20 (the gap), growth 0.013 at Rm 30 (second window), at 32 cubed,
+  slow-marked (66 s). A Beltrami-aligned seed decays instead: it projects
+  poorly onto the growing eigenmode. Recorded in the equilibrium
+  docstring.
+- Suite: 313 fast tests green plus the slow dynamo gate; ruff clean.
+- Remaining on this PR: TOML config path, G6 tearing gates, docs pages,
+  strong-B0 rotation-accuracy gate, campaigns G7 onward.

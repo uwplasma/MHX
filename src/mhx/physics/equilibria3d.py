@@ -116,10 +116,13 @@ class ABCFlowEquilibrium:
     b_coefficient: float = 1.0
     c: float = 1.0
     seed_amplitude: float = 1.0e-6
+    seed: int = 0
 
     name: ClassVar[str] = "abc_flow"
 
     def initial_fields(self, shape: tuple[int, int, int]) -> tuple[Array, Array]:
+        import jax
+
         x, y, z = _grid(shape)
         v = jnp.stack(
             (
@@ -128,14 +131,11 @@ class ABCFlowEquilibrium:
                 self.c * jnp.sin(y) + self.b_coefficient * jnp.cos(x),
             )
         )
-        seed = self.seed_amplitude * jnp.stack(
-            (
-                jnp.sin(y) + jnp.cos(z),
-                jnp.sin(z) + jnp.cos(x),
-                jnp.sin(x) + jnp.cos(y),
-            )
-        )
-        return v, seed
+        # Broadband random seed: the growing eigenmode selects itself. A
+        # Beltrami-aligned seed projects poorly onto it and decays first.
+        noise = jax.random.normal(jax.random.PRNGKey(self.seed), (3, *shape))
+        seed_field = self.seed_amplitude * noise
+        return v, seed_field
 
 
 @dataclass(frozen=True)
