@@ -124,3 +124,50 @@ def test_etdrk4_cross_checks_the_production_stepper() -> None:
 
     assert error_rk3 < 1.0e-4
     assert error_etdrk4 < error_rk3 / 5.0
+
+
+def test_strong_guide_field_keeps_exact_dispersion() -> None:
+    """Accuracy gate at B0/b = 33: the wave CFL costs step size, not physics.
+
+    The guide field enters through the real-space products rather than an
+    exact Elsässer rotation, so the stepper must resolve the fast Alfvén
+    oscillation. This gate pins that the dispersion stays exact at strong
+    B0 once the step resolves the wave, and that halving the step converges
+    at third order. The exact phase rotation stays an optimization item.
+    """
+    shape = (4, 4, 32)
+    amplitude = 0.3
+    equilibrium = CircularlyPolarizedAlfvenEquilibrium(amplitude=amplitude, mode=1)
+    velocity, magnetic = equilibrium.initial_fields(shape)
+    k = mhd3d.wavevectors(shape, LENGTHS)
+    mask = mhd3d.two_thirds_mask_rfft(shape)
+    state0 = MHD3DState(
+        v_hat=mhd3d.project(mhd3d.to_spectral(velocity), k),
+        b_hat=mhd3d.project(mhd3d.to_spectral(magnetic), k),
+    )
+    eta = 1.0e-3
+    guide = 10.0
+    params = MHD3DParams(
+        viscosity=eta, resistivity=eta, guide_field=(0.0, 0.0, guide)
+    )
+    decay = mhd3d.decay_rates(params, k)
+
+    def nonlinear(state: MHD3DState) -> MHD3DState:
+        return mhd3d.mhd3d_nonlinear(state, params, shape=shape, k=k, mask=mask)
+
+    def final_error(dt: float, steps: int) -> float:
+        trajectory = evolve_if_rk3(
+            state0, nonlinear, decay, dt=dt, steps=steps, save_every=steps
+        )
+        final = jax.tree.map(lambda leaf: leaf[-1], trajectory.states)
+        t_end = dt * steps
+        phase = jnp.exp(-1j * k[2] * guide * t_end)
+        expected_b = state0.b_hat * phase * jnp.exp(-eta * t_end)
+        return float(
+            jnp.max(jnp.abs(final.b_hat - expected_b)) / (amplitude * shape[0] ** 3)
+        )
+
+    coarse = final_error(2.0e-3, 1000)
+    fine = final_error(1.0e-3, 2000)
+    assert coarse < 1.0e-3
+    assert coarse / fine > 5.0
