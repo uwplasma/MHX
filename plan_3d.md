@@ -597,3 +597,27 @@ A final solver-methods literature pass amends the architecture:
   branches for both steppers, the `device_count` path through
   `Simulation` matching one device at 1e-12, and the printed summary.
   Full-suite coverage: 95.36 percent, 342 tests green.
+
+### 2026-08-06 — Derivation, the 3D movie, and the save fix
+
+- `MHD3DResult.save` now transforms one saved frame at a time, closing
+  the trajectory-OOM item from the first campaign run.
+- `docs/physics/mhd3d.md` gained the derivation: constant-density limit,
+  the rotational-form identity, exact pressure elimination through the
+  projector, curl-form solenoidality, the three ideal invariants with
+  the Frisch 1975 citation, the Elsässer structure, and the
+  strong-guide-field bridge to the 2D model.
+- The first 3D movie is committed: current-density magnitude of the
+  128-cubed Orszag--Tang run, midplane slice beside a maximum-intensity
+  projection on fixed scales, 20 frames to t = 4, 2.8 MB, rendered by
+  `render_ot3d_movie` from views extracted on the GPU. Embedded on the
+  3D physics page and in the gallery, registered in the figure manifest
+  at claim level smoke with the G7-audit limitation stated, and passing
+  the motion gate.
+- Operational lesson recorded: the second extraction attempt failed with
+  out-of-memory because a tenant process held twelve gigabytes on GPU
+  zero. The etiquette held (no touching tenant jobs); the run moved to
+  the free GPU one. Campaign scripts should probe free memory and pick
+  the device.
+- Checks: prose 22 documents, `sphinx-build -W`, fast suite 323, `ruff`,
+  and the artifact verifier are green.

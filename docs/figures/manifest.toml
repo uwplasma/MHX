@@ -291,3 +291,13 @@ claim_level = "validation"
 claim_scope = "Current density from the gate-passing 256x256 decaying-turbulence bundle in docs/_static/validation/decaying_turbulence_256_t10. Morphology media only, not converged turbulence statistics."
 sources = ["docs/_static/validation/decaying_turbulence_256_t10/validation.json", "docs/_static/validation/decaying_turbulence_256_t10/diagnostics.json", "examples/make_docs_movies.py", "src/mhx/benchmarks/turbulence.py"]
 tests = ["tests/test_docs_movies.py"]
+
+[[figures]]
+id = "movie_orszag_tang_3d_current"
+path = "docs/_static/movies/orszag_tang_3d_current.mp4"
+sha256 = "f806db6e2d84b19252cb30403f8b2bcd2cbff0ece58f5912206935d5896650a9"
+command = "mhx.Simulation(shape=(128, 128, 128), equations=mhd3d, OrszagTang3DEquilibrium(beta=0.8), nu=eta=2e-3, dt=1e-3, t_end=4) on one office GPU, rendered by render_ot3d_movie in examples/make_docs_movies.py"
+claim_level = "smoke"
+claim_scope = "Campaign-scale 3D Orszag-Tang solver output at 128 cubed, x64: current-sheet formation and the dissipation-peak window. Not a gated G7 validation artifact until the dissipation normalization audit in plan_3d.md completes."
+sources = ["examples/make_docs_movies.py", "src/mhx/equations/mhd3d.py", "src/mhx/physics/equilibria3d.py"]
+tests = ["tests/test_docs_movies.py"]

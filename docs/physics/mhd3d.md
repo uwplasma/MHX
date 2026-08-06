@@ -37,6 +37,45 @@ real-space products. That one addition reproduces the
 $\mathbf{j}\times\mathbf{B}_0$ force and the $\mathbf{B}_0$ advection in
 the induction equation, with no separate terms.
 
+## Where the equations come from
+
+Start from compressible visco-resistive MHD and take the constant-density
+limit: sound waves leave the system and $\nabla\cdot\mathbf{v} = 0$
+becomes a constraint rather than an evolution. Measure the field in
+Alfvén-speed units, $\mathbf{B}/\sqrt{\mu_0\rho_0} \to \mathbf{B}$, so
+the momentum and induction equations read
+
+$$
+\partial_t \mathbf{v} + (\mathbf{v}\cdot\nabla)\mathbf{v}
+  = -\nabla p + (\nabla\times\mathbf{B})\times\mathbf{B}
+  + \nu\nabla^2\mathbf{v},
+\qquad
+\partial_t \mathbf{B} = \nabla\times(\mathbf{v}\times\mathbf{B})
+  + \eta\nabla^2\mathbf{B}.
+$$
+
+Two identities give the solved form. The identity
+$(\mathbf{v}\cdot\nabla)\mathbf{v} =
+\boldsymbol{\omega}\times\mathbf{v} + \nabla(v^2/2)$ moves the advection
+into rotational form. Its gradient part folds into the pressure, which
+then enforces incompressibility alone, so applying $\mathcal{P}$ removes
+it exactly. In Fourier space the projected equations close over
+$(\hat{\mathbf{v}}, \hat{\mathbf{B}})$ with no elliptic solve. The curl form of the induction term keeps
+$\mathbf{k}\cdot\hat{\mathbf{B}} = 0$ invariant, because a curl is
+orthogonal to $\mathbf{k}$ mode by mode.
+
+The ideal system conserves the energy
+$E = \tfrac{1}{2}\langle v^2 + B^2 \rangle$, the cross helicity
+$H_C = \tfrac{1}{2}\langle \mathbf{v}\cdot\mathbf{B} \rangle$, and the
+magnetic helicity $H_M = \langle \mathbf{A}\cdot\mathbf{B} \rangle$
+{cite}`frisch1975`. In Elsässer variables
+$\mathbf{z}^\pm = \mathbf{v} \pm \mathbf{B}$ the nonlinearity couples
+only counter-propagating fields, which is the structural fact behind
+Alfvénic turbulence phenomenology {cite}`biskamp2003`. The
+[2D reduced model](reduced_mhd.md) follows from this system in the
+strong-guide-field limit {cite}`strauss1976`, and gate G12 of the
+program plan measures that limit directly.
+
 ## Numerics
 
 - **Space**: Fourier pseudo-spectral on the periodic box, half-spectrum
@@ -75,6 +114,17 @@ The first campaign-scale nonlinear run is the 3D Orszag--Tang vortex of
 dissipation peak inside the window reported by {cite}`mininni2006`, and
 an internally closed energy budget. Its promotion into gate G7 follows
 the normalization audit recorded in the plan.
+
+```{video} ../_static/movies/orszag_tang_3d_current.mp4
+:loop:
+:muted:
+:width: 100%
+```
+
+The movie shows $|\mathbf{j}|$ from that run on one fixed color scale:
+the midplane slice on the left, the maximum-intensity projection along
+$z$ on the right. Current sheets form, roll up, and fragment through the
+dissipation peak near $t = 2.8$.
 
 ## Using it
 
