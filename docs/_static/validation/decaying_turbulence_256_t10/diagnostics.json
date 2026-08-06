@@ -1,0 +1,33 @@
+{
+  "current_linf_growth": 4.339048540444482,
+  "domain": [
+    0.0,
+    6.283185307179586,
+    0.0,
+    6.283185307179586
+  ],
+  "dt": 0.004,
+  "final_total_energy": 0.030001301400266675,
+  "initial_current_linf": 8.957021671583622,
+  "initial_total_energy": 0.49773280569940537,
+  "max_current_high_k_fraction": 0.8076573104594853,
+  "max_current_linf": 13.296070212028104,
+  "max_magnetic_divergence_linf": 0.0,
+  "max_relative_energy_growth": 0.0,
+  "references": {
+    "literature": "Anchored to 2-D MHD turbulence/current-sheet studies and the Orszag--Tang vortex as a canonical nonlinear MHD test.",
+    "scope": "Deterministic decaying incompressible reduced-MHD turbulence example with current-sheet formation and dissipative energy checks."
+  },
+  "relative_energy_drop": 0.9397240827674411,
+  "resistivity": 0.02,
+  "samples": 126,
+  "save_every": 20,
+  "schema": "mhx.validation.decaying_mhd_turbulence.v1",
+  "seed": 7,
+  "shape": [
+    256,
+    256
+  ],
+  "t_end": 10.0,
+  "viscosity": 0.02
+}

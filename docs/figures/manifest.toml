@@ -275,9 +275,19 @@ tests = ["tests/test_docs_movies.py"]
 [[figures]]
 id = "movie_double_harris_reconnection_256"
 path = "docs/_static/movies/double_harris_reconnection_256.mp4"
-sha256 = "c2bdae41e5dec51f685bf29290581ea4eb3fede0e3fe008ed89ed55715245faf"
+sha256 = "e6f75f405f65fbe0ee9cbcf4188def6075313a5ab71dbe0b4ea400f793416f2b"
 command = "mhx benchmark double-harris-long-run --nx 256 --ny 256 --t-end 160 --movies, then MHX_HERO_BUNDLE replay render in examples/make_docs_movies.py"
 claim_level = "validation"
 claim_scope = "Island-flux zoom rendered from a replay at the exact settings of the committed 256x256 gate-passing bundle in docs/_static/validation/double_harris_256_t160. Not a converged Rutherford, Sweet-Parker, or plasmoid production result."
 sources = ["docs/_static/validation/double_harris_256_t160/validation.json", "docs/_static/validation/double_harris_256_t160/diagnostics.json", "examples/make_docs_movies.py", "src/mhx/benchmarks/current_sheet.py"]
+tests = ["tests/test_docs_movies.py"]
+
+[[figures]]
+id = "movie_decaying_mhd_turbulence_current_256"
+path = "docs/_static/movies/decaying_mhd_turbulence_current_256.mp4"
+sha256 = "eea2d8e63cf3441ffd4770740eb829c4d8d1fb37f1759503a7da0209e7e7a23d"
+command = "mhx benchmark decaying-turbulence --nx 256 --ny 256 --t-end 10 --dt 0.004 --movies, transcoded at half speed by examples/make_docs_movies.py"
+claim_level = "validation"
+claim_scope = "Current density from the gate-passing 256x256 decaying-turbulence bundle in docs/_static/validation/decaying_turbulence_256_t10. Morphology media only, not converged turbulence statistics."
+sources = ["docs/_static/validation/decaying_turbulence_256_t10/validation.json", "docs/_static/validation/decaying_turbulence_256_t10/diagnostics.json", "examples/make_docs_movies.py", "src/mhx/benchmarks/turbulence.py"]
 tests = ["tests/test_docs_movies.py"]

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import math
 import time
+import warnings
 from collections.abc import Sequence
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
@@ -263,6 +264,15 @@ class Simulation:
         Returns:
             A :class:`SimulationResult` with fields, diagnostics, and timings.
         """
+        if self.integrator == "backward_euler" and not jax.config.jax_enable_x64:
+            warnings.warn(
+                "backward_euler targets Newton tolerances near 1e-9, which "
+                "float32 usually cannot reach, so the run may report "
+                "implicit_converged=False. Set JAX_ENABLE_X64=1 for implicit "
+                "runs.",
+                UserWarning,
+                stacklevel=2,
+            )
         console = Console()
         grid = CartesianGrid(
             shape=self.shape,

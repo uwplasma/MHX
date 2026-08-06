@@ -86,17 +86,19 @@ shock-capturing results.
 
 ## Turbulence
 
-```{video} _static/movies/decaying_mhd_turbulence_current.mp4
+```{video} _static/movies/decaying_mhd_turbulence_current_256.mp4
 :loop:
 :muted:
 :width: 100%
 ```
 
-Current filaments in decaying reduced-MHD turbulence {cite}`biskamp2003` at
-64 x 64 to $t=8$:
+Current density in decaying reduced-MHD turbulence {cite}`biskamp2003` at
+256 x 256 to $t=10$, from a gate-passing validation run. Its evidence is
+committed under
+[`_static/validation/decaying_turbulence_256_t10/`](https://github.com/uwplasma/MHX/tree/main/docs/_static/validation/decaying_turbulence_256_t10):
 
 ```bash
-mhx benchmark decaying-turbulence --outdir outputs/turbulence --nx 64 --ny 64 --t-end 8 --movies
+mhx benchmark decaying-turbulence --outdir outputs/turbulence --nx 256 --ny 256 --t-end 10 --dt 0.004 --movies
 ```
 
 ```{video} _static/movies/forced_turbulent_reconnection.mp4

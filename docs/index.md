@@ -8,6 +8,10 @@ Use MHX to study periodic current sheets, tearing modes, magnetic
 reconnection, and reduced-MHD turbulence. MHX does not solve full
 three-dimensional MHD.
 
+::::{grid} 1 1 2 2
+:gutter: 3
+
+:::{grid-item}
 ```{video} _static/movies/double_harris_reconnection_256.mp4
 :autoplay:
 :loop:
@@ -15,11 +19,29 @@ three-dimensional MHD.
 :nocontrols:
 :width: 100%
 ```
+**Magnetic reconnection.** A seeded island grows on a Harris current sheet
+at 256 x 256. Red and blue show the island flux, black lines follow the
+total flux, and the markers track the X and O points.
+:::
 
-The movie shows Harris-sheet reconnection at 256 x 256: island flux with
-total-flux contours and X/O markers, run to $t = 160$. It replays the exact
-settings of a gate-passing validation run. The [gallery](gallery.md) has
-more.
+:::{grid-item}
+```{video} _static/movies/decaying_mhd_turbulence_current_256.mp4
+:autoplay:
+:loop:
+:muted:
+:nocontrols:
+:width: 100%
+```
+**MHD turbulence.** Current density in decaying reduced-MHD turbulence at
+256 x 256. Vortical structures merge and stretch into the thin current
+sheets where the energy dissipates.
+:::
+
+::::
+
+Both movies replay gate-passing validation runs, at a pace slow enough to
+follow. The [gallery](gallery.md) documents every movie with its command and
+claim boundary.
 
 ## Install and run
 

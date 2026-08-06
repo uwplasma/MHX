@@ -771,3 +771,23 @@ can trail the rest of P3 by one PR if the machines are busy.
   triggers the PyPI publish workflow, so it stays a maintainer decision.
 - Checks: prose 21 documents, `sphinx-build -W`, fast suite 297 passed,
   `ruff`, paper-artifact verifier, and the movie gates are green.
+
+### 2026-08-05 — Landing polish, turbulence movie, float32 warning
+
+- Landing page: the hero no longer fills the page alone. A two-column grid
+  pairs the reconnection movie with a new 256 x 256 decaying-turbulence
+  current-density movie, each with a two-sentence explanation underneath.
+  The hero re-rendered at 6 frames per second and the turbulence movie
+  plays at half speed, so a reader can follow the dynamics.
+- The turbulence movie comes from a gate-passing
+  `mhx benchmark decaying-turbulence --nx 256 --ny 256 --t-end 10
+  --dt 0.004 --movies` run on the office GPU. The default `dt=0.01` went
+  non-finite at this resolution; the gates caught it (`finite_histories`
+  false) and the smaller step passed. Evidence committed under
+  `docs/_static/validation/decaying_turbulence_256_t10/`. The gallery
+  turbulence section now uses the 256 x 256 movie.
+- `Simulation.run` now warns when `backward_euler` runs without x64, with a
+  test that toggles precision and restores it. This closes the follow-up
+  noted in the P4 log entry.
+- Checks: prose, `sphinx-build -W`, fast suite 299 passed, `ruff`, and the
+  artifact verifier are green.

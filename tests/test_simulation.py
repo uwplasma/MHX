@@ -63,6 +63,27 @@ def test_simulation_uses_solvax_for_backward_euler() -> None:
     assert result.diagnostics["implicit_linear_converged"] is True
 
 
+def test_backward_euler_warns_without_x64() -> None:
+    import jax
+    import pytest
+
+    simulation = mhx.Simulation(
+        shape=(8, 8),
+        equilibrium=mhx.ZeroEquilibrium(),
+        dt=0.01,
+        t_end=0.01,
+        save_every=1,
+        integrator="backward_euler",
+        verbose=False,
+    )
+    jax.config.update("jax_enable_x64", False)
+    try:
+        with pytest.warns(UserWarning, match="JAX_ENABLE_X64"):
+            simulation.run()
+    finally:
+        jax.config.update("jax_enable_x64", True)
+
+
 def test_simulation_ensemble_runs_plots_and_saves(tmp_path, capsys, monkeypatch) -> None:
     equilibria = tuple(
         mhx.PeriodicDoubleHarrisEquilibrium(

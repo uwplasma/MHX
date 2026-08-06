@@ -59,8 +59,12 @@ def ffmpeg_exe() -> str:
         return "ffmpeg"
 
 
-def transcode(source: Path, target: Path) -> None:
-    """Transcode one GIF to H.264 mp4 with even dimensions."""
+def transcode(source: Path, target: Path, *, slow: float = 1.0) -> None:
+    """Transcode one GIF to H.264 mp4 with even dimensions.
+
+    ``slow`` stretches playback time by that factor, so a reader can follow
+    the dynamics. It changes pacing only, never the frames.
+    """
     command = [
         ffmpeg_exe(),
         "-y",
@@ -71,7 +75,7 @@ def transcode(source: Path, target: Path) -> None:
         "-pix_fmt",
         "yuv420p",
         "-vf",
-        "scale=trunc(iw/2)*2:trunc(ih/2)*2",
+        f"setpts={slow}*PTS,scale=trunc(iw/2)*2:trunc(ih/2)*2",
         "-c:v",
         "libx264",
         "-crf",
@@ -134,7 +138,7 @@ def render_island_movie(target: Path) -> None:
     writer.close()
 
 
-def render_hero_movie(bundle: Path, target: Path) -> None:
+def render_hero_movie(bundle: Path, target: Path, *, fps: int = 6) -> None:
     """Render the landing hero from a validated long-run trajectory NPZ.
 
     The view zooms on the right current sheet, where the seeded island and
@@ -160,7 +164,7 @@ def render_hero_movie(bundle: Path, target: Path) -> None:
     left = int(np.searchsorted(x, sheet - 1.6))
     right = min(int(np.searchsorted(x, sheet + 1.6)), flux.shape[1] - 1)
 
-    writer = imageio.get_writer(target, fps=10, codec="libx264", quality=7)
+    writer = imageio.get_writer(target, fps=fps, codec="libx264", quality=7)
     for index, time in enumerate(times):
         figure, axis = plt.subplots(figsize=(6.4, 6.0), dpi=120)
         axis.imshow(
