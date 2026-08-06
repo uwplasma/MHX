@@ -1,12 +1,13 @@
 # MHX
 
-MHX runs differentiable, two-dimensional reduced-MHD models in JAX. It builds
-the plasma equations and diagnostics. [SOLVAX](https://github.com/uwplasma/SOLVAX)
+MHX runs differentiable MHD models in JAX: two-dimensional reduced MHD and
+full three-dimensional incompressible MHD. It builds the plasma equations
+and diagnostics. [SOLVAX](https://github.com/uwplasma/SOLVAX)
 supplies the linear, Krylov, and nonlinear solvers.
 
 Use MHX to study periodic current sheets, tearing modes, magnetic
-reconnection, and reduced-MHD turbulence. MHX does not solve full
-three-dimensional MHD.
+reconnection, MHD turbulence, and dynamos. MHX does not solve
+compressible MHD with shocks.
 
 ::::{grid} 1 1 2 2
 :gutter: 3
@@ -147,6 +148,7 @@ how_to/add_diagnostics
 :caption: Physics
 
 physics/reduced_mhd
+physics/mhd3d
 physics/spectral_method
 physics/time_integration
 physics/differentiability

@@ -15,6 +15,7 @@ DOCUMENTS = (
     ROOT / "docs" / "getting_started" / "troubleshooting.md",
     ROOT / "docs" / "how_to" / "run_on_gpus.md",
     ROOT / "docs" / "physics" / "reduced_mhd.md",
+    ROOT / "docs" / "physics" / "mhd3d.md",
     ROOT / "docs" / "physics" / "spectral_method.md",
     ROOT / "docs" / "physics" / "time_integration.md",
     ROOT / "docs" / "physics" / "differentiability.md",

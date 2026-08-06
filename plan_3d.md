@@ -575,3 +575,25 @@ A final solver-methods literature pass amends the architecture:
   transforms the whole trajectory at once and ran out of GPU memory
   after the 128-cubed run; it must transform frame by frame (or stream
   through the host) before campaign use.
+
+### 2026-08-06 — Docs, coverage, and multi-device paths in-process
+
+- Documentation: `docs/physics/mhd3d.md` states the 3D equations, the
+  projector, the numerics, the passing-gate table with citations, and a
+  runnable example; seven new BibTeX entries (Cox--Matthews,
+  Kassam--Trefethen, Frisch 1975, Galloway--Frisch, Bouya--Dormy,
+  Politano--Pouquet--Sulem, Mininni--Pouquet--Montgomery). The README and
+  landing page now state the honest scope: 2D reduced MHD plus 3D
+  incompressible MHD, not compressible MHD with shocks. The pinned
+  release-candidate marker moved in lockstep. The prose gate covers the
+  new page (22 documents).
+- Coverage: the suite now runs with four logical CPU devices set in
+  `tests/conftest.py` before JAX loads, so the sharded transform and RHS
+  paths execute in-process and count. New physics-anchored completeness
+  tests: Taylor--Green exact means (E_V = v0^2/8, E_M = 3 b0^2/8, so the
+  Lee et al. equal-energy start needs b0 = 1/sqrt(3)), the ABC Beltrami
+  helicity identity (curl b = b, so the helicity saturates at 2 E_M),
+  odd-nz Parseval weights, evolver validation and partial-chunk
+  branches for both steppers, the `device_count` path through
+  `Simulation` matching one device at 1e-12, and the printed summary.
+  Full-suite coverage: 95.36 percent, 342 tests green.

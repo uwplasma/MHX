@@ -4,13 +4,14 @@
 [![Coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/uwplasma/MHX/main/badges/coverage.json)](https://github.com/uwplasma/MHX/actions/workflows/ci.yml)
 [![Documentation](https://readthedocs.org/projects/mhx/badge/?version=latest)](https://mhx.readthedocs.io/)
 
-MHX runs differentiable, two-dimensional reduced-MHD models in JAX. It builds
-the plasma equations and diagnostics. [SOLVAX](https://github.com/uwplasma/SOLVAX)
+MHX runs differentiable MHD models in JAX: two-dimensional reduced MHD and
+full three-dimensional incompressible MHD. It builds the plasma equations
+and diagnostics. [SOLVAX](https://github.com/uwplasma/SOLVAX)
 contains the linear, Krylov, and nonlinear solvers.
 
-Use MHX to study periodic current sheets, tearing modes, reconnection, and
-reduced-MHD turbulence. MHX does not solve the full three-dimensional MHD
-equations.
+Use MHX to study periodic current sheets, tearing modes, reconnection,
+MHD turbulence, and dynamos. MHX does not solve compressible MHD with
+shocks.
 
 ![Double-Harris reconnection: residual flux with flux contours and X/O markers](docs/_static/readme/double_harris_reconnection.gif)
 
@@ -96,6 +97,27 @@ These images show bounded validation runs. The
 movies, and the
 [media inventory](docs/project/media_inventory.md) records their settings and
 claim limits.
+
+## Three-dimensional MHD
+
+The same call runs full 3D incompressible MHD: change the shape, the
+equations name, and the equilibrium.
+
+```python
+result = mhx.Simulation(
+    shape=(128, 128, 128),
+    equations="mhd3d",
+    equilibrium=mhx.OrszagTang3DEquilibrium(beta=0.8),
+    viscosity=2.0e-3,
+    resistivity=2.0e-3,
+    dt=1.0e-3,
+    t_end=4.0,
+).run()
+```
+
+The [3D model page](docs/physics/mhd3d.md) states the equations, the
+numerics, and the passing validation gates. The program plan and its
+literature-anchored benchmark ladder are in [`plan_3d.md`](plan_3d.md).
 
 ## Physics and numerics
 

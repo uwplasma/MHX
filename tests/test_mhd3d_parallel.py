@@ -107,3 +107,60 @@ def test_sharded_transform_contract() -> None:
     )
     assert result.returncode == 0, result.stderr[-3000:]
     assert "PARALLEL-OK" in result.stdout
+
+
+def test_pfft_mesh_paths_in_process() -> None:
+    """Sharded transforms and RHS on the in-process four-device mesh.
+
+    The subprocess test pins the HLO contract; this one runs the same
+    paths inside the suite so they count toward coverage and stay under
+    the debugger's reach.
+    """
+    import jax
+    import jax.numpy as jnp
+    from jax.sharding import Mesh
+
+    from mhx.equations import mhd3d
+    from mhx.numerics.spectral.pfft import (
+        pfft3,
+        pifft3,
+        shard_physical,
+        shard_spectral,
+    )
+    from mhx.physics.equilibria3d import OrszagTang3DEquilibrium
+    from mhx.state.mhd3d import MHD3DParams, MHD3DState
+
+    if jax.device_count() < 4:
+        import pytest
+
+        pytest.skip("needs the four-device conftest environment")
+
+    mesh = Mesh(jax.devices()[:4], axis_names=("x",))
+    shape = (16, 16, 16)
+    velocity, magnetic = OrszagTang3DEquilibrium().initial_fields(shape)
+
+    reference = jnp.fft.rfftn(velocity, axes=(-3, -2, -1))
+    sharded = pfft3(shard_physical(velocity, mesh), mesh=mesh)
+    scale = float(jnp.max(jnp.abs(reference)))
+    assert float(jnp.max(jnp.abs(reference - sharded))) < 1.0e-12 * scale
+
+    round_trip = pifft3(shard_spectral(sharded, mesh), shape=shape, mesh=mesh)
+    assert float(jnp.max(jnp.abs(round_trip - velocity))) < 1.0e-12
+
+    k = mhd3d.wavevectors(shape, (2.0 * jnp.pi,) * 3)
+    mask = mhd3d.two_thirds_mask_rfft(shape)
+    params = MHD3DParams(viscosity=5.0e-3, resistivity=5.0e-3)
+    state = MHD3DState(
+        v_hat=mhd3d.project(pfft3(velocity, mesh=mesh), k),
+        b_hat=mhd3d.project(pfft3(magnetic, mesh=mesh), k),
+    )
+    sharded_rhs = mhd3d.mhd3d_nonlinear(
+        state, params, shape=shape, k=k, mask=mask, mesh=mesh
+    )
+    single_rhs = mhd3d.mhd3d_nonlinear(state, params, shape=shape, k=k, mask=mask)
+    gap = max(
+        float(jnp.max(jnp.abs(sharded_rhs.v_hat - single_rhs.v_hat))),
+        float(jnp.max(jnp.abs(sharded_rhs.b_hat - single_rhs.b_hat))),
+    )
+    rhs_scale = float(jnp.max(jnp.abs(single_rhs.v_hat)))
+    assert gap < 1.0e-10 * max(rhs_scale, 1.0)
