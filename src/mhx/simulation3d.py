@@ -82,11 +82,28 @@ class MHD3DResult:
         if output.suffix != ".npz":
             output = output / "trajectory.npz"
         output.parent.mkdir(parents=True, exist_ok=True)
-        velocity = np.asarray(
-            mhd3d.to_physical(self.trajectory.states.v_hat, shape=self.shape)
+        # Transform one saved frame at a time: transforming the whole
+        # trajectory at once exhausts device memory after large runs.
+        frames = int(self.trajectory.times.shape[0])
+        velocity = np.stack(
+            [
+                np.asarray(
+                    mhd3d.to_physical(
+                        self.trajectory.states.v_hat[i], shape=self.shape
+                    )
+                )
+                for i in range(frames)
+            ]
         )
-        magnetic = np.asarray(
-            mhd3d.to_physical(self.trajectory.states.b_hat, shape=self.shape)
+        magnetic = np.stack(
+            [
+                np.asarray(
+                    mhd3d.to_physical(
+                        self.trajectory.states.b_hat[i], shape=self.shape
+                    )
+                )
+                for i in range(frames)
+            ]
         )
         np.savez_compressed(
             output,
