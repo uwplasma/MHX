@@ -543,3 +543,35 @@ A final solver-methods literature pass amends the architecture:
 - Suite: 313 fast tests green plus the slow dynamo gate; ruff clean.
 - Remaining on this PR: TOML config path, G6 tearing gates, docs pages,
   strong-B0 rotation-accuracy gate, campaigns G7 onward.
+
+### 2026-08-05 — Strong-B0 gate, SOLVAX inner product, first G7-scale run
+
+- Added the strong-guide-field accuracy gate: the CP Alfvén dispersion
+  stays exact at B0/b = 33 with the guide field in the real-space
+  products, converging at third order once the step resolves the wave.
+  The exact Elsässer phase rotation stays an optimization item, now with
+  a gate that will detect any accuracy change when it lands.
+- SOLVAX branch: `solvax.axis_inner_product(axis_name)` completes local
+  Hermitian products with `lax.psum`, and a four-device subprocess gate
+  runs GMRES entirely inside a `shard_map` region (operator communicating
+  by `ppermute`) matching the global solve at 1e-10. Caveat discovered
+  and documented: the Krylov-basis carry starts replicated and becomes
+  shard-varying, so callers need `check_vma=False` until basis
+  initialization is axis-aware.
+- First G7-scale physics run completed through the new `Simulation` API
+  on one office A4000: 3D Orszag--Tang, PPS95 beta 0.8 fields, 128 cubed,
+  x64, nu = eta = 2e-3, dt 1e-3, t_end 4, 564 s (7.1 steps per second),
+  max |div B| 5.5e-9 across 4000 steps. Physics: max|j| grows about 16x
+  through t of 0.6 to 1.2 then saturates near 100 to 150 (sheet
+  formation), total dissipation peaks at 0.833 at t = 2.8, inside the
+  Mininni--Pouquet--Montgomery peak window, and the energy budget closes
+  internally (mean energy loss rate 0.48 matches the dissipation curve;
+  E drops 3.92 to 2.00). The quantitative eps-peak comparison against
+  the paper's approximately 0.3 needs their exact normalization audited
+  before it becomes a gate tolerance: recorded as part of the G7 gate
+  work, not hand-tuned. History committed on the office box under
+  `outputs/docs_media/ot3d_128/history.npz`.
+- Scalability lesson filed as a checklist item: `MHD3DResult.save`
+  transforms the whole trajectory at once and ran out of GPU memory
+  after the 128-cubed run; it must transform frame by frame (or stream
+  through the host) before campaign use.
