@@ -34,6 +34,32 @@ def _forward_finish(block: Array) -> Array:
     return jnp.fft.fft(block, axis=-3)
 
 
+def _shard_map(function, mesh: Mesh, in_specs, out_specs):
+    """``jax.shard_map`` with the varying-axis type check disabled.
+
+    Reverse-mode cotangents through the transform are shard-varying while
+    some JAX versions type them as replicated, which rejects a correct
+    program. The keyword is ``check_vma`` on current JAX and ``check_rep``
+    on older releases.
+    """
+    try:
+        return jax.shard_map(
+            function,
+            mesh=mesh,
+            in_specs=in_specs,
+            out_specs=out_specs,
+            check_vma=False,
+        )
+    except TypeError:
+        return jax.shard_map(
+            function,
+            mesh=mesh,
+            in_specs=in_specs,
+            out_specs=out_specs,
+            check_rep=False,
+        )
+
+
 def pfft3(field: Array, *, mesh: Mesh | None = None) -> Array:
     """Real-to-complex 3D transform over the last three axes.
 
@@ -63,11 +89,11 @@ def pfft3(field: Array, *, mesh: Mesh | None = None) -> Array:
         )
         return _forward_finish(transposed)
 
-    return jax.shard_map(
+    return _shard_map(
         transform,
-        mesh=mesh,
-        in_specs=PartitionSpec(*batch, axis, None, None),
-        out_specs=PartitionSpec(*batch, None, axis, None),
+        mesh,
+        PartitionSpec(*batch, axis, None, None),
+        PartitionSpec(*batch, None, axis, None),
     )(field)
 
 
@@ -106,11 +132,11 @@ def pifft3(
         partial = jnp.fft.ifft(transposed, axis=-2)
         return jnp.fft.irfft(partial, n=shape[2], axis=-1)
 
-    return jax.shard_map(
+    return _shard_map(
         transform,
-        mesh=mesh,
-        in_specs=PartitionSpec(*batch, None, axis, None),
-        out_specs=PartitionSpec(*batch, axis, None, None),
+        mesh,
+        PartitionSpec(*batch, None, axis, None),
+        PartitionSpec(*batch, axis, None, None),
     )(field_hat)
 
 
