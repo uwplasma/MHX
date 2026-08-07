@@ -738,3 +738,34 @@ tests.
   dispatch (`equations="compressible"`), gallery examples in 2D-thin and
   3D, the C3/C4 gates, the docs page with derivation and movies, then
   the C5/C6 campaigns.
+
+### 2026-08-06 — Track C phases C-2: dispatch, gates C3/C4, docs, example
+
+- `mhx.Simulation(equations="compressible")` runs end to end with the
+  same print/plot/save contract: density and current midplane panels and
+  the log-density spread history. `sound_speed` and `bulk_viscosity`
+  joined the Simulation fields. Gallery example
+  `10_compressible_orszag_tang.py` runs the thin-box subsonic vortex in
+  six seconds on a laptop; the README capability matrix now marks
+  compressible available in the thin-box 2D form and 3D.
+- Gate C3 passes with the physically correct statement: the solenoidal
+  velocity of the compressible run converges onto the incompressible
+  module below one percent at every Mach, while the compressive residual
+  is the free acoustic transient of the unbalanced start and gets a
+  monotonicity gate. The error split (solenoidal 0.2 percent versus
+  compressive 5 percent at Mach 0.3) is recorded in the test.
+- Gate C4, the flagship, passes: the circularly polarized pump at beta
+  0.1, amplitude 1, decays at the Goldstein--Derby dispersion-root rate
+  within ten percent (predicted 1.667 in pump units, measured in the
+  asymptotic window after the seed mixture converges), and the same
+  pump in the incompressible module decays only resistively. One
+  experiment validates the compressible physics and the model boundary.
+- `docs/physics/compressible.md` states the equations, the log-density
+  design decision, the C-gate table, and the validity boundary, with
+  seven new references (Dahlburg--Picone 1989/1990, Picone--Dahlburg
+  1991, Goldstein 1978, Derby 1978, Ghosh--Matthaeus 1992,
+  Brodiano--Andrés--Dmitruk 2021).
+- Suite: 328 fast tests plus the slow gates, prose 23 documents,
+  `sphinx-build -W`, `ruff` all green. Post-merge work: C5/C6 campaigns,
+  the G7 audit, G6 tearing, G8 to G12, the TOML path for the new
+  equations, and compressible movies from the office GPUs.

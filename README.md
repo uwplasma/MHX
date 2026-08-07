@@ -4,8 +4,8 @@
 [![Coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/uwplasma/MHX/main/badges/coverage.json)](https://github.com/uwplasma/MHX/actions/workflows/ci.yml)
 [![Documentation](https://readthedocs.org/projects/mhx/badge/?version=latest)](https://mhx.readthedocs.io/)
 
-MHX runs differentiable MHD models in JAX: two-dimensional reduced MHD and
-full three-dimensional incompressible MHD. It builds the plasma equations
+MHX runs differentiable MHD models in JAX: two-dimensional reduced MHD,
+full three-dimensional incompressible MHD, and subsonic compressible MHD. It builds the plasma equations
 and diagnostics. [SOLVAX](https://github.com/uwplasma/SOLVAX)
 contains the linear, Krylov, and nonlinear solvers.
 
@@ -16,7 +16,7 @@ MHD turbulence, and dynamos. The capability matrix:
 | --- | --- | --- |
 | Reduced MHD (incompressible) | validated | not offered |
 | Incompressible MHD | via the reduced model | available |
-| Compressible MHD, subsonic smooth | planned, Track C of [`plan_3d.md`](plan_3d.md) | planned |
+| Compressible MHD, subsonic smooth | available, thin box | available |
 | Shocks and supersonic flows | out of scope | out of scope |
 
 ![Double-Harris reconnection: residual flux with flux contours and X/O markers](docs/_static/readme/double_harris_reconnection.gif)
@@ -94,6 +94,7 @@ run it from the repository root.
 | [`07_multi_process.py`](examples/gallery/07_multi_process.py) | Run one ensemble across JAX processes. |
 | [`08_gradient.py`](examples/gallery/08_gradient.py) | Differentiate a solve and check the gradient numerically. |
 | [`09_orszag_tang_3d.py`](examples/gallery/09_orszag_tang_3d.py) | Run the 3D incompressible Orszag--Tang vortex. |
+| [`10_compressible_orszag_tang.py`](examples/gallery/10_compressible_orszag_tang.py) | Run the subsonic compressible model in a thin box. |
 
 | Reconnection | Turbulence | Orszag--Tang |
 | --- | --- | --- |

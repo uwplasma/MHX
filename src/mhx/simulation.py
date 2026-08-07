@@ -236,15 +236,20 @@ class Simulation:
     terms: tuple[PhysicsTerm, ...] = ()
     equations: str = "reduced_mhd"
     guide_field: tuple[float, float, float] = (0.0, 0.0, 0.0)
+    sound_speed: float = 1.0
+    bulk_viscosity: float = 0.0
 
     def __post_init__(self) -> None:
         """Reject invalid settings before JAX starts a compilation."""
-        if self.equations not in ("reduced_mhd", "mhd3d"):
-            raise ValueError("equations must be 'reduced_mhd' or 'mhd3d'")
-        if self.equations == "mhd3d":
+        if self.equations not in ("reduced_mhd", "mhd3d", "compressible"):
+            raise ValueError(
+                "equations must be 'reduced_mhd', 'mhd3d', or 'compressible'"
+            )
+        if self.equations in ("mhd3d", "compressible"):
             if len(self.shape) != 3 or any(points < 4 for points in self.shape):
                 raise ValueError(
-                    "equations='mhd3d' needs three grid sizes of at least 4"
+                    f"equations={self.equations!r} needs three grid sizes of "
+                    "at least 4"
                 )
             if self.integrator == "rk4":
                 # The 3D production stepper; keeps the 2D default untouched.
@@ -292,6 +297,10 @@ class Simulation:
             from mhx.simulation3d import run_mhd3d
 
             return run_mhd3d(self)
+        if self.equations == "compressible":
+            from mhx.simulation_compressible import run_compressible
+
+            return run_compressible(self)
         if self.integrator == "backward_euler" and not jax.config.jax_enable_x64:
             warnings.warn(
                 "backward_euler targets Newton tolerances near 1e-9, which "
