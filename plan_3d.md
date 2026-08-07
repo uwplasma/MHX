@@ -715,3 +715,26 @@ tests.
   release-candidate marker moved in lockstep. The gallery gained
   `09_orszag_tang_3d.py` in the uniform five-step workflow, running in
   five seconds on a laptop CPU.
+
+### 2026-08-06 — Track C phase C-1 lands: the compressible core
+
+- `equations/compressible.py` implements the section 14.1 isothermal
+  formulation: log density, velocity, and magnetic field in the half
+  spectrum, rotational-form advection, exact pressure gradient, shear
+  and bulk viscous stresses, all explicit in the first cut, with the
+  exact 7x7 `linear_block` builder beside the solver for the gates.
+- Gates in `tests/test_compressible.py`, all passing: C1 sound decay
+  against Stokes--Kirchhoff to 1e-3 from the exact damped-acoustic
+  eigenvector, C1 oblique fast-magnetosonic frequency and damping
+  against the eigenvalues of the exact block to 2e-3, solenoidality at
+  round-off through nonlinear steps, and the C2 pseudosound gate with a
+  fitted Mach-squared exponent between 1.7 and 2.3.
+- The C1 gate caught a real bug on its first run: the compressive
+  viscous stress had the wrong sign (two factors of i flip it), so the
+  term pumped energy instead of damping. The fix is one character and a
+  comment; the gate difference was a factor of eleven in the measured
+  damping rate. This is the validation culture doing its job.
+- Suite: 327 fast tests green. Remaining for Track C: `Simulation`
+  dispatch (`equations="compressible"`), gallery examples in 2D-thin and
+  3D, the C3/C4 gates, the docs page with derivation and movies, then
+  the C5/C6 campaigns.
