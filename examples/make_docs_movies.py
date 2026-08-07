@@ -220,3 +220,43 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
+
+def render_ot3d_movie(views: Path, target: Path, *, fps: int = 5) -> None:
+    """Render the 3D Orszag--Tang current movie from saved views.
+
+    ``views`` is the NPZ written by the campaign extraction: times, the
+    midplane slice of |j|, and the max-intensity projection of |j| along
+    z. Both panels keep one fixed color scale across all frames.
+    """
+    import imageio.v2 as imageio
+    import matplotlib.pyplot as plt
+    import numpy as np
+
+    data = np.load(views)
+    times = np.asarray(data["times"])
+    midplane = np.asarray(data["midplane"])
+    projection = np.asarray(data["projection"])
+    slice_scale = float(np.percentile(midplane, 99.5))
+    projection_scale = float(np.percentile(projection, 99.5))
+
+    writer = imageio.get_writer(target, fps=fps, codec="libx264", quality=7)
+    for index, time in enumerate(times):
+        figure, axes = plt.subplots(1, 2, figsize=(9.6, 4.8), dpi=120)
+        for axis, field, scale, title in (
+            (axes[0], midplane[index], slice_scale, "|j|, midplane"),
+            (axes[1], projection[index], projection_scale, "|j|, max projection"),
+        ):
+            axis.imshow(
+                field.T, origin="lower", cmap="inferno", vmin=0.0, vmax=scale
+            )
+            axis.set_title(f"{title}, t = {time:.1f}")
+            axis.set_xticks([])
+            axis.set_yticks([])
+        figure.tight_layout()
+        figure.canvas.draw()
+        frame = np.asarray(figure.canvas.buffer_rgba())[..., :3]
+        plt.close(figure)
+        frame = frame[: frame.shape[0] // 2 * 2, : frame.shape[1] // 2 * 2]
+        writer.append_data(frame)
+    writer.close()

@@ -16,6 +16,10 @@ compilation, and writes the values beside its plot. `07_multi_process.py` uses
 the same ensemble API after JAX connects processes launched by Slurm or Open
 MPI. `08_gradient.py` differentiates a solve with respect to resistivity and
 proves the gradient against central differences under float64.
+`09_orszag_tang_3d.py` runs full 3D incompressible MHD through the same
+five steps, at a size a laptop finishes in under a minute.
+`10_compressible_orszag_tang.py` runs the subsonic compressible model in a
+thin box, watching density structure form at Mach near 0.3.
 
 Run a script from the repository root:
 

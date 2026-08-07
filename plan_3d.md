@@ -421,7 +421,140 @@ The first code phase, P3D-0 plus P3D-1, can start immediately.
 
 ---
 
-## 13. Log
+## 13. Delivery model and solver-pass amendments (2026-08-05)
+
+The program delivers through **one major pull request per repository**:
+
+- **MHX `feature/mhd3d`**: the entire 3D program lands on this branch and
+  merges once through its PR. Phases P3D-0 to P3D-7 become commits and
+  checklist items on the PR, not separate PRs.
+- **SOLVAX `feature/spectral-mhd-interop`**: all section 7 solver work
+  lands on this branch and merges once through its PR.
+
+A final solver-methods literature pass amends the architecture:
+
+1. **Preconditioner upgrade.** The Fourier-diagonal helper becomes a
+   per-mode 2x2 wave-block inverse for the coupled $(v, b)$ implicit
+   system, $\alpha_{v,b} = 1 + \{\nu,\eta\} k^2 \Delta t$ off-diagonally
+   coupled by $i k_\parallel v_A \Delta t$. This is Chacón's
+   Schur-complement JFNK preconditioning (Phys. Plasmas 15, 056103, 2008)
+   specialized to Fourier, where the Schur solve is exact. Without it,
+   implicit iteration counts scale with $B_0 \Delta t k_\parallel$ and the
+   strong-guide-field G12 implicit runs crawl. Diffusion-only is the
+   special case $B_0 = 0$.
+2. **ETDRK4 as the validation stepper.** Montanelli--Bootland (2020) find
+   ETDRK4 hard to beat for periodic stiff PDEs; for a diagonal operator
+   the phi functions are elementwise. It cross-checks the production
+   IF-RK3 on gates G2/G3 and guards the Lawson error-constant penalty of
+   the $B_0$ phase rotation at strong guide field, which is an accuracy
+   risk to G12, not a stability risk.
+3. **Interop contract** (PETSc/SUNDIALS split in the Lineax idiom): MHX
+   owns operators and preconditioners with an amortized setup hook;
+   SOLVAX owns iteration and reporting; solvers accept `inner=` for
+   axis-aware sharded inner products, `fixed_work=` for scan-embedded
+   masked-convergence iteration, Eisenstat--Walker forcing for Newton,
+   and return `SolveStats` pytrees with flags instead of raising inside
+   jit. Right preconditioning is the default so reported residuals are
+   true residuals.
+4. **Krylov priorities.** FGMRES and GCRO-DR-grade harmonic-Ritz
+   recycling rank directly after the sharded-operand pass; pipelined and
+   s-step GMRES are explicitly deprioritized at NCCL workstation scale,
+   and randomized sketching moves into the device-resident eigensolver
+   item with a basis-condition monitor.
+5. **Determinism policy.** Cross-device-count parity checks are
+   toleranced (about $10^{-12}$ relative in x64), never bitwise; bitwise
+   is asserted only for same-device-count reruns under deterministic-ops
+   flags.
+6. **Verification additions**: Taylor-remainder rate-2 gradient tests
+   (dolfin-adjoint style), band-limited manufactured solutions to isolate
+   temporal order, dot-product adjoint tests at 100 eps for every linear
+   operator, GMRES residual-monotonicity property tests, and an embedded
+   step-doubling error monitor as a diagnostic mode. Complex-step
+   differentiation is documented as unusable on the non-holomorphic main
+   path.
+
+## 14. Track C: compressible spectral MHD (added 2026-08-06)
+
+MHX will offer compressible MHD beside the incompressible models, in 2D
+and 3D, under the same `Simulation` API and example workflow. The scope
+is **subsonic smooth flows, Mach below about 0.5, no shock capturing**,
+which is a research-grade lineage of its own: Dahlburg and Picone ran
+exactly this class pseudospectrally (Comput. Methods Appl. Mech. Eng.
+85, 1990), and GHOST publishes subsonic compressible spectral turbulence
+today (Brodiano, Andrés, Dmitruk, ApJ 2021).
+
+### 14.1 Formulation
+
+- Fields: **ln rho, u, B**, plus evolved pressure in the adiabatic case;
+  isothermal (p = c_s^2 rho) and adiabatic (gamma = 5/3) behind one
+  flag. Log density guarantees positivity without floors, which floors
+  would break differentiability exactly where compressibility matters
+  (Pencil Code and Shebalin precedents).
+- Constant dynamic shear viscosity mu with the compressible 1/3 grad div
+  term, **bulk viscosity mu_b from day one** (the physical damper of the
+  dilatational component and an independent linear observable), eta, and
+  optional conduction kappa in the adiabatic branch.
+- 2D and 3D from one right-hand side; 2/3 dealiasing as everywhere.
+
+### 14.2 Time stepping
+
+Linearized about a uniform state, compressible MHD is block-diagonal per
+Fourier mode: a 7x7 (isothermal) or 8x8 (adiabatic) block, the same
+structural shape as the Alfvén 2x2. The existing IF/ETDRK4 machinery
+therefore extends by exponentiating the full per-mode linear block, which
+treats acoustic, Alfvén, and magnetosonic propagation and damping
+exactly, and leaves the step limited by nonlinear advection instead of
+the sound speed. This is what low-Mach preconditioning degenerates to in
+a periodic spectral code. For a guide field along z the block depends on
+k only through (k_perp^2, k_z), so the exponential table is O(N^2).
+Blocks are non-normal near the slow/Alfvén degeneracy: evaluate phi
+functions by the Kassam--Trefethen contour, never naive
+diagonalization. Fallback and debug path: SSP-RK3 explicit with the
+fast-magnetosonic CFL.
+
+### 14.3 Gate ladder C1 to C6
+
+| Gate | Statement | Anchor |
+| --- | --- | --- |
+| C1 | fitted complex frequencies of seeded fast/slow/Alfvén/entropy modes against eigenvalues of the exact per-mode block, 1e-6 relative; hand checks: Stokes--Kirchhoff sound decay, entropy mode omega = -i kappa k^2 / (rho0 c_p), the damped Alfvén gate reproduced at any Mach | Landau--Lifshitz section 79; exact algebra |
+| C2 | pseudosound scaling: density fluctuations grow as Mach squared, fitted exponent 2.0 plus or minus 0.1 | Ghosh--Matthaeus 1992; Zank--Matthaeus 1993 |
+| C3 | cross-model convergence to the incompressible 3D module as Mach to zero, error bounded by Mach squared over Mach in {0.05, 0.1, 0.2} | nearly-incompressible theory |
+| C4 | parametric decay of a circularly polarized Alfvén wave at beta 0.1, amplitude 1: growth rate against the numerically solved Goldstein--Derby dispersion root to 2 percent, anchor gamma/omega0 = 0.41; companion assert that the incompressible module shows no growth | Goldstein 1978; Derby 1978; Komissarov 2025 |
+| C5 | Dahlburg--Picone 1989 subsonic 2D Orszag--Tang at Mach 0.2 and 0.6: density-fluctuation scaling, compressible retardation of peak mean-square current against the incompressible run, spectral self-convergence; exact curve tolerances pinned once the paywalled tables are in hand or a cross-code reference exists | Dahlburg--Picone 1989 |
+| C6 | subsonic 3D compressible turbulence at Mach 0.25, 128 to 256 cubed: spectra and compressive-to-solenoidal ratios against the GHOST-published results | Brodiano--Andrés--Dmitruk 2021 |
+
+C4 is the flagship: parametric decay exists only in compressible MHD, so
+one gate validates the new physics and discriminates the two models at
+once. Supersonic and shock benchmarks (Picone--Dahlburg 1991, Federrath
+2010) are cited in the docs only to state the validity boundary.
+
+### 14.4 PR #5 verdict
+
+The codex branch's 2D compressible module is a conservative-variable,
+zero-dissipation, floor-clipped, adiabatic-only formulation. Floors break
+gradients, zero dissipation forbids every linear gate, and conservative
+variables lose the log-density positivity guarantee. **Reimplement the
+equations per 14.1; salvage the Kelvin--Helmholtz benchmark, test, and
+notebook scaffolding as templates.**
+
+### 14.5 Capability matrix (the honest public statement)
+
+| | 2D | 3D |
+| --- | --- | --- |
+| Reduced MHD (incompressible) | available, validated | not offered |
+| Incompressible MHD | via the reduced model | available on this branch |
+| Compressible MHD, subsonic smooth | Track C | Track C |
+| Shocks and supersonic flows | out of scope | out of scope |
+
+### 14.6 Placement
+
+Track C lands on this same PR after G6/G7: phases C-1 (state, RHS,
+block-exponential stepper, C1), C-2 (C2 to C4 plus examples in the
+gallery workflow), C-3 (C5/C6 campaigns on the office GPUs, docs page
+with derivation and movies). Estimated 1.0 to 1.5 thousand lines with
+tests.
+
+## 15. Log
 
 ### 2026-08-05 — Plan created
 
@@ -432,3 +565,207 @@ The first code phase, P3D-0 plus P3D-1, can start immediately.
   and jaxDecomp, plus the JAX distributed-FFT and checkpointing state of
   the art.
 - Next: P3D-0.
+
+### 2026-08-05 — Core lands on feature/mhd3d: P3D-1 and most of P3D-2
+
+- Implemented and tested on the branch, delivery per section 13:
+  `numerics/spectral/pfft.py` (rfftn-convention slab transforms through
+  `shard_map` with one `all_to_all`, single-device passthrough),
+  `state/mhd3d.py`, `equations/mhd3d.py` (projector, curl, dealiasing,
+  rotational-form nonlinear RHS with the guide field folded into the
+  real-space product, Parseval-weighted energies and helicities),
+  `time_integrators/low_storage.py` (Williamson 2N RK3 on the
+  integrating-factor transformed variable, exact for pure dissipation),
+  and `physics/equilibria3d.py` (single mode, CP Alfvén, the exact
+  PPS95 beta 0.8 Orszag--Tang fields, ABC, Taylor--Green class I).
+- Gates passing in `tests/test_mhd3d.py`: G1 exact decay at 1e-12,
+  projector idempotency and gradient annihilation, divergence at
+  round-off through nonlinear steps, G2 damped-Alfvén dispersion at 1e-3
+  against the exact complex frequency using the exact damped eigenvector
+  (a naive standing-wave start mixes both branches and fails: recorded
+  here so it stays a test comment), G3 CP Alfvén with third-order
+  temporal convergence, G4 ideal-invariant drift below 1e-6 and
+  convergent, Orszag--Tang initial energies exact (E_V = 2, E_M = 1.92:
+  the beta 0.8 fields are near, not exact, equipartition), and
+  d(energy)/d(viscosity) against finite differences at 1e-6.
+- Parallel contract in `tests/test_mhd3d_parallel.py` (subprocess with
+  four host devices): sharded-versus-single forward parity at 1e-12,
+  distributed gradient parity at 1e-10, and compiled HLO for forward and
+  backward containing `all-to-all` and no `all-gather`. Plain
+  differentiation through `shard_map` stays distributed, so the
+  defensive custom adjoint is not needed yet; the HLO gate pins the
+  property.
+- Full suite: 308 fast tests green including the untouched 2D suite.
+- Remaining on this PR: Simulation/TOML/output dispatch, ETDRK4
+  validation stepper and rotation-accuracy gate, G5/G6 linear-physics
+  gates, docs pages, then the campaign phases per section 8.
+
+### 2026-08-05 — Dispatch, ETDRK4, and the G5 dynamo gate
+
+- `mhx.Simulation` now dispatches on `equations="mhd3d"`: three-entry
+  shapes validate, the integrator upgrades to `if_rk3` (or `etdrk4`), and
+  the run returns an `MHD3DResult` with the same `print_summary`, `plot`
+  (midplane |j| and |v| slices, energy and cross-helicity histories), and
+  compressed-NPZ `save` contract as 2D. A 2D script becomes 3D by
+  changing `shape`, `equations`, and the equilibrium.
+- Added the ETDRK4 validation stepper. The first implementation hit the
+  classic phi-function catastrophic cancellation (an O(eps) numerator
+  over z cubed): fixed with the Kassam--Trefethen contour mean, which is
+  exact for these entire functions at any z. The cross-check gate now
+  shows ETDRK4 beating IF-RK3 by more than 5x on the CP Alfvén wave, with
+  both landing on the analytic state.
+- Gate G5 passes: with a broadband random solenoidal seed the 1:1:1 ABC
+  kinematic dynamo reproduces the Galloway--Frisch window structure at
+  `Rm = 1/eta`: growth 0.0025 at Rm 12 (first window), marginal decay at
+  Rm 20 (the gap), growth 0.013 at Rm 30 (second window), at 32 cubed,
+  slow-marked (66 s). A Beltrami-aligned seed decays instead: it projects
+  poorly onto the growing eigenmode. Recorded in the equilibrium
+  docstring.
+- Suite: 313 fast tests green plus the slow dynamo gate; ruff clean.
+- Remaining on this PR: TOML config path, G6 tearing gates, docs pages,
+  strong-B0 rotation-accuracy gate, campaigns G7 onward.
+
+### 2026-08-05 — Strong-B0 gate, SOLVAX inner product, first G7-scale run
+
+- Added the strong-guide-field accuracy gate: the CP Alfvén dispersion
+  stays exact at B0/b = 33 with the guide field in the real-space
+  products, converging at third order once the step resolves the wave.
+  The exact Elsässer phase rotation stays an optimization item, now with
+  a gate that will detect any accuracy change when it lands.
+- SOLVAX branch: `solvax.axis_inner_product(axis_name)` completes local
+  Hermitian products with `lax.psum`, and a four-device subprocess gate
+  runs GMRES entirely inside a `shard_map` region (operator communicating
+  by `ppermute`) matching the global solve at 1e-10. Caveat discovered
+  and documented: the Krylov-basis carry starts replicated and becomes
+  shard-varying, so callers need `check_vma=False` until basis
+  initialization is axis-aware.
+- First G7-scale physics run completed through the new `Simulation` API
+  on one office A4000: 3D Orszag--Tang, PPS95 beta 0.8 fields, 128 cubed,
+  x64, nu = eta = 2e-3, dt 1e-3, t_end 4, 564 s (7.1 steps per second),
+  max |div B| 5.5e-9 across 4000 steps. Physics: max|j| grows about 16x
+  through t of 0.6 to 1.2 then saturates near 100 to 150 (sheet
+  formation), total dissipation peaks at 0.833 at t = 2.8, inside the
+  Mininni--Pouquet--Montgomery peak window, and the energy budget closes
+  internally (mean energy loss rate 0.48 matches the dissipation curve;
+  E drops 3.92 to 2.00). The quantitative eps-peak comparison against
+  the paper's approximately 0.3 needs their exact normalization audited
+  before it becomes a gate tolerance: recorded as part of the G7 gate
+  work, not hand-tuned. History committed on the office box under
+  `outputs/docs_media/ot3d_128/history.npz`.
+- Scalability lesson filed as a checklist item: `MHD3DResult.save`
+  transforms the whole trajectory at once and ran out of GPU memory
+  after the 128-cubed run; it must transform frame by frame (or stream
+  through the host) before campaign use.
+
+### 2026-08-06 — Docs, coverage, and multi-device paths in-process
+
+- Documentation: `docs/physics/mhd3d.md` states the 3D equations, the
+  projector, the numerics, the passing-gate table with citations, and a
+  runnable example; seven new BibTeX entries (Cox--Matthews,
+  Kassam--Trefethen, Frisch 1975, Galloway--Frisch, Bouya--Dormy,
+  Politano--Pouquet--Sulem, Mininni--Pouquet--Montgomery). The README and
+  landing page now state the honest scope: 2D reduced MHD plus 3D
+  incompressible MHD, not compressible MHD with shocks. The pinned
+  release-candidate marker moved in lockstep. The prose gate covers the
+  new page (22 documents).
+- Coverage: the suite now runs with four logical CPU devices set in
+  `tests/conftest.py` before JAX loads, so the sharded transform and RHS
+  paths execute in-process and count. New physics-anchored completeness
+  tests: Taylor--Green exact means (E_V = v0^2/8, E_M = 3 b0^2/8, so the
+  Lee et al. equal-energy start needs b0 = 1/sqrt(3)), the ABC Beltrami
+  helicity identity (curl b = b, so the helicity saturates at 2 E_M),
+  odd-nz Parseval weights, evolver validation and partial-chunk
+  branches for both steppers, the `device_count` path through
+  `Simulation` matching one device at 1e-12, and the printed summary.
+  Full-suite coverage: 95.36 percent, 342 tests green.
+
+### 2026-08-06 — Derivation, the 3D movie, and the save fix
+
+- `MHD3DResult.save` now transforms one saved frame at a time, closing
+  the trajectory-OOM item from the first campaign run.
+- `docs/physics/mhd3d.md` gained the derivation: constant-density limit,
+  the rotational-form identity, exact pressure elimination through the
+  projector, curl-form solenoidality, the three ideal invariants with
+  the Frisch 1975 citation, the Elsässer structure, and the
+  strong-guide-field bridge to the 2D model.
+- The first 3D movie is committed: current-density magnitude of the
+  128-cubed Orszag--Tang run, midplane slice beside a maximum-intensity
+  projection on fixed scales, 20 frames to t = 4, 2.8 MB, rendered by
+  `render_ot3d_movie` from views extracted on the GPU. Embedded on the
+  3D physics page and in the gallery, registered in the figure manifest
+  at claim level smoke with the G7-audit limitation stated, and passing
+  the motion gate.
+- Operational lesson recorded: the second extraction attempt failed with
+  out-of-memory because a tenant process held twelve gigabytes on GPU
+  zero. The etiquette held (no touching tenant jobs); the run moved to
+  the free GPU one. Campaign scripts should probe free memory and pick
+  the device.
+- Checks: prose 22 documents, `sphinx-build -W`, fast suite 323, `ruff`,
+  and the artifact verifier are green.
+
+### 2026-08-06 — Track C planned, capability matrix public, 3D example
+
+- Section 14 added from the final compressible literature pass: the
+  ln-rho/u/B formulation with bulk viscosity, the per-mode block
+  exponential stepper (the Alfvén-block idea generalized to the 7x7 and
+  8x8 magnetosonic blocks), the C1 to C6 gate ladder with the parametric
+  decay cross-model discriminator at gamma/omega0 = 0.41, the PR #5
+  reimplement-and-salvage verdict, and the honest capability matrix.
+- The README now carries the capability matrix, with the pinned
+  release-candidate marker moved in lockstep. The gallery gained
+  `09_orszag_tang_3d.py` in the uniform five-step workflow, running in
+  five seconds on a laptop CPU.
+
+### 2026-08-06 — Track C phase C-1 lands: the compressible core
+
+- `equations/compressible.py` implements the section 14.1 isothermal
+  formulation: log density, velocity, and magnetic field in the half
+  spectrum, rotational-form advection, exact pressure gradient, shear
+  and bulk viscous stresses, all explicit in the first cut, with the
+  exact 7x7 `linear_block` builder beside the solver for the gates.
+- Gates in `tests/test_compressible.py`, all passing: C1 sound decay
+  against Stokes--Kirchhoff to 1e-3 from the exact damped-acoustic
+  eigenvector, C1 oblique fast-magnetosonic frequency and damping
+  against the eigenvalues of the exact block to 2e-3, solenoidality at
+  round-off through nonlinear steps, and the C2 pseudosound gate with a
+  fitted Mach-squared exponent between 1.7 and 2.3.
+- The C1 gate caught a real bug on its first run: the compressive
+  viscous stress had the wrong sign (two factors of i flip it), so the
+  term pumped energy instead of damping. The fix is one character and a
+  comment; the gate difference was a factor of eleven in the measured
+  damping rate. This is the validation culture doing its job.
+- Suite: 327 fast tests green. Remaining for Track C: `Simulation`
+  dispatch (`equations="compressible"`), gallery examples in 2D-thin and
+  3D, the C3/C4 gates, the docs page with derivation and movies, then
+  the C5/C6 campaigns.
+
+### 2026-08-06 — Track C phases C-2: dispatch, gates C3/C4, docs, example
+
+- `mhx.Simulation(equations="compressible")` runs end to end with the
+  same print/plot/save contract: density and current midplane panels and
+  the log-density spread history. `sound_speed` and `bulk_viscosity`
+  joined the Simulation fields. Gallery example
+  `10_compressible_orszag_tang.py` runs the thin-box subsonic vortex in
+  six seconds on a laptop; the README capability matrix now marks
+  compressible available in the thin-box 2D form and 3D.
+- Gate C3 passes with the physically correct statement: the solenoidal
+  velocity of the compressible run converges onto the incompressible
+  module below one percent at every Mach, while the compressive residual
+  is the free acoustic transient of the unbalanced start and gets a
+  monotonicity gate. The error split (solenoidal 0.2 percent versus
+  compressive 5 percent at Mach 0.3) is recorded in the test.
+- Gate C4, the flagship, passes: the circularly polarized pump at beta
+  0.1, amplitude 1, decays at the Goldstein--Derby dispersion-root rate
+  within ten percent (predicted 1.667 in pump units, measured in the
+  asymptotic window after the seed mixture converges), and the same
+  pump in the incompressible module decays only resistively. One
+  experiment validates the compressible physics and the model boundary.
+- `docs/physics/compressible.md` states the equations, the log-density
+  design decision, the C-gate table, and the validity boundary, with
+  seven new references (Dahlburg--Picone 1989/1990, Picone--Dahlburg
+  1991, Goldstein 1978, Derby 1978, Ghosh--Matthaeus 1992,
+  Brodiano--Andrés--Dmitruk 2021).
+- Suite: 328 fast tests plus the slow gates, prose 23 documents,
+  `sphinx-build -W`, `ruff` all green. Post-merge work: C5/C6 campaigns,
+  the G7 audit, G6 tearing, G8 to G12, the TOML path for the new
+  equations, and compressible movies from the office GPUs.
