@@ -473,7 +473,88 @@ A final solver-methods literature pass amends the architecture:
    differentiation is documented as unusable on the non-holomorphic main
    path.
 
-## 14. Log
+## 14. Track C: compressible spectral MHD (added 2026-08-06)
+
+MHX will offer compressible MHD beside the incompressible models, in 2D
+and 3D, under the same `Simulation` API and example workflow. The scope
+is **subsonic smooth flows, Mach below about 0.5, no shock capturing**,
+which is a research-grade lineage of its own: Dahlburg and Picone ran
+exactly this class pseudospectrally (Comput. Methods Appl. Mech. Eng.
+85, 1990), and GHOST publishes subsonic compressible spectral turbulence
+today (Brodiano, Andrés, Dmitruk, ApJ 2021).
+
+### 14.1 Formulation
+
+- Fields: **ln rho, u, B**, plus evolved pressure in the adiabatic case;
+  isothermal (p = c_s^2 rho) and adiabatic (gamma = 5/3) behind one
+  flag. Log density guarantees positivity without floors, which floors
+  would break differentiability exactly where compressibility matters
+  (Pencil Code and Shebalin precedents).
+- Constant dynamic shear viscosity mu with the compressible 1/3 grad div
+  term, **bulk viscosity mu_b from day one** (the physical damper of the
+  dilatational component and an independent linear observable), eta, and
+  optional conduction kappa in the adiabatic branch.
+- 2D and 3D from one right-hand side; 2/3 dealiasing as everywhere.
+
+### 14.2 Time stepping
+
+Linearized about a uniform state, compressible MHD is block-diagonal per
+Fourier mode: a 7x7 (isothermal) or 8x8 (adiabatic) block, the same
+structural shape as the Alfvén 2x2. The existing IF/ETDRK4 machinery
+therefore extends by exponentiating the full per-mode linear block, which
+treats acoustic, Alfvén, and magnetosonic propagation and damping
+exactly, and leaves the step limited by nonlinear advection instead of
+the sound speed. This is what low-Mach preconditioning degenerates to in
+a periodic spectral code. For a guide field along z the block depends on
+k only through (k_perp^2, k_z), so the exponential table is O(N^2).
+Blocks are non-normal near the slow/Alfvén degeneracy: evaluate phi
+functions by the Kassam--Trefethen contour, never naive
+diagonalization. Fallback and debug path: SSP-RK3 explicit with the
+fast-magnetosonic CFL.
+
+### 14.3 Gate ladder C1 to C6
+
+| Gate | Statement | Anchor |
+| --- | --- | --- |
+| C1 | fitted complex frequencies of seeded fast/slow/Alfvén/entropy modes against eigenvalues of the exact per-mode block, 1e-6 relative; hand checks: Stokes--Kirchhoff sound decay, entropy mode omega = -i kappa k^2 / (rho0 c_p), the damped Alfvén gate reproduced at any Mach | Landau--Lifshitz section 79; exact algebra |
+| C2 | pseudosound scaling: density fluctuations grow as Mach squared, fitted exponent 2.0 plus or minus 0.1 | Ghosh--Matthaeus 1992; Zank--Matthaeus 1993 |
+| C3 | cross-model convergence to the incompressible 3D module as Mach to zero, error bounded by Mach squared over Mach in {0.05, 0.1, 0.2} | nearly-incompressible theory |
+| C4 | parametric decay of a circularly polarized Alfvén wave at beta 0.1, amplitude 1: growth rate against the numerically solved Goldstein--Derby dispersion root to 2 percent, anchor gamma/omega0 = 0.41; companion assert that the incompressible module shows no growth | Goldstein 1978; Derby 1978; Komissarov 2025 |
+| C5 | Dahlburg--Picone 1989 subsonic 2D Orszag--Tang at Mach 0.2 and 0.6: density-fluctuation scaling, compressible retardation of peak mean-square current against the incompressible run, spectral self-convergence; exact curve tolerances pinned once the paywalled tables are in hand or a cross-code reference exists | Dahlburg--Picone 1989 |
+| C6 | subsonic 3D compressible turbulence at Mach 0.25, 128 to 256 cubed: spectra and compressive-to-solenoidal ratios against the GHOST-published results | Brodiano--Andrés--Dmitruk 2021 |
+
+C4 is the flagship: parametric decay exists only in compressible MHD, so
+one gate validates the new physics and discriminates the two models at
+once. Supersonic and shock benchmarks (Picone--Dahlburg 1991, Federrath
+2010) are cited in the docs only to state the validity boundary.
+
+### 14.4 PR #5 verdict
+
+The codex branch's 2D compressible module is a conservative-variable,
+zero-dissipation, floor-clipped, adiabatic-only formulation. Floors break
+gradients, zero dissipation forbids every linear gate, and conservative
+variables lose the log-density positivity guarantee. **Reimplement the
+equations per 14.1; salvage the Kelvin--Helmholtz benchmark, test, and
+notebook scaffolding as templates.**
+
+### 14.5 Capability matrix (the honest public statement)
+
+| | 2D | 3D |
+| --- | --- | --- |
+| Reduced MHD (incompressible) | available, validated | not offered |
+| Incompressible MHD | via the reduced model | available on this branch |
+| Compressible MHD, subsonic smooth | Track C | Track C |
+| Shocks and supersonic flows | out of scope | out of scope |
+
+### 14.6 Placement
+
+Track C lands on this same PR after G6/G7: phases C-1 (state, RHS,
+block-exponential stepper, C1), C-2 (C2 to C4 plus examples in the
+gallery workflow), C-3 (C5/C6 campaigns on the office GPUs, docs page
+with derivation and movies). Estimated 1.0 to 1.5 thousand lines with
+tests.
+
+## 15. Log
 
 ### 2026-08-05 — Plan created
 
@@ -621,3 +702,16 @@ A final solver-methods literature pass amends the architecture:
   the device.
 - Checks: prose 22 documents, `sphinx-build -W`, fast suite 323, `ruff`,
   and the artifact verifier are green.
+
+### 2026-08-06 — Track C planned, capability matrix public, 3D example
+
+- Section 14 added from the final compressible literature pass: the
+  ln-rho/u/B formulation with bulk viscosity, the per-mode block
+  exponential stepper (the Alfvén-block idea generalized to the 7x7 and
+  8x8 magnetosonic blocks), the C1 to C6 gate ladder with the parametric
+  decay cross-model discriminator at gamma/omega0 = 0.41, the PR #5
+  reimplement-and-salvage verdict, and the honest capability matrix.
+- The README now carries the capability matrix, with the pinned
+  release-candidate marker moved in lockstep. The gallery gained
+  `09_orszag_tang_3d.py` in the uniform five-step workflow, running in
+  five seconds on a laptop CPU.

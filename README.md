@@ -10,8 +10,14 @@ and diagnostics. [SOLVAX](https://github.com/uwplasma/SOLVAX)
 contains the linear, Krylov, and nonlinear solvers.
 
 Use MHX to study periodic current sheets, tearing modes, reconnection,
-MHD turbulence, and dynamos. MHX does not solve compressible MHD with
-shocks.
+MHD turbulence, and dynamos. The capability matrix:
+
+| | 2D | 3D |
+| --- | --- | --- |
+| Reduced MHD (incompressible) | validated | not offered |
+| Incompressible MHD | via the reduced model | available |
+| Compressible MHD, subsonic smooth | planned, Track C of [`plan_3d.md`](plan_3d.md) | planned |
+| Shocks and supersonic flows | out of scope | out of scope |
 
 ![Double-Harris reconnection: residual flux with flux contours and X/O markers](docs/_static/readme/double_harris_reconnection.gif)
 
@@ -87,6 +93,7 @@ run it from the repository root.
 | [`06_strong_scaling.py`](examples/gallery/06_strong_scaling.py) | Strong-scale one fixed reconnection ensemble. |
 | [`07_multi_process.py`](examples/gallery/07_multi_process.py) | Run one ensemble across JAX processes. |
 | [`08_gradient.py`](examples/gallery/08_gradient.py) | Differentiate a solve and check the gradient numerically. |
+| [`09_orszag_tang_3d.py`](examples/gallery/09_orszag_tang_3d.py) | Run the 3D incompressible Orszag--Tang vortex. |
 
 | Reconnection | Turbulence | Orszag--Tang |
 | --- | --- | --- |
