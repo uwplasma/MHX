@@ -34,6 +34,9 @@ jobs:
       - name: Legacy import guard
         run: |
           python tools/check_legacy_imports.py
+      - name: Example entry-point import guard
+        run: |
+          python tools/check_example_entry_points.py
       - name: Fast tests
         run: |
           python -m pytest -m "not slow"

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -1665,7 +1665,7 @@ def _write_visual_qa_manifest(
 ) -> None:
     manifest = {
         "schema": "mhx.readme_media_visual_qa.v1",
-        "generated_utc": datetime.now(UTC).isoformat(),
+        "generated_utc": datetime.now(tz=timezone.utc).isoformat(),
         "source_policy": (
             "README solver movies prefer the GPU nonlinear campaign bundle under "
             "outputs/campaigns/gpu_nonlinear_20260522_085049 when it is present "
