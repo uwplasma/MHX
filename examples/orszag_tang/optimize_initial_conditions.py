@@ -17,25 +17,24 @@ Usage
 
 import argparse
 import time
-from pathlib import Path
 from functools import partial
+from pathlib import Path
 
 import matplotlib
 
 matplotlib.use("Agg")
-import matplotlib.pyplot as plt
-import numpy as np
 import imageio.v2 as imageio
-
 import jax
 import jax.numpy as jnp
+import matplotlib.pyplot as plt
+import numpy as np
 import optax
 from jaxtyping import Array
 
 from mhx.config import MeshConfig
+from mhx.equations.reduced_mhd import reduced_mhd_rhs
 from mhx.grids import CartesianGrid
 from mhx.state import ReducedMHDParams, ReducedMHDState
-from mhx.equations.reduced_mhd import reduced_mhd_rhs
 
 # Enable double precision for stability
 jax.config.update("jax_enable_x64", True)
@@ -229,8 +228,8 @@ def print_scan_results(name: str, values: np.ndarray, losses: np.ndarray, true_v
     i_min = int(np.argmin(losses))
     print(f"\n--- Scan: {name} vs Loss ---")
     print(f"{'value':>12s} {'loss':>14s}")
-    for v, l in zip(values, losses):
-        print(f"{v:12.6g} {l:14.6e}")
+    for v, loss_val in zip(values, losses, strict=False):
+        print(f"{v:12.6g} {loss_val:14.6e}")
     print(f"Minimum loss at {name} = {values[i_min]:.6g} (true value {true_value:.6g})")
 
 

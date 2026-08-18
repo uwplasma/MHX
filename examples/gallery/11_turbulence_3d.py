@@ -18,13 +18,12 @@ from pathlib import Path
 
 import jax
 import jax.numpy as jnp
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 
-import mhx
 from mhx.equations import mhd3d
-from mhx.state.mhd3d import MHD3DParams, MHD3DState, MHD3DTrajectory
 from mhx.simulation3d import MHD3DResult
+from mhx.state.mhd3d import MHD3DParams, MHD3DState, MHD3DTrajectory
 from mhx.time_integrators.exponential import etdrk4_step
 
 # --- settings (edit here) -------------------------------------------------
@@ -163,7 +162,10 @@ for idx in valid_indices:
 if mag_spectra:
     magnetic_spectrum = np.mean(np.stack(mag_spectra), axis=0)
     kinetic_spectrum = np.mean(np.stack(kin_spectra), axis=0)
-    print(f"Computed time-averaged spectrum over {len(mag_spectra)} frames from t={t_min} to t={t_max}.")
+    print(
+        f"Computed time-averaged spectrum over {len(mag_spectra)} frames "
+        f"from t={t_min} to t={t_max}."
+    )
 else:
     print(f"Warning: No frames found between {t_min} and {t_max}. Using final state only.")
     k_1d, magnetic_spectrum = _shell_spectrum(final_state.b_hat, k, weight, SHAPE)
@@ -215,7 +217,12 @@ ref_index = int(np.argmin(np.abs(k_1d - 10.0)))
 scale = max(float(magnetic_spectrum[ref_index]), np.finfo(float).tiny) * 10.0 ** (5.0 / 3.0)
 axis.loglog(k_ref, scale * k_ref ** (-5.0 / 3.0), "k--", label=r"$k^{-5/3}$ (Kolmogorov)")
 scale_ik = max(float(magnetic_spectrum[ref_index]), np.finfo(float).tiny) * 10.0**1.5
-axis.loglog(k_ref, scale_ik * k_ref ** (-3.0 / 2.0), "k:", label=r"$k^{-3/2}$ (Iroshnikov--Kraichnan)")
+axis.loglog(
+    k_ref,
+    scale_ik * k_ref ** (-3.0 / 2.0),
+    "k:",
+    label=r"$k^{-3/2}$ (Iroshnikov--Kraichnan)",
+)
 
 axis.set_title(f"Time-averaged spectra (t={t_min} to {t_max})")
 axis.set_xlabel(r"wavenumber $k$")

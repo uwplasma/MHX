@@ -14,8 +14,9 @@ build/
 dist/
 .eggs/
 outputs/
-# Developer convenience: smoke-test runner for the ported examples.
+# Developer convenience: smoke-test runner and Modal launchers for the ported examples.
 smoke_ports.py
+modal_run_plasmoids.py
 # Legacy scripts still write outputs to CWD; keep the repo clean.
 *.npz
 *.npy

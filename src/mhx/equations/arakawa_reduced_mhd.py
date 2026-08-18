@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import jax
-import jax.numpy as jnp
 from jaxtyping import Array
 
 from mhx.numerics import MatrixFreeOperator

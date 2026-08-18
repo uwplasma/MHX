@@ -11,13 +11,6 @@ from typing import Any
 import jax.numpy as jnp
 import numpy as np
 
-from mhx.config import MeshConfig
-from mhx.state import ReducedMHDParams, ReducedMHDState
-from mhx.grids import CartesianGrid
-from mhx.io import write_manifest
-from mhx.numerics.spectral import laplacian
-from mhx.equations.arakawa_reduced_mhd import arakawa_reduced_mhd_rhs
-
 # Reuse the canonical turbulence machinery from the benchmarks package rather
 # than duplicating it inside ``examples/``.
 from mhx.benchmarks.turbulence import (
@@ -29,6 +22,12 @@ from mhx.benchmarks.turbulence import (
     _validate_turbulence_inputs,
     turbulent_initial_state,
 )
+from mhx.config import MeshConfig
+from mhx.equations.arakawa_reduced_mhd import arakawa_reduced_mhd_rhs
+from mhx.grids import CartesianGrid
+from mhx.io import write_manifest
+from mhx.numerics.spectral import laplacian
+from mhx.state import ReducedMHDParams, ReducedMHDState
 
 TURBULENT_SPECTRUM_SCHEMA = "mhx.validation.turbulent_spectrum.v1"
 
@@ -229,7 +228,9 @@ def write_turbulent_spectrum_validation(
     }
     np.savez_compressed(history_path, **payload)
 
-    summary_path = _write_turbulent_spectrum_summary(result, figure_dir / "turbulent_spectrum_summary.png")
+    summary_path = _write_turbulent_spectrum_summary(
+        result, figure_dir / "turbulent_spectrum_summary.png"
+    )
 
     outputs: dict[str, str] = {
         "diagnostics": diagnostics_path.name,
@@ -287,9 +288,16 @@ def main() -> None:
     parser.add_argument("--eta", type=float, default=5.0e-5, help="Resistivity")
     parser.add_argument("--nu", type=float, default=5.0e-5, help="Viscosity")
     parser.add_argument("--dt", type=float, default=1.0e-3, help="Time step")
-    parser.add_argument("--t-end", dest="t_end", type=float, default=50.0, help="Simulation end time")
+    parser.add_argument(
+        "--t-end", dest="t_end", type=float, default=50.0,
+        help="Simulation end time",
+    )
     parser.add_argument("--save-every", type=int, default=1000, help="Save interval")
-    parser.add_argument("--outdir", type=str, default="outputs/turbulent_spectrum_output", help="Output directory")
+    parser.add_argument(
+        "--outdir", type=str,
+        default="outputs/turbulent_spectrum_output",
+        help="Output directory",
+    )
     args = parser.parse_args()
 
     print("Running 2D MHD Turbulent Cascade Spectrum Test...")

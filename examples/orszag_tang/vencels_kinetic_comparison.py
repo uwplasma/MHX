@@ -31,12 +31,10 @@ import argparse
 from pathlib import Path
 from typing import Any
 
-import jax
 import jax.numpy as jnp
+import matplotlib
 import numpy as np
 from scipy.interpolate import interp1d
-
-import matplotlib
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -177,9 +175,9 @@ def load_vencels_reference(csv_path: Path):
                     t_i.append(float(g[0]))
                     y_i.append(float(g[1]))
 
-    t_B, y_B = zip(*sorted(zip(t_B, y_B)))
-    t_e, y_e = zip(*sorted(zip(t_e, y_e)))
-    t_i, y_i = zip(*sorted(zip(t_i, y_i)))
+    t_B, y_B = zip(*sorted(zip(t_B, y_B, strict=False)), strict=False)
+    t_e, y_e = zip(*sorted(zip(t_e, y_e, strict=False)), strict=False)
+    t_i, y_i = zip(*sorted(zip(t_i, y_i, strict=False)), strict=False)
 
     interp_B = interp1d(t_B, y_B, bounds_error=False, fill_value="extrapolate")
     interp_e = interp1d(t_e, y_e, bounds_error=False, fill_value="extrapolate")
@@ -271,15 +269,30 @@ def write_kinetic_comparison_figure(
         ref_i = interp_i(vencels_time)
         ref_total_particles = ref_e + ref_i
 
-        axes[0].plot(vencels_time, ref_B, label="B (Vencels)", color="navy", linestyle=":", alpha=0.7)
-        axes[0].plot(vencels_time, ref_e, label="e (Vencels)", color="red", linestyle=":", alpha=0.7)
-        axes[0].plot(vencels_time, ref_i, label="i (Vencels)", color="green", linestyle=":", alpha=0.7)
+        axes[0].plot(
+            vencels_time, ref_B, label="B (Vencels)",
+            color="navy", linestyle=":", alpha=0.7,
+        )
+        axes[0].plot(
+            vencels_time, ref_e, label="e (Vencels)",
+            color="red", linestyle=":", alpha=0.7,
+        )
+        axes[0].plot(
+            vencels_time, ref_i, label="i (Vencels)",
+            color="green", linestyle=":", alpha=0.7,
+        )
         axes[0].plot(vencels_time, ref_total_particles, label="e+i (Vencels)", color="purple",
                      linestyle="--", alpha=0.8)
 
     delta_E_particles = delta_E_K - delta_E_total  # kinetic + dissipated heat
-    axes[0].plot(vencels_time, delta_E_B, label=r"$\delta E_B / W_0$ (Fluid)", color="navy", linewidth=2)
-    axes[0].plot(vencels_time, delta_E_K, label=r"$\delta E_K / W_0$ (Fluid)", color="crimson", linewidth=2)
+    axes[0].plot(
+        vencels_time, delta_E_B, label=r"$\delta E_B / W_0$ (Fluid)",
+        color="navy", linewidth=2,
+    )
+    axes[0].plot(
+        vencels_time, delta_E_K, label=r"$\delta E_K / W_0$ (Fluid)",
+        color="crimson", linewidth=2,
+    )
     axes[0].plot(vencels_time, delta_E_particles, label=r"$\delta E_{K+diss} / W_0$ (Fluid)",
                  color="purple", linewidth=2)
 
@@ -298,7 +311,10 @@ def write_kinetic_comparison_figure(
 
     k_ref, power_ref = load_vencels_spectrum(csv_path)
     if k_ref is not None:
-        axes[1].loglog(k_ref, power_ref, label="SPS Reference", color="red", linestyle=":", alpha=0.8)
+        axes[1].loglog(
+            k_ref, power_ref, label="SPS Reference",
+            color="red", linestyle=":", alpha=0.8,
+        )
 
     axes[1].loglog(k_1d_phys, power_1d, label=f"MHX Fluid (t={time[time_idx]:.1f})",
                    color="teal", linewidth=2)

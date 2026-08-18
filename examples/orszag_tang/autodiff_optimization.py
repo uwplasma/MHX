@@ -3,26 +3,26 @@ autodiff against Vencels energy curves."""
 
 from __future__ import annotations
 
-import time
 import argparse
-from pathlib import Path
+import time
 from functools import partial
-from scipy.interpolate import interp1d
+from pathlib import Path
+
 import matplotlib
+from scipy.interpolate import interp1d
 
 matplotlib.use("Agg")  # Headless Matplotlib backend to prevent WSL/NERSC hangs
-import matplotlib.pyplot as plt
-import numpy as np
-
 import jax
 import jax.numpy as jnp
+import matplotlib.pyplot as plt
+import numpy as np
 from jaxtyping import Array
 
 from mhx.config import MeshConfig
-from mhx.grids import CartesianGrid
-from mhx.state import ReducedMHDParams, ReducedMHDState
 from mhx.equations.reduced_mhd import reduced_mhd_rhs, stream_function
+from mhx.grids import CartesianGrid
 from mhx.numerics.spectral import gradient
+from mhx.state import ReducedMHDParams, ReducedMHDState
 
 # The Vencels CSV ships alongside this example.
 VENCELS_CSV = Path(__file__).resolve().parent.parent / "vencelsdata.csv"
@@ -76,9 +76,9 @@ def load_vencels_reference(csv_path: Path):
                     t_i.append(float(g[0]))
                     y_i.append(float(g[1]))
 
-    t_B, y_B = zip(*sorted(zip(t_B, y_B)))
-    t_e, y_e = zip(*sorted(zip(t_e, y_e)))
-    t_i, y_i = zip(*sorted(zip(t_i, y_i)))
+    t_B, y_B = zip(*sorted(zip(t_B, y_B, strict=False)), strict=False)
+    t_e, y_e = zip(*sorted(zip(t_e, y_e, strict=False)), strict=False)
+    t_i, y_i = zip(*sorted(zip(t_i, y_i, strict=False)), strict=False)
 
     interp_B = interp1d(t_B, y_B, bounds_error=False, fill_value="extrapolate")
     interp_e = interp1d(t_e, y_e, bounds_error=False, fill_value="extrapolate")

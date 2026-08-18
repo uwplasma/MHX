@@ -382,15 +382,28 @@ def main() -> None:
     parser.add_argument("--nx", type=int, default=128, help="Grid points in X")
     parser.add_argument("--ny", type=int, default=128, help="Grid points in Y")
     parser.add_argument("--dt", type=float, default=5.0e-4, help="Time step")
-    parser.add_argument("--t-end", dest="t_end", type=float, default=2.0, help="Simulation end time")
+    parser.add_argument(
+        "--t-end", dest="t_end", type=float, default=2.0,
+        help="Simulation end time",
+    )
     parser.add_argument("--save-every", type=int, default=40, help="Save interval")
-    parser.add_argument("--outdir", type=str, default="outputs/inviscid_orszag_tang_output", help="Output directory")
+    parser.add_argument(
+        "--outdir", type=str,
+        default="outputs/inviscid_orszag_tang_output",
+        help="Output directory",
+    )
     parser.add_argument("--movies", action="store_true", help="Generate output GIFs")
-    parser.add_argument("--no-npz", action="store_true", help="Do not save the heavy NPZ history file")
+    parser.add_argument(
+        "--no-npz", action="store_true",
+        help="Do not save the heavy NPZ history file",
+    )
     args = parser.parse_args()
 
     print("Running Inviscid Orszag-Tang Benchmark...")
-    print(f"Grid: {args.nx}x{args.ny} | dt: {args.dt} | t_end: {args.t_end} | Movies: {args.movies}")
+    print(
+        f"Grid: {args.nx}x{args.ny} | dt: {args.dt} | "
+        f"t_end: {args.t_end} | Movies: {args.movies}"
+    )
     print(f"Output directory: {Path(args.outdir).resolve()}")
 
     manifest_path, validation = write_inviscid_orszag_tang_validation(

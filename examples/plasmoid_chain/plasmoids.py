@@ -73,28 +73,27 @@ from pathlib import Path
 
 import jax
 import jax.numpy as jnp
+import matplotlib
 import numpy as np
 
-import matplotlib
-
 matplotlib.use("Agg")
-import matplotlib.pyplot as plt
 import imageio.v2 as imageio
+import matplotlib.pyplot as plt
 
-from mhx.runtime import configure_jax
 from mhx.config import MeshConfig
-from mhx.grids import CartesianGrid
-from mhx.state import ReducedMHDParams, ReducedMHDState
-from mhx.equations.reduced_mhd import current_density, reduced_mhd_rhs
-from mhx.numerics.spectral import spectral_wavenumbers
-from mhx.physics.equilibria import PeriodicDoubleHarrisEquilibrium
-from mhx.physics.terms import HyperResistivityTerm
-from mhx.time_integrators import rk4_step
 from mhx.diagnostics import (
     kinetic_energy,
     magnetic_energy,
     mode_amplitude,
 )
+from mhx.equations.reduced_mhd import current_density, reduced_mhd_rhs
+from mhx.grids import CartesianGrid
+from mhx.numerics.spectral import spectral_wavenumbers
+from mhx.physics.equilibria import PeriodicDoubleHarrisEquilibrium
+from mhx.physics.terms import HyperResistivityTerm
+from mhx.runtime import configure_jax
+from mhx.state import ReducedMHDParams, ReducedMHDState
+from mhx.time_integrators import rk4_step
 
 TRACKED_Y_MODES = (1, 2, 4, 8, 16, 32)  # y-harmonics monitored for multi-mode growth
 
@@ -280,7 +279,10 @@ def main() -> None:
     print(f"  sheet separation   = {sheet_sep:.3g}  (sheets at x = Lx/4 and 3Lx/4)")
     print(f"  resistivity eta    = {args.eta:.3g}  ->  S_L = Ly/eta ~ {s_lundquist:.2g}")
     print(f"  hyper-resistivity  = {args.eta4:.3g}  (grid damping ~100/s at k_max={k_max:.3g})")
-    print(f"  tearing wavelength ~ {lambda_island:.3g}  ->  ~{expected_per_sheet} islands per sheet (2 sheets)")
+    print(
+        f"  tearing wavelength ~ {lambda_island:.3g}  ->  "
+        f"~{expected_per_sheet} islands per sheet (2 sheets)"
+    )
     print("=" * 70)
 
     # 1. Clean double-Harris equilibrium (two thin sheets).
@@ -409,7 +411,7 @@ def main() -> None:
 
     print("=" * 70)
     print(f"Done. Y-mode amplitudes grew to: "
-          f"{dict(zip(TRACKED_Y_MODES, np.round(mode_history[-1], 6)))}")
+          f"{dict(zip(TRACKED_Y_MODES, np.round(mode_history[-1], 6), strict=False))}")
     print("=" * 70)
 
 
