@@ -19,9 +19,12 @@ from mhx.physics import (
 )
 from mhx.physics.equilibria3d import (
     ABCFlowEquilibrium,
+    AlfvenWaveCollisionEquilibrium,
     CircularlyPolarizedAlfvenEquilibrium,
     OrszagTang3DEquilibrium,
     SingleModeEquilibrium,
+    TaylorGreenAlternativeEquilibrium,
+    TaylorGreenConductingEquilibrium,
     TaylorGreenEquilibrium,
 )
 from mhx.simulation import Simulation, SimulationResult
@@ -40,10 +43,13 @@ def run(config: str | Path, *, outdir: str | Path | None = None) -> Path:
 
 __all__ = [
     "ABCFlowEquilibrium",
+    "AlfvenWaveCollisionEquilibrium",
     "CircularlyPolarizedAlfvenEquilibrium",
     "MHX_PUBLIC_API_VERSION",
     "OrszagTang3DEquilibrium",
     "SingleModeEquilibrium",
+    "TaylorGreenAlternativeEquilibrium",
+    "TaylorGreenConductingEquilibrium",
     "TaylorGreenEquilibrium",
     "CosineTearingEquilibrium",
     "EnsembleResult",

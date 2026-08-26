@@ -19,7 +19,7 @@ MHD turbulence, and dynamos. The capability matrix:
 | Compressible MHD, subsonic smooth | available, thin box | available |
 | Shocks and supersonic flows | out of scope | out of scope |
 
-![Double-Harris reconnection: residual flux with flux contours and X/O markers](docs/_static/readme/double_harris_reconnection.gif)
+![Many-plasmoid Double-Harris chain: magnetic flux with flux contours](docs/_static/readme/double_harris_reconnection.gif)
 
 ## First run
 
@@ -106,6 +106,19 @@ movies, and the
 [media inventory](docs/project/media_inventory.md) records their settings and
 claim limits.
 
+Regenerate the landing-page and documentation media from the same final
+simulation bundles:
+
+```bash
+python examples/media/run_all.py simulate --preset final --allow-expensive
+python examples/media/run_all.py render --preset final
+```
+
+The [media campaign guide](examples/media/README.md) documents individual
+cases, preview runs, staging paths, and promotion checks. The committed
+high-fidelity collection includes its GIFs, MP4s, posters, and provenance.
+[Generation instructions](docs/how_to/generate_media.md) are organized by case.
+
 ## Three-dimensional MHD
 
 The same call runs full 3D incompressible MHD: change the shape, the
@@ -178,6 +191,7 @@ data.
 | TOML configuration | [`docs/reference/config_schema.md`](docs/reference/config_schema.md) |
 | Output files | [`docs/reference/output_schema.md`](docs/reference/output_schema.md) |
 | Movie gallery | [`docs/gallery.md`](docs/gallery.md) |
+| Generate documentation media | [`docs/how_to/generate_media.md`](docs/how_to/generate_media.md) |
 
 The benchmark and campaign tools remain available for validation and long
 production runs. Run `mhx --help` to list them.

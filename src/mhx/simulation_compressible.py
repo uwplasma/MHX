@@ -124,11 +124,20 @@ class CompressibleResult:
         return output
 
     def plot(self, path: str | Path) -> Path:
-        """Write a four-panel summary: density, |j|, energies, density spread."""
+        """Write a four-panel summary: density, |j|, log-density spread, energies."""
         import matplotlib.pyplot as plt
 
         output = Path(path)
         output.parent.mkdir(parents=True, exist_ok=True)
+
+        plt.rcParams.update(
+            {
+                "axes.spines.top": False,
+                "axes.spines.right": False,
+                "font.size": 10,
+            }
+        )
+
         k = mhd3d.wavevectors(self.shape, (2.0 * jnp.pi,) * 3)
         final = self.final_state
         density = np.exp(
@@ -157,18 +166,34 @@ class CompressibleResult:
             for i in range(len(times))
         ]
 
-        figure, axes = plt.subplots(2, 2, figsize=(9.0, 7.0), constrained_layout=True)
-        image = axes[0, 0].imshow(density[:, :, mid].T, origin="lower", cmap="viridis")
-        axes[0, 0].set_title("density, midplane")
-        figure.colorbar(image, ax=axes[0, 0], shrink=0.8)
-        image = axes[0, 1].imshow(current_slice.T, origin="lower", cmap="inferno")
-        axes[0, 1].set_title("|j|, midplane")
-        figure.colorbar(image, ax=axes[0, 1], shrink=0.8)
+        figure, axes = plt.subplots(2, 2, figsize=(11.0, 7.5), constrained_layout=True)
+        image = axes[0, 0].imshow(density[:, :, mid].T, origin="lower", cmap="jet")
+        axes[0, 0].set_title(r"density $\rho$, midplane")
+        axes[0, 0].set_xlabel("grid x")
+        axes[0, 0].set_ylabel("grid y")
+        cbar = figure.colorbar(image, ax=axes[0, 0], shrink=0.82)
+        cbar.set_label(r"$\rho$")
+
+        image = axes[0, 1].imshow(current_slice.T, origin="lower", cmap="jet")
+        axes[0, 1].set_title(r"$|\mathbf{j}|$, midplane")
+        axes[0, 1].set_xlabel("grid x")
+        axes[0, 1].set_ylabel("grid y")
+        cbar = figure.colorbar(image, ax=axes[0, 1], shrink=0.82)
+        cbar.set_label(r"$|\mathbf{j}|$")
+
         axes[1, 0].plot(times, spreads)
         axes[1, 0].set_xlabel("time")
-        axes[1, 0].set_title("log-density spread")
+        axes[1, 0].set_title(r"$\sigma(\ln\rho)$")
+        axes[1, 0].grid(True, alpha=0.25)
+
         axes[1, 1].axis("off")
-        figure.savefig(output, dpi=180)
+
+        figure.suptitle(
+            f"MHX compressible MHD  —  "
+            f"{getattr(type(self), '__name__', 'run')}",
+            fontsize=13,
+        )
+        figure.savefig(output, dpi=200)
         plt.close(figure)
         return output
 

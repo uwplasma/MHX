@@ -13,16 +13,16 @@ compressible MHD with shocks.
 :gutter: 3
 
 :::{grid-item}
-```{video} _static/movies/double_harris_reconnection_256.mp4
+```{video} _static/movies/double_harris_reconnection.mp4
 :autoplay:
 :loop:
 :muted:
 :nocontrols:
 :width: 100%
 ```
-**Magnetic reconnection.** A seeded island grows on a Harris current sheet
-at 256 x 256. Red and blue show the island flux, black lines follow the
-total flux, and the markers track the X and O points.
+**Magnetic reconnection.** A many-plasmoid double-Harris demonstration
+shows magnetic flux with black flux contours. It is solver-generated
+morphology, not a converged plasmoid-scaling result.
 :::
 
 :::{grid-item}
@@ -38,9 +38,22 @@ total flux, and the markers track the X and O points.
 sheets where the energy dissipates.
 :::
 
+:::{grid-item}
+```{video} _static/movies/orszag_tang_current.mp4
+:autoplay:
+:loop:
+:muted:
+:nocontrols:
+:width: 100%
+```
+**Orszag--Tang vortex.** The standard 2-D reduced-MHD benchmark develops
+interacting current sheets and transfers magnetic energy to smaller scales.
+:::
+
 ::::
 
-Both movies replay gate-passing validation runs, at a pace slow enough to
+The turbulence movie replays a gate-passing validation run. The reconnection
+movie is a high-resolution solver demonstration. Both are paced to be easy to
 follow. The [gallery](gallery.md) documents every movie with its command and
 claim boundary.
 
@@ -141,6 +154,7 @@ how_to/run_from_toml
 how_to/run_on_gpus
 how_to/extend_physics
 how_to/add_diagnostics
+how_to/generate_media
 ```
 
 ```{toctree}

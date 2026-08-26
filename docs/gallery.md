@@ -7,29 +7,15 @@ settings, and quality checks for each source.
 
 ## Harris-sheet reconnection
 
-```{video} _static/movies/double_harris_reconnection_256.mp4
-:loop:
-:muted:
-:width: 100%
-```
-
-Island flux on the right current sheet of a seeded double-Harris
-configuration at 256 x 256, with total-flux contours and X/O markers, to
-$t=160$. The frames replay the exact settings of a gate-passing validation
-run. Its evidence is committed under
-[`_static/validation/double_harris_256_t160/`](https://github.com/uwplasma/MHX/tree/main/docs/_static/validation/double_harris_256_t160).
-Anchored to the Harris and FKR tearing picture {cite}`harris1962,furth1963`.
-The markers are diagnostic annotations, not converged Rutherford or plasmoid
-evidence.
-
 ```{video} _static/movies/double_harris_reconnection.mp4
 :loop:
 :muted:
 :width: 100%
 ```
 
-The earlier 128 x 128 view of the same configuration: residual reconnecting
-flux with contours and markers, from the committed GPU validation bundle.
+Magnetic flux and contours from the high-resolution many-plasmoid
+double-Harris demonstration. It is real solver output, but it is not a
+converged Sweet--Parker or plasmoid-scaling result.
 
 ```{video} _static/movies/double_harris_current_sheet.mp4
 :loop:
@@ -37,8 +23,7 @@ flux with contours and markers, from the committed GPU validation bundle.
 :width: 100%
 ```
 
-Full-domain view of the same run through the residual current $\Delta j_z$
-across both sheets.
+Companion current-density view of the same many-plasmoid demonstration.
 
 ```{video} _static/movies/double_harris_island_64.mp4
 :loop:
@@ -60,11 +45,11 @@ result.
 ```
 
 Full 3D incompressible MHD: the {cite}`politano1995` Orszag--Tang vortex
-at 128 x 128 x 128 to $t=4$, on one office GPU. The panels show the
+at 192 x 192 x 192 to $t=4$, on one office GPU. The panels show the
 current magnitude as a midplane slice and a maximum projection:
 
 ```bash
-python - # mhx.Simulation(shape=(128,)*3, equations="mhd3d", ...) per docs/physics/mhd3d.md
+python - # mhx.Simulation(shape=(192,)*3, equations="mhd3d", ...) per docs/physics/mhd3d.md
 ```
 
 Campaign-scale solver output on the road to gate G7. Not yet a gated
@@ -119,15 +104,38 @@ committed under
 mhx benchmark decaying-turbulence --outdir outputs/turbulence --nx 256 --ny 256 --t-end 10 --dt 0.004 --movies
 ```
 
-```{video} _static/movies/forced_turbulent_reconnection.mp4
+```{video} _static/movies/forced_2d_turbulence.mp4
 :loop:
 :muted:
 :width: 100%
 ```
 
-Forced turbulent reconnection proxy at 64 x 64 to $t=80$, with flux contours
-and a reconnection-rate proxy. Pedagogical validation media, not a
-three-dimensional fast-reconnection test.
+Continually forced 2-D turbulence at 256 x 256 to $t=50$. The movie combines
+current density, the live spectrum, and a compensated-spectrum constant fit.
+It is a morphology and spectral diagnostic, not a converged inertial-range
+measurement.
+
+```{video} _static/movies/forced_3d_turbulence_current.mp4
+:loop:
+:muted:
+:width: 100%
+```
+
+Forced 3-D incompressible turbulence at 96 cubed to $t=200$. The panels show
+midplane and maximum-projection current magnitude. This is demonstration
+media, not a converged turbulence-statistics result.
+
+## Kelvin--Helmholtz instability
+
+```{video} _static/movies/kelvin_helmholtz.mp4
+:loop:
+:muted:
+:width: 100%
+```
+
+Smooth periodic Kelvin--Helmholtz roll-up in the hydrodynamic limit at
+128 x 256. It demonstrates the ported example initialization and nonlinear
+evolution, not a quantitative instability-growth benchmark.
 
 ## Linear theory
 
@@ -143,12 +151,16 @@ localization of {cite}`furth1963`. From `mhx benchmark linear-tearing-layer`.
 
 ## Reproduce or extend
 
-Regenerate every movie on this page with:
+Render every available final source bundle into staging with:
 
 ```bash
-python examples/make_docs_movies.py
+python examples/media/run_all.py status --preset final
+python examples/media/run_all.py simulate --preset final --allow-expensive
+python examples/media/run_all.py render --preset final
 ```
 
-The script transcodes the committed validated sources and renders the island
-example. [Make your first movie](getting_started/first_movie.md) shows how to
+Missing requested sources are errors. Existing committed files are never treated
+as substitutes for missing inputs. The per-case commands and output contract are documented in
+`examples/media/README.md`. The [generation-instructions page](how_to/generate_media.md)
+provides one placeholder section per curated case. [Make your first movie](getting_started/first_movie.md) shows how to
 build your own.
