@@ -1,45 +1,45 @@
 schema = "mhx.docs.figures_manifest.v1"
-updated_utc = "2026-08-05T12:00:00Z"
+updated_utc = "2026-08-25T00:00:00Z"
 description = "Reviewer-facing map from documentation figures and movies to commands, claim levels, sources, and tests."
 
 [[figures]]
 id = "readme_double_harris_reconnection"
 path = "docs/_static/readme/double_harris_reconnection.gif"
-sha256 = "f54638f9907416d59499d75a0761dbf362c3e6f6f0936532bc8030a79ac808a2"
-command = "python examples/make_readme_media.py"
-claim_level = "validation"
-claim_scope = "Longer seeded double-Harris visual communication; not a converged Rutherford or plasmoid claim."
-sources = ["examples/make_readme_media.py", "src/mhx/benchmarks/current_sheet.py", "src/mhx/diagnostics/critical_points.py"]
-tests = ["tests/test_readme_media.py", "tests/test_critical_points.py", "tests/test_current_sheet_eigenvalue_validation.py"]
+sha256 = "f24578bb26edfc246ff731e3684c5a716bcaa608ceda0f3433eba7de0e30c32d"
+command = "python examples/media/double_harris_reconnection.py render --preset final"
+claim_level = "demonstration"
+claim_scope = "Many-plasmoid double-Harris chain from a 1024x1024 reduced-MHD run (psi + flux contours); exploratory plasmoid formation, not a converged Sweet-Parker or plasmoid-scaling claim."
+sources = ["examples/media/double_harris_reconnection.py", "examples/plasmoid_chain/plasmoids.py"]
+tests = ["tests/test_readme_media.py"]
 
 [[figures]]
 id = "readme_forced_turbulent_reconnection"
 path = "docs/_static/readme/forced_turbulent_reconnection.gif"
-sha256 = "e3230bf19e2fdf89ae21856d9a0ff814aabbcb6c58c86c192a485f6abed50712"
-command = "python examples/make_readme_media.py"
+sha256 = "8a0315dc834ff9e6debbe43fb67314b11b0bf317306ad4e04b2e583bc99faa68"
+command = "python examples/media/forced_turbulent_reconnection.py render"
 claim_level = "validation"
 claim_scope = "Forced reduced-MHD turbulent-reconnection proxy movie; not a production reconnection-rate measurement."
-sources = ["examples/make_readme_media.py", "src/mhx/benchmarks/turbulence.py"]
+sources = ["examples/media/forced_turbulent_reconnection.py", "src/mhx/benchmarks/turbulence.py"]
 tests = ["tests/test_readme_media.py", "tests/test_turbulence_validation.py"]
 
 [[figures]]
 id = "readme_decaying_mhd_turbulence"
 path = "docs/_static/readme/decaying_mhd_turbulence_current.gif"
-sha256 = "81d11d1b3a0b5de385ef85f5eff5a02c635a5967133bbf1a49f2d28d12266d2d"
-command = "python examples/make_readme_media.py"
+sha256 = "70774f9365a5ad9f1f4550f777dc7601f0d5439786115d25ef61d145fbff9c59"
+command = "python examples/media/decaying_turbulence.py render --preset final"
 claim_level = "validation"
 claim_scope = "Decaying reduced-MHD turbulence morphology and high-k transfer gate; not converged turbulence statistics."
-sources = ["examples/make_readme_media.py", "src/mhx/benchmarks/turbulence.py"]
+sources = ["examples/media/decaying_turbulence.py", "src/mhx/benchmarks/turbulence.py"]
 tests = ["tests/test_readme_media.py", "tests/test_turbulence_validation.py"]
 
 [[figures]]
 id = "readme_orszag_tang_current"
 path = "docs/_static/readme/orszag_tang_current.gif"
-sha256 = "17c66b5a7e05814b488ae9363d7847376f7000474142c3bb48c8f8269a86e79a"
-command = "python examples/make_readme_media.py"
+sha256 = "f148ed73e1163ada94c097537f4761e3ff95f64c2427f5e252a7834bdd991929"
+command = "python examples/media/orszag_tang_2d.py render --preset final"
 claim_level = "validation"
 claim_scope = "Incompressible reduced-MHD Orszag-Tang morphology gate; not compressible shock validation."
-sources = ["examples/make_readme_media.py", "src/mhx/benchmarks/orszag_tang.py"]
+sources = ["examples/media/orszag_tang_2d.py", "src/mhx/benchmarks/orszag_tang.py"]
 tests = ["tests/test_readme_media.py", "tests/test_orszag_tang_validation.py"]
 
 [[figures]]
@@ -175,37 +175,37 @@ tests = ["tests/test_seed_robust_qi.py", "tests/test_production_campaign.py"]
 [[figures]]
 id = "movie_double_harris_reconnection"
 path = "docs/_static/movies/double_harris_reconnection.mp4"
-sha256 = "f8a9b7d8431243cf223ca40ffaf14fb02d0729ccddebcb0936cbccfb2540ae46"
-command = "python examples/make_docs_movies.py"
-claim_level = "validation"
-claim_scope = "Transcode of the README double-Harris residual-flux movie. Validation media, not converged Rutherford or plasmoid evidence."
-sources = ["docs/_static/readme/double_harris_reconnection.gif", "examples/make_docs_movies.py"]
+sha256 = "2bb1fdb07cc3775fe5078359a5b5bb9037c62c32ec8d4d1472cffa6c059f7469"
+command = "python examples/media/double_harris_reconnection.py render --preset final"
+claim_level = "demonstration"
+claim_scope = "Many-plasmoid double-Harris reconnection movie (psi + flux contours). Exploratory plasmoid formation, not converged Sweet-Parker or plasmoid evidence."
+sources = ["examples/media/double_harris_reconnection.py", "examples/plasmoid_chain/plasmoids.py"]
 tests = ["tests/test_docs_movies.py"]
 
 [[figures]]
 id = "movie_double_harris_current_sheet"
 path = "docs/_static/movies/double_harris_current_sheet.mp4"
-sha256 = "642e5c5dcb203259bb617253c7e35eed028e483bbc63967c1a1ce6c256e1be0e"
-command = "python examples/make_docs_movies.py"
-claim_level = "validation"
-claim_scope = "Transcode of the README full-domain double-Harris residual-current movie. Validation media, not a production reconnection-rate measurement."
-sources = ["docs/_static/readme/double_harris_current_sheet.gif", "examples/make_docs_movies.py"]
+sha256 = "0be0f1284ad299f70560380b3350cd5abc7c66d275e5de547461e2550c379297"
+command = "python examples/media/double_harris_reconnection.py render --preset final"
+claim_level = "demonstration"
+claim_scope = "Many-plasmoid double-Harris current-sheet movie (j_z + flux contours). Exploratory plasmoid formation, not a production reconnection-rate measurement."
+sources = ["examples/media/double_harris_reconnection.py", "examples/plasmoid_chain/plasmoids.py"]
 tests = ["tests/test_docs_movies.py"]
 
 [[figures]]
 id = "movie_orszag_tang_current"
 path = "docs/_static/movies/orszag_tang_current.mp4"
-sha256 = "e71c35f63475a8bc965c87ddac37a9f3fe4ccd468573438e5aa3f354b6996f78"
-command = "python examples/make_docs_movies.py"
+sha256 = "7593fb263e13dc032c324f1f40e9048a7350ef24f31087a95e1343dd5e41f2bc"
+command = "python examples/media/orszag_tang_2d.py render --preset final"
 claim_level = "validation"
-claim_scope = "Transcode of the README Orszag-Tang current-density movie. Nonlinear reduced-MHD validation media, not a compressible shock-capturing result."
-sources = ["docs/_static/readme/orszag_tang_current.gif", "examples/make_docs_movies.py"]
+claim_scope = "README and documentation Orszag-Tang current-density movie. Nonlinear reduced-MHD validation media, not a compressible shock-capturing result."
+sources = ["examples/media/orszag_tang_2d.py", "src/mhx/benchmarks/orszag_tang.py"]
 tests = ["tests/test_docs_movies.py"]
 
 [[figures]]
 id = "movie_orszag_tang_vorticity"
 path = "docs/_static/movies/orszag_tang_vorticity.mp4"
-sha256 = "301dd3499d9a61f8f3c29055170e435df05ca8d3413d2d02ff962209fed56526"
+sha256 = "29ff1c204a6c6294b2ad0973d2a84946a4186aa09d718773fab278bfc4848928"
 command = "python examples/make_docs_movies.py"
 claim_level = "validation"
 claim_scope = "Transcode of the README Orszag-Tang vorticity movie. Nonlinear reduced-MHD validation media, not a compressible shock-capturing result."
@@ -215,7 +215,7 @@ tests = ["tests/test_docs_movies.py"]
 [[figures]]
 id = "movie_orszag_tang_flux"
 path = "docs/_static/movies/orszag_tang_flux.mp4"
-sha256 = "4a3ee6fee4c2163307e7720cfbbfba60e274f46b783a5af44096f1f2dc6d2976"
+sha256 = "67b93cc7a65ccdeb7c520865346bf90df5c0d568d2655e07ab433c3db2364a91"
 command = "python examples/make_docs_movies.py"
 claim_level = "validation"
 claim_scope = "Transcode of the README Orszag-Tang flux movie. Nonlinear reduced-MHD validation media, not a compressible shock-capturing result."
@@ -225,7 +225,7 @@ tests = ["tests/test_docs_movies.py"]
 [[figures]]
 id = "movie_decaying_mhd_turbulence_current"
 path = "docs/_static/movies/decaying_mhd_turbulence_current.mp4"
-sha256 = "258b6b4472b342822ce67482f17d3a7bb9309700e578588bd947b630accb2817"
+sha256 = "585bc77e4dd59b4270d5baeb3dd4fc6a7c354b0d66dc1e4cdcdca874bbdc1383"
 command = "python examples/make_docs_movies.py"
 claim_level = "validation"
 claim_scope = "Transcode of the README decaying-turbulence current movie. Morphology media, not converged turbulence statistics."
@@ -235,7 +235,7 @@ tests = ["tests/test_docs_movies.py"]
 [[figures]]
 id = "movie_forced_turbulent_reconnection"
 path = "docs/_static/movies/forced_turbulent_reconnection.mp4"
-sha256 = "5e55cf90a220c5148679beb7d6804319df228eedde2c329adab85fc4f589a9f2"
+sha256 = "4a87e3c8c8de84c083a195e43bf981bd9d94e9b49e3d236609cf47db5a8ba882"
 command = "python examples/make_docs_movies.py"
 claim_level = "validation"
 claim_scope = "Transcode of the README forced turbulent-reconnection movie. Pedagogical media, not a three-dimensional fast-reconnection production test."
@@ -245,7 +245,7 @@ tests = ["tests/test_docs_movies.py"]
 [[figures]]
 id = "movie_harris_layer_sweep"
 path = "docs/_static/movies/harris_layer_sweep.mp4"
-sha256 = "e28f34468bf333387cabc81df2a8c2c3012250d1145542b4376ddabc93c22392"
+sha256 = "01f87e0fd994b90b1b40bef883ef6271ce5911f6b509aa45ea30b2e8ddbaa226"
 command = "python examples/make_docs_movies.py"
 claim_level = "validation"
 claim_scope = "Transcode of the Harris tearing layer sweep. Linear eigenproblem media only, not a nonlinear result."
@@ -253,19 +253,9 @@ sources = ["docs/_static/readme/harris_layer_sweep.gif", "examples/make_docs_mov
 tests = ["tests/test_docs_movies.py"]
 
 [[figures]]
-id = "movie_periodic_double_harris_current"
-path = "docs/_static/movies/periodic_double_harris_current.mp4"
-sha256 = "3c0d6a8e17ec71098700fee43ddc9d93f7740dc0e5798d96080c03a209020f7e"
-command = "python examples/make_docs_movies.py"
-claim_level = "validation"
-claim_scope = "Transcode of the committed seeded double-Harris current validation movie. Bounded validation evidence, not a production nonlinear result."
-sources = ["docs/_static/validation/periodic_double_harris_seeded_long_run/figures/periodic_double_harris_current.gif", "examples/make_docs_movies.py"]
-tests = ["tests/test_docs_movies.py"]
-
-[[figures]]
 id = "movie_double_harris_island_64"
 path = "docs/_static/movies/double_harris_island_64.mp4"
-sha256 = "eda57b2973861e25d3f312cfde05ea2477060d0c5523aa798f242f7edac07d96"
+sha256 = "ad978f2c4992b27651ac76c10705d1282c84fcb612de4f9d779b018d86eed43a"
 command = "python examples/make_docs_movies.py"
 claim_level = "smoke"
 claim_scope = "Documentation illustration rendered at the exact first_movie.md settings: 64x64, t_end=40, S=200. A real solver run without validation gates."
@@ -273,19 +263,9 @@ sources = ["examples/make_docs_movies.py"]
 tests = ["tests/test_docs_movies.py"]
 
 [[figures]]
-id = "movie_double_harris_reconnection_256"
-path = "docs/_static/movies/double_harris_reconnection_256.mp4"
-sha256 = "e6f75f405f65fbe0ee9cbcf4188def6075313a5ab71dbe0b4ea400f793416f2b"
-command = "mhx benchmark double-harris-long-run --nx 256 --ny 256 --t-end 160 --movies, then MHX_HERO_BUNDLE replay render in examples/make_docs_movies.py"
-claim_level = "validation"
-claim_scope = "Island-flux zoom rendered from a replay at the exact settings of the committed 256x256 gate-passing bundle in docs/_static/validation/double_harris_256_t160. Not a converged Rutherford, Sweet-Parker, or plasmoid production result."
-sources = ["docs/_static/validation/double_harris_256_t160/validation.json", "docs/_static/validation/double_harris_256_t160/diagnostics.json", "examples/make_docs_movies.py", "src/mhx/benchmarks/current_sheet.py"]
-tests = ["tests/test_docs_movies.py"]
-
-[[figures]]
 id = "movie_decaying_mhd_turbulence_current_256"
 path = "docs/_static/movies/decaying_mhd_turbulence_current_256.mp4"
-sha256 = "eea2d8e63cf3441ffd4770740eb829c4d8d1fb37f1759503a7da0209e7e7a23d"
+sha256 = "9cb3d44b5774344d4739cc8fb62b419d32c6fce99633f43fceffe36197d011ff"
 command = "mhx benchmark decaying-turbulence --nx 256 --ny 256 --t-end 10 --dt 0.004 --movies, transcoded at half speed by examples/make_docs_movies.py"
 claim_level = "validation"
 claim_scope = "Current density from the gate-passing 256x256 decaying-turbulence bundle in docs/_static/validation/decaying_turbulence_256_t10. Morphology media only, not converged turbulence statistics."
@@ -295,9 +275,40 @@ tests = ["tests/test_docs_movies.py"]
 [[figures]]
 id = "movie_orszag_tang_3d_current"
 path = "docs/_static/movies/orszag_tang_3d_current.mp4"
-sha256 = "f806db6e2d84b19252cb30403f8b2bcd2cbff0ece58f5912206935d5896650a9"
-command = "mhx.Simulation(shape=(128, 128, 128), equations=mhd3d, OrszagTang3DEquilibrium(beta=0.8), nu=eta=2e-3, dt=1e-3, t_end=4) on one office GPU, rendered by render_ot3d_movie in examples/make_docs_movies.py"
+sha256 = "a07879caad7096e5718c20f3eb6ae5341fb9220045d028339ccb5e769aa1fd82"
+command = "python examples/media/orszag_tang_3d.py simulate --preset final && python examples/media/orszag_tang_3d.py render --preset final"
 claim_level = "smoke"
-claim_scope = "Campaign-scale 3D Orszag-Tang solver output at 128 cubed, x64: current-sheet formation and the dissipation-peak window. Not a gated G7 validation artifact until the dissipation normalization audit in plan_3d.md completes."
-sources = ["examples/make_docs_movies.py", "src/mhx/equations/mhd3d.py", "src/mhx/physics/equilibria3d.py"]
+claim_scope = "Campaign-scale 3D Orszag-Tang solver output at 192 cubed, x64: current-sheet formation and the dissipation-peak window. Not a gated G7 validation artifact until the dissipation normalization audit in plan_3d.md completes."
+sources = ["examples/media/orszag_tang_3d.py", "src/mhx/equations/mhd3d.py", "src/mhx/physics/equilibria3d.py"]
 tests = ["tests/test_docs_movies.py"]
+
+
+[[figures]]
+id = "movie_forced_2d_turbulence"
+path = "docs/_static/movies/forced_2d_turbulence.mp4"
+sha256 = "06e918ba51980f7406f9564c60cad6f1ede0bc80b7a2de1da180df9bed884a33"
+command = "python examples/media/forced_turbulence_2d.py render --preset final"
+claim_level = "demonstration"
+claim_scope = "Continually forced 256x256 reduced-MHD turbulence with live and compensated spectra. Morphology and spectral diagnostic, not converged inertial-range statistics."
+sources = ["examples/media/forced_turbulence_2d.py"]
+tests = ["tests/test_docs_movies.py", "tests/test_readme_media.py"]
+
+[[figures]]
+id = "movie_forced_3d_turbulence_current"
+path = "docs/_static/movies/forced_3d_turbulence_current.mp4"
+sha256 = "734c3ca235aa71f395e0461bce24fcef0f51b0fc3bb26fa89daf76bc5ca0c494"
+command = "python examples/media/turbulence_3d.py render --preset final"
+claim_level = "demonstration"
+claim_scope = "Forced 96-cubed incompressible-MHD current magnitude through t=200. Demonstration media, not converged turbulence statistics."
+sources = ["examples/media/turbulence_3d.py"]
+tests = ["tests/test_docs_movies.py"]
+
+[[figures]]
+id = "movie_kelvin_helmholtz"
+path = "docs/_static/movies/kelvin_helmholtz.mp4"
+sha256 = "f8ab102b7e914c335ed561211b905a05a576f3c458ad6841090357a963607e54"
+command = "python examples/media/kelvin_helmholtz.py render --preset final"
+claim_level = "demonstration"
+claim_scope = "Smooth periodic 128x256 hydrodynamic-limit Kelvin--Helmholtz roll-up. Nonlinear demonstration, not a quantitative instability-growth benchmark."
+sources = ["examples/media/kelvin_helmholtz.py"]
+tests = ["tests/test_docs_movies.py", "tests/test_kelvin_helmholtz_media.py"]

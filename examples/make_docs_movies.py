@@ -12,9 +12,11 @@ Three lanes:
    with total-flux contours and X/O markers. The bundle itself stays outside
    the repository; only the rendered movie is committed.
 
-Run from the repository root:
+Render into staging from the repository root:
 
-    python examples/make_docs_movies.py
+    python examples/make_docs_movies.py \
+        --readme-source-dir outputs/media-preview/readme \
+        --output-dir outputs/media-preview/movies
 
 Requires ffmpeg through ``imageio-ffmpeg`` (installed by the ``dev`` extra).
 """
@@ -41,8 +43,6 @@ TRANSCODES = {
     ),
     "docs/_static/readme/forced_turbulent_reconnection.gif": "forced_turbulent_reconnection.mp4",
     "docs/_static/readme/harris_layer_sweep.gif": "harris_layer_sweep.mp4",
-    "docs/_static/validation/periodic_double_harris_seeded_long_run/figures/"
-    "periodic_double_harris_current.gif": "periodic_double_harris_current.mp4",
 }
 # The historical seeded flux movie is deliberately absent: its total-field
 # view fails the motion gate, which is the policy working as intended. The
@@ -202,26 +202,6 @@ def render_hero_movie(bundle: Path, target: Path, *, fps: int = 6) -> None:
     writer.close()
 
 
-def main() -> None:
-    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    for source_name, target_name in TRANSCODES.items():
-        source = ROOT / source_name
-        target = OUTPUT_DIR / target_name
-        transcode(source, target)
-        print(f"{target_name}: {target.stat().st_size / 1024:.0f} KiB")
-    island_target = OUTPUT_DIR / "double_harris_island_64.mp4"
-    render_island_movie(island_target)
-    print(f"double_harris_island_64.mp4: {island_target.stat().st_size / 1024:.0f} KiB")
-
-    for path in sorted(OUTPUT_DIR.glob("*.mp4")):
-        digest = hashlib.sha256(path.read_bytes()).hexdigest()
-        print(f"{path.relative_to(ROOT)} sha256 {digest}")
-
-
-if __name__ == "__main__":
-    main()
-
-
 def render_ot3d_movie(views: Path, target: Path, *, fps: int = 5) -> None:
     """Render the 3D Orszag--Tang current movie from saved views.
 
@@ -260,3 +240,86 @@ def render_ot3d_movie(views: Path, target: Path, *, fps: int = 5) -> None:
         frame = frame[: frame.shape[0] // 2 * 2, : frame.shape[1] // 2 * 2]
         writer.append_data(frame)
     writer.close()
+
+
+def _require_source(path: Path, label: str) -> Path:
+    if not path.is_file():
+        raise FileNotFoundError(f"requested {label} source does not exist: {path}")
+    return path
+
+
+def main(
+    *,
+    readme_source_dir: Path,
+    output_dir: Path,
+    hero_bundle: Path | None = None,
+    ot3d_views: Path | None = None,
+    skip_island: bool = False,
+) -> None:
+    output_dir.mkdir(parents=True, exist_ok=True)
+    for source_name, target_name in TRANSCODES.items():
+        source = _require_source(readme_source_dir / Path(source_name).name, target_name)
+        target = output_dir / target_name
+        transcode(source, target)
+        print(f"{target_name}: {target.stat().st_size / 1024:.0f} KiB")
+
+    if not skip_island:
+        island_target = output_dir / "double_harris_island_64.mp4"
+        render_island_movie(island_target)
+        print(f"double_harris_island_64.mp4: {island_target.stat().st_size / 1024:.0f} KiB")
+
+    if hero_bundle is not None:
+        hero_bundle = _require_source(hero_bundle, "double-Harris hero")
+        hero_target = output_dir / "double_harris_reconnection_256.mp4"
+        render_hero_movie(hero_bundle, hero_target)
+        print(f"double_harris_reconnection_256.mp4: {hero_target.stat().st_size / 1024:.0f} KiB")
+
+    if ot3d_views is not None:
+        ot3d_views = _require_source(ot3d_views, "3-D Orszag-Tang")
+        ot3d_target = output_dir / "orszag_tang_3d_current.mp4"
+        render_ot3d_movie(ot3d_views, ot3d_target)
+        print(f"orszag_tang_3d_current.mp4: {ot3d_target.stat().st_size / 1024:.0f} KiB")
+
+    for path in sorted(output_dir.glob("*.mp4")):
+        digest = hashlib.sha256(path.read_bytes()).hexdigest()
+        print(f"{path} sha256 {digest}")
+
+
+if __name__ == "__main__":
+    import argparse
+    import os
+
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--readme-source-dir",
+        type=Path,
+        default=Path("outputs/media-preview/readme"),
+    )
+    parser.add_argument(
+        "--output-dir",
+        type=Path,
+        default=Path("outputs/media-preview/movies"),
+    )
+    parser.add_argument(
+        "--hero-bundle",
+        type=Path,
+        default=Path(os.environ["MHX_HERO_BUNDLE"])
+        if os.environ.get("MHX_HERO_BUNDLE")
+        else None,
+    )
+    parser.add_argument(
+        "--ot3d-views",
+        type=Path,
+        default=Path(os.environ["MHX_OT3D_VIEWS"])
+        if os.environ.get("MHX_OT3D_VIEWS")
+        else None,
+    )
+    parser.add_argument("--skip-island", action="store_true")
+    args = parser.parse_args()
+    main(
+        readme_source_dir=args.readme_source_dir,
+        output_dir=args.output_dir,
+        hero_bundle=args.hero_bundle,
+        ot3d_views=args.ot3d_views,
+        skip_island=args.skip_island,
+    )

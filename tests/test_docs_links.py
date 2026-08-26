@@ -93,7 +93,8 @@ REQUIRED_SOURCE_LINKS = {
     ("docs/project/publication_checklist.md",): {
         "examples/tools/verify_paper_artifacts.py",
         "examples/make_validation_media.py",
-        "examples/make_readme_media.py",
+        "examples/media/run_all.py",
+        "examples/media/supplemental.py",
         "src/mhx/plotting/reduced_mhd.py",
         "tests/test_readme_media.py",
     },
@@ -102,7 +103,8 @@ REQUIRED_SOURCE_LINKS = {
         "src/mhx/cli/main.py",
     },
     ("docs/project/media_inventory.md",): {
-        "examples/make_readme_media.py",
+        "examples/media/run_all.py",
+        "examples/media/supplemental.py",
         "src/mhx/benchmarks/current_sheet.py",
         "src/mhx/benchmarks/orszag_tang.py",
         "src/mhx/campaigns/production.py",

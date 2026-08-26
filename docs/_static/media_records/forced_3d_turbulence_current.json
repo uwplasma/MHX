@@ -1,0 +1,74 @@
+{
+  "frame_count": 40,
+  "id": "forced_3d_turbulence_current",
+  "outputs": {
+    "docs_movie": {
+      "bytes": 2775599,
+      "path": "docs/_static/movies/forced_3d_turbulence_current.mp4",
+      "sha256": "734c3ca235aa71f395e0461bce24fcef0f51b0fc3bb26fa89daf76bc5ca0c494"
+    },
+    "poster": {
+      "bytes": 87803,
+      "path": "docs/_static/posters/forced_3d_turbulence_current.png",
+      "sha256": "2927c19ddd78be9d1cac95881f8e9ad896f3d08a5a7c1d84461a156cef9bc302"
+    }
+  },
+  "schema": "mhx.media.render.v1",
+  "source": "outputs/media-campaign/final/turbulence_3d/trajectory.npz",
+  "source_metadata": {
+    "case": "turbulence_3d",
+    "dt": 0.0016,
+    "preset": "final",
+    "save_every": 625,
+    "shape": [
+      96,
+      96,
+      96
+    ],
+    "t_end": 200.0,
+    "trajectory": "trajectory.npz"
+  },
+  "source_sha256": "07a5259d24671cc05273b99ae270718c41c00f3be8b3ce73f1de58d695e97dc2",
+  "times": [
+    1.0,
+    5.999999523162842,
+    11.0,
+    16.0,
+    21.0,
+    26.0,
+    30.999998092651367,
+    36.0,
+    41.0,
+    46.0,
+    52.0,
+    56.999996185302734,
+    61.999996185302734,
+    67.0,
+    72.0,
+    77.0,
+    82.0,
+    87.0,
+    92.0,
+    96.99999237060547,
+    103.0,
+    107.99999237060547,
+    112.99999237060547,
+    117.99999237060547,
+    122.99999237060547,
+    128.0,
+    133.0,
+    138.0,
+    143.0,
+    148.0,
+    154.0,
+    158.99998474121094,
+    164.0,
+    168.99998474121094,
+    174.0,
+    179.0,
+    184.0,
+    189.0,
+    193.99998474121094,
+    200.0
+  ]
+}

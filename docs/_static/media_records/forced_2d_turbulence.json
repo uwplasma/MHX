@@ -1,0 +1,101 @@
+{
+  "frame_count": 51,
+  "id": "forced_2d_turbulence",
+  "outputs": {
+    "docs_movie": {
+      "bytes": 5939611,
+      "path": "docs/_static/movies/forced_2d_turbulence.mp4",
+      "sha256": "06e918ba51980f7406f9564c60cad6f1ede0bc80b7a2de1da180df9bed884a33"
+    },
+    "final_spectrum": {
+      "bytes": 127527,
+      "path": "docs/_static/posters/forced_2d_turbulence_final_spectrum.png",
+      "sha256": "a04150d9816ef08a64678ba7f659d0e1c188c6e589c177402344f42aefb6ad58"
+    },
+    "poster": {
+      "bytes": 487246,
+      "path": "docs/_static/posters/forced_2d_turbulence.png",
+      "sha256": "bbc177f7f06be3f961dbc577c304f29677b911be65e329a9361d86b7e50d9ff5"
+    },
+    "readme_gif": {
+      "bytes": 17598301,
+      "path": "docs/_static/readme/forced_2d_turbulence.gif",
+      "sha256": "b98cfdc3e4b2808fa2c857a31d840b574bd2eb1b4277b71352531750b010f3af"
+    }
+  },
+  "schema": "mhx.media.render.v1",
+  "source": "outputs/media-campaign/final/forced_turbulence_2d/turbulent_spectrum.npz",
+  "source_metadata": {
+    "case": "forced_turbulence_2d",
+    "dt": 0.001,
+    "poster_selection": {
+      "criterion": "minimum compensated-spectrum constant-fit NRMSE",
+      "frame_position": 32,
+      "nrmse": 0.1196322679044071,
+      "source_index": 32,
+      "time": 32.0
+    },
+    "preset": "final",
+    "save_every": 1000,
+    "shape": [
+      256,
+      256
+    ],
+    "t_end": 50.0,
+    "trajectory": "turbulent_spectrum.npz"
+  },
+  "source_sha256": "70d65f5f93653951a72f171a9389b0befe65da7ec3514e4a82e335e3efe2496f",
+  "times": [
+    0.0,
+    1.0,
+    2.0,
+    3.000000238418579,
+    4.0,
+    5.0,
+    6.000000476837158,
+    7.000000476837158,
+    8.0,
+    9.0,
+    10.0,
+    11.000000953674316,
+    12.000000953674316,
+    13.000000953674316,
+    14.000000953674316,
+    15.000000953674316,
+    16.0,
+    17.0,
+    18.0,
+    19.0,
+    20.0,
+    21.000001907348633,
+    22.000001907348633,
+    23.000001907348633,
+    24.000001907348633,
+    25.000001907348633,
+    26.000001907348633,
+    27.000001907348633,
+    28.000001907348633,
+    29.000001907348633,
+    30.000001907348633,
+    31.000001907348633,
+    32.0,
+    33.0,
+    34.0,
+    35.0,
+    36.0,
+    37.0,
+    38.0,
+    39.0,
+    40.0,
+    41.000003814697266,
+    42.000003814697266,
+    43.000003814697266,
+    44.000003814697266,
+    45.000003814697266,
+    46.000003814697266,
+    47.000003814697266,
+    48.000003814697266,
+    49.000003814697266,
+    50.000003814697266
+  ]
+}

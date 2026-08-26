@@ -151,15 +151,10 @@ not authorize Rutherford, Sweet--Parker, or plasmoid production claims.
 
 ![Seeded periodic double-Harris nonlinear long run](../_static/validation/periodic_double_harris_seeded_long_run/figures/periodic_double_harris_seeded_long_run.png)
 
-```{video} ../_static/movies/periodic_double_harris_current.mp4
-:loop:
-:muted:
-:width: 100%
-```
-
-The current-density view is shown because the total-flux movie of this run
-is visually dominated by the static equilibrium. The historical flux movie
-remains in the [media inventory](../project/media_inventory.md).
+The historical flux and current-density movies remain in the
+[media inventory](../project/media_inventory.md). They are not embedded here
+because the total-field view is dominated by the static equilibrium; the
+response-history figure above is the clearer validation evidence.
 
 Source anchors:
 

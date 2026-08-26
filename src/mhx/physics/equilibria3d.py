@@ -72,6 +72,22 @@ class CircularlyPolarizedAlfvenEquilibrium:
 
 
 @dataclass(frozen=True)
+class AlfvenWaveCollisionEquilibrium:
+    """Howes--Nielson perpendicular counterpropagating Alfvén waves."""
+
+    amplitude_plus: float = 0.1
+    amplitude_minus: float = 0.1
+    name: ClassVar[str] = "alfven_wave_collision"
+
+    def initial_fields(self, shape: tuple[int, int, int]) -> tuple[Array, Array]:
+        x, y, z = _grid(shape)
+        zero = jnp.zeros(shape)
+        z_plus = self.amplitude_plus * jnp.stack((zero, jnp.cos(x - z), zero))
+        z_minus = self.amplitude_minus * jnp.stack((jnp.cos(y + z), zero, zero))
+        return 0.5 * (z_plus + z_minus), 0.5 * (z_plus - z_minus)
+
+
+@dataclass(frozen=True)
 class OrszagTang3DEquilibrium:
     """The 3D Orszag--Tang vortex of Politano, Pouquet and Sulem (1995).
 
@@ -168,10 +184,69 @@ class TaylorGreenEquilibrium:
         return v, b
 
 
+@dataclass(frozen=True)
+class TaylorGreenAlternativeEquilibrium:
+    """Lee et al. (2010) alternative insulating Taylor--Green field."""
+
+    v0: float = 1.0
+    b0: float = 1.0
+    name: ClassVar[str] = "taylor_green_a"
+
+    def initial_fields(self, shape: tuple[int, int, int]) -> tuple[Array, Array]:
+        x, y, z = _grid(shape)
+        zero = jnp.zeros(shape)
+        v = self.v0 * jnp.stack(
+            (
+                jnp.sin(x) * jnp.cos(y) * jnp.cos(z),
+                -jnp.cos(x) * jnp.sin(y) * jnp.cos(z),
+                zero,
+            )
+        )
+        b = self.b0 * jnp.stack(
+            (
+                jnp.cos(2 * x) * jnp.sin(2 * y) * jnp.sin(2 * z),
+                -jnp.sin(2 * x) * jnp.cos(2 * y) * jnp.sin(2 * z),
+                zero,
+            )
+        )
+        return v, b
+
+
+@dataclass(frozen=True)
+class TaylorGreenConductingEquilibrium:
+    """Lee et al. (2010) conducting Taylor--Green magnetic field."""
+
+    v0: float = 1.0
+    b0: float = 1.0
+    name: ClassVar[str] = "taylor_green_c"
+
+    def initial_fields(self, shape: tuple[int, int, int]) -> tuple[Array, Array]:
+        x, y, z = _grid(shape)
+        zero = jnp.zeros(shape)
+        v = self.v0 * jnp.stack(
+            (
+                jnp.sin(x) * jnp.cos(y) * jnp.cos(z),
+                -jnp.cos(x) * jnp.sin(y) * jnp.cos(z),
+                zero,
+            )
+        )
+        b = self.b0 * jnp.stack(
+            (
+                jnp.sin(2 * x) * jnp.cos(2 * y) * jnp.cos(2 * z),
+                jnp.cos(2 * x) * jnp.sin(2 * y) * jnp.cos(2 * z),
+                -2 * jnp.cos(2 * x) * jnp.cos(2 * y) * jnp.sin(2 * z),
+            )
+        )
+        return v, b
+
+
 __all__ = [
     "ABCFlowEquilibrium",
+    "AlfvenWaveCollisionEquilibrium",
     "CircularlyPolarizedAlfvenEquilibrium",
     "OrszagTang3DEquilibrium",
     "SingleModeEquilibrium",
+    "TaylorGreenAlternativeEquilibrium",
+    "TaylorGreenConductingEquilibrium",
     "TaylorGreenEquilibrium",
 ]

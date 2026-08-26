@@ -371,9 +371,18 @@ def main() -> None:
 
     print("=== Starting Initial Condition Optimization in MHX ===")
 
+    initial_state = modified_orszag_tang_initial_state(true_theta, grid)
+    compile_start = time.perf_counter()
+    run_block.lower(
+        initial_state, params, grid.lengths, args.dt, steps_per_block
+    ).compile()
+    integration_compile_seconds = time.perf_counter() - compile_start
+    integration_run_seconds = 0.0
+
     # 1. Generate the "true" target state and the baseline state history.
     print("\nSimulating target state and baseline [1,1,1,1] state (this may take a "
           "moment to compile)...")
+    integration_start = time.perf_counter()
     target_state, target_history = simulate_and_track_history(
         true_theta, grid, params, args.dt, steps_per_block, num_blocks
     )
@@ -382,6 +391,7 @@ def main() -> None:
     _, default_history = simulate_and_track_history(
         init_theta, grid, params, args.dt, steps_per_block, num_blocks
     )
+    integration_run_seconds += time.perf_counter() - integration_start
 
     # 2. Render the time-evolution comparison GIF.
     render_time_evolution_gif(
@@ -413,10 +423,12 @@ def main() -> None:
             if not enabled_scans[name]:
                 continue
             print(f"\nSweeping {name} around true value {true_value:.6g} ...")
+            integration_start = time.perf_counter()
             values, losses = run_parameter_scan(
                 name, theta_index, true_value, grid, params, target_state, true_theta,
                 args.dt, steps_per_block, num_blocks, args.scan_points, args.scan_relative_range,
             )
+            integration_run_seconds += time.perf_counter() - integration_start
             print_scan_results(name, values, losses, true_value)
             plot_scan(name, values, losses, outdir)
             scan_results[name] = {"values": values, "losses": losses}
@@ -448,16 +460,23 @@ def main() -> None:
         theta = optax.apply_updates(theta, updates)
         return theta, opt_state, loss_val, current_state
 
+    compile_start = time.perf_counter()
+    step_executable = step.lower(init_theta, opt_state, initial_state).compile()
+    optimizer_compile_seconds = time.perf_counter() - compile_start
+    compile_seconds = integration_compile_seconds + optimizer_compile_seconds
+    print(f"Compile time: {compile_seconds:.3f} s")
+
     # 5. Run the optimization loop.
     theta = init_theta
     loss_history = []
     omega_history = []
+    optimizer_run_start = time.perf_counter()
 
     print("\nStarting L-BFGS optimization loop...")
     for i in range(1, args.opt_steps + 1):
         t0 = time.perf_counter()
 
-        theta, opt_state, loss_val, current_state = step(theta, opt_state, target_state)
+        theta, opt_state, loss_val, current_state = step_executable(theta, opt_state, target_state)
         theta.block_until_ready()
 
         t1 = time.perf_counter()
@@ -470,6 +489,9 @@ def main() -> None:
                   f"| Time: {t1 - t0:.3f}s")
 
     print("\n=== Optimization Completed! ===")
+    optimizer_run_seconds = time.perf_counter() - optimizer_run_start
+    run_seconds = integration_run_seconds + optimizer_run_seconds
+    print(f"Run time: {run_seconds:.3f} s")
 
     # 6. Plot the loss curve.
     plt.figure(figsize=(8, 5))

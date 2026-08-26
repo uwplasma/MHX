@@ -17,6 +17,12 @@ outputs/
 # Developer convenience: smoke-test runner and Modal launchers for the ported examples.
 smoke_ports.py
 modal_run_plasmoids.py
+modal_media_campaign.py
+modal_full_runs.py
+modal_run_mhd3d_benchmarks.py
+# Temporary exclusions for the new 3-D benchmark gallery tests.
+examples/gallery/12_taylor_green_classes_3d.py
+examples/gallery/13_alfven_collision_3d.py
 # Legacy scripts still write outputs to CWD; keep the repo clean.
 *.npz
 *.npy

@@ -60,6 +60,16 @@ Zoom into one sheet::
 
     python examples/plasmoid_chain/plasmoids.py --crop "0.1,0.4"
 
+Render a different field (out-of-plane current, or the island = psi minus its
+y-mean) with per-frame or fixed colour scale::
+
+    python examples/plasmoid_chain/plasmoids.py --field jz --scale fixed
+    python examples/plasmoid_chain/plasmoids.py --field island
+
+Each run also writes ``plasmoids_trajectory.npz`` with the time series of raw
+``psi`` and ``current_density`` over the saved frames; the documentation
+movie generators use it to re-render any field without re-running.
+
 Note: this is an exploratory demonstration, not a production Sweet-Parker
 plasmoid-chain claim (see ``docs/audit.md`` and ``docs/media.md`` for the
 repo's claim boundaries).
@@ -88,7 +98,7 @@ from mhx.diagnostics import (
 )
 from mhx.equations.reduced_mhd import current_density, reduced_mhd_rhs
 from mhx.grids import CartesianGrid
-from mhx.numerics.spectral import spectral_wavenumbers
+from mhx.numerics.spectral import laplacian, spectral_wavenumbers
 from mhx.physics.equilibria import PeriodicDoubleHarrisEquilibrium
 from mhx.physics.terms import HyperResistivityTerm
 from mhx.runtime import configure_jax
@@ -107,8 +117,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--sheet-sep",
         type=float,
-        default=2.0 * np.pi,
-        help="Separation between the two Harris sheets (default 2*pi; Lx = 2*sep)",
+        default=4.0 * np.pi,
+        help="Separation between the two Harris sheets (default 4*pi; Lx = 2*sep)",
     )
     parser.add_argument("--t-end", dest="t_end", type=float, default=60.0, help="End time")
     parser.add_argument("--dt", type=float, default=0.002, help="Time step")
@@ -122,12 +132,40 @@ def parse_args() -> argparse.Namespace:
         help="Hyper-resistivity / hyper-viscosity (auto-scales with resolution if omitted)",
     )
     parser.add_argument("--width", type=float, default=0.05, help="Half-width of each Harris sheet")
+    parser.add_argument(
+        "--seed-type",
+        choices=("single", "noise"),
+        default="single",
+        help="Single coherent Fourier mode or broadband white noise",
+    )
+    parser.add_argument(
+        "--mode-y", type=int, default=1, help="Y mode index; wavelength = Ly/mode-y"
+    )
+    parser.add_argument(
+        "--perturbation-amp",
+        type=float,
+        default=None,
+        help="Coherent flux amplitude (default: 0.01*width)",
+    )
     parser.add_argument("--noise-amp", type=float, default=2e-3, help="White-noise seed amplitude")
     parser.add_argument("--seed", type=int, default=42, help="RNG seed for reproducible noise")
     parser.add_argument(
         "--crop",
         default=None,
         help='x-fraction crop of the domain, e.g. "0.10,0.40" to zoom on the left sheet',
+    )
+    parser.add_argument(
+        "--field",
+        choices=("psi", "jz", "island"),
+        default="psi",
+        help="Field to colour in the frames: psi (magnetic flux), jz (out-of-plane "
+        "current density), or island (psi minus its y-mean, the growing tearing mode).",
+    )
+    parser.add_argument(
+        "--scale",
+        choices=("frame", "fixed"),
+        default="frame",
+        help="Colour-scale limits per frame (percentile) or fixed across all frames.",
     )
     parser.add_argument(
         "--outdir",
@@ -186,14 +224,36 @@ def advance_block(state: ReducedMHDState, step, steps: int) -> ReducedMHDState:
     return jax.lax.scan(body, state, None, length=steps)[0]
 
 
-def render_frame(
+def compute_render_field(
     state: ReducedMHDState,
+    grid: CartesianGrid,
+    field_name: str,
+) -> np.ndarray:
+    """Return the 2-D array to colour for a given ``--field`` choice.
+
+    - ``psi``: magnetic flux function.
+    - ``jz``: out-of-plane current density ``-∇²ψ``.
+    - ``island``: psi minus its y-mean (isolates the growing tearing mode).
+    """
+    psi = np.asarray(state.psi)
+    if field_name == "psi":
+        return psi
+    if field_name == "jz":
+        return -np.asarray(laplacian(state.psi, lengths=grid.lengths))
+    # island
+    return psi - psi.mean(axis=1, keepdims=True)
+
+
+def render_frame(
+    field: np.ndarray,
     grid: CartesianGrid,
     time_value: float,
     crop: tuple[float, float] | None,
+    limit: float,
+    label: str = r"$\psi$",
 ) -> np.ndarray:
-    """Draw the ψ-coloured map + flux contours; return the RGBA frame."""
-    psi = np.asarray(state.psi)
+    """Draw a coloured field map + flux contours; return the RGBA frame."""
+    psi = field
     nx = psi.shape[0]
 
     i0, i1 = 0, nx
@@ -207,24 +267,15 @@ def render_frame(
     dx = grid.spacing[0]
     extent = (i0 * dx, i1 * dx, 0.0, grid.lengths[1])
 
-    # Symmetric percentile limits so the flux fills the colour range.
-    if np.isfinite(psi).all():
-        lo, hi = np.percentile(psi, [1.0, 99.0])
-        limit = max(abs(float(lo)), abs(float(hi)))
-    else:
-        limit = 1.0
-    if not np.isfinite(limit) or limit == 0.0:
-        limit = 1.0
-
     aspect = grid.lengths[1] / grid.lengths[0]
     fig, ax = plt.subplots(figsize=(4.2, 4.2 * aspect), constrained_layout=True)
     image = ax.imshow(
         psi.T, origin="lower", cmap="RdBu_r", vmin=-limit, vmax=limit,
         extent=extent, aspect="auto",
     )
-    fig.colorbar(image, ax=ax, shrink=0.9, label=r"$\psi$")
+    fig.colorbar(image, ax=ax, shrink=0.9, label=label)
 
-    # Overlay flux contours on the coloured flux map (islands = closed loops).
+    # Overlay flux contours on the coloured field map (islands = closed loops).
     # Must share the imshow extent/origin, otherwise contour uses raw array
     # indices and autoscaling blows the axes out, squeezing the image away.
     ax.contour(
@@ -240,6 +291,18 @@ def render_frame(
     frame = np.asarray(fig.canvas.buffer_rgba())[..., :3].copy()
     plt.close(fig)
     return frame
+
+
+def symmetric_limit(
+    field_values: np.ndarray,
+    percentile: tuple[float, float] = (1.0, 99.0),
+) -> float:
+    """Return a symmetric colour limit from percentile extremes of one or more frames."""
+    lo, hi = np.percentile(field_values, list(percentile))
+    limit = max(abs(float(lo)), abs(float(hi)))
+    if not np.isfinite(limit) or limit == 0.0:
+        limit = 1.0
+    return limit
 
 
 def main() -> None:
@@ -258,6 +321,10 @@ def main() -> None:
     sheet_sep = args.sheet_sep
     if sheet_sep <= 0.0:
         raise ValueError("--sheet-sep must be positive")
+    if args.mode_y < 1:
+        raise ValueError("--mode-y must be a positive integer")
+    if args.perturbation_amp is not None and args.perturbation_amp < 0.0:
+        raise ValueError("--perturbation-amp must be non-negative")
     Lx, Ly = 2.0 * sheet_sep, 8.0 * np.pi
     grid = CartesianGrid.from_mesh_config(
         MeshConfig(shape=(args.nx, args.ny), lower=(0.0, 0.0), upper=(Lx, Ly))
@@ -285,16 +352,29 @@ def main() -> None:
     )
     print("=" * 70)
 
-    # 1. Clean double-Harris equilibrium (two thin sheets).
+    # mode_x=2 is periodic and has extrema at both current sheets.
+    coherent_amplitude = (
+        0.01 * args.width
+        if args.perturbation_amp is None
+        else args.perturbation_amp
+    )
     eq = PeriodicDoubleHarrisEquilibrium(
-        width=args.width, amplitude=1.0, perturbation_amplitude=0.0
+        width=args.width, amplitude=1.0,
+        perturbation_amplitude=coherent_amplitude if args.seed_type == "single" else 0.0,
+        perturbation_mode=(2, args.mode_y),
     )
     base = eq.initial_state(grid)
 
-    # 2. Broadband white-noise seed -> every tearing mode grows at once.
-    key = jax.random.PRNGKey(args.seed)
-    noise = args.noise_amp * jax.random.normal(key, base.psi.shape)
-    state = ReducedMHDState(psi=base.psi + noise, omega=base.omega)
+    if args.seed_type == "noise":
+        key = jax.random.PRNGKey(args.seed)
+        noise = args.noise_amp * jax.random.normal(key, base.psi.shape)
+        state = ReducedMHDState(psi=base.psi + noise, omega=base.omega)
+    else:
+        state = base
+        print(
+            f"  perturbation = {coherent_amplitude:.3g} cos(4*pi*x/Lx) "
+            f"cos(2*pi*{args.mode_y}*y/Ly); lambda_y={Ly / args.mode_y:.3g}"
+        )
 
     params = ReducedMHDParams(resistivity=args.eta, viscosity=args.nu)
     rhs = make_rhs(params, grid.lengths, args.eta4, args.eta4)
@@ -304,19 +384,31 @@ def main() -> None:
     advance = jax.jit(advance_block, static_argnames=("step", "steps"))
 
     frames: list[np.ndarray] = []
+    field_frames: list[np.ndarray] = []  # 2-D arrays for the chosen --field
+    psi_frames: list[np.ndarray] = []    # raw flux (for contours / island recompute)
     t_history: list[float] = []
     ek_history: list[float] = []
     eb_history: list[float] = []
     jzmax_history: list[float] = []
     mode_history: list[np.ndarray] = []
 
+    field_label = {"psi": r"$\psi$", "jz": r"$j_z$", "island": r"$\Delta\psi$"}[args.field]
+
     num_steps = int(args.t_end / args.dt)
     num_blocks = num_steps // args.save_every
     if num_blocks < 1:
         raise ValueError("--t-end too short for --save-every")
 
+    compile_start = time.perf_counter()
+    advance_executable = advance.lower(
+        state, step=step, steps=args.save_every
+    ).compile()
+    compile_seconds = time.perf_counter() - compile_start
+    print(f"Compile time: {compile_seconds:.3f} s")
+
     # Diagnostics at t=0.
-    frames.append(render_frame(state, grid, 0.0, crop))
+    field_frames.append(compute_render_field(state, grid, args.field))
+    psi_frames.append(np.asarray(state.psi))
     jz0 = np.abs(np.asarray(current_density(state.psi, lengths=grid.lengths)))
     t_history.append(0.0)
     ek_history.append(float(kinetic_energy(state, lengths=grid.lengths)))
@@ -326,11 +418,13 @@ def main() -> None:
         np.array([float(mode_amplitude(state, mode=(0, m))) for m in TRACKED_Y_MODES])
     )
 
+    run_seconds = 0.0
     for block in range(1, num_blocks + 1):
-        start = time.time()
-        state = advance(state, step=step, steps=args.save_every)
+        start = time.perf_counter()
+        state = advance_executable(state)
         state.psi.block_until_ready()
-        elapsed = time.time() - start
+        elapsed = time.perf_counter() - start
+        run_seconds += elapsed
 
         time_value = block * args.save_every * args.dt
         psi_np = np.asarray(state.psi)
@@ -338,8 +432,8 @@ def main() -> None:
             print(f"NaN detected at block {block}; simulation crashed — stop.")
             break
 
-        frame = render_frame(state, grid, time_value, crop)
-        frames.append(frame)
+        field_frames.append(compute_render_field(state, grid, args.field))
+        psi_frames.append(np.asarray(state.psi))
 
         jz = np.abs(np.asarray(current_density(state.psi, lengths=grid.lengths)))
 
@@ -354,6 +448,27 @@ def main() -> None:
         print(
             f"block {block:4d}/{num_blocks} | t = {time_value:7.2f} | "
             f"{elapsed:6.2f}s | max|Jz| = {float(np.max(jz)):.3e}"
+        )
+
+    print(f"Run time: {run_seconds:.3f} s")
+
+    # ---- Render frames (after the full run, so --scale fixed can span all) ----
+    if args.scale == "fixed" and field_frames:
+        fixed_limit = symmetric_limit(np.asarray([f for f in field_frames if np.isfinite(f).all()]))
+    else:
+        fixed_limit = None
+    for idx, field in enumerate(field_frames):
+        if args.scale == "frame":
+            lo, hi = np.percentile(field, [1.0, 99.0])
+            field_limit = max(abs(float(lo)), abs(float(hi)))
+            if not np.isfinite(field_limit) or field_limit == 0.0:
+                field_limit = 1.0
+        else:
+            field_limit = fixed_limit
+        frames.append(
+            render_frame(
+                field, grid, t_history[idx], crop, field_limit, label=field_label
+            )
         )
 
     # ---- Save outputs ------------------------------------------------------
@@ -394,6 +509,33 @@ def main() -> None:
         ly=Ly,
     )
     print(f"Saved {outdir / 'plasmoids_final_state.npz'}")
+
+    # Full trajectory of raw flux + current over the saved frames, so the
+    # documentation movie generators can re-render any field (psi/jz/island)
+    # from one deterministic run without re-running the simulation.
+    psi_series = np.asarray(psi_frames, dtype=np.float64)
+    current_series = np.asarray(
+        [
+            -np.asarray(laplacian(frame, lengths=grid.lengths), dtype=np.float64)
+            for frame in psi_series
+        ]
+    )
+    trajectory_path = outdir / "plasmoids_trajectory.npz"
+    np.savez_compressed(
+        trajectory_path,
+        time=np.array(t_history),
+        psi=psi_series,
+        current_density=current_series,
+        nx=args.nx,
+        ny=args.ny,
+        lx=Lx,
+        ly=Ly,
+        eta=args.eta,
+        eta4=args.eta4,
+        seed=args.seed,
+        field=args.field,
+    )
+    print(f"Saved {trajectory_path}")
 
     # Summary plot.
     fig, axs = plt.subplots(2, 1, figsize=(8, 6), sharex=True)

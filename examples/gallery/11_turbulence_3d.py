@@ -13,6 +13,7 @@ Models the balanced-Elsässer forced turbulence of equation (25) from the
 
 from __future__ import annotations
 
+import os
 import time
 from pathlib import Path
 
@@ -20,6 +21,8 @@ import jax
 import jax.numpy as jnp
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.animation import FuncAnimation, PillowWriter
+from matplotlib.colors import Normalize
 
 from mhx.equations import mhd3d
 from mhx.simulation3d import MHD3DResult
@@ -27,18 +30,20 @@ from mhx.state.mhd3d import MHD3DParams, MHD3DState, MHD3DTrajectory
 from mhx.time_integrators.exponential import etdrk4_step
 
 # --- settings (edit here) -------------------------------------------------
-SHAPE = (64, 64, 64)          # cubic periodic L = 2π  [paper: 64³]
+GRID_SIZE = int(os.environ.get("MHX_TURBULENCE_3D_N", "64"))
+SHAPE = (GRID_SIZE,) * 3       # cubic periodic L = 2π  [paper: 64³]
 AMP_FORCE = 0.048             # forcing amplitude  [paper: 0.048]
 DISSIPATION_ORDER = 2         # hyper-viscosity k⁴
 RESISTIVITY = 6.0 / (21**4)   # η  [paper: 6.0 at k_max=21]
 VISCOSITY = 6.0 / (21**4)     # matched to resistivity
-DT = 2.0e-3                   # step size
-T_END = 200.0                 # paper: ~200 τ_A ≈ 1256
-SAVE_EVERY = 500              # save every 1.0 time unit
+DT = float(os.environ.get("MHX_TURBULENCE_3D_DT", "2.0e-3"))
+T_END = float(os.environ.get("MHX_TURBULENCE_3D_T_END", "200.0"))
+SAVE_EVERY = int(os.environ.get("MHX_TURBULENCE_3D_SAVE_EVERY", "500"))
 SEED = 11
-K_FIT_MIN = 3                 # lower edge of the slope fit; the upper edge is N/3
+K_FIT_MIN = 3                 # lower edge of the resolved inertial-range fit
+K_FIT_MAX = 16                # below the k≈21 de-aliasing/hyper-dissipation rolloff
 
-output = Path("outputs/gallery/turbulence_3d")
+output = Path(os.environ.get("MHX_TURBULENCE_3D_OUTDIR", "outputs/gallery/turbulence_3d"))
 output.parent.mkdir(parents=True, exist_ok=True)
 
 # --- 1. System Setup ------------------------------------------------------
@@ -121,7 +126,11 @@ zero_hat = jnp.zeros((3, SHAPE[0], SHAPE[1], SHAPE[2] // 2 + 1), dtype=jnp.compl
 state0 = MHD3DState(v_hat=zero_hat, b_hat=zero_hat)
 
 t0 = time.perf_counter()
-final_state, saved = run_simulation(state0, keys_chunks)
+compiled_simulation = run_simulation.lower(state0, keys_chunks).compile()
+compile_seconds = time.perf_counter() - t0
+
+t0 = time.perf_counter()
+final_state, saved = compiled_simulation(state0, keys_chunks)
 jax.block_until_ready(final_state)
 run_seconds = time.perf_counter() - t0
 
@@ -199,7 +208,7 @@ result = MHD3DResult(
     parameters=params,
     config=config,
     diagnostics=diagnostics,
-    compile_seconds=0.0,
+    compile_seconds=compile_seconds,
     run_seconds=run_seconds,
     device_count=1,
 )
@@ -212,23 +221,155 @@ figure, axis = plt.subplots(figsize=(7.0, 5.0), constrained_layout=True)
 axis.loglog(k_1d, magnetic_spectrum, "o-", color="teal", label="magnetic")
 axis.loglog(k_1d, kinetic_spectrum, "s-", color="firebrick", label="kinetic")
 
-k_ref = np.linspace(1.0, float(np.max(k_1d)), 100)
-ref_index = int(np.argmin(np.abs(k_1d - 10.0)))
-scale = max(float(magnetic_spectrum[ref_index]), np.finfo(float).tiny) * 10.0 ** (5.0 / 3.0)
-axis.loglog(k_ref, scale * k_ref ** (-5.0 / 3.0), "k--", label=r"$k^{-5/3}$ (Kolmogorov)")
-scale_ik = max(float(magnetic_spectrum[ref_index]), np.finfo(float).tiny) * 10.0**1.5
-axis.loglog(
-    k_ref,
-    scale_ik * k_ref ** (-3.0 / 2.0),
-    "k:",
-    label=r"$k^{-3/2}$ (Iroshnikov--Kraichnan)",
+fit_mask = (
+    (k_1d >= K_FIT_MIN)
+    & (k_1d <= K_FIT_MAX)
+    & np.isfinite(magnetic_spectrum)
+    & (magnetic_spectrum > 0.0)
 )
+if not np.any(fit_mask):
+    raise RuntimeError("No positive magnetic-spectrum samples in the Kolmogorov fit range")
+
+# Fit only the normalization of the fixed Kolmogorov exponent in the marked band.
+log_scale = np.mean(
+    np.log(magnetic_spectrum[fit_mask])
+    + (5.0 / 3.0) * np.log(k_1d[fit_mask])
+)
+kolmogorov_scale = float(np.exp(log_scale))
+k_fit = np.linspace(float(K_FIT_MIN), float(K_FIT_MAX), 100)
+axis.loglog(
+    k_fit,
+    kolmogorov_scale * k_fit ** (-5.0 / 3.0),
+    "k--",
+    label=rf"Kolmogorov fit, $k^{{-5/3}}$ ({K_FIT_MIN} ≤ k ≤ {K_FIT_MAX})",
+)
+for boundary in (K_FIT_MIN, K_FIT_MAX):
+    axis.axvline(boundary, color="black", linestyle=":", linewidth=1.2)
 
 axis.set_title(f"Time-averaged spectra (t={t_min} to {t_max})")
 axis.set_xlabel(r"wavenumber $k$")
 axis.set_ylabel(r"energy density $E(k)$")
 axis.legend(frameon=False)
 figure.savefig(output / "spectrum.png", dpi=180)
+plt.close(figure)
+
+# Animate nine orthogonal slices through the saved turbulence trajectory.
+# Rows are slice normals; columns are fixed locations at 25%, 50%, and 75%.
+animation_frames = np.unique(
+    np.linspace(0, chunks - 1, min(chunks, 80), dtype=int)
+)
+magnetic_magnitudes = []
+for frame_index in animation_frames:
+    b_hat = np.asarray(saved.b_hat[frame_index])
+    magnetic_field = np.fft.irfftn(b_hat, s=SHAPE, axes=(-3, -2, -1)).real
+    magnetic_magnitudes.append(np.sqrt(np.sum(magnetic_field**2, axis=0)))
+
+slice_indices = tuple(
+    int(round(fraction * (SHAPE[0] - 1))) for fraction in (0.25, 0.50, 0.75)
+)
+slice_percentages = ("25%", "50%", "75%")
+slice_specs = (
+    ("x", "y", "z", lambda field, index: field[index, :, :].T),
+    ("y", "x", "z", lambda field, index: field[:, index, :].T),
+    ("z", "x", "y", lambda field, index: field[:, :, index].T),
+)
+color_max = float(np.percentile(np.stack(magnetic_magnitudes), 99.5))
+if not np.isfinite(color_max) or color_max <= 0.0:
+    color_max = 1.0
+
+figure, axes = plt.subplots(3, 3, figsize=(11, 10), constrained_layout=True)
+initial_field = magnetic_magnitudes[0]
+images = []
+for row, (normal, horizontal, vertical, extract) in enumerate(slice_specs):
+    for column, (index, percentage) in enumerate(
+        zip(slice_indices, slice_percentages, strict=True)
+    ):
+        axis = axes[row, column]
+        image = axis.imshow(
+            extract(initial_field, index), origin="lower", cmap="magma",
+            vmin=0.0, vmax=color_max, aspect="equal",
+        )
+        images.append((image, extract, index))
+        axis.set_title(f"{normal} = {percentage}")
+        axis.set_xlabel(horizontal)
+        axis.set_ylabel(vertical)
+
+title = figure.suptitle("Magnetic-field magnitude: t = 0.0", fontsize=15)
+figure.colorbar(image, ax=axes, shrink=0.82, label="B magnitude")
+
+def update_slice_animation(frame_number: int):
+    field = magnetic_magnitudes[frame_number]
+    for image, extract, index in images:
+        image.set_data(extract(field, index))
+    title.set_text(
+        f"Magnetic-field magnitude: t = {float(times[animation_frames[frame_number]]):.1f}"
+    )
+    return [image for image, _, _ in images]
+
+slice_animation = FuncAnimation(
+    figure, update_slice_animation, frames=len(animation_frames), interval=100, blit=False
+)
+static_slice_path = output / "slices.png"
+if static_slice_path.exists():
+    static_slice_path.unlink()
+slice_animation.save(output / "slices.gif", writer=PillowWriter(fps=10), dpi=110)
+plt.close(figure)
+
+# Map the three unique periodic faces onto adjoining planes of an isometric cube.
+coordinates = np.linspace(0.0, 1.0, SHAPE[0])
+face_normalizer = Normalize(vmin=0.0, vmax=color_max)
+face_colormap = plt.get_cmap("magma")
+
+def draw_isometric_faces(axis, field):
+    y, z = np.meshgrid(coordinates, coordinates, indexing="ij")
+    x, z_for_y = np.meshgrid(coordinates, coordinates, indexing="ij")
+    x_for_z, y_for_z = np.meshgrid(coordinates, coordinates, indexing="ij")
+    face_surfaces = (
+        (np.zeros_like(y), y, z, field[0, :, :]),
+        (x, np.zeros_like(x), z_for_y, field[:, 0, :]),
+        (x_for_z, y_for_z, np.zeros_like(x_for_z), field[:, :, 0]),
+    )
+    for x_face, y_face, z_face, values in face_surfaces:
+        axis.plot_surface(
+            x_face, y_face, z_face,
+            facecolors=face_colormap(face_normalizer(values)),
+            rstride=1, cstride=1, shade=False, linewidth=0, antialiased=False,
+        )
+    axis.set_xlim(0.0, 1.0)
+    axis.set_ylim(0.0, 1.0)
+    axis.set_zlim(0.0, 1.0)
+    axis.set_box_aspect((1.0, 1.0, 1.0))
+    axis.view_init(elev=-25.0, azim=225.0)
+    axis.set_xlabel("x")
+    axis.set_ylabel("y")
+    axis.set_zlabel("z")
+
+figure = plt.figure(figsize=(7, 7), constrained_layout=True)
+axis = figure.add_subplot(projection="3d")
+draw_isometric_faces(axis, initial_field)
+cube_title = figure.suptitle("Periodic boundary faces on an isometric cube: t = 0.0")
+figure.colorbar(
+    plt.cm.ScalarMappable(norm=face_normalizer, cmap=face_colormap),
+    ax=axis, shrink=0.72, pad=0.08, label="B magnitude",
+)
+figure.text(0.5, 0.02, "Faces: x = 0 (y-z), y = 0 (x-z), z = 0 (x-y)", ha="center")
+
+def update_cube_animation(frame_number: int):
+    axis.clear()
+    draw_isometric_faces(axis, magnetic_magnitudes[frame_number])
+    cube_title.set_text(
+        "Periodic boundary faces on an isometric cube: "
+        f"t = {float(times[animation_frames[frame_number]]):.1f}"
+    )
+    return axis.collections
+
+cube_animation = FuncAnimation(
+    figure, update_cube_animation, frames=len(animation_frames), interval=100, blit=False
+)
+flat_face_path = output / "outer_faces.gif"
+if flat_face_path.exists():
+    flat_face_path.unlink()
+cube_animation.save(output / "outer_faces_cube.gif", writer=PillowWriter(fps=10), dpi=110)
 plt.close(figure)
 
 print(f"Data and spectrum plot saved to: {output}")

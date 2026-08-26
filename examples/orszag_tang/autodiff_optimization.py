@@ -211,9 +211,17 @@ def main() -> None:
         )
     )
     steps_per_block = args.save_every
-    num_blocks = int(round(args.t_end / (args.dt * steps_per_block)))
+    block_duration = args.dt * steps_per_block
+    exact_num_blocks = args.t_end / block_duration
+    num_blocks = int(round(exact_num_blocks))
+    if not np.isclose(exact_num_blocks, num_blocks, rtol=0.0, atol=1.0e-12):
+        raise ValueError(
+            "t_end must be an integer multiple of dt * save_every so the "
+            "differentiable trajectory reaches the requested end time exactly"
+        )
+    executed_t_end = num_blocks * block_duration
 
-    times = np.linspace(0.0, args.t_end, num_blocks + 1)
+    times = np.arange(num_blocks + 1, dtype=np.float64) * block_duration
     vencels_time = times / args.domain_size  # Normalized time t/t_A
 
     # 2. Load Vencels target curves.
@@ -247,12 +255,22 @@ def main() -> None:
     v = jnp.zeros_like(theta)
     lr = jnp.array([1.0e-3, 1.0e-3])  # per-parameter update rate
 
+    compile_start = time.perf_counter()
+    loss_val_grad_executable = loss_val_grad.lower(theta).compile()
+    compile_seconds = time.perf_counter() - compile_start
+
     print(f"=== Starting Incompressible Orszag-Tang Viscoresistive Optimization "
           f"({args.nx}x{args.ny}) ===")
+    print(
+        f"Requested t_end={args.t_end:g}; executing {num_blocks} blocks "
+        f"to physical time {executed_t_end:g} (t/t_A={executed_t_end / args.domain_size:g})."
+    )
     print(f"Optimizing resistivity (eta) and viscosity (nu) to match Vencels "
           f"energy curves for {args.opt_steps} steps...")
 
     history = []
+    print(f"Compile time: {compile_seconds:.3f} s")
+    run_start = time.perf_counter()
 
     # Store initial curve for final plotting comparison.
     init_EB, init_EK, init_Etot0 = run_differentiable_simulation(
@@ -264,7 +282,7 @@ def main() -> None:
     for step in range(1, args.opt_steps + 1):
         t0 = time.perf_counter()
 
-        loss_val, grad = loss_val_grad(theta)
+        loss_val, grad = loss_val_grad_executable(theta)
 
         eta = float(jnp.maximum(theta[0], 5e-4))
         nu = float(jnp.maximum(theta[1], 5e-4))
@@ -296,6 +314,8 @@ def main() -> None:
     )
     opt_delta_EB = np.array((opt_EB - opt_EB[0]) / opt_Etot0)
     opt_delta_particles = -opt_delta_EB
+    run_seconds = time.perf_counter() - run_start
+    print(f"Run time: {run_seconds:.3f} s")
 
     fig, ax = plt.subplots(figsize=(10, 6))
 
@@ -313,7 +333,10 @@ def main() -> None:
     ax.plot(vencels_time, opt_delta_particles, label="e+i (Optimized)", color="purple",
             linewidth=2.0)
 
-    ax.set_title("Orszag-Tang Parameter Optimization (Autodiff)")
+    ax.set_title(
+        "Orszag-Tang Parameter Optimization (Autodiff)\n"
+        f"physical t_end={executed_t_end:g}; t/t_A={executed_t_end / args.domain_size:g}"
+    )
     ax.set_xlabel(r"$t/t_A$")
     ax.set_ylabel(r"$\Delta E$")
     ax.set_xlim(0.0, 3.0)
