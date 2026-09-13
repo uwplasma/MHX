@@ -1,12 +1,18 @@
-"""Differentiable Kelvin--Helmholtz benchmark helpers.
+"""Differentiable Kelvin--Helmholtz benchmark helpers and default runner.
 
-This module factors the clean, reusable pieces behind the notebook examples:
-smooth double-shear initial conditions, passive-dye advection, scalar
-diagnostics, and small differentiable objectives.  The equations are the
-periodic incompressible/reduced-MHD hydrodynamic limit used by the existing
-Kelvin--Helmholtz notebook: ``psi=0`` and vorticity evolves through the
-reduced-MHD vorticity equation while a passive dye is advected by the
-streamfunction velocity.
+This module factors the clean, reusable pieces behind the Kelvin--Helmholtz
+examples: smooth double-shear initial conditions, passive-dye advection,
+scalar diagnostics, and small differentiable objectives.  The equations are
+the periodic incompressible/reduced-MHD hydrodynamic limit: ``psi=0`` and
+vorticity evolves through the reduced-MHD vorticity equation while a
+passive dye is advected by the streamfunction velocity.
+
+Running this file as a script (``python examples/kelvin_helmholtz.py``)
+executes the FAST incompressible passive-dye benchmark and writes snapshot
+and entropy figures to ``$MHX_EXAMPLE_OUTDIR_ROOT/kelvin_helmholtz_incompressible``
+(default ``outputs/examples``).  It reuses the same setup style as Lecoanet
+et al. and is deliberately small enough to run locally; the production-scale
+hints live in the ``__main__`` block at the bottom.
 """
 
 from __future__ import annotations
@@ -22,11 +28,10 @@ import numpy as np
 from jaxtyping import Array
 
 from mhx.config import MeshConfig
-from mhx.numerics.spectral import fft_derivative
 from mhx.equations.reduced_mhd import poisson_bracket, reduced_mhd_rhs, stream_function
 from mhx.grids import CartesianGrid
 from mhx.io import write_manifest
-from mhx.numerics.spectral import laplacian
+from mhx.numerics.spectral import fft_derivative, laplacian
 from mhx.state import ReducedMHDParams, ReducedMHDState
 from mhx.time_integrators import evolve_rk4
 
@@ -1164,3 +1169,121 @@ def _sample_indices(frame_count: int, max_frames: int) -> np.ndarray:
     if frame_count <= max_frames:
         return np.arange(frame_count)
     return np.unique(np.linspace(0, frame_count - 1, max_frames, dtype=int))
+
+
+# ---------------------------------------------------------------------------
+# Kelvin--Helmholtz passive-dye benchmark, FAST incompressible run
+#
+# The runnable section below reuses the helpers above to execute the same
+# smooth double-shear passive-dye benchmark (Lecoanet et al. style) in the
+# reduced-MHD hydrodynamic limit (``psi=0``).  FAST defaults are chosen for
+# a local laptop run; ``PRODUCTION_HINT`` documents production-scale
+# settings but is not the default.
+# ---------------------------------------------------------------------------
+
+
+def _run_incompressible_default() -> None:
+    import os
+
+    import matplotlib.pyplot as plt
+
+    from mhx.runtime import configure_jax
+
+    configure_jax(enable_x64=True)
+
+    output_root = Path(os.environ.get("MHX_EXAMPLE_OUTDIR_ROOT", "outputs/examples"))
+    outdir = output_root / "kelvin_helmholtz_incompressible"
+    outdir.mkdir(parents=True, exist_ok=True)
+    print(f"Writing outputs to {outdir.resolve()}")
+
+    # Inputs: FAST defaults small enough to run locally.  For a larger
+    # exploratory run, change ``shape``, ``t_end``, and ``save_every``; for a
+    # production-quality hydrodynamic benchmark use much higher resolution
+    # and document convergence separately.
+    fast_config = KelvinHelmholtzConfig(
+        shape=(32, 64),
+        dt=2.0e-3,
+        t_end=0.2,
+        save_every=20,
+        viscosity=1.0e-3,
+        perturbation_amplitude=1.0e-2,
+    )
+    production_hint = KelvinHelmholtzConfig(  # noqa: F841 -- documented reference
+        shape=(512, 1024),
+        dt=1.0e-3,
+        t_end=10.0,
+        save_every=200,
+        viscosity=1.0e-6,
+        perturbation_amplitude=1.0e-2,
+    )
+    config = fast_config
+    print(config)
+
+    # Inspect the initial condition and RHS.  The example exposes the main
+    # building blocks rather than hiding everything behind one driver call.
+    grid = kelvin_helmholtz_grid(config)
+    state0 = kelvin_helmholtz_initial_state_from_config(grid, config)
+    warmup_result = run_kelvin_helmholtz_dye(config)
+    rhs0 = kelvin_helmholtz_dye_rhs(
+        state0,
+        params=warmup_result.params,
+        lengths=grid.lengths,
+    )
+    print("grid shape:", grid.shape)
+    print("initial dye entropy:", float(dye_entropy(state0.dye, grid)))
+    omega0 = np.asarray(state0.mhd.omega)
+    print("initial omega range:", float(np.min(omega0)), float(np.max(omega0)))
+    print("RHS dye max norm:", float(np.max(np.abs(np.asarray(rhs0.dye)))))
+
+    # Run the simulation.
+    result = run_kelvin_helmholtz_dye(config)
+    result.trajectory.times.block_until_ready()
+    print("saved times:", np.asarray(result.trajectory.times))
+    print("entropy history:", np.asarray(result.entropy))
+    final_dye_array = np.asarray(result.final_state.dye)
+    print("final dye range:", float(np.min(final_dye_array)), float(np.max(final_dye_array)))
+
+    # Plot outputs: initial/final dye, final vorticity, and entropy history.
+    extent = (config.lower[0], config.upper[0], config.lower[1], config.upper[1])
+    initial_dye = np.asarray(state0.dye)
+    final_dye = np.asarray(result.final_state.dye)
+    final_omega = np.asarray(result.final_state.mhd.omega)
+
+    fig, axes = plt.subplots(1, 3, figsize=(12, 4), constrained_layout=True)
+    images = [
+        axes[0].imshow(
+            initial_dye.T, origin="lower", extent=extent, cmap="RdBu_r", vmin=0.0, vmax=1.0
+        ),
+        axes[1].imshow(
+            final_dye.T, origin="lower", extent=extent, cmap="RdBu_r", vmin=0.0, vmax=1.0
+        ),
+    ]
+    axes[0].set_title(f"Initial Dye Concentration, t={float(result.trajectory.times[0]):.3f}")
+    axes[1].set_title(f"Final Dye Concentration, t={float(result.trajectory.times[-1]):.3f}")
+    for ax, image in zip(axes[:2], images, strict=True):
+        ax.set_xlabel("x/Lx")
+        ax.set_ylabel("y/Ly")
+        fig.colorbar(image, ax=ax, shrink=0.8, label="Concentration (c)")
+    vort_im = axes[2].imshow(final_omega.T, origin="lower", extent=extent, cmap="magma")
+    axes[2].set_title(f"Final Vorticity, t={float(result.trajectory.times[-1]):.3f}")
+    axes[2].set_xlabel("x/Lx")
+    axes[2].set_ylabel("y/Ly")
+    fig.colorbar(vort_im, ax=axes[2], shrink=0.8, label="Vorticity")
+    fig.savefig(outdir / "kh_incompressible_snapshots.png", dpi=180)
+    plt.close(fig)
+
+    fig, ax = plt.subplots(figsize=(5, 3), constrained_layout=True)
+    ax.plot(np.asarray(result.trajectory.times), np.asarray(result.entropy), marker="o")
+    ax.set_xlabel("time")
+    ax.set_ylabel("dye entropy")
+    ax.set_title("Kelvin--Helmholtz dye entropy")
+    ax.grid(alpha=0.3)
+    fig.savefig(outdir / "kh_incompressible_entropy.png", dpi=180)
+    plt.close(fig)
+
+    print("wrote", outdir / "kh_incompressible_snapshots.png")
+    print("wrote", outdir / "kh_incompressible_entropy.png")
+
+
+if __name__ == "__main__":
+    _run_incompressible_default()

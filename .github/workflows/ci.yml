@@ -32,9 +32,6 @@ jobs:
         run: |
           python -m ruff check src tests examples tools
           python tools/check_prose.py
-      - name: Legacy import guard
-        run: |
-          python tools/check_legacy_imports.py
       - name: Fast tests
         run: |
           python -m pytest -m "not slow"

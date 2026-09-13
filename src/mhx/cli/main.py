@@ -176,14 +176,6 @@ def api_status(
     typer.echo(f"Claim levels: {', '.join(info['claim_levels'])}")
 
 
-@api_app.command("deprecations")
-def api_deprecations() -> None:
-    """Print active deprecation guidance for legacy entry points."""
-    typer.echo("Legacy scripts live under legacy/old_mhx/ and are not imported by src/mhx.")
-    typer.echo("Use mhx run, mhx benchmark, mhx validate, mhx figures, and mhx report instead.")
-    typer.echo("See docs/develop/release.md for the deprecation window.")
-
-
 @app.command()
 def init(
     path: Annotated[
