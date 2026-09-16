@@ -131,7 +131,14 @@ def total_energy(state: ReducedMHDState, *, lengths: tuple[float, float]) -> Arr
 
 
 def magnetic_divergence_linf(state: ReducedMHDState, *, lengths: tuple[float, float]) -> Array:
-    r"""Return ``||∇·B_\perp||_∞`` for ``B_\perp=(∂_yψ,-∂_xψ)``."""
+    r"""Return an FFT-roundoff diagnostic for ``∇·B_\perp`` on ``B_\perp=(∂_yψ,-∂_xψ)``.
+
+    The evaluated quantity is ``(∂_x∂_y - ∂_y∂_x)ψ``, which is identically
+    zero for any smooth ``ψ`` by construction. This function therefore does
+    not detect real solenoidality violations -- it only surfaces
+    floating-point noise from the FFT-based derivatives, which is useful as
+    a sanity check on the spectral pipeline.
+    """
     psi = jnp.asarray(state.psi)
     kx = spectral_wavenumbers(psi.shape[0], lengths[0]).reshape((-1, 1))
     ky = spectral_wavenumbers(psi.shape[1], lengths[1]).reshape((1, -1))

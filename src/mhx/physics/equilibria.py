@@ -63,7 +63,8 @@ class CosineTearingEquilibrium:
 class PeriodicDoubleHarrisEquilibrium:
     r"""Periodic double-Harris current sheet with an optional tearing seed.
 
-    The reconnecting field is
+    Under the convention ``B = ẑ × ∇ψ`` (i.e. ``B_y = ∂_xψ``), the
+    reconnecting field is
 
     ``B_y = A[tanh((x-L_x/4)/a) - tanh((x-3L_x/4)/a) - 1]``.
 
