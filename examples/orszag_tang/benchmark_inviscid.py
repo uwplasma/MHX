@@ -73,7 +73,9 @@ def run_inviscid_orszag_tang_validation(
     params = ReducedMHDParams(resistivity=0.0, viscosity=0.0)
 
     def rhs(state: ReducedMHDState) -> ReducedMHDState:
-        return arakawa_reduced_mhd_rhs(state, params, lengths=grid.lengths)
+        return arakawa_reduced_mhd_rhs(
+            state, params, lengths=grid.lengths, dealiasing="two_thirds"
+        )
 
     trajectory = evolve_rk4(initial_state, rhs, dt=dt, steps=steps, save_every=save_every)
 

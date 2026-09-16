@@ -6,7 +6,12 @@ import jax
 from jaxtyping import Array
 
 from mhx.numerics import MatrixFreeOperator
-from mhx.numerics.spectral import fft_derivative, inverse_laplacian, laplacian
+from mhx.numerics.spectral import (
+    dealiased_product,
+    fft_derivative,
+    inverse_laplacian,
+    laplacian,
+)
 from mhx.physics import PhysicsTerm, apply_physics_terms
 from mhx.state import (
     ReducedMHDParams,
@@ -17,19 +22,43 @@ from mhx.state import (
 )
 
 
-def arakawa_poisson_bracket(a: Array, b: Array, *, lengths: tuple[float, float]) -> Array:
-    """Return the fully conservative 2D Arakawa Poisson bracket."""
+def arakawa_poisson_bracket(
+    a: Array,
+    b: Array,
+    *,
+    lengths: tuple[float, float],
+    dealiasing: str = "none",
+) -> Array:
+    """Return the fully conservative 2D Arakawa Poisson bracket.
+
+    The Arakawa (J1+J2+J3)/3 average is antisymmetric under ``a↔b`` swap and
+    conserves the discrete energy and enstrophy of a finite-difference
+    Jacobian. With exact FFT derivatives, the quadratic products still alias
+    onto resolved modes; pass ``dealiasing="two_thirds"`` for the standard
+    2/3-rule filter on every product when using this bracket in nonlinear or
+    turbulent runs. The default ``"none"`` preserves the historical behavior
+    for linear-perturbation call sites.
+    """
+    if dealiasing not in ("none", "two_thirds"):
+        raise ValueError("dealiasing must be 'none' or 'two_thirds'")
+
     da_dx = fft_derivative(a, axis=0, length=lengths[0])
     da_dy = fft_derivative(a, axis=1, length=lengths[1])
     db_dx = fft_derivative(b, axis=0, length=lengths[0])
     db_dy = fft_derivative(b, axis=1, length=lengths[1])
 
-    j1 = da_dx * db_dy - da_dy * db_dx
-    j2 = fft_derivative(a * db_dy, axis=0, length=lengths[0]) - fft_derivative(
-        a * db_dx, axis=1, length=lengths[1]
+    j1 = dealiased_product(da_dx, db_dy, dealiasing=dealiasing) - dealiased_product(
+        da_dy, db_dx, dealiasing=dealiasing
     )
-    j3 = fft_derivative(b * da_dx, axis=1, length=lengths[1]) - fft_derivative(
-        b * da_dy, axis=0, length=lengths[0]
+    j2 = fft_derivative(
+        dealiased_product(a, db_dy, dealiasing=dealiasing), axis=0, length=lengths[0]
+    ) - fft_derivative(
+        dealiased_product(a, db_dx, dealiasing=dealiasing), axis=1, length=lengths[1]
+    )
+    j3 = fft_derivative(
+        dealiased_product(b, da_dx, dealiasing=dealiasing), axis=1, length=lengths[1]
+    ) - fft_derivative(
+        dealiased_product(b, da_dy, dealiasing=dealiasing), axis=0, length=lengths[0]
     )
 
     return (j1 + j2 + j3) / 3.0
@@ -51,6 +80,7 @@ def arakawa_reduced_mhd_rhs(
     *,
     lengths: tuple[float, float],
     terms: tuple[PhysicsTerm, ...] = (),
+    dealiasing: str = "none",
 ) -> ReducedMHDState:
     """Return the resistive-viscous reduced-MHD RHS with Arakawa brackets.
 
@@ -60,18 +90,20 @@ def arakawa_reduced_mhd_rhs(
 
     ``ω_t + [φ, ω] = [ψ, ∇²ψ] + ν ∇²ω``
 
-    with ``∇²φ = ω`` on a periodic domain.
+    with ``∇²φ = ω`` on a periodic domain. Pass ``dealiasing="two_thirds"``
+    for nonlinear or turbulent runs; the default ``"none"`` matches the
+    historical linear-perturbation behavior.
     """
     phi = stream_function(state.omega, lengths=lengths)
     lap_psi = laplacian(state.psi, lengths=lengths)
     lap_omega = laplacian(state.omega, lengths=lengths)
     dpsi = (
-        -arakawa_poisson_bracket(phi, state.psi, lengths=lengths)
+        -arakawa_poisson_bracket(phi, state.psi, lengths=lengths, dealiasing=dealiasing)
         + params.resistivity * lap_psi
     )
     domega = (
-        -arakawa_poisson_bracket(phi, state.omega, lengths=lengths)
-        + arakawa_poisson_bracket(state.psi, lap_psi, lengths=lengths)
+        -arakawa_poisson_bracket(phi, state.omega, lengths=lengths, dealiasing=dealiasing)
+        + arakawa_poisson_bracket(state.psi, lap_psi, lengths=lengths, dealiasing=dealiasing)
         + params.viscosity * lap_omega
     )
     base_rhs = ReducedMHDState(psi=dpsi, omega=domega)

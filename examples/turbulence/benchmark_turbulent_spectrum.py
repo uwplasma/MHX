@@ -135,7 +135,9 @@ def run_turbulent_spectrum_validation(
 
     def forcing(state: ReducedMHDState) -> ReducedMHDState:
         dealiased_state = _apply_2_3_dealiasing(state)
-        base = arakawa_reduced_mhd_rhs(dealiased_state, params, lengths=grid.lengths)
+        base = arakawa_reduced_mhd_rhs(
+            dealiased_state, params, lengths=grid.lengths, dealiasing="two_thirds"
+        )
         rhs_with_forcing = ReducedMHDState(psi=base.psi, omega=base.omega + forcing_omega)
         return _apply_2_3_dealiasing(rhs_with_forcing)
 
