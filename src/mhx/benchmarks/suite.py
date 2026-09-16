@@ -17,19 +17,19 @@ from mhx.benchmarks.current_sheet import (
 )
 from mhx.benchmarks.decay import write_resistive_decay_validation
 from mhx.benchmarks.duration_policy import write_duration_policy
-from mhx.benchmarks.eigenvalue import (
+from mhx.benchmarks.linear_stability import (
     write_arnoldi_validation,
+    write_cosine_equilibrium_linearization_validation,
     write_diffusion_eigenvalue_validation,
-    write_power_iteration_validation,
-)
-from mhx.benchmarks.fkr import (
     write_fkr_growth_rate_validation,
     write_fkr_window_validation,
     write_harris_delta_prime_validation,
-)
-from mhx.benchmarks.linearized import (
-    write_cosine_equilibrium_linearization_validation,
+    write_linear_tearing_dispersion_validation,
+    write_linear_tearing_eigenvalue_validation,
+    write_linear_tearing_layer_validation,
+    write_linear_tearing_timedomain_validation,
     write_linearized_rhs_validation,
+    write_power_iteration_validation,
     write_reduced_mhd_linear_eigenmode_validation,
 )
 from mhx.benchmarks.nonlinear import write_nonlinear_energy_budget_validation
@@ -42,12 +42,6 @@ from mhx.benchmarks.seed_robust_qi import (
     write_seed_robust_qi_validation,
 )
 from mhx.benchmarks.tearing import run_linear_tearing_smoke
-from mhx.benchmarks.tearing_eigen import (
-    write_linear_tearing_dispersion_validation,
-    write_linear_tearing_eigenvalue_validation,
-    write_linear_tearing_layer_validation,
-    write_linear_tearing_timedomain_validation,
-)
 from mhx.benchmarks.turbulence import (
     write_decaying_mhd_turbulence_validation,
     write_forced_turbulent_reconnection_readiness_report,

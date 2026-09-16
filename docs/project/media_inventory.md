@@ -252,7 +252,7 @@ reduced-MHD Harris eigenproblem used in the MacTaggart validation papers.
 
 Source links:
 
-- [Layer benchmark implementation](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/tearing_eigen.py)
+- [Layer benchmark implementation](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/linear_stability/harris.py)
 - [Layer validation tests](https://github.com/uwplasma/MHX/blob/main/tests/test_linear_tearing_eigenvalue_validation.py)
 - [Documentation media campaign](https://github.com/uwplasma/MHX/tree/main/examples/media)
 

@@ -44,7 +44,7 @@ REQUIRED_TOCTREE_ENTRIES = {
 REQUIRED_SOURCE_LINKS = {
     ("docs/validation",): {
         "src/mhx/benchmarks/seed_robust_qi.py",
-        "src/mhx/benchmarks/eigenvalue.py",
+        "src/mhx/benchmarks/linear_stability/matrix_free.py",
         "src/mhx/benchmarks/suite.py",
         "src/mhx/benchmarks/orszag_tang.py",
     },

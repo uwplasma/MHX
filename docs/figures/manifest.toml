@@ -49,7 +49,7 @@ sha256 = "3191b1ba8a4a00b1573eeb4e6c5477c599af3f41421e1e9f02348db851b6dc4a"
 command = "python examples/make_validation_media.py"
 claim_level = "validation"
 claim_scope = "Single Harris tearing eigenvalue anchor against a documented reference case; not nonlinear reconnection evidence."
-sources = ["src/mhx/benchmarks/tearing_eigen.py"]
+sources = ["src/mhx/benchmarks/linear_stability/harris.py"]
 tests = ["tests/test_linear_tearing_eigenvalue_validation.py"]
 
 [[figures]]
