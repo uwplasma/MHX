@@ -32,6 +32,11 @@ Outputs (in ``--outdir``): ``histories.npz``, ``snapshots.npz``,
 with flux contours every ``--gif-interval``) and ``summary.json``. Snapshots and
 GIF frames are rolled in ``y`` so the X-point sits at ``y = Ly/2``.
 
+``--sap`` (stop after phase) ends the run ``--sap-buffer`` time units after the
+clean collapse phase ends, using the same criteria as the verdict.
+``--devices N`` splits the ``x`` axis across ``N`` GPUs (``nx`` must divide by
+``N``); JAX partitions the FFTs and the RK4 loop across them.
+
 Usage::
 
     python examples/sweet_parker/collapse_check.py --hold-equilibrium
@@ -68,6 +73,7 @@ from mhx.diagnostics import (  # noqa: E402
 )
 from mhx.equations.reduced_mhd import current_density, reduced_mhd_rhs  # noqa: E402
 from mhx.grids import CartesianGrid  # noqa: E402
+from mhx.parallel import make_spatial_sharding, shard_state  # noqa: E402
 from mhx.physics import PeriodicDoubleHarrisEquilibrium  # noqa: E402
 from mhx.state import ReducedMHDParams, ReducedMHDState  # noqa: E402
 from mhx.time_integrators import evolve_rk4  # noqa: E402
@@ -123,6 +129,17 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--t-end", type=float, default=300.0)
     parser.add_argument("--save-interval", type=float, default=0.5)
     parser.add_argument("--cfl", type=float, default=0.25, help="dt = cfl * min(dx, dy)")
+    parser.add_argument(
+        "--devices", type=int, default=1, help="GPUs to split the x axis across (nx % devices == 0)"
+    )
+    parser.add_argument(
+        "--sap",
+        action="store_true",
+        help="stop after the clean collapse phase ends (plus --sap-buffer time units)",
+    )
+    parser.add_argument(
+        "--sap-buffer", type=float, default=10.0, help="time run past the phase end with --sap"
+    )
     parser.add_argument("--snapshots", type=int, default=8)
     parser.add_argument(
         "--gif-interval", type=float, default=1.0, help="time between GIF frames (0 disables)"
@@ -161,8 +178,10 @@ def main() -> None:
     print(
         f"[collapse] grid={args.nx}x{args.ny} L=({args.lx:.3f},{args.ly:.3f}) a={args.width} "
         f"ka={ka:.3f} Delta'a={delta_prime_a:.2f} eta={args.eta:g} nu={viscosity:g} "
-        f"hold_equilibrium={args.hold_equilibrium} dt={dt:.3e} steps={n_saves * save_every}"
+        f"hold_equilibrium={args.hold_equilibrium} dt={dt:.3e} steps={n_saves * save_every} "
+        f"devices={args.devices} sap={args.sap}"
     )
+    print(f"[collapse] JAX devices: {jax.devices()}")
 
     equilibrium = PeriodicDoubleHarrisEquilibrium(width=args.width, amplitude=1.0)
     state = PeriodicDoubleHarrisEquilibrium(
@@ -176,15 +195,20 @@ def main() -> None:
     equilibrium_source = args.eta * current_density(
         equilibrium.initial_state(grid).psi, lengths=lengths
     )
-
-    def rhs(current_state: ReducedMHDState) -> ReducedMHDState:
-        tendency = reduced_mhd_rhs(current_state, params, lengths=lengths, dealiasing="two_thirds")
-        if args.hold_equilibrium:
-            tendency = tendency._replace(psi=tendency.psi + equilibrium_source)
-        return tendency
+    if args.devices > 1:
+        # Split the x axis across GPUs; JAX partitions the FFTs and RK4 (SPMD).
+        sharding = make_spatial_sharding((args.nx, args.ny), args.devices)
+        state = shard_state(state, sharding)
+        equilibrium_source = jax.device_put(equilibrium_source, sharding.fields)
 
     @jax.jit
-    def advance(current_state: ReducedMHDState) -> ReducedMHDState:
+    def advance(current_state: ReducedMHDState, source: jax.Array) -> ReducedMHDState:
+        def rhs(rhs_state: ReducedMHDState) -> ReducedMHDState:
+            tendency = reduced_mhd_rhs(rhs_state, params, lengths=lengths, dealiasing="two_thirds")
+            if args.hold_equilibrium:
+                tendency = tendency._replace(psi=tendency.psi + source)
+            return tendency
+
         trajectory = evolve_rk4(current_state, rhs, dt=dt, steps=save_every, save_every=save_every)
         return jax.tree.map(lambda field: field[-1], trajectory.states)
 
@@ -198,10 +222,15 @@ def main() -> None:
     gif_steps = (max(1, args.nx // GIF_MAX_POINTS), max(1, args.ny // GIF_MAX_POINTS))
     gif_frames: list[tuple[float, np.ndarray, np.ndarray]] = []
     wall_start = time.perf_counter()
+    # Online copy of the collapse-phase logic in ``assess`` for --sap.
+    reference_current = math.inf
+    onset = False
+    phase_end_time: float | None = None
+    stopped_early = False
 
     for index in range(n_saves + 1):
         if index > 0:
-            state = advance(state)
+            state = advance(state, equilibrium_source)
         t = index * args.save_interval
         psi, omega = np.asarray(state.psi), np.asarray(state.omega)
         if not (np.all(np.isfinite(psi)) and np.all(np.isfinite(omega))):
@@ -247,6 +276,32 @@ def main() -> None:
                 f"wall={time.perf_counter() - wall_start:.0f}s"
             )
 
+        current_now = abs(history["current_x"][-1])
+        if np.isfinite(current_now):
+            if not onset:
+                reference_current = min(reference_current, current_now)
+                onset = current_now >= 1.5 * reference_current
+            elif phase_end_time is None and (
+                history["sheet_x_point_count"][-1] > 1
+                or not history["island_width"][-1] <= 0.5 * sheet_separation
+                or current_now < 1.5 * reference_current
+            ):
+                phase_end_time = t
+                print(f"[collapse] clean collapse phase ended at t={t:.2f}")
+        if args.sap and phase_end_time is not None and t >= phase_end_time + args.sap_buffer:
+            print(f"[collapse] --sap: stopping at t={t:.2f}")
+            stopped_early = True
+            break
+
+    if stopped_early and (not snapshot_times or snapshot_times[-1] != times[-1]):
+        shift = _centring_shift(history["x_point_y"][-1], args.ny, dy)
+        snapshot_times.append(times[-1])
+        snapshots.append(
+            np.roll(
+                np.asarray(current_density(state.psi, lengths=lengths), np.float32), shift, axis=1
+            )
+        )
+
     t_arr = np.asarray(times)
     h = {key: np.asarray(values) for key, values in history.items()}
     summary = assess(
@@ -267,6 +322,10 @@ def main() -> None:
             "viscosity": viscosity,
             "seed": args.seed,
             "hold_equilibrium": args.hold_equilibrium,
+            "cfl": args.cfl,
+            "devices": args.devices,
+            "sap": args.sap,
+            "stopped_early": stopped_early,
             "sheet_separation": sheet_separation,
             "dt": dt,
             "t_final": float(t_arr[-1]),
