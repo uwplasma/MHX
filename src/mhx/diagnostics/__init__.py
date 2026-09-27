@@ -28,6 +28,12 @@ from mhx.diagnostics.reduced_mhd import (
     trajectory_energies,
     trajectory_mode_amplitude,
 )
+from mhx.diagnostics.sweet_parker import (
+    SweetParkerSheetMeasurement,
+    measure_sweet_parker_sheet,
+    select_steady_window,
+    sweet_parker_prediction,
+)
 
 __all__ = [
     "DiagnosticContext",
@@ -46,10 +52,14 @@ __all__ = [
     "load_diagnostics_plugin_modules",
     "magnetic_divergence_linf",
     "magnetic_energy",
+    "measure_sweet_parker_sheet",
     "mode_amplitude",
     "reconnected_flux_amplitude",
     "rutherford_island_full_width",
     "select_fit_window",
+    "select_steady_window",
+    "SweetParkerSheetMeasurement",
+    "sweet_parker_prediction",
     "total_energy",
     "trajectory_energies",
     "trajectory_mode_amplitude",
