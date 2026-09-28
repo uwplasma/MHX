@@ -213,17 +213,24 @@ def select_steady_window(
     *,
     min_duration: float,
     max_cv: float = 0.1,
+    constraints: tuple[np.ndarray, ...] = (),
 ) -> tuple[float, float, float] | None:
-    """Return ``(t_start, t_end, cv)`` of the flattest window of ``rate``.
+    """Return ``(t_start, t_end, cv)`` of the flattest quasi-steady window of ``rate``.
 
     Each candidate window is the shortest one starting at a saved sample that
-    spans at least ``min_duration``; the window with the smallest coefficient of
-    variation is returned when it is below ``max_cv``.
+    spans at least ``min_duration``. A candidate counts only if ``rate`` and
+    every series in ``constraints`` (e.g. sheet width, length, upstream field)
+    vary by at most ``max_cv`` (coefficient of variation) inside it, so a
+    turning point of ``rate`` with a still-evolving sheet is rejected. Among
+    those, the window with the smallest ``rate`` variation is returned.
     """
     times = np.asarray(times, dtype=np.float64)
     rate = np.asarray(rate, dtype=np.float64)
+    series = tuple(np.asarray(values, dtype=np.float64) for values in constraints)
     if times.ndim != 1 or times.shape != rate.shape:
         raise ValueError("times and rate must be one-dimensional arrays of equal length")
+    if any(values.shape != times.shape for values in series):
+        raise ValueError("constraints must match the shape of times")
     if min_duration <= 0.0:
         raise ValueError("min_duration must be positive")
     best: tuple[float, float, float] | None = None
@@ -231,15 +238,22 @@ def select_steady_window(
         stop = int(np.searchsorted(times, times[start] + min_duration))
         if stop >= times.size:
             break
-        window = rate[start : stop + 1]
-        if not np.all(np.isfinite(window)) or np.mean(window) <= 0.0:
+        cvs = [_coefficient_of_variation(rate[start : stop + 1])] + [
+            _coefficient_of_variation(values[start : stop + 1]) for values in series
+        ]
+        if not all(cv <= max_cv for cv in cvs):
             continue
-        cv = float(np.std(window) / np.mean(window))
-        if best is None or cv < best[2]:
-            best = (float(times[start]), float(times[stop]), cv)
-    if best is None or best[2] > max_cv:
-        return None
+        if best is None or cvs[0] < best[2]:
+            best = (float(times[start]), float(times[stop]), cvs[0])
     return best
+
+
+def _coefficient_of_variation(values: np.ndarray) -> float:
+    """Return ``std/|mean|``, or infinity for non-finite or zero-mean samples."""
+    mean = float(np.mean(values))
+    if not np.all(np.isfinite(values)) or mean == 0.0:
+        return float("inf")
+    return float(np.std(values) / abs(mean))
 
 
 def _spectral_fields(
