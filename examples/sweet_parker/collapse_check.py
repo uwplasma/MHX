@@ -18,11 +18,13 @@ full trajectory is kept in memory. At the end the script reports:
 * X-point collapse: the sheet thins (``delta_min/delta_ref <= 0.5``), the X-point
   current grows (``max|j_X|/|j_X|_ref >= 2``) and the sheet is elongated
   (``L_j/delta >= 5`` at minimum thickness);
-* the clean collapse phase: from ``|j_X| >= 1.5 |j_X|_ref`` until the first
-  secondary X-point on the sheet, the island full width exceeding half the sheet
-  separation, or ``|j_X|`` dropping back;
-* a steady window inside that phase where ``eta|j_X|`` varies by less than 10 %
-  over at least three Alfven transit times ``L/v_A``, and whether, in that
+* the clean collapse phase: from ``|j_X| >= 1.5 |j_X|_ref`` until the X-point
+  flattens (opening angle below 10 % of its post-onset maximum, the start of a
+  secondary island), a secondary X-point appears on the sheet, the island full
+  width exceeds half the sheet separation, or ``|j_X|`` drops back;
+* a quasi-steady window inside that phase where ``eta|j_X|``, ``delta``, ``L``
+  and ``B_up`` each vary by less than 10 % over at least three Alfven transit
+  times ``L/v_A``, and whether, in that
   window, ``delta/dx >= 8`` (resolved), ``v_out/v_A,up >= 0.5`` (Alfvenic
   outflow), ``L/delta >= 10`` (elongated sheet) and ``S_L >= 500``;
 * informational Sweet-Parker consistency ratios in the window.
@@ -107,6 +109,10 @@ VERDICT_KEYS = (
 MIN_OUTFLOW_OVER_ALFVEN = 0.5
 MIN_WINDOW_ASPECT_RATIO = 10.0
 MIN_WINDOW_LUNDQUIST = 500.0
+# The X-point opening angle closes to ~0 when the sheet centre flattens into the
+# start of a secondary island; the clean phase ends once it falls below this
+# fraction of its largest value since collapse onset.
+X_POINT_FLATTENING_FRACTION = 0.1
 GIF_MAX_POINTS = 384
 
 
@@ -229,6 +235,7 @@ def main() -> None:
     wall_start = time.perf_counter()
     # Online copy of the collapse-phase logic in ``assess`` for --sap.
     reference_current = math.inf
+    max_angle_since_onset = 0.0
     onset = False
     phase_end_time: float | None = None
     stopped_early = False
@@ -286,8 +293,14 @@ def main() -> None:
             if not onset:
                 reference_current = min(reference_current, current_now)
                 onset = current_now >= 1.5 * reference_current
-            elif phase_end_time is None and (
-                history["sheet_x_point_count"][-1] > 1
+            if onset and phase_end_time is None:
+                max_angle_since_onset = max(
+                    max_angle_since_onset, np.nan_to_num(history["opening_angle_deg"][-1])
+                )
+            if onset and phase_end_time is None and (
+                history["opening_angle_deg"][-1]
+                < X_POINT_FLATTENING_FRACTION * max_angle_since_onset
+                or history["sheet_x_point_count"][-1] > 1
                 or not history["island_width"][-1] <= 0.5 * sheet_separation
                 or current_now < 1.5 * reference_current
             ):
@@ -446,7 +459,12 @@ def assess(
         checks[key] = False
     if onset.size:
         start = i_weakest + int(onset[0])
+        angle = h["opening_angle_deg"]
+        running_max_angle = np.maximum.accumulate(np.nan_to_num(angle[start:]))
+        flattening = np.zeros(t.size, dtype=bool)
+        flattening[start:] = angle[start:] < X_POINT_FLATTENING_FRACTION * running_max_angle
         end_reasons = {
+            "x_point_flattening": flattening,
             "secondary_x_point": h["sheet_x_point_count"] > 1,
             "island_width": ~(h["island_width"] <= 0.5 * sheet_separation),
             "current_drop": current < 1.5 * current0,
@@ -464,7 +482,10 @@ def assess(
         metrics["alfven_transit"] = float(transit)
         if np.isfinite(transit) and transit > 0.0:
             window = select_steady_window(
-                t[phase], h["reconnection_rate"][phase], min_duration=3.0 * transit
+                t[phase],
+                h["reconnection_rate"][phase],
+                min_duration=3.0 * transit,
+                constraints=(h["delta"][phase], h["length"][phase], h["b_upstream"][phase]),
             )
     if window is not None:
         in_window = (t >= window[0]) & (t <= window[1])
