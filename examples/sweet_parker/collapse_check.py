@@ -22,10 +22,10 @@ full trajectory is kept in memory. At the end the script reports:
   flattens (opening angle below 10 % of its post-onset maximum, the start of a
   secondary island), a secondary X-point appears on the sheet, the island full
   width exceeds half the sheet separation, or ``|j_X|`` drops back;
-* a quasi-steady window inside that phase where ``eta|j_X|``, ``delta``, ``L``
-  and ``B_up`` each vary by less than 10 % over at least three Alfven transit
-  times ``L/v_A``, and whether, in that
-  window, ``delta/dx >= 8`` (resolved), ``v_out/v_A,up >= 0.5`` (Alfvenic
+* a quasi-steady window inside that phase, at least three Alfven transit times
+  ``L/v_A`` long, where ``eta|j_X|`` varies by less than 10 % (CV) and
+  ``delta``, ``L`` and ``B_up`` each change by at most 10 % in total, and
+  whether, in that window, ``delta/dx >= 8`` (resolved), ``v_out/v_A,up >= 0.5`` (Alfvenic
   outflow), ``L/delta >= 10`` (elongated sheet) and ``S_L >= 500``;
 * informational Sweet-Parker consistency ratios in the window.
 
