@@ -27,11 +27,15 @@ class MHD3DParams(NamedTuple):
         resistivity: Magnetic diffusivity, the inverse Lundquist number.
         guide_field: Uniform background field added inside the nonlinear
             terms. The default is no guide field.
+        dissipation_order: Exponent ``r`` so the diagonal dissipation rate
+            is ``k^(2r)``.  ``1`` gives Laplacian dissipation (the default);
+            ``2`` gives hyper-resistivity / hyper-viscosity ``k^4``.
     """
 
     viscosity: Array | float
     resistivity: Array | float
     guide_field: tuple[float, float, float] = (0.0, 0.0, 0.0)
+    dissipation_order: int = 1
 
 
 class MHD3DTrajectory(NamedTuple):

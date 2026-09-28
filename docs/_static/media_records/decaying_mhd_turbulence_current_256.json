@@ -1,0 +1,64 @@
+{
+  "frame_count": 26,
+  "id": "decaying_mhd_turbulence_current_256",
+  "outputs": {
+    "docs_movie": {
+      "bytes": 248448,
+      "path": "docs/_static/movies/decaying_mhd_turbulence_current_256.mp4",
+      "sha256": "9cb3d44b5774344d4739cc8fb62b419d32c6fce99633f43fceffe36197d011ff"
+    },
+    "poster": {
+      "bytes": 102034,
+      "path": "docs/_static/posters/decaying_mhd_turbulence_current_256.png",
+      "sha256": "11dcd3146ca2a53dc35c74b368c8b2300b7b325e42ec5851befd5cefc7fce055"
+    },
+    "readme_gif": {
+      "bytes": 2296319,
+      "path": "docs/_static/readme/decaying_mhd_turbulence_current.gif",
+      "sha256": "70774f9365a5ad9f1f4550f777dc7601f0d5439786115d25ef61d145fbff9c59"
+    }
+  },
+  "schema": "mhx.media.render.v1",
+  "source": "outputs/media-campaign/final/decaying_turbulence/decaying_mhd_turbulence.npz",
+  "source_metadata": {
+    "case": "decaying_turbulence",
+    "dt": 0.004,
+    "preset": "final",
+    "save_every": 100,
+    "shape": [
+      256,
+      256
+    ],
+    "t_end": 10.0,
+    "trajectory": "decaying_mhd_turbulence.npz"
+  },
+  "source_sha256": "ba029a27cde1fc7cafe66cabdca037550c0a7dbeecffa16b0fb7b6e70bbf8a5e",
+  "times": [
+    0.0,
+    0.4000000059604645,
+    0.800000011920929,
+    1.2000000476837158,
+    1.600000023841858,
+    2.0,
+    2.4000000953674316,
+    2.8000001907348633,
+    3.200000047683716,
+    3.6000001430511475,
+    4.0,
+    4.400000095367432,
+    4.800000190734863,
+    5.200000286102295,
+    5.600000381469727,
+    6.000000476837158,
+    6.400000095367432,
+    6.800000190734863,
+    7.200000286102295,
+    7.600000381469727,
+    8.0,
+    8.40000057220459,
+    8.800000190734863,
+    9.200000762939453,
+    9.600000381469727,
+    10.0
+  ]
+}

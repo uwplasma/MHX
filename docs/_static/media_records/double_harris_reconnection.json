@@ -1,0 +1,77 @@
+{
+  "frame_count": 24,
+  "id": "double_harris_reconnection",
+  "outputs": {
+    "docs_movie": {
+      "bytes": 592630,
+      "path": "docs/_static/movies/double_harris_reconnection.mp4",
+      "sha256": "2bb1fdb07cc3775fe5078359a5b5bb9037c62c32ec8d4d1472cffa6c059f7469"
+    },
+    "poster": {
+      "bytes": 242729,
+      "path": "docs/_static/posters/double_harris_reconnection.png",
+      "sha256": "64bb980ee402d9856a7335212fe2778e3e8f03bdd3fdaa91c082dccddbf36089"
+    },
+    "readme_gif": {
+      "bytes": 4582497,
+      "path": "docs/_static/readme/double_harris_reconnection.gif",
+      "sha256": "f24578bb26edfc246ff731e3684c5a716bcaa608ceda0f3433eba7de0e30c32d"
+    }
+  },
+  "schema": "mhx.media.render.v1",
+  "source": "outputs/media-campaign/final/double_harris_reconnection/plasmoids_trajectory.npz",
+  "source_metadata": {
+    "case": "double_harris_reconnection",
+    "domain": [
+      0.0,
+      25.132741228718345,
+      0.0,
+      25.132741228718345
+    ],
+    "dt": 0.002,
+    "eta": 5e-05,
+    "initialization": "broadband-seeded examples/plasmoid_chain/plasmoids.py",
+    "noise_amplitude": 0.002,
+    "nu": 5e-05,
+    "nx": 1024,
+    "ny": 1024,
+    "preset": "final",
+    "save_every": 500,
+    "seed": 42,
+    "shape": [
+      1024,
+      1024
+    ],
+    "sheet_sep": 12.566370614359172,
+    "t_end": 60.0,
+    "trajectory": "plasmoids_trajectory.npz",
+    "width": 0.05
+  },
+  "source_sha256": "5418875c4feafe79315c3c4432746a9eafa5d013803630b5b39de9beb9d62c8e",
+  "times": [
+    0.0,
+    2.0,
+    5.0,
+    7.0,
+    10.0,
+    13.0,
+    15.0,
+    18.0,
+    20.0,
+    23.0,
+    26.0,
+    28.0,
+    31.0,
+    33.0,
+    36.0,
+    39.0,
+    41.0,
+    44.0,
+    46.0,
+    49.0,
+    52.0,
+    54.0,
+    57.0,
+    60.0
+  ]
+}

@@ -1,0 +1,58 @@
+{
+  "frame_count": 20,
+  "id": "double_harris_island_64",
+  "outputs": {
+    "docs_movie": {
+      "bytes": 386062,
+      "path": "docs/_static/movies/double_harris_island_64.mp4",
+      "sha256": "ad978f2c4992b27651ac76c10705d1282c84fcb612de4f9d779b018d86eed43a"
+    },
+    "poster": {
+      "bytes": 67763,
+      "path": "docs/_static/posters/double_harris_island_64.png",
+      "sha256": "d1b268e2a8a722ce18c96f5e51f66744f542e385ee252a667ab71f17eb15a376"
+    },
+    "readme_gif": {
+      "bytes": 1312811,
+      "path": "docs/_static/readme/double_harris_island_64.gif",
+      "sha256": "3d86ad1d17e80d29dfde428f04e931b994803213f37d4cf9f74a0e0d47b5efb3"
+    }
+  },
+  "schema": "mhx.media.render.v1",
+  "source": "outputs/media-campaign/final/double_harris_island/double_harris_island.npz",
+  "source_metadata": {
+    "case": "double_harris_island",
+    "dt": 0.02,
+    "preset": "final",
+    "save_every": 100,
+    "shape": [
+      64,
+      64
+    ],
+    "t_end": 40.0,
+    "trajectory": "double_harris_island.npz"
+  },
+  "source_sha256": "4743b5fc5a38e08362908f71feb776ddf607c92f5054fbeb67f67d4de4c3ada8",
+  "times": [
+    2.0,
+    4.0,
+    6.0,
+    8.0,
+    10.0,
+    12.0,
+    14.0,
+    16.0,
+    18.0,
+    20.0,
+    22.0,
+    24.0,
+    26.0,
+    28.0,
+    30.0,
+    32.0,
+    34.0,
+    36.0,
+    38.0,
+    40.0
+  ]
+}

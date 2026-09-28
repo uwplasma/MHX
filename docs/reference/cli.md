@@ -449,7 +449,7 @@ mhx campaign rutherford-plan-production --outdir outputs/ci/rutherford_plan
 mhx campaign rutherford-execute outputs/ci/rutherford_plan --max-steps 4
 mhx validate all --outdir outputs/ci/validation_suite
 mhx validate readiness --suite outputs/ci/validation_suite --outdir outputs/ci/readiness
-python examples/make_readme_media.py
+python examples/media/run_all.py render --preset final
 mhx run examples/linear_tearing_twofluid_toy.toml --outdir outputs/ci/twofluid_toy
 mhx figures outputs/ci/twofluid_toy --gif
 mhx report outputs/ci/twofluid_toy

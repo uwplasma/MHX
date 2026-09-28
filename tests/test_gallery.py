@@ -31,6 +31,15 @@ def test_gallery_has_one_level_and_uniform_scripts() -> None:
             assert "jax_enable_x64" in source
             assert "finite_difference" in source
             continue
+        if script.name == "11_turbulence_3d.py":
+            # The turbulence script drives the functional core directly
+            # because it applies stochastic white-noise forcing with a custom
+            # forcing band and per-step divergence-free projection, neither of
+            # which the high-level Simulation API can express.
+            assert "etdrk4_step" in source
+            assert "jax.random.normal" in source
+            assert ".run(" not in source
+            continue
         assert "Simulation(" in source
         assert ".run()" in source or ".run_ensemble(" in source
         assert ".print_summary()" in source

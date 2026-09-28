@@ -48,6 +48,9 @@ def test_required_workflows_exist() -> None:
     assert "python -m pytest -m slow" in ci_workflow
     assert "release-tests:" in ci_workflow
     assert "needs: [test, release-tests]" in ci_workflow
+    assert "workflow_dispatch:" in ci_workflow
+    benchmark_job = ci_workflow.split("  benchmark-artifacts:", maxsplit=1)[1]
+    assert "if: github.event_name == 'workflow_dispatch'" in benchmark_job
     assert "mhx campaign rutherford-promotion-check" in ci_workflow
     assert "mhx validate paper-pipeline" in ci_workflow
     assert "python examples/tools/verify_paper_artifacts.py" in ci_workflow
@@ -137,5 +140,10 @@ def test_docs_figure_manifest_is_parseable_and_complete() -> None:
     for entry in manifest["figures"]:
         path = ROOT / entry["path"]
         assert path.exists(), entry["path"]
-        assert entry["claim_level"] in {"smoke", "validation", "production_template"}
+        assert entry["claim_level"] in {
+            "demonstration",
+            "smoke",
+            "validation",
+            "production_template",
+        }
         assert entry["command"]

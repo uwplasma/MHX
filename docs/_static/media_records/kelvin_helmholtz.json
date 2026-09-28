@@ -1,0 +1,86 @@
+{
+  "frame_count": 40,
+  "id": "kelvin_helmholtz",
+  "outputs": {
+    "docs_movie": {
+      "bytes": 595926,
+      "path": "docs/_static/movies/kelvin_helmholtz.mp4",
+      "sha256": "f8ab102b7e914c335ed561211b905a05a576f3c458ad6841090357a963607e54"
+    },
+    "poster": {
+      "bytes": 192483,
+      "path": "docs/_static/posters/kelvin_helmholtz.png",
+      "sha256": "f7fec36d6f5a6e7bcda72c66a385ae37ca30d87ad3d70e24939352b5af47c05b"
+    },
+    "readme_gif": {
+      "bytes": 2861717,
+      "path": "docs/_static/readme/kelvin_helmholtz.gif",
+      "sha256": "bcd6c1d3397ac4973588cdd9b80cf18c4017c7a4414c4185aeb74a3afedc064b"
+    }
+  },
+  "schema": "mhx.media.render.v1",
+  "source": "outputs/media-campaign/final/kelvin_helmholtz/kelvin_helmholtz.npz",
+  "source_metadata": {
+    "case": "kelvin_helmholtz",
+    "claim_scope": "smooth periodic hydrodynamic-limit Kelvin--Helmholtz demonstration",
+    "domain": [
+      0.0,
+      1.0,
+      0.0,
+      2.0
+    ],
+    "dt": 0.001,
+    "preset": "final",
+    "save_every": 100,
+    "shape": [
+      128,
+      256
+    ],
+    "t_end": 4.0,
+    "trajectory": "kelvin_helmholtz.npz",
+    "viscosity": 0.00025
+  },
+  "source_sha256": "91501d900e0ef2aad20091c169506c20c7229f049b034492831b808556354706",
+  "times": [
+    0.0,
+    0.10000000149011612,
+    0.20000000298023224,
+    0.30000001192092896,
+    0.4000000059604645,
+    0.5,
+    0.6000000238418579,
+    0.7000000476837158,
+    0.800000011920929,
+    0.9000000357627869,
+    1.0,
+    1.100000023841858,
+    1.2000000476837158,
+    1.3000000715255737,
+    1.4000000953674316,
+    1.5000001192092896,
+    1.600000023841858,
+    1.7000000476837158,
+    1.8000000715255737,
+    1.9000000953674316,
+    2.0,
+    2.1000001430511475,
+    2.200000047683716,
+    2.3000001907348633,
+    2.4000000953674316,
+    2.5,
+    2.6000001430511475,
+    2.700000047683716,
+    2.8000001907348633,
+    2.9000000953674316,
+    3.000000238418579,
+    3.1000001430511475,
+    3.200000047683716,
+    3.3000001907348633,
+    3.4000000953674316,
+    3.500000238418579,
+    3.6000001430511475,
+    3.700000286102295,
+    3.8000001907348633,
+    4.0
+  ]
+}

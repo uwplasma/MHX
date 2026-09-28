@@ -110,7 +110,7 @@ gates passing in CI today:
 | gradients | $dE/d\nu$ against finite differences at $10^{-6}$ under x64 | code contract |
 
 The first campaign-scale nonlinear run is the 3D Orszag--Tang vortex of
-{cite}`politano1995` at $128^3$. It shows current-sheet formation, a
+{cite}`politano1995` at $192^3$. It shows current-sheet formation, a
 dissipation peak inside the window reported by {cite}`mininni2006`, and
 an internally closed energy budget. Its promotion into gate G7 follows
 the normalization audit recorded in the plan.
@@ -132,14 +132,14 @@ dissipation peak near $t = 2.8$.
 import mhx
 
 result = mhx.Simulation(
-    shape=(128, 128, 128),
+    shape=(192, 192, 192),
     equations="mhd3d",
     equilibrium=mhx.OrszagTang3DEquilibrium(beta=0.8),
     viscosity=2.0e-3,
     resistivity=2.0e-3,
-    dt=1.0e-3,
+    dt=8.0e-4,
     t_end=4.0,
-    save_every=200,
+    save_every=250,
 ).run()
 result.print_summary()
 result.plot("ot3d.png")

@@ -143,9 +143,10 @@ def decay_rates(
 ) -> MHD3DState:
     """Return the diagonal dissipation rates for the integrating factor."""
     k_squared = jnp.sum(k * k, axis=0)
+    dissipation = k_squared ** params.dissipation_order
     return MHD3DState(
-        v_hat=params.viscosity * k_squared[None],
-        b_hat=params.resistivity * k_squared[None],
+        v_hat=params.viscosity * dissipation[None],
+        b_hat=params.resistivity * dissipation[None],
     )
 
 

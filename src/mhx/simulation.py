@@ -236,6 +236,8 @@ class Simulation:
     terms: tuple[PhysicsTerm, ...] = ()
     equations: str = "reduced_mhd"
     guide_field: tuple[float, float, float] = (0.0, 0.0, 0.0)
+    dissipation_order: int = 1
+    forcing: object | None = None
     sound_speed: float = 1.0
     bulk_viscosity: float = 0.0
 

@@ -1,0 +1,73 @@
+{
+  "frame_count": 36,
+  "id": "orszag_tang_current",
+  "outputs": {
+    "docs_movie": {
+      "bytes": 651273,
+      "path": "docs/_static/movies/orszag_tang_current.mp4",
+      "sha256": "7593fb263e13dc032c324f1f40e9048a7350ef24f31087a95e1343dd5e41f2bc"
+    },
+    "poster": {
+      "bytes": 48105,
+      "path": "docs/_static/posters/orszag_tang_current.png",
+      "sha256": "cc5ccac2fef08d3b1b845c2ccad9ca06c4b769a5ae3d5ee834f247f4def546c3"
+    },
+    "readme_gif": {
+      "bytes": 2607463,
+      "path": "docs/_static/readme/orszag_tang_current.gif",
+      "sha256": "f148ed73e1163ada94c097537f4761e3ff95f64c2427f5e252a7834bdd991929"
+    }
+  },
+  "schema": "mhx.media.render.v1",
+  "source": "outputs/media-campaign/final/orszag_tang_2d/orszag_tang_vortex.npz",
+  "source_metadata": {
+    "case": "orszag_tang_2d",
+    "preset": "final",
+    "save_every": 40,
+    "shape": [
+      96,
+      96
+    ],
+    "t_end": 10.0,
+    "trajectory": "orszag_tang_vortex.npz"
+  },
+  "source_sha256": "6fce93370a61e4aab7cc5b39459e13e54180783f1084f237ca501a1ab2bbfc29",
+  "times": [
+    0.0,
+    0.19999998807907104,
+    0.3999999761581421,
+    0.7999999523162842,
+    1.0,
+    1.399999976158142,
+    1.5999999046325684,
+    2.0,
+    2.200000047683716,
+    2.3999998569488525,
+    2.799999952316284,
+    3.0,
+    3.3999998569488525,
+    3.5999999046325684,
+    4.0,
+    4.199999809265137,
+    4.400000095367432,
+    4.799999713897705,
+    5.0,
+    5.400000095367432,
+    5.599999904632568,
+    6.0,
+    6.199999809265137,
+    6.399999618530273,
+    6.799999713897705,
+    7.0,
+    7.399999618530273,
+    7.599999904632568,
+    8.0,
+    8.199999809265137,
+    8.399999618530273,
+    8.800000190734863,
+    9.0,
+    9.399999618530273,
+    9.59999942779541,
+    10.0
+  ]
+}

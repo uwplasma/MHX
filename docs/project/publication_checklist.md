@@ -169,6 +169,10 @@ superior to baselines on held-out regimes.
 ## Movie rules
 
 Movies are effective for reviewer communication but dangerous for overclaiming.
+Regenerate the curated set with
+[`examples/media/run_all.py`](../../examples/media/run_all.py), with supplemental
+validation media in
+[`examples/media/supplemental.py`](../../examples/media/supplemental.py).
 Every movie should state one of:
 
 - `validation movie`: generated from a validated benchmark or operator replay;
@@ -186,14 +190,14 @@ validation promotion into a production claim.
 The README currently ships validation/theory movies only:
 
 - [README media docs](../project/media_inventory.md)
-- [media generator](https://github.com/uwplasma/MHX/blob/main/examples/make_readme_media.py)
+- [media campaign](https://github.com/uwplasma/MHX/tree/main/examples/media)
 - [media tests](https://github.com/uwplasma/MHX/blob/main/tests/test_readme_media.py)
 
 ## Source map for publication plots
 
 - [Paper artifact verifier](https://github.com/uwplasma/MHX/blob/main/examples/tools/verify_paper_artifacts.py)
 - [Validation media generator](https://github.com/uwplasma/MHX/blob/main/examples/make_validation_media.py)
-- [README media generator](https://github.com/uwplasma/MHX/blob/main/examples/make_readme_media.py)
+- [README and documentation media campaign](https://github.com/uwplasma/MHX/tree/main/examples/media)
 - [Figure manifest](../figures/manifest.toml)
 - [Double-Harris validation and promotion checks](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/current_sheet.py)
 - [Forced turbulent-reconnection readiness](https://github.com/uwplasma/MHX/blob/main/src/mhx/benchmarks/turbulence.py)
