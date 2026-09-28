@@ -172,14 +172,19 @@ def main() -> None:
     delta_prime_a = 2.0 * (1.0 / ka - ka)
     sheet_separation = 0.5 * args.lx
 
-    save_every = max(1, math.ceil(args.save_interval / (args.cfl * min(dx, dy))))
+    # Explicit RK4 is stable for diffusion only while D*k_max^2*dt < ~2.8; keep it <= 2.
+    dt_advective = args.cfl * min(dx, dy)
+    k_max_squared = (math.pi / dx) ** 2 + (math.pi / dy) ** 2
+    dt_diffusive = 2.0 / (max(args.eta, viscosity) * k_max_squared)
+    dt_limit = "diffusive" if dt_diffusive < dt_advective else "advective"
+    save_every = max(1, math.ceil(args.save_interval / min(dt_advective, dt_diffusive)))
     dt = args.save_interval / save_every
     n_saves = max(1, round(args.t_end / args.save_interval))
     print(
         f"[collapse] grid={args.nx}x{args.ny} L=({args.lx:.3f},{args.ly:.3f}) a={args.width} "
         f"ka={ka:.3f} Delta'a={delta_prime_a:.2f} eta={args.eta:g} nu={viscosity:g} "
-        f"hold_equilibrium={args.hold_equilibrium} dt={dt:.3e} steps={n_saves * save_every} "
-        f"devices={args.devices} sap={args.sap}"
+        f"hold_equilibrium={args.hold_equilibrium} dt={dt:.3e} ({dt_limit} limit) "
+        f"steps={n_saves * save_every} devices={args.devices} sap={args.sap}"
     )
     print(f"[collapse] JAX devices: {jax.devices()}")
 
