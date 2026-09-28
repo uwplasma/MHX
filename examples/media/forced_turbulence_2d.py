@@ -114,7 +114,23 @@ def _constant_compensated_fit(
     return constant, nrmse, mask
 
 
-def _write_final_spectrum(stem: str, wavenumber: object, power: object) -> Path:
+def _display_mask(wavenumber: object, values: object, plot_k_max: float | None) -> object:
+    """Select positive samples, optionally hiding wavenumbers above ``plot_k_max``."""
+    import numpy as np
+
+    mask = np.asarray(values) > 0.0
+    if plot_k_max is not None:
+        mask &= np.asarray(wavenumber) <= plot_k_max
+    return mask
+
+
+def _write_final_spectrum(
+    stem: str,
+    wavenumber: object,
+    power: object,
+    *,
+    plot_k_max: float | None = None,
+) -> Path:
     import matplotlib.pyplot as plt
     import numpy as np
 
@@ -128,7 +144,7 @@ def _write_final_spectrum(stem: str, wavenumber: object, power: object) -> Path:
     )
     wavenumber = np.asarray(wavenumber)
     power = np.asarray(power)
-    mask = power > 0.0
+    mask = _display_mask(wavenumber, power, plot_k_max)
     compensated = power * wavenumber ** (5.0 / 3.0)
     fit_constant, fit_nrmse, fit_mask = _constant_compensated_fit(
         wavenumber,
@@ -177,19 +193,28 @@ def _render_spectrum_frames(
     psi: object,
     time: object,
     indices: list[int],
+    *,
+    plot_k_max: float | None = None,
 ) -> tuple[list[object], list[float]]:
     import matplotlib.pyplot as plt
     import numpy as np
 
     spectra = [_magnetic_spectrum(psi[index]) for index in indices]
     compensated_spectra = [power * wavenumber ** (5.0 / 3.0) for wavenumber, power in spectra]
-    positive = [power[power > 0.0] for _, power in spectra]
-    positive_compensated = [values[values > 0.0] for values in compensated_spectra]
+    positive = [
+        power[_display_mask(wavenumber, power, plot_k_max)] for wavenumber, power in spectra
+    ]
+    positive_compensated = [
+        values[_display_mask(wavenumber, values, plot_k_max)]
+        for (wavenumber, _), values in zip(spectra, compensated_spectra, strict=True)
+    ]
     minimum = min(float(values.min()) for values in positive if values.size)
     maximum = max(float(values.max()) for values in positive if values.size)
     compensated_minimum = min(float(values.min()) for values in positive_compensated if values.size)
     compensated_maximum = max(float(values.max()) for values in positive_compensated if values.size)
     k_max = max(int(wavenumber[-1]) for wavenumber, _ in spectra)
+    if plot_k_max is not None:
+        k_max = min(k_max, plot_k_max)
     frames = []
     fit_errors = []
     for index, (wavenumber, power), compensated in zip(
@@ -202,7 +227,7 @@ def _render_spectrum_frames(
             dpi=100,
             constrained_layout=True,
         )
-        mask = power > 0.0
+        mask = _display_mask(wavenumber, power, plot_k_max)
         fit_constant, fit_nrmse, fit_mask = _constant_compensated_fit(
             wavenumber,
             compensated,
@@ -215,13 +240,14 @@ def _render_spectrum_frames(
             color="#00a6a6",
             linewidth=2.2,
         )
-        axis.axvline(
-            psi.shape[1] / 3.0,
-            color="0.55",
-            linestyle=":",
-            linewidth=1.2,
-            label="2/3 cutoff",
-        )
+        if psi.shape[1] / 3.0 <= k_max:
+            axis.axvline(
+                psi.shape[1] / 3.0,
+                color="0.55",
+                linestyle=":",
+                linewidth=1.2,
+                label="2/3 cutoff",
+            )
         axis.set_xlim(1.0, k_max)
         axis.set_ylim(0.7 * minimum, 1.4 * maximum)
         axis.set_xlabel(r"wavenumber $k$")
@@ -245,13 +271,14 @@ def _render_spectrum_frames(
                 linewidth=1.5,
                 label=rf"constant fit; NRMSE={fit_nrmse:.1%}",
             )
-        compensated_axis.axvline(
-            psi.shape[1] / 3.0,
-            color="0.55",
-            linestyle=":",
-            linewidth=1.2,
-            label="2/3 cutoff",
-        )
+        if psi.shape[1] / 3.0 <= k_max:
+            compensated_axis.axvline(
+                psi.shape[1] / 3.0,
+                color="0.55",
+                linestyle=":",
+                linewidth=1.2,
+                label="2/3 cutoff",
+            )
         compensated_axis.set_xlim(1.0, k_max)
         compensated_axis.set_ylim(
             0.7 * compensated_minimum,
@@ -267,8 +294,17 @@ def _render_spectrum_frames(
     return frames, fit_errors
 
 
-def render(*, source: Path, maximum_frames: int = 51) -> dict[str, Path]:
-    """Render clear current-density and time-dependent spectrum movies."""
+def render(
+    *,
+    source: Path,
+    maximum_frames: int = 51,
+    plot_k_max: float | None = None,
+) -> dict[str, Path]:
+    """Render clear current-density and time-dependent spectrum movies.
+
+    ``plot_k_max`` hides spectrum samples above that wavenumber (e.g. the
+    dealiased tail past N/3) so the inertial-range fit stays readable.
+    """
     import matplotlib.pyplot as plt
     import numpy as np
 
@@ -307,7 +343,9 @@ def render(*, source: Path, maximum_frames: int = 51) -> dict[str, Path]:
         frames.append(figure_frame(figure))
         plt.close(figure)
 
-    spectrum_frames, fit_errors = _render_spectrum_frames(psi, time, indices)
+    spectrum_frames, fit_errors = _render_spectrum_frames(
+        psi, time, indices, plot_k_max=plot_k_max
+    )
     combined_frames = [
         np.concatenate((field_frame, spectrum_frame), axis=1)
         for field_frame, spectrum_frame in zip(frames, spectrum_frames, strict=True)
@@ -342,7 +380,9 @@ def render(*, source: Path, maximum_frames: int = 51) -> dict[str, Path]:
         poster_index=poster_index,
     )
     stem = render_stem("forced_2d_turbulence", metadata)
-    outputs["final_spectrum"] = _write_final_spectrum(stem, wavenumber, power)
+    outputs["final_spectrum"] = _write_final_spectrum(
+        stem, wavenumber, power, plot_k_max=plot_k_max
+    )
     write_render_record(
         stem=stem,
         source=source,
@@ -363,13 +403,21 @@ def main() -> None:
     render_parser.add_argument("--source", type=Path)
     render_parser.add_argument("--preset", choices=PRESETS, default="preview")
     render_parser.add_argument("--max-frames", type=int, default=51)
+    render_parser.add_argument(
+        "--plot-k-max",
+        type=float,
+        default=None,
+        help="Hide spectrum wavenumbers above this k (e.g. the drop past N/3).",
+    )
     args = parser.parse_args()
     if args.command == "simulate":
         outdir = args.outdir or source_dir(CASE, args.preset)
         print(simulate(preset=args.preset, outdir=outdir))
     else:
         source = args.source or source_dir(CASE, args.preset) / "turbulent_spectrum.npz"
-        for path in render(source=source, maximum_frames=args.max_frames).values():
+        for path in render(
+            source=source, maximum_frames=args.max_frames, plot_k_max=args.plot_k_max
+        ).values():
             print(path)
 
 

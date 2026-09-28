@@ -164,13 +164,17 @@ def measure_sweet_parker_sheet(
         np.mean([v_y_along[(iy + s * k) % ny] for s, k in zip((1, -1), outflow_steps, strict=True)])
     )
 
-    fallback = max(1, round(3.0 * delta / dx)) if np.isfinite(delta) else 1
-    upstream_steps = [
-        _first_local_max_distance(b_y_in, ix, sign, in_reach, fallback) for sign in (1, -1)
-    ]
-    upstream = [(ix + s * k) % nx for s, k in zip((1, -1), upstream_steps, strict=True)]
-    b_upstream = float(np.mean(b_y_in[upstream]))
-    v_inflow = float(np.mean(v_x_in[upstream]))
+    # Upstream state: average over a band 2δ–4δ from the X-point on both sides of
+    # the sheet, so it follows the sheet width rather than hopping between
+    # local maxima of |B_y|.
+    b_upstream = v_inflow = float("nan")
+    if np.isfinite(delta):
+        inner = min(in_reach, max(1, round(2.0 * delta / dx)))
+        outer = min(in_reach, max(inner + 1, round(4.0 * delta / dx)))
+        steps = np.arange(inner, outer + 1)
+        upstream = np.concatenate(((ix + steps) % nx, (ix - steps) % nx))
+        b_upstream = float(np.mean(b_y_in[upstream]))
+        v_inflow = float(np.mean(v_x_in[upstream]))
 
     hessian = np.array(
         [
@@ -321,16 +325,3 @@ def _count_prominent_maxima(values: np.ndarray, relative_tolerance: float = 1.0e
 def _argmax_distance(profile: np.ndarray, start: int, sign: int, reach: int) -> int:
     values = [profile[(start + sign * step) % profile.size] for step in range(reach + 1)]
     return int(np.argmax(values))
-
-
-def _first_local_max_distance(
-    profile: np.ndarray, start: int, sign: int, reach: int, fallback: int
-) -> int:
-    size = profile.size
-    for step in range(1, reach):
-        here = profile[(start + sign * step) % size]
-        if here >= profile[(start + sign * (step - 1)) % size] and here > profile[
-            (start + sign * (step + 1)) % size
-        ]:
-            return step
-    return min(fallback, reach)
