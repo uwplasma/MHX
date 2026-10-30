@@ -1,10 +1,22 @@
 """Standardized diagnostics shared by MHX workflows."""
 
 from mhx.diagnostics.critical_points import (
+    CriticalPointDetection,
+    CriticalPointTracker,
     FluxCriticalPoint,
+    PeriodicFluxInterpolator,
     critical_points_by_kind,
     detect_flux_critical_points,
     track_critical_points,
+)
+from mhx.diagnostics.planar_flux import (
+    PLANAR_FLUX_SCHEMA,
+    FluxPairRegion,
+    PlanarFluxResult,
+    analyze_planar_flux,
+    continuous_flux_rates,
+    double_sheet_pair_regions,
+    join_planar_flux,
 )
 from mhx.diagnostics.reduced_mhd import (
     DIAGNOSTICS_ENTRY_POINT_GROUP,
@@ -36,6 +48,16 @@ from mhx.diagnostics.sweet_parker import (
 )
 
 __all__ = [
+    "CriticalPointDetection",
+    "CriticalPointTracker",
+    "PeriodicFluxInterpolator",
+    "PLANAR_FLUX_SCHEMA",
+    "FluxPairRegion",
+    "PlanarFluxResult",
+    "analyze_planar_flux",
+    "continuous_flux_rates",
+    "double_sheet_pair_regions",
+    "join_planar_flux",
     "DiagnosticContext",
     "DIAGNOSTICS_ENTRY_POINT_GROUP",
     "DiagnosticSpec",

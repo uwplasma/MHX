@@ -154,8 +154,9 @@ def run_turbulent_spectrum_validation(
         result.psi[-1], domain_size=TURBULENCE_DOMAIN[0]
     )
 
-    k_max_fit = shape[0] / 3.0
-    mask = (k_1d >= 5) & (k_1d <= k_max_fit)
+    # Fit the inertial range only: k = 4 to 40 stays clear of the 2/3 dealiasing edge.
+    k_fit_min, k_fit_max = 4, 40
+    mask = (k_1d >= k_fit_min) & (k_1d <= k_fit_max)
     k_fit = k_1d[mask]
     power_fit = power_1d[mask]
     slope, _ = np.polyfit(np.log10(k_fit), np.log10(power_fit), 1)
@@ -177,6 +178,7 @@ def run_turbulent_spectrum_validation(
         "max_vorticity": float(np.max(result.vorticity_linf)),
         "max_current": float(np.max(result.current_linf)),
         "spectral_slope": float(slope),
+        "fit_k_range": [k_fit_min, k_fit_max],
     }
     validation = {
         "schema": "mhx.validation.turbulent_spectrum.gates.v1",
@@ -258,7 +260,10 @@ def _write_turbulent_spectrum_summary(result: TurbulentSpectrumResult, path: Pat
     k_1d = result.k_1d
     power_1d = result.power_1d
 
-    ax.loglog(k_1d, power_1d, label=f"Power Spectrum (t={result.turbulence.time[-1]:.1f})",
+    # Show k <= 100 only; the spectrum falls off in the dissipation range above it.
+    shown = k_1d <= 100
+    ax.loglog(k_1d[shown], power_1d[shown],
+              label=f"Power Spectrum (t={result.turbulence.time[-1]:.1f})",
               color="teal", linewidth=2)
 
     k_ref = np.linspace(10, 50, 100)

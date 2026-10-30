@@ -8,13 +8,10 @@ import time
 from functools import partial
 from pathlib import Path
 
-import matplotlib
 from scipy.interpolate import interp1d
 
-matplotlib.use("Agg")  # Headless Matplotlib backend to prevent WSL/NERSC hangs
 import jax
 import jax.numpy as jnp
-import matplotlib.pyplot as plt
 import numpy as np
 from jaxtyping import Array
 
@@ -23,6 +20,10 @@ from mhx.equations.reduced_mhd import reduced_mhd_rhs, stream_function
 from mhx.grids import CartesianGrid
 from mhx.numerics.spectral import gradient
 from mhx.state import ReducedMHDParams, ReducedMHDState
+
+# Same fluid run and three-panel figure as the comparison example. Importing it
+# also selects the headless Agg Matplotlib backend before pyplot is loaded.
+from vencels_kinetic_comparison import run_orszag_tang, write_kinetic_comparison_figure
 
 # The Vencels CSV ships alongside this example.
 VENCELS_CSV = Path(__file__).resolve().parent.parent / "vencelsdata.csv"
@@ -194,8 +195,8 @@ def main() -> None:
     parser.add_argument("--ny", type=int, default=256)
     parser.add_argument("--domain-size", type=float, default=10.0)
     parser.add_argument("--dt", type=float, default=0.001)
-    parser.add_argument("--t-end", dest="t_end", type=float, default=30.0)
-    parser.add_argument("--save-every", type=int, default=300)
+    parser.add_argument("--t-end", dest="t_end", type=float, default=2.0)
+    parser.add_argument("--save-every", type=int, default=200)
     parser.add_argument("--opt-steps", type=int, default=15)
     args = parser.parse_args()
 
@@ -272,13 +273,6 @@ def main() -> None:
     print(f"Compile time: {compile_seconds:.3f} s")
     run_start = time.perf_counter()
 
-    # Store initial curve for final plotting comparison.
-    init_EB, init_EK, init_Etot0 = run_differentiable_simulation(
-        theta, grid, args.dt, steps_per_block, num_blocks
-    )
-    init_delta_EB = np.array((init_EB - init_EB[0]) / init_Etot0)
-    init_delta_particles = -init_delta_EB
-
     for step in range(1, args.opt_steps + 1):
         t0 = time.perf_counter()
 
@@ -309,42 +303,22 @@ def main() -> None:
     print(f"Optimized Resistivity (eta): {final_eta:.6f}")
     print(f"Optimized Viscosity (nu):   {final_nu:.6f}")
 
-    opt_EB, opt_EK, opt_Etot0 = run_differentiable_simulation(
-        theta, grid, args.dt, steps_per_block, num_blocks
+    # 6. Re-run with the optimized parameters and write the fluid-vs-kinetic figure.
+    result = run_orszag_tang(
+        shape=(args.nx, args.ny),
+        resistivity=final_eta,
+        viscosity=final_nu,
+        dt=args.dt,
+        t_end=executed_t_end,
+        save_every=steps_per_block,
     )
-    opt_delta_EB = np.array((opt_EB - opt_EB[0]) / opt_Etot0)
-    opt_delta_particles = -opt_delta_EB
     run_seconds = time.perf_counter() - run_start
     print(f"Run time: {run_seconds:.3f} s")
 
-    fig, ax = plt.subplots(figsize=(10, 6))
-
-    ax.plot(vencels_time, ref_B_vals, label="B (Vencels Target)", color="navy",
-            linestyle=":", alpha=0.8)
-    ax.plot(vencels_time, ref_particles_vals, label="e+i (Vencels Target)", color="purple",
-            linestyle=":", alpha=0.8)
-
-    ax.plot(vencels_time, init_delta_EB, label="B (Initial Guess)", color="navy",
-            linestyle="--", alpha=0.5)
-    ax.plot(vencels_time, init_delta_particles, label="e+i (Initial Guess)", color="purple",
-            linestyle="--", alpha=0.5)
-
-    ax.plot(vencels_time, opt_delta_EB, label="B (Optimized)", color="navy", linewidth=2.0)
-    ax.plot(vencels_time, opt_delta_particles, label="e+i (Optimized)", color="purple",
-            linewidth=2.0)
-
-    ax.set_title(
-        "Orszag-Tang Parameter Optimization (Autodiff)\n"
-        f"physical t_end={executed_t_end:g}; t/t_A={executed_t_end / args.domain_size:g}"
+    figure_path = write_kinetic_comparison_figure(
+        result, outdir / "kinetic_comparison.png", VENCELS_CSV, args.domain_size
     )
-    ax.set_xlabel(r"$t/t_A$")
-    ax.set_ylabel(r"$\Delta E$")
-    ax.set_xlim(0.0, 3.0)
-    ax.legend(frameon=False)
-
-    plot_path = outdir / "orszag_tang_reconstruction.png"
-    fig.savefig(plot_path, dpi=150, bbox_inches="tight")
-    print(f"Saved reconstruction history plot to: {plot_path}")
+    print(f"Saved kinetic comparison figure to: {figure_path}")
 
 
 if __name__ == "__main__":

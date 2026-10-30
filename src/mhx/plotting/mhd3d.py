@@ -34,8 +34,14 @@ def plot_taylor_green_paper_comparison(
     path: str | Path,
     *,
     peak_half_width: float = 0.25,
+    note: str = "",
 ) -> tuple[Path, dict[str, dict[str, float]]]:
-    """Reproduce the quantities in Lee et al. (2010), Figures 1, 2, and 6."""
+    """Reproduce the quantities in Lee et al. (2010), Figures 1, 2, and 6.
+
+    Spectra are shown and fitted only up to k = N/3, the 2/3 dealiasing cutoff.
+    The fit uses 3 <= k <= N/6. ``note`` is added under the title, for example
+    to name the Table I runs that were used.
+    """
     import matplotlib.pyplot as plt
 
     output = Path(path)
@@ -73,7 +79,9 @@ def plot_taylor_green_paper_comparison(
         kinetic = np.asarray(peak["kinetic"])
         magnetic = np.asarray(peak["magnetic"])
         total = np.asarray(peak["total"])
-        valid_ratio = (k > 0) & (kinetic > 0.0)
+        k_display = result.shape[0] // 3
+        shown = k <= k_display
+        valid_ratio = (k > 0) & (k <= k_display) & (kinetic > 0.0)
         axes[1, 0].semilogx(
             k[valid_ratio],
             magnetic[valid_ratio] / kinetic[valid_ratio],
@@ -82,7 +90,7 @@ def plot_taylor_green_paper_comparison(
         )
 
         exponent = exponents[name]
-        valid = (k > 0) & (total > 0.0)
+        valid = (k > 0) & shown & (total > 0.0)
         fit_max = max(4, min(result.shape[0] // 6, int(k.max())))
         slope = _power_law_slope(k, total, 3, fit_max)
         compensated = k[valid] ** exponent * total[valid]
@@ -104,6 +112,7 @@ def plot_taylor_green_paper_comparison(
             "target_slope": -exponent,
             "fit_k_min": 3.0,
             "fit_k_max": float(fit_max),
+            "display_k_max": float(k_display),
             "peak_samples": float(peak["sample_count"]),
         }
 
@@ -122,10 +131,13 @@ def plot_taylor_green_paper_comparison(
     for axis in axes.flat:
         axis.grid(True, alpha=0.25)
         axis.legend(frameon=False)
-    figure.suptitle(
+    title = (
         "Taylor--Green MHD paper comparison\n"
         "I: target $k^{-2}$, A: $k^{-5/3}$, C: $k^{-3/2}$"
     )
+    if note:
+        title = f"{title}\n{note}"
+    figure.suptitle(title)
     figure.savefig(output, dpi=200)
     plt.close(figure)
     return output, metrics
