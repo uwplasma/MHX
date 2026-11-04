@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
+import jax
 import numpy as np
 import pytest
-from jax.experimental import disable_x64
 
 from mhx.diagnostics.critical_points import (
     PeriodicFluxInterpolator,
@@ -71,8 +71,12 @@ def test_refine_many_empty_input_and_multi_batch():
 
 def test_requires_x64():
     psi = _psi()
-    with disable_x64(), pytest.raises(ValueError, match="enable_x64"):
-        JaxPeriodicFluxInterpolator(psi)
+    jax.config.update("jax_enable_x64", False)
+    try:
+        with pytest.raises(ValueError, match="enable_x64"):
+            JaxPeriodicFluxInterpolator(psi)
+    finally:
+        jax.config.update("jax_enable_x64", True)
 
 
 def _sorted(points):
