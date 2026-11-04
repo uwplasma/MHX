@@ -112,7 +112,7 @@ Check every physics gate, tolerance, and claim boundary.
 :::
 
 :::{grid-item-card} API reference
-:link: reference/api/index
+:link: reference/api
 :link-type: doc
 Look up every public class, function, and CLI command.
 :::
@@ -148,13 +148,24 @@ tutorials/06_implicit_stepping
 
 ```{toctree}
 :hidden:
+:caption: Examples
+
+examples/autodiff_gradients
+examples/orszag_tang_vencels
+examples/orszag_tang_ic_optimization
+examples/turbulence_2d
+examples/orszag_tang_3d
+examples/turbulence_3d
+examples/sweet_parker_collapse
+```
+
+```{toctree}
+:hidden:
 :caption: How-to guides
 
 how_to/run_from_toml
 how_to/run_on_gpus
-how_to/extend_physics
-how_to/add_diagnostics
-how_to/generate_media
+how_to/extend
 ```
 
 ```{toctree}
@@ -164,10 +175,7 @@ how_to/generate_media
 physics/reduced_mhd
 physics/mhd3d
 physics/compressible
-physics/spectral_method
-physics/time_integration
-physics/differentiability
-physics/solvax_boundary
+physics/numerics
 ```
 
 ```{toctree}
@@ -182,50 +190,17 @@ gallery
 :caption: Validation
 
 validation/index
-validation/exact_limits
-validation/linear_tearing
 validation/nonlinear
-validation/reconnection_campaigns
-validation/scaling_theory
 ```
 
 ```{toctree}
 :hidden:
 :caption: Reference
 
-reference/api/index
+reference/api
 reference/cli
 reference/config_schema
 reference/output_schema
-reference/performance
+reference/literature
 reference/bibliography
-```
-
-```{toctree}
-:hidden:
-:caption: Development
-
-develop/architecture
-develop/style
-develop/release
-```
-
-```{toctree}
-:hidden:
-:caption: Project records
-
-project/media_inventory
-project/literature
-project/audit
-project/paper_plan
-project/paper_pipeline
-project/publication_checklist
-project/reviewer_evidence
-project/campaigns
-project/campaign_runner
-project/long_run_evidence
-project/nonlinear_campaign_evidence
-project/seed_robust_qi
-project/time_windows
-project/neural_ode_reproducibility
 ```

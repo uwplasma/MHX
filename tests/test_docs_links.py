@@ -15,107 +15,25 @@ REQUIRED_TOCTREE_ENTRIES = {
     "getting_started/install",
     "getting_started/first_run",
     "how_to/run_from_toml",
-    "how_to/extend_physics",
-    "how_to/add_diagnostics",
+    "how_to/extend",
     "physics/reduced_mhd",
-    "physics/differentiability",
+    "physics/numerics",
     "gallery",
     "validation/index",
-    "validation/exact_limits",
-    "validation/linear_tearing",
     "validation/nonlinear",
-    "validation/reconnection_campaigns",
-    "validation/scaling_theory",
-    "reference/api/index",
+    "reference/api",
     "reference/cli",
     "reference/output_schema",
-    "reference/performance",
-    "develop/style",
-    "develop/release",
-    "project/media_inventory",
-    "project/reviewer_evidence",
-    "project/publication_checklist",
-    "project/campaign_runner",
-    "project/long_run_evidence",
+    "reference/literature",
+    "examples/autodiff_gradients",
 }
 
 # Each documentation area must keep linking the source files it describes.
 # The listed paths must exist and appear in the combined text of the area.
 REQUIRED_SOURCE_LINKS = {
     ("docs/validation",): {
-        "src/mhx/benchmarks/seed_robust_qi.py",
         "src/mhx/benchmarks/eigenvalue.py",
-        "src/mhx/benchmarks/suite.py",
         "src/mhx/benchmarks/orszag_tang.py",
-    },
-    ("docs/reference/performance.md",): {
-        ".github/workflows/ci.yml",
-        "src/mhx/benchmarks/timing.py",
-        "tests/test_timing_benchmark.py",
-    },
-    ("docs/project/paper_plan.md",): {
-        "src/mhx/benchmarks/campaigns.py",
-        "src/mhx/benchmarks/campaign_runner.py",
-        "src/mhx/neural_ode/reproducibility.py",
-        "src/mhx/benchmarks/seed_robust_qi.py",
-        "src/mhx/cli/main.py",
-        "src/mhx/physics/equilibria.py",
-    },
-    ("docs/project/seed_robust_qi.md",): {
-        "src/mhx/benchmarks/seed_robust_qi.py",
-        "src/mhx/benchmarks/suite.py",
-        "src/mhx/cli/main.py",
-        "tests/test_seed_robust_qi.py",
-    },
-    ("docs/project/neural_ode_reproducibility.md",): {
-        "src/mhx/neural_ode/reproducibility.py",
-        "src/mhx/neural_ode/__init__.py",
-        "src/mhx/cli/main.py",
-        "examples/make_neural_ode_reproducibility.py",
-        "tests/test_neural_ode_reproducibility.py",
-    },
-    ("docs/project/reviewer_evidence.md",): {
-        "src/mhx/benchmarks/seed_robust_qi.py",
-        "src/mhx/benchmarks/campaign_runner.py",
-        "src/mhx/benchmarks/duration_policy.py",
-        "src/mhx/benchmarks/readiness.py",
-        "tests/test_campaign_runner.py",
-    },
-    ("docs/project/campaign_runner.md",): {
-        "src/mhx/benchmarks/campaigns.py",
-        "src/mhx/benchmarks/campaign_runner.py",
-        "src/mhx/benchmarks/duration_policy.py",
-        "src/mhx/campaigns/production.py",
-        "src/mhx/campaigns/__init__.py",
-        "tests/test_campaign_runner.py",
-        "tests/test_production_campaign.py",
-    },
-    ("docs/project/publication_checklist.md",): {
-        "examples/tools/verify_paper_artifacts.py",
-        "examples/make_validation_media.py",
-        "examples/media/run_all.py",
-        "examples/media/supplemental.py",
-        "src/mhx/plotting/reduced_mhd.py",
-        "tests/test_readme_media.py",
-    },
-    ("docs/project/paper_pipeline.md",): {
-        "src/mhx/benchmarks/paper_pipeline.py",
-        "src/mhx/cli/main.py",
-    },
-    ("docs/project/media_inventory.md",): {
-        "examples/media/run_all.py",
-        "examples/media/supplemental.py",
-        "src/mhx/benchmarks/current_sheet.py",
-        "src/mhx/benchmarks/orszag_tang.py",
-        "src/mhx/campaigns/production.py",
-        "tests/test_current_sheet_eigenvalue_validation.py",
-        "tests/test_orszag_tang_validation.py",
-        "tests/test_production_campaign.py",
-    },
-    ("docs/project/long_run_evidence.md",): {
-        "src/mhx/benchmarks/nonlinear.py",
-        "src/mhx/benchmarks/current_sheet.py",
-        "src/mhx/physics/equilibria.py",
     },
 }
 
@@ -150,7 +68,6 @@ def test_every_docs_page_is_reachable_from_a_toctree() -> None:
     entries: set[str] = set()
     toctree_holders = {
         DOCS / "index.md": "",
-        DOCS / "reference" / "api" / "index.md": "reference/api/",
     }
     for holder, prefix in toctree_holders.items():
         for match in TOCTREE_RE.finditer(holder.read_text(encoding="utf-8")):
@@ -164,7 +81,7 @@ def test_every_docs_page_is_reachable_from_a_toctree() -> None:
         if "_build" in page.parts:
             continue
         name = str(page.relative_to(DOCS).with_suffix(""))
-        if name in {"index", "reference/api/index"}:
+        if name == "index":
             continue
         if name not in entries:
             missing.append(name)
@@ -196,37 +113,21 @@ def test_docs_image_links_point_to_existing_files() -> None:
     assert missing == []
 
 
-def test_reviewer_claim_levels_stay_explicit() -> None:
-    reviewer_text = (DOCS / "project" / "reviewer_evidence.md").read_text(encoding="utf-8")
-
-    for claim_level in (
-        "`smoke`",
-        "`validation`",
-        "`production_template`",
-        "`production`",
-    ):
-        assert claim_level in reviewer_text
-
-    assert "not production UQ" in reviewer_text
-
-
-def test_validation_split_pages_keep_their_gates() -> None:
-    """Every gate section survived the split into topic pages."""
+def test_validation_pages_keep_their_gates() -> None:
+    """Every gate section survived the merge into two validation pages."""
     expectations = {
-        "exact_limits.md": ["## Exact resistive decay", "## Diffusion eigenvalue scaffold"],
-        "linear_tearing.md": [
-            "## FKR growth-rate gate",
-            "## Direct Harris-sheet tearing eigenvalue gate",
+        "index.md": [
+            "Exact resistive decay",
+            "Diffusion eigenvalue scaffold",
+            "FKR growth-rate gate",
+            "Direct Harris-sheet tearing eigenvalue gate",
+            "Reconnection scaling gates",
         ],
         "nonlinear.md": [
-            "## Nonlinear Orszag--Tang reduced-MHD gate",
-            "## Nonlinear reduced-MHD energy budget",
+            "Nonlinear Orszag--Tang reduced-MHD gate",
+            "Nonlinear reduced-MHD energy budget",
+            "Seeded double-Harris long-run validation",
         ],
-        "reconnection_campaigns.md": [
-            "## Seeded double-Harris long-run validation",
-            "## Seed-robust QI validation",
-        ],
-        "scaling_theory.md": ["## Reconnection scaling gates"],
     }
     for page, headings in expectations.items():
         text = (DOCS / "validation" / page).read_text(encoding="utf-8")

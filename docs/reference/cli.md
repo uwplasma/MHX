@@ -5,9 +5,8 @@ benchmark and validation workflows, which are the largest command group.
 
 MHX benchmark workflows are intentionally command-line reproducible. The active
 catalog now includes a FAST reduced-MHD smoke run, exact linear physics gates,
-Harris tearing eigenvalue checks, nonlinear energy-budget and duration gates,
-Orszag--Tang and turbulence media, seed-QI, neural-ODE reproducibility, and
-restartable Rutherford-executor artifacts.
+Harris tearing eigenvalue checks, nonlinear energy-budget gates, and
+Orszag--Tang and turbulence media.
 
 ```bash
 mhx benchmark run \
@@ -34,8 +33,7 @@ Expected files include:
 
 Use this section as the detailed command catalog that the README intentionally
 does not carry. Most benchmark commands write `claim_level = "validation"`;
-`mhx benchmark run` writes `smoke`, and campaign planning commands can write
-`production_template`.
+
 
 ```bash
 mhx benchmark run --config examples/linear_tearing.toml --outdir outputs/benchmarks/linear_tearing_fast --gif
@@ -63,46 +61,14 @@ mhx benchmark orszag-tang --outdir outputs/benchmarks/orszag_tang_vortex --movie
 mhx benchmark decaying-turbulence --outdir outputs/benchmarks/decaying_mhd_turbulence --movies
 mhx benchmark forced-turbulent-reconnection --outdir outputs/benchmarks/forced_turbulent_reconnection --movies
 mhx benchmark forced-turbulent-reconnection-readiness-check outputs/benchmarks/forced_turbulent_reconnection
-mhx benchmark nonlinear-duration-audit --outdir outputs/benchmarks/nonlinear_duration_audit
-mhx benchmark duration-policy --outdir outputs/benchmarks/duration_policy
 mhx benchmark diffusion-eigenvalue --outdir outputs/benchmarks/diffusion_eigenvalue
 mhx benchmark power-iteration --outdir outputs/benchmarks/power_iteration
 mhx benchmark arnoldi --outdir outputs/benchmarks/arnoldi
-mhx benchmark timing --outdir outputs/benchmarks/timing --repeats 3 --warmups 1
-mhx benchmark catalog --outdir outputs/benchmarks/catalog
-mhx benchmark seed-robust-qi --outdir outputs/benchmarks/seed_robust_qi
-mhx benchmark seed-robust-qi-sweep --outdir outputs/benchmarks/seed_robust_qi_sweep
-mhx neural-ode dataset --outdir outputs/neural_ode/seed_qi_fast
-mhx neural-ode train --outdir outputs/neural_ode/latent_ode_fast
-mhx campaign rutherford-template --outdir outputs/campaigns/rutherford_template
-mhx campaign rutherford-run-fast --outdir outputs/campaigns/rutherford_fast
-mhx campaign rutherford-plan-production --outdir outputs/campaigns/rutherford_production_plan
-mhx campaign rutherford-resume-plan outputs/campaigns/rutherford_production_plan
-mhx campaign rutherford-execute outputs/campaigns/rutherford_production_plan --max-steps 128
-python examples/make_rutherford_production_plan.py --outdir outputs/examples/rutherford_production_plan
-python examples/run_rutherford_production_chunk.py --outdir outputs/examples/rutherford_chunk --movies
 python examples/run_orszag_tang.py --outdir outputs/examples/orszag_tang --nx 64 --ny 64 --t-end 6
-python examples/train_latent_ode_fast.py --outdir outputs/examples/latent_ode_fast
-mhx validate all --outdir outputs/validation_suite
-mhx validate readiness --suite outputs/validation_suite --outdir outputs/validation_readiness
-mhx validate paper-pipeline --outdir outputs/paper_pipeline
 ```
 
-`mhx validate all` includes the forced-turbulent-reconnection readiness check as
-a separate required public-release gate after generating a FAST forced run. This
-accounts for the validation-only claim boundary in release readiness while still
-leaving nonlinear publication claims blocked pending production evidence.
-`mhx validate paper-pipeline` wraps that suite, the readiness report, and a
-top-level recursive artifact manifest into the bundle documented in
-[paper_pipeline.md](../project/paper_pipeline.md).
-
 The equation-heavy physics gates and still figures are on
-[validation.md](../validation/index.md). Campaign scaffolds and restartable execution are
-documented in [campaigns.md](../project/campaigns.md) and
-[campaign_runner.md](../project/campaign_runner.md). Neural-ODE baseline comparison and
-fitted latent-ODE outputs are documented in
-[neural_ode_reproducibility.md](../project/neural_ode_reproducibility.md).
-
+[validation.md](../validation/index.md). 
 ## Orszag--Tang nonlinear vortex example
 
 ```bash
@@ -208,12 +174,9 @@ mhx benchmark double-harris-growth --outdir outputs/benchmarks/periodic_double_h
 mhx benchmark double-harris-long-run --outdir outputs/benchmarks/periodic_double_harris_seeded_long_run
 mhx benchmark double-harris-convergence --outdir outputs/benchmarks/periodic_double_harris_convergence
 mhx benchmark nonlinear-energy-budget --outdir outputs/benchmarks/nonlinear_energy_budget
-mhx benchmark nonlinear-duration-audit --outdir outputs/benchmarks/nonlinear_duration_audit
-mhx benchmark duration-policy --outdir outputs/benchmarks/duration_policy
 mhx benchmark diffusion-eigenvalue --outdir outputs/benchmarks/diffusion_eigenvalue
 mhx benchmark power-iteration --outdir outputs/benchmarks/power_iteration
 mhx benchmark arnoldi --outdir outputs/benchmarks/arnoldi
-mhx benchmark catalog --outdir outputs/benchmarks/catalog
 ```
 
 This writes:
@@ -363,20 +326,6 @@ The nonlinear energy-budget command writes:
 - `nonlinear_energy_budget.npz`
 - `figures/nonlinear_energy_budget.png`
 
-The nonlinear duration-audit command writes:
-
-- `diagnostics.json`
-- `validation.json`
-- `nonlinear_duration_audit.npz`
-- `figures/nonlinear_duration_audit.png`
-
-The duration-policy command writes:
-
-- `duration_policy.json`
-- `duration_policy.md`
-- `validation.json`
-- `manifest.json`
-
 The diffusion-eigenvalue command writes:
 
 - `diagnostics.json`
@@ -397,115 +346,6 @@ The Arnoldi command writes:
 - `validation.json`
 - `arnoldi_spectrum.npz`
 - `figures/arnoldi_ritz_values.png`
-
-The catalog command writes:
-
-- `benchmark_catalog.json`
-- `benchmark_catalog.md`
-- `manifest.json`
-
-## CI artifacts
-
-Every push runs a `benchmark-artifacts` CI job. It executes deterministic FAST
-pipelines:
-
-```bash
-mhx benchmark run --config examples/linear_tearing.toml --outdir outputs/ci/linear_tearing_fast --gif
-mhx benchmark validate outputs/ci/linear_tearing_fast
-mhx benchmark decay --outdir outputs/ci/resistive_decay
-mhx benchmark scaling --outdir outputs/ci/reconnection_scaling
-mhx benchmark fkr-window --outdir outputs/ci/fkr_window
-mhx benchmark fkr-growth --outdir outputs/ci/fkr_growth_rate
-mhx benchmark harris-delta-prime --outdir outputs/ci/harris_delta_prime
-mhx benchmark linear-tearing-eigenvalue --outdir outputs/ci/linear_tearing_eigenvalue
-mhx benchmark linear-tearing-dispersion --outdir outputs/ci/linear_tearing_dispersion
-mhx benchmark linear-tearing-layer --outdir outputs/ci/linear_tearing_layer
-mhx benchmark linear-tearing-timedomain --outdir outputs/ci/linear_tearing_timedomain
-mhx benchmark linearized-rhs --outdir outputs/ci/linearized_rhs
-mhx benchmark reduced-mhd-eigenmode --outdir outputs/ci/reduced_mhd_eigenmode
-mhx benchmark cosine-equilibrium-linearization --outdir outputs/ci/cosine_equilibrium_linearization
-mhx benchmark current-sheet-eigenvalue --outdir outputs/ci/periodic_current_sheet_eigenvalue
-mhx benchmark current-sheet-timedomain --outdir outputs/ci/periodic_current_sheet_timedomain
-mhx benchmark current-sheet-nonlinear-bridge --outdir outputs/ci/periodic_current_sheet_nonlinear_bridge
-mhx benchmark double-harris-growth --outdir outputs/ci/periodic_double_harris_nonlinear_growth
-mhx benchmark double-harris-convergence --outdir outputs/ci/periodic_double_harris_convergence
-mhx benchmark nonlinear-energy-budget --outdir outputs/ci/nonlinear_energy_budget
-mhx benchmark orszag-tang --outdir outputs/ci/orszag_tang_vortex
-mhx benchmark decaying-turbulence --outdir outputs/ci/decaying_mhd_turbulence
-mhx benchmark forced-turbulent-reconnection --outdir outputs/ci/forced_turbulent_reconnection
-mhx benchmark forced-turbulent-reconnection-readiness-check outputs/ci/forced_turbulent_reconnection
-mhx benchmark nonlinear-duration-audit --outdir outputs/ci/nonlinear_duration_audit
-mhx benchmark duration-policy --outdir outputs/ci/duration_policy
-mhx benchmark diffusion-eigenvalue --outdir outputs/ci/diffusion_eigenvalue
-mhx benchmark power-iteration --outdir outputs/ci/power_iteration
-mhx benchmark arnoldi --outdir outputs/ci/arnoldi
-mhx benchmark timing --outdir outputs/ci/timing --repeats 1 --warmups 0
-mhx benchmark catalog --outdir outputs/ci/catalog
-mhx benchmark seed-robust-qi --outdir outputs/ci/seed_robust_qi
-mhx benchmark seed-robust-qi-sweep --outdir outputs/ci/seed_robust_qi_sweep
-mhx neural-ode dataset --outdir outputs/ci/neural_ode_dataset
-mhx neural-ode train --outdir outputs/ci/neural_ode_latent_fit
-mhx campaign rutherford-plan-production --outdir outputs/ci/rutherford_plan
-mhx campaign rutherford-execute outputs/ci/rutherford_plan --max-steps 4
-mhx validate all --outdir outputs/ci/validation_suite
-mhx validate readiness --suite outputs/ci/validation_suite --outdir outputs/ci/readiness
-python examples/media/run_all.py render --preset final
-mhx run examples/linear_tearing_twofluid_toy.toml --outdir outputs/ci/twofluid_toy
-mhx figures outputs/ci/twofluid_toy --gif
-mhx report outputs/ci/twofluid_toy
-mhx run examples/linear_tearing_plugin_demo.toml --outdir outputs/ci/plugin_demo
-mhx figures outputs/ci/plugin_demo --gif
-mhx report outputs/ci/plugin_demo
-mhx artifact-manifest outputs/ci
-```
-
-The job uploads `outputs/ci` as the `mhx-fast-artifacts` GitHub Actions
-artifact. Readers can download it to inspect manifests, reports, PNG figures,
-GIF movies, and `artifact_manifest.json` checksums generated from the exact
-commit under test.
-
-The catalog file `outputs/ci/catalog/benchmark_catalog.md` gives readers a
-single table of active FAST gates, schemas, commands, and expected artifacts.
-
-For a single pass/fail evidence bundle, run:
-
-```bash
-mhx validate all --outdir outputs/validation_suite
-```
-
-This command executes the active deterministic FAST validation gates and writes:
-
-- `outputs/validation_suite/validation_suite.json`
-- `outputs/validation_suite/validation_suite.md`
-- `outputs/validation_suite/artifact_manifest.json`
-- one subdirectory per validation case, each with its own `validation.json`
-  and `manifest.json`.
-
-## FAST timing benchmark
-
-MHX records performance as an artifact, not as a brittle absolute CI gate:
-
-```bash
-mhx benchmark timing --outdir outputs/benchmarks/timing --repeats 3 --warmups 1
-```
-
-This measures wall-clock time and Python allocation peaks for:
-
-- `linear_tearing_fast`: the active reduced-MHD smoke run.
-- `resistive_decay_fast`: the exact single-mode resistive validation case.
-- `reconnection_scaling`: analytic FKR/plasmoid/ideal-tearing scaling gates.
-
-The command writes:
-
-- `timing.json`
-- `timing.md`
-- `figures/timing_summary.png`
-- `manifest.json`
-
-The CI job uses `--repeats 1 --warmups 0` to keep runtime low and uploads the
-result in `outputs/ci/timing/`. Timing comparisons should be made between
-artifacts from the same runner class; MHX does not currently fail CI on
-absolute speed.
 
 ## Theory scaffolds
 

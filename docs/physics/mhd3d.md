@@ -3,9 +3,7 @@
 MHX solves full three-dimensional incompressible visco-resistive MHD in a
 periodic box, beside the [2D reduced model](reduced_mhd.md). The same
 `mhx.Simulation` call runs both: a three-entry `shape` with
-`equations="mhd3d"` selects this model. The program plan behind it, with
-the full benchmark ladder and delivery state, is
-[`plan_3d.md`](https://github.com/uwplasma/MHX/blob/main/plan_3d.md).
+`equations="mhd3d"` selects this model.
 
 ## The equations
 
@@ -96,8 +94,7 @@ program plan measures that limit directly.
 
 ## Validation so far
 
-The gate ladder and its literature anchors live in `plan_3d.md`. The
-gates passing in CI today:
+The gates passing in CI today:
 
 | Gate | Statement | Anchor |
 | --- | --- | --- |

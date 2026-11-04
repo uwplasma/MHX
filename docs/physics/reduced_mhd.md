@@ -199,7 +199,7 @@ default. Each adds its contribution to $(S_\psi, S_\omega)$:
 | `electron_pressure_tensor` | anisotropic current smoothing | toy closure, not gated physics |
 
 The toy terms exist to exercise the plugin interface. Do not attach physical
-claims to them. [Extend physics](../how_to/extend_physics.md) shows how to
+claims to them. [Extend physics](../how_to/extend.md) shows how to
 register your own term.
 
 ## Assumptions and limits

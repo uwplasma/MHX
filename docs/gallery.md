@@ -1,9 +1,7 @@
 # Gallery
 
 Every movie here comes from a recorded MHX run. The caption under each one
-states what it shows, the command that made it, and the claim boundary. The
-[media inventory](project/media_inventory.md) holds the full provenance,
-settings, and quality checks for each source.
+states what it shows, the command that made it, and the claim boundary.
 
 ## Harris-sheet reconnection
 
@@ -53,8 +51,7 @@ python - # mhx.Simulation(shape=(192,)*3, equations="mhd3d", ...) per docs/physi
 ```
 
 Campaign-scale solver output on the road to gate G7. Not yet a gated
-validation artifact: the dissipation-peak tolerance waits on the
-normalization audit in `plan_3d.md`.
+validation artifact.
 
 ```{video} _static/movies/orszag_tang_current.mp4
 :loop:
@@ -161,6 +158,5 @@ python examples/media/run_all.py render --preset final
 
 Missing requested sources are errors. Existing committed files are never treated
 as substitutes for missing inputs. The per-case commands and output contract are documented in
-`examples/media/README.md`. The [generation-instructions page](how_to/generate_media.md)
-provides one placeholder section per curated case. [Make your first movie](getting_started/first_movie.md) shows how to
+`examples/media/README.md`. [Make your first movie](getting_started/first_movie.md) shows how to
 build your own.

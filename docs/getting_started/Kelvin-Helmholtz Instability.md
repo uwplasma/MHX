@@ -1,1 +1,0 @@
-To initialize a Kelvin-Helmholtz Instability run, take a look at 
