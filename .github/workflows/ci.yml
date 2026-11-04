@@ -55,7 +55,7 @@ jobs:
           python -m pytest -m "not slow" --cov=mhx --cov-report=
       - name: Slow release-gate coverage slice
         run: |
-          python -m pytest -m slow --cov=mhx --cov-append --cov-report=term-missing --cov-report=json:coverage.json --cov-fail-under=85
+          python -m pytest -m slow --cov=mhx --cov-append --cov-report=term-missing --cov-report=json:coverage.json --cov-fail-under=95
       - name: Upload coverage JSON
         uses: actions/upload-artifact@v7.0.1
         with:

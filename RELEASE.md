@@ -16,7 +16,7 @@ the tests, the documentation build and the lint check are green.
 
 ```bash
 python -m ruff check src tests examples tools
-python -m pytest --cov=mhx --cov-report=term-missing --cov-fail-under=85
+python -m pytest --cov=mhx --cov-report=term-missing --cov-fail-under=95
 sphinx-build -W -b html docs docs/_build/html
 python -m pip install --upgrade build twine
 python -m build

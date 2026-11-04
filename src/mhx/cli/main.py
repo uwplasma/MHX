@@ -1616,13 +1616,6 @@ def diagnostics_lint(
     typer.echo(f"{name}: ok ({len(spec.output_keys)} output keys)")
 
 
-def main() -> None:  # pragma: no cover - exercised by console entry points.
-    """Run the Typer application."""
-    app()
-
-
-if __name__ == "__main__":
-    main()
 
 
 @app.command()
@@ -1674,3 +1667,12 @@ def benchmark_validate(
     typer.echo(f"wrote {output_path}")
     if not result["passed"]:
         raise typer.Exit(code=1)
+
+
+def main() -> None:  # pragma: no cover - exercised by console entry points.
+    """Run the Typer application."""
+    app()
+
+
+if __name__ == "__main__":
+    main()
