@@ -41,10 +41,8 @@ or change the Python API.
 
 ## Validation drivers
 
-Files named `publication_*.py` and `make_*.py` regenerate review artifacts.
-They call benchmark and campaign modules, so they contain more controls than
-the gallery. The test suite runs their small settings.
+Files named `make_*.py` regenerate documentation media. They call benchmark
+modules, so they contain more controls than the gallery.
 
-`examples/tools/verify_paper_artifacts.py` checks saved paper data.
 `examples/plugin_template/` is a package template for an external physics or
 diagnostics plugin.

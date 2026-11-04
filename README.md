@@ -19,7 +19,7 @@ MHD turbulence, and dynamos. The capability matrix:
 | Compressible MHD, subsonic smooth | available, thin box | available |
 | Shocks and supersonic flows | out of scope | out of scope |
 
-![Double-Harris reconnection: residual flux with flux contours and X/O markers](docs/_static/readme/double_harris_reconnection.gif)
+![Many-plasmoid Double-Harris chain: magnetic flux with flux contours](docs/_static/readme/double_harris_reconnection.gif)
 
 ## First run
 
@@ -102,9 +102,19 @@ run it from the repository root.
 
 These images show bounded validation runs. The
 [gallery](https://mhx.readthedocs.io/en/latest/gallery.html) plays them as
-movies, and the
-[media inventory](docs/project/media_inventory.md) records their settings and
-claim limits.
+movies.
+
+Regenerate the landing-page and documentation media from the same final
+simulation bundles:
+
+```bash
+python examples/media/run_all.py simulate --preset final --allow-expensive
+python examples/media/run_all.py render --preset final
+```
+
+The [media campaign guide](examples/media/README.md) documents individual
+cases, preview runs, staging paths, and promotion checks. The committed
+high-fidelity collection includes its GIFs, MP4s, posters, and provenance.
 
 ## Three-dimensional MHD
 
@@ -124,8 +134,7 @@ result = mhx.Simulation(
 ```
 
 The [3D model page](docs/physics/mhd3d.md) states the equations, the
-numerics, and the passing validation gates. The program plan and its
-literature-anchored benchmark ladder are in [`plan_3d.md`](plan_3d.md).
+numerics, and the passing validation gates.
 
 ## Physics and numerics
 
@@ -145,8 +154,7 @@ SOLVAX owns general numerical algebra:
 
 The documentation states the
 [equations and their derivation](https://mhx.readthedocs.io/en/latest/physics/reduced_mhd.html),
-the [spectral method](https://mhx.readthedocs.io/en/latest/physics/spectral_method.html),
-and [what differentiates](https://mhx.readthedocs.io/en/latest/physics/differentiability.html).
+and the [spectral method and what differentiates](https://mhx.readthedocs.io/en/latest/physics/numerics.html).
 
 ## Parallel runs
 
@@ -164,7 +172,7 @@ JAX_PLATFORM_NAME=gpu python examples/gallery/05_gpu_parallel.py
 The measured speedup is 2.38x on four logical CPU devices and 1.95x on two
 PCIe-connected RTX A4000 GPUs, for four fixed reconnection cases. The
 [device guide](https://mhx.readthedocs.io/en/latest/how_to/run_on_gpus.html)
-and [performance page](docs/reference/performance.md) hold the settings and
+and [performance page](docs/how_to/run_on_gpus.md) hold the settings and
 data.
 
 ## Documentation
@@ -173,14 +181,14 @@ data.
 | --- | --- |
 | Install and first steps | [Get started](https://mhx.readthedocs.io/en/latest/getting_started/install.html) |
 | Equations and derivation | [`docs/physics/reduced_mhd.md`](docs/physics/reduced_mhd.md) |
-| Gradients | [`docs/physics/differentiability.md`](docs/physics/differentiability.md) |
+| Numerics and gradients | [`docs/physics/numerics.md`](docs/physics/numerics.md) |
 | Validation gates and limits | [`docs/validation/index.md`](docs/validation/index.md) |
 | TOML configuration | [`docs/reference/config_schema.md`](docs/reference/config_schema.md) |
 | Output files | [`docs/reference/output_schema.md`](docs/reference/output_schema.md) |
 | Movie gallery | [`docs/gallery.md`](docs/gallery.md) |
 
-The benchmark and campaign tools remain available for validation and long
-production runs. Run `mhx --help` to list them.
+The benchmark commands remain available for validation. Run `mhx --help` to
+list them.
 
 ## Development
 
@@ -189,7 +197,6 @@ Install the repository tools, then run the checks:
 ```bash
 python -m pip install -e ".[dev]"
 python -m ruff check src tests examples tools
-python tools/check_prose.py
 python -m pytest
 sphinx-build -W -b html docs docs/_build/html
 ```

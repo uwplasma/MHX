@@ -68,10 +68,10 @@ $A(t) \approx A_0 e^{\gamma t}$ by least squares on $\log A$ inside
 `fit_time_window`. MHX records `fit_time_window` and `fit_sample_count` in
 `diagnostics.json`, so growth-rate comparisons stay auditable. Do not read
 `gamma_fit` as a tearing growth rate unless the equilibrium, fit window, and
-parameter regime match a [validated gate](../validation/linear_tearing.md).
+parameter regime match a [validated gate](../validation/index.md).
 
 Use `mhx diagnostics list` for names and output keys, and
-[add diagnostics](../how_to/add_diagnostics.md) for the registry.
+[add diagnostics](../how_to/extend.md) for the registry.
 
 ## Reproducible command
 

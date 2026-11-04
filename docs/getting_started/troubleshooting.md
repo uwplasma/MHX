@@ -45,7 +45,7 @@ with `JAX_ENABLE_X64=1` for validation and gradient work. The
 Check precision first. The Newton tolerances sit near $10^{-9}$, which
 float32 cannot reach, so implicit runs need `JAX_ENABLE_X64=1`. If the flag
 still fails under float64, reduce `dt` and rerun. Do not use a non-converged
-trajectory as evidence. The [time integration page](../physics/time_integration.md)
+trajectory as evidence. The [time integration page](../physics/numerics.md)
 explains the solver.
 
 ## Something else
