@@ -14,11 +14,9 @@ from mhx.benchmarks import (
     run_linear_tearing_smoke,
     validate_run,
     write_arnoldi_validation,
-    write_benchmark_catalog,
     write_cosine_equilibrium_linearization_validation,
     write_decaying_mhd_turbulence_validation,
     write_diffusion_eigenvalue_validation,
-    write_duration_policy,
     write_fkr_growth_rate_validation,
     write_fkr_window_validation,
     write_forced_turbulent_reconnection_readiness_report,
@@ -29,10 +27,8 @@ from mhx.benchmarks import (
     write_linear_tearing_layer_validation,
     write_linear_tearing_timedomain_validation,
     write_linearized_rhs_validation,
-    write_nonlinear_duration_audit,
     write_nonlinear_energy_budget_validation,
     write_orszag_tang_vortex_validation,
-    write_paper_pipeline,
     write_periodic_current_sheet_eigenvalue_validation,
     write_periodic_current_sheet_nonlinear_bridge_validation,
     write_periodic_current_sheet_timedomain_validation,
@@ -42,25 +38,10 @@ from mhx.benchmarks import (
     write_periodic_double_harris_promotion_report,
     write_periodic_double_harris_seeded_long_run_validation,
     write_power_iteration_validation,
-    write_readiness_report,
     write_reconnection_scaling_validation,
     write_reduced_mhd_linear_eigenmode_validation,
-    write_release_candidate_report,
     write_resistive_decay_validation,
     write_run_report,
-    write_rutherford_campaign_fast,
-    write_rutherford_campaign_template,
-    write_seed_robust_qi_sweep,
-    write_seed_robust_qi_validation,
-    write_timing_benchmark,
-    write_validation_suite,
-)
-from mhx.campaigns import (
-    WalltimePolicy,
-    write_rutherford_production_execution,
-    write_rutherford_production_plan,
-    write_rutherford_production_promotion_report,
-    write_rutherford_resume_plan,
 )
 from mhx.config import RunConfig, load_config
 from mhx.diagnostics import (
@@ -75,10 +56,6 @@ from mhx.io import (
     write_artifact_manifest,
     write_manifest,
     write_reduced_mhd_trajectory_npz,
-)
-from mhx.neural_ode import (
-    write_neural_ode_reproducibility_bundle,
-    write_neural_ode_training_bundle,
 )
 from mhx.physics import (
     PHYSICS_API_VERSION,
@@ -102,21 +79,12 @@ from mhx.versioning import api_version_info
 app = typer.Typer(no_args_is_help=True, help="MHX differentiable MHD workflows.")
 benchmark_app = typer.Typer(no_args_is_help=True, help="Benchmark workflows.")
 api_app = typer.Typer(no_args_is_help=True, help="Public API and schema metadata.")
-campaign_app = typer.Typer(no_args_is_help=True, help="Production campaign templates.")
 physics_app = typer.Typer(no_args_is_help=True, help="Physics plugin inspection.")
 diagnostics_app = typer.Typer(no_args_is_help=True, help="Diagnostic registry inspection.")
-validate_app = typer.Typer(no_args_is_help=True, help="Validation-suite workflows.")
-neural_ode_app = typer.Typer(
-    no_args_is_help=True,
-    help="Neural-ODE reproducibility datasets and baseline artifacts.",
-)
 app.add_typer(benchmark_app, name="benchmark")
 app.add_typer(api_app, name="api")
-app.add_typer(campaign_app, name="campaign")
 app.add_typer(physics_app, name="physics")
 app.add_typer(diagnostics_app, name="diagnostics")
-app.add_typer(validate_app, name="validate")
-app.add_typer(neural_ode_app, name="neural-ode")
 
 
 def _exit_if_validation_failed(validation: dict[str, object], *, context: str) -> None:
@@ -172,16 +140,8 @@ def api_status(
     typer.echo(f"Trajectory schema: {info['trajectory_schema']}")
     typer.echo(f"Manifest schema: {info['manifest_schema']}")
     typer.echo(f"Artifact manifest schema: {info['artifact_manifest_schema']}")
-    typer.echo(f"Validation-suite schema: {info['validation_suite_schema']}")
     typer.echo(f"Claim levels: {', '.join(info['claim_levels'])}")
 
-
-@api_app.command("deprecations")
-def api_deprecations() -> None:
-    """Print active deprecation guidance for legacy entry points."""
-    typer.echo("Legacy scripts live under legacy/old_mhx/ and are not imported by src/mhx.")
-    typer.echo("Use mhx run, mhx benchmark, mhx validate, mhx figures, and mhx report instead.")
-    typer.echo("See docs/develop/release.md for the deprecation window.")
 
 
 @app.command()
@@ -220,9 +180,7 @@ def _run_config(config: Path, *, outdir: Path | None = None) -> Path:
         cfg = cfg.with_output_dir(outdir)
     if cfg.physics.model != "reduced_mhd_linear_tearing":
         raise typer.BadParameter(
-            "mhx run currently supports physics.model='reduced_mhd_linear_tearing'. "
-            "Production campaign templates are planning artifacts, not runnable "
-            "through the FAST smoke runner."
+            "mhx run currently supports physics.model='reduced_mhd_linear_tearing'."
         )
 
     run_dir = cfg.output_dir
@@ -260,355 +218,16 @@ def _run_config(config: Path, *, outdir: Path | None = None) -> Path:
     return manifest_path
 
 
-@campaign_app.command("rutherford-template")
-def campaign_rutherford_template(
-    outdir: Annotated[
-        Path,
-        typer.Option("--outdir", help="Output directory for campaign-template artifacts."),
-    ] = Path("outputs/campaigns/rutherford_template"),
-    harris_growth_rate: Annotated[
-        float,
-        typer.Option("--harris-growth-rate", help="Reference Harris growth rate gamma."),
-    ] = 1.31e-2,
-    production_efolds: Annotated[
-        float,
-        typer.Option("--production-efolds", help="Required e-folds before nonlinear claims."),
-    ] = 10.0,
-    safety_factor: Annotated[
-        float,
-        typer.Option("--safety-factor", help="Extra multiplier for nonlinear tracking."),
-    ] = 3.0,
-    nx: Annotated[int, typer.Option("--nx", help="Template x resolution.")] = 128,
-    ny: Annotated[int, typer.Option("--ny", help="Template y resolution.")] = 128,
-    dt: Annotated[float, typer.Option("--dt", help="Template fixed time step.")] = 0.1,
-    target_saved_frames: Annotated[
-        int,
-        typer.Option("--target-saved-frames", help="Target saved frames for figures/movies."),
-    ] = 400,
-    run_output_dir: Annotated[
-        Path,
-        typer.Option("--run-output-dir", help="Output directory embedded in campaign_config.toml."),
-    ] = Path("outputs/production/rutherford_island"),
-) -> None:
-    """Write a duration-guarded nonlinear Rutherford campaign template."""
-    manifest_path, validation = write_rutherford_campaign_template(
-        outdir,
-        harris_growth_rate=harris_growth_rate,
-        production_efolds=production_efolds,
-        safety_factor=safety_factor,
-        shape=(nx, ny),
-        dt=dt,
-        target_saved_frames=target_saved_frames,
-        run_output_dir=run_output_dir,
-    )
-    typer.echo(f"wrote {manifest_path}")
-    if not validation["passed"]:
-        raise typer.Exit(code=1)
 
 
-@campaign_app.command("rutherford-run-fast")
-def campaign_rutherford_run_fast(
-    outdir: Annotated[
-        Path,
-        typer.Option("--outdir", help="Output directory for validation campaign artifacts."),
-    ] = Path("outputs/campaigns/rutherford_fast"),
-    nx: Annotated[int, typer.Option("--nx", help="Grid points in x.")] = 24,
-    ny: Annotated[int, typer.Option("--ny", help="Grid points in y.")] = 24,
-    t_end: Annotated[float, typer.Option("--t-end", help="Short validation final time.")] = 0.24,
-    dt: Annotated[float, typer.Option("--dt", help="RK4 time step.")] = 1.0e-2,
-    save_every: Annotated[int, typer.Option("--save-every", help="Saved-step stride.")] = 1,
-    seed: Annotated[int, typer.Option("--seed", help="Deterministic perturbation seed.")] = 0,
-    eta: Annotated[float, typer.Option("--eta", help="Resistivity.")] = 1.0e-3,
-    nu: Annotated[float, typer.Option("--nu", help="Viscosity.")] = 1.0e-3,
-    noise_amplitude: Annotated[
-        float,
-        typer.Option("--noise-amplitude", help="Smooth seeded noise amplitude."),
-    ] = 1.0e-6,
-    gif: Annotated[bool, typer.Option("--gif", help="Write a fixed-scale flux GIF.")] = False,
-) -> None:
-    """Run a short validation-grade Rutherford-style campaign."""
-    _configure_validation_precision()
-    manifest_path, validation = write_rutherford_campaign_fast(
-        outdir,
-        seeds=(seed,),
-        shape=(nx, ny),
-        t_end=t_end,
-        dt=dt,
-        save_every=save_every,
-        seed=seed,
-        resistivity=eta,
-        viscosity=nu,
-        noise_amplitude=noise_amplitude,
-        write_gif=gif,
-    )
-    typer.echo(f"wrote {manifest_path}")
-    if not validation["passed"]:
-        raise typer.Exit(code=1)
 
 
-@campaign_app.command("rutherford-plan-production")
-def campaign_rutherford_plan_production(
-    outdir: Annotated[
-        Path,
-        typer.Option("--outdir", help="Output directory for production-plan artifacts."),
-    ] = Path("outputs/campaigns/rutherford_production_plan"),
-    harris_growth_rate: Annotated[
-        float,
-        typer.Option("--harris-growth-rate", help="Reference Harris growth rate gamma."),
-    ] = 1.31e-2,
-    production_efolds: Annotated[
-        float,
-        typer.Option("--production-efolds", help="Required e-folds before nonlinear claims."),
-    ] = 10.0,
-    safety_factor: Annotated[
-        float,
-        typer.Option("--safety-factor", help="Extra multiplier for nonlinear tracking."),
-    ] = 3.0,
-    nx: Annotated[int, typer.Option("--nx", help="Production x resolution.")] = 128,
-    ny: Annotated[int, typer.Option("--ny", help="Production y resolution.")] = 128,
-    dt: Annotated[float, typer.Option("--dt", help="Production fixed time step.")] = 0.1,
-    target_saved_frames: Annotated[
-        int,
-        typer.Option("--target-saved-frames", help="Target saved frames for figures/movies."),
-    ] = 400,
-    max_walltime_hours: Annotated[
-        float,
-        typer.Option("--max-walltime-hours", help="Scheduler walltime budget per job."),
-    ] = 12.0,
-    seconds_per_step_estimate: Annotated[
-        float,
-        typer.Option("--seconds-per-step-estimate", help="Conservative runtime model."),
-    ] = 0.5,
-    checkpoint_interval_minutes: Annotated[
-        float,
-        typer.Option("--checkpoint-interval-minutes", help="Target checkpoint cadence."),
-    ] = 30.0,
-    preemption_margin_minutes: Annotated[
-        float,
-        typer.Option("--preemption-margin-minutes", help="Walltime reserved for safe exit."),
-    ] = 20.0,
-    min_production_resolution: Annotated[
-        int,
-        typer.Option("--min-production-resolution", help="Minimum reviewer-facing grid size."),
-    ] = 96,
-    equilibrium: Annotated[
-        str,
-        typer.Option(
-            "--equilibrium",
-            help="Production initial condition: cosine_tearing or periodic_double_harris.",
-        ),
-    ] = "cosine_tearing",
-    width: Annotated[
-        float,
-        typer.Option("--width", help="Double-Harris half-width when equilibrium is periodic."),
-    ] = 0.4,
-    amplitude: Annotated[
-        float,
-        typer.Option("--amplitude", help="Double-Harris reconnecting-field amplitude."),
-    ] = 1.0,
-    perturbation_amplitude: Annotated[
-        float,
-        typer.Option("--perturbation-amplitude", help="Coherent tearing seed amplitude."),
-    ] = 1.0e-3,
-    mode_x: Annotated[
-        int,
-        typer.Option("--mode-x", help="Seed and diagnostic Fourier mode in x."),
-    ] = 1,
-    mode_y: Annotated[
-        int,
-        typer.Option("--mode-y", help="Seed and diagnostic Fourier mode in y."),
-    ] = 1,
-    eta: Annotated[
-        float,
-        typer.Option("--eta", help="Resistivity for the production executor."),
-    ] = 1.0e-3,
-    nu: Annotated[
-        float,
-        typer.Option("--nu", help="Viscosity for the production executor."),
-    ] = 1.0e-3,
-) -> None:
-    """Write production Rutherford planning, walltime, and checkpoint artifacts."""
-    manifest_path, validation = write_rutherford_production_plan(
-        outdir,
-        harris_growth_rate=harris_growth_rate,
-        production_efolds=production_efolds,
-        safety_factor=safety_factor,
-        shape=(nx, ny),
-        dt=dt,
-        target_saved_frames=target_saved_frames,
-        min_production_resolution=min_production_resolution,
-        walltime_policy=WalltimePolicy(
-            max_walltime_hours=max_walltime_hours,
-            seconds_per_step_estimate=seconds_per_step_estimate,
-            checkpoint_interval_minutes=checkpoint_interval_minutes,
-            preemption_margin_minutes=preemption_margin_minutes,
-        ),
-        equilibrium=equilibrium,
-        width=width,
-        amplitude=amplitude,
-        perturbation_amplitude=perturbation_amplitude,
-        perturbation_mode=(mode_x, mode_y),
-        resistivity=eta,
-        viscosity=nu,
-    )
-    typer.echo(f"wrote {manifest_path}")
-    if not validation["passed"]:
-        raise typer.Exit(code=1)
 
 
-@campaign_app.command("rutherford-resume-plan")
-def campaign_rutherford_resume_plan(
-    run_dir: Annotated[
-        Path,
-        typer.Argument(help="Production campaign run directory containing checkpoints/."),
-    ],
-    target_step: Annotated[
-        int | None,
-        typer.Option("--target-step", help="Override the campaign target step."),
-    ] = None,
-) -> None:
-    """Write a resume plan from the latest valid production checkpoint."""
-    path, validation = write_rutherford_resume_plan(run_dir, target_step=target_step)
-    typer.echo(f"wrote {path}")
-    if not validation["passed"]:
-        raise typer.Exit(code=1)
 
 
-@campaign_app.command("rutherford-execute")
-def campaign_rutherford_execute(
-    run_dir: Annotated[
-        Path,
-        typer.Argument(help="Production campaign run directory with campaign_plan.json."),
-    ],
-    max_steps: Annotated[
-        int | None,
-        typer.Option("--max-steps", help="Maximum RK4 steps for this walltime chunk."),
-    ] = None,
-    seed: Annotated[
-        int,
-        typer.Option("--seed", help="Initial-condition seed used if no checkpoint is valid."),
-    ] = 0,
-    noise_amplitude: Annotated[
-        float,
-        typer.Option("--noise-amplitude", help="Seeded smooth perturbation amplitude."),
-    ] = 1.0e-6,
-    movies_enabled: Annotated[
-        bool,
-        typer.Option("--movies/--no-movies", help="Write fixed-scale flux/current GIFs."),
-    ] = False,
-    allow_production_claim: Annotated[
-        bool,
-        typer.Option(
-            "--allow-production-claim/--validation-claim",
-            help="Allow claim_level=production only when target completion gates pass.",
-        ),
-    ] = False,
-    max_relative_energy_growth: Annotated[
-        float,
-        typer.Option("--max-relative-energy-growth", help="Energy monotonicity tolerance."),
-    ] = 1.0e-9,
-    max_divergence_linf: Annotated[
-        float,
-        typer.Option("--max-divergence-linf", help="Magnetic-divergence tolerance."),
-    ] = 1.0e-9,
-) -> None:
-    """Run one restartable Rutherford production-campaign walltime chunk."""
-    _configure_validation_precision()
-    manifest_path, validation = write_rutherford_production_execution(
-        run_dir,
-        max_steps=max_steps,
-        seed=seed,
-        noise_amplitude=noise_amplitude,
-        write_movies=movies_enabled,
-        allow_production_claim=allow_production_claim,
-        max_relative_energy_growth=max_relative_energy_growth,
-        max_divergence_linf=max_divergence_linf,
-    )
-    typer.echo(f"wrote {manifest_path}")
-    _exit_if_validation_failed(validation, context="rutherford-execute")
 
 
-@campaign_app.command("rutherford-promotion-check")
-def campaign_rutherford_promotion_check(
-    run_dir: Annotated[
-        Path,
-        typer.Argument(help="Completed Rutherford campaign run directory."),
-    ],
-    outdir: Annotated[
-        Path | None,
-        typer.Option(
-            "--outdir",
-            help="Promotion-report directory; defaults to <run-dir>/promotion.",
-        ),
-    ] = None,
-    convergence_dirs: Annotated[
-        list[Path] | None,
-        typer.Option(
-            "--convergence-dir",
-            help="Validation/convergence bundle directory. Repeat for each sweep.",
-        ),
-    ] = None,
-    seed_qi_dir: Annotated[
-        Path | None,
-        typer.Option("--seed-qi-dir", help="Seed-robust QI evidence directory."),
-    ] = None,
-    require_movies: Annotated[
-        bool,
-        typer.Option(
-            "--require-movies/--no-require-movies",
-            help="Require fixed-scale flux/current GIFs in the run bundle.",
-        ),
-    ] = True,
-    min_history_samples: Annotated[
-        int,
-        typer.Option("--min-history-samples", help="Minimum saved history samples."),
-    ] = 100,
-    min_convergence_dirs: Annotated[
-        int,
-        typer.Option("--min-convergence-dirs", help="Minimum convergence bundles."),
-    ] = 2,
-    max_energy_budget_residual: Annotated[
-        float,
-        typer.Option(
-            "--max-energy-budget-residual",
-            help="Maximum positive total-energy residual allowed.",
-        ),
-    ] = 1.0e-9,
-    max_divergence_linf: Annotated[
-        float,
-        typer.Option("--max-divergence-linf", help="Maximum magnetic-divergence error."),
-    ] = 1.0e-9,
-    min_reconnected_flux_amplification: Annotated[
-        float,
-        typer.Option(
-            "--min-reconnected-flux-amplification",
-            help="Minimum peak/initial reconnecting-flux response required.",
-        ),
-    ] = 1.05,
-    min_island_width_amplification: Annotated[
-        float,
-        typer.Option(
-            "--min-island-width-amplification",
-            help="Minimum peak/initial Rutherford island-width response required.",
-        ),
-    ] = 1.05,
-) -> None:
-    """Write and validate a reviewer-facing Rutherford promotion report."""
-    manifest_path, validation = write_rutherford_production_promotion_report(
-        run_dir,
-        outdir=outdir,
-        convergence_dirs=tuple(convergence_dirs or ()),
-        seed_qi_dir=seed_qi_dir,
-        require_movies=require_movies,
-        min_history_samples=min_history_samples,
-        min_convergence_dirs=min_convergence_dirs,
-        max_energy_budget_residual=max_energy_budget_residual,
-        max_divergence_linf=max_divergence_linf,
-        min_reconnected_flux_amplification=min_reconnected_flux_amplification,
-        min_island_width_amplification=min_island_width_amplification,
-    )
-    typer.echo(f"wrote {manifest_path}")
-    _exit_if_validation_failed(validation, context="rutherford-promotion-check")
 
 
 @app.command()
@@ -661,14 +280,6 @@ def figures(
         typer.echo(f"wrote {gif_path}")
 
 
-@app.command()
-def report(
-    run_dir: Annotated[Path, typer.Argument(help="Run directory containing manifest outputs.")],
-) -> None:
-    """Write a JSON and Markdown benchmark report for a run directory."""
-    json_path, markdown_path = write_run_report(run_dir)
-    typer.echo(f"wrote {json_path}")
-    typer.echo(f"wrote {markdown_path}")
 
 
 @app.command()
@@ -685,58 +296,10 @@ def artifact_manifest(
     typer.echo(f"wrote {output_path} ({len(manifest['files'])} files)")
 
 
-@benchmark_app.command("run")
-def benchmark_run(
-    config: Annotated[
-        Path,
-        typer.Option("--config", help="Benchmark TOML config."),
-    ] = Path("examples/linear_tearing.toml"),
-    outdir: Annotated[
-        Path,
-        typer.Option("--outdir", help="Benchmark output directory."),
-    ] = Path("outputs/benchmarks/linear_tearing_fast"),
-    figures_enabled: Annotated[bool, typer.Option("--figures/--no-figures")] = True,
-    gif: Annotated[bool, typer.Option("--gif", help="Write flux_movie.gif when plotting.")] = False,
-    report_enabled: Annotated[bool, typer.Option("--report/--no-report")] = True,
-) -> None:
-    """Run the FAST reduced-MHD benchmark pipeline."""
-    manifest_path = _run_config(config, outdir=outdir)
-    typer.echo(f"wrote {manifest_path}")
-    if figures_enabled:
-        figures(outdir, gif=gif)
-    if report_enabled:
-        report(outdir)
 
 
-@benchmark_app.command("catalog")
-def benchmark_catalog(
-    outdir: Annotated[
-        Path,
-        typer.Option("--outdir", help="Output directory for validation catalog artifacts."),
-    ] = Path("outputs/benchmarks/catalog"),
-) -> None:
-    """Write a reviewer-facing validation benchmark catalog."""
-    json_path, markdown_path = write_benchmark_catalog(outdir)
-    typer.echo(f"wrote {json_path}")
-    typer.echo(f"wrote {markdown_path}")
 
 
-@benchmark_app.command("validate")
-def benchmark_validate(
-    run_dir: Annotated[Path, typer.Argument(help="Run directory to validate.")],
-    max_relative_energy_growth: Annotated[
-        float,
-        typer.Option("--max-relative-energy-growth", help="Allowed relative total-energy growth."),
-    ] = 1.0e-10,
-) -> None:
-    """Validate a completed FAST benchmark run."""
-    output_path, result = validate_run(
-        run_dir,
-        max_relative_energy_growth=max_relative_energy_growth,
-    )
-    typer.echo(f"wrote {output_path}")
-    if not result["passed"]:
-        raise typer.Exit(code=1)
 
 
 @benchmark_app.command("decay")
@@ -1818,261 +1381,16 @@ def benchmark_nonlinear_energy_budget(
         raise typer.Exit(code=1)
 
 
-@benchmark_app.command("nonlinear-duration-audit")
-def benchmark_nonlinear_duration_audit(
-    outdir: Annotated[
-        Path,
-        typer.Option(
-            "--outdir",
-            help="Output directory for nonlinear duration-audit artifacts.",
-        ),
-    ] = Path("outputs/benchmarks/nonlinear_duration_audit"),
-    harris_growth_rate: Annotated[
-        float,
-        typer.Option(
-            "--harris-growth-rate",
-            help="Reference Harris-sheet growth rate gamma for the duration audit.",
-        ),
-    ] = 1.31e-2,
-    linear_efolds: Annotated[
-        float,
-        typer.Option("--linear-efolds", help="Target number of linear e-folds."),
-    ] = 10.0,
-) -> None:
-    """Audit nonlinear FAST run durations against literature-scale targets."""
-    manifest_path, validation = write_nonlinear_duration_audit(
-        outdir,
-        harris_growth_rate=harris_growth_rate,
-        requested_linear_efolds=linear_efolds,
-    )
-    typer.echo(f"wrote {manifest_path}")
-    if not validation["passed"]:
-        raise typer.Exit(code=1)
 
 
-@benchmark_app.command("seed-robust-qi")
-def benchmark_seed_robust_qi(
-    outdir: Annotated[
-        Path,
-        typer.Option(
-            "--outdir",
-            help="Output directory for seed-robust quality-indicator artifacts.",
-        ),
-    ] = Path("outputs/benchmarks/seed_robust_qi"),
-    seeds: Annotated[
-        str,
-        typer.Option("--seeds", help="Comma-separated deterministic seed list."),
-    ] = "0,1,2,3",
-    nx: Annotated[int, typer.Option("--nx", help="Grid points in x.")] = 16,
-    ny: Annotated[int, typer.Option("--ny", help="Grid points in y.")] = 16,
-    t_end: Annotated[float, typer.Option("--t-end", help="Final ensemble time.")] = 0.12,
-    dt: Annotated[float, typer.Option("--dt", help="RK4 time step.")] = 1.0e-2,
-    save_every: Annotated[int, typer.Option("--save-every", help="Saved-step stride.")] = 1,
-    eta: Annotated[float, typer.Option("--eta", help="Resistivity.")] = 1.0e-3,
-    nu: Annotated[float, typer.Option("--nu", help="Viscosity.")] = 1.0e-3,
-    noise_amplitude: Annotated[
-        float,
-        typer.Option("--noise-amplitude", help="Smooth seeded noise amplitude."),
-    ] = 1.0e-6,
-) -> None:
-    """Run a seed-robust quality-indicator ensemble for FAST metrics."""
-    _configure_validation_precision()
-    manifest_path, validation = write_seed_robust_qi_validation(
-        outdir,
-        seeds=_parse_int_tuple(seeds),
-        shape=(nx, ny),
-        steps=max(1, round(t_end / dt)),
-        dt=dt,
-        save_every=save_every,
-        resistivity=eta,
-        viscosity=nu,
-        psi_noise_amplitude=noise_amplitude,
-    )
-    typer.echo(f"wrote {manifest_path}")
-    if not validation["passed"]:
-        raise typer.Exit(code=1)
 
 
-@benchmark_app.command("seed-robust-qi-sweep")
-def benchmark_seed_robust_qi_sweep(
-    outdir: Annotated[
-        Path,
-        typer.Option(
-            "--outdir",
-            help="Output directory for seed/amplitude-sweep QI artifacts.",
-        ),
-    ] = Path("outputs/benchmarks/seed_robust_qi_sweep"),
-    seeds: Annotated[
-        str,
-        typer.Option("--seeds", help="Comma-separated deterministic seed list."),
-    ] = "0,1,2,3",
-    amplitudes: Annotated[
-        str,
-        typer.Option("--amplitudes", help="Comma-separated sorted noise amplitudes."),
-    ] = "0,1e-9,1e-8",
-    nx: Annotated[int, typer.Option("--nx", help="Grid points in x.")] = 16,
-    ny: Annotated[int, typer.Option("--ny", help="Grid points in y.")] = 16,
-    steps: Annotated[int, typer.Option("--steps", help="RK4 steps per amplitude.")] = 12,
-    dt: Annotated[float, typer.Option("--dt", help="RK4 time step.")] = 1.0e-2,
-    eta: Annotated[float, typer.Option("--eta", help="Resistivity.")] = 1.0e-3,
-    nu: Annotated[float, typer.Option("--nu", help="Viscosity.")] = 1.0e-3,
-) -> None:
-    """Run a common-seed perturbation-amplitude sweep for FAST metric QI."""
-    _configure_validation_precision()
-    manifest_path, validation = write_seed_robust_qi_sweep(
-        outdir,
-        seeds=_parse_int_tuple(seeds),
-        noise_amplitudes=_parse_float_tuple(amplitudes),
-        shape=(nx, ny),
-        steps=steps,
-        dt=dt,
-        resistivity=eta,
-        viscosity=nu,
-    )
-    typer.echo(f"wrote {manifest_path}")
-    if not validation["passed"]:
-        raise typer.Exit(code=1)
 
 
-@neural_ode_app.command("dataset")
-def neural_ode_dataset(
-    outdir: Annotated[
-        Path,
-        typer.Option("--outdir", help="Output directory for neural-ODE artifacts."),
-    ] = Path("outputs/neural_ode/seed_qi_fast"),
-    seeds: Annotated[
-        str,
-        typer.Option("--seeds", help="Comma-separated deterministic seed list."),
-    ] = "0,1,2,3,4,5",
-    nx: Annotated[int, typer.Option("--nx", help="Grid points in x.")] = 16,
-    ny: Annotated[int, typer.Option("--ny", help="Grid points in y.")] = 16,
-    steps: Annotated[int, typer.Option("--steps", help="RK4 steps per seed.")] = 24,
-    dt: Annotated[float, typer.Option("--dt", help="RK4 time step.")] = 1.0e-2,
-    eta: Annotated[float, typer.Option("--eta", help="Resistivity.")] = 1.0e-3,
-    nu: Annotated[float, typer.Option("--nu", help="Viscosity.")] = 1.0e-3,
-    noise_amplitude: Annotated[
-        float,
-        typer.Option("--noise-amplitude", help="Smooth seeded psi-noise amplitude."),
-    ] = 1.0e-8,
-    split_seed: Annotated[
-        int,
-        typer.Option("--split-seed", help="Seed for train/validation/test split."),
-    ] = 314159,
-    observation_count: Annotated[
-        int,
-        typer.Option("--observation-count", help="Prefix samples visible to baselines."),
-    ] = 2,
-    figures_enabled: Annotated[bool, typer.Option("--figures/--no-figures")] = True,
-) -> None:
-    """Write deterministic neural-ODE dataset, splits, baselines, and calibration."""
-    _configure_validation_precision()
-    manifest_path, validation = write_neural_ode_reproducibility_bundle(
-        outdir,
-        seeds=_parse_int_tuple(seeds),
-        shape=(nx, ny),
-        steps=steps,
-        dt=dt,
-        resistivity=eta,
-        viscosity=nu,
-        psi_noise_amplitude=noise_amplitude,
-        split_seed=split_seed,
-        observation_count=observation_count,
-        write_figures=figures_enabled,
-    )
-    typer.echo(f"wrote {manifest_path}")
-    if not validation["passed"]:
-        raise typer.Exit(code=1)
 
 
-@neural_ode_app.command("train")
-def neural_ode_train(
-    outdir: Annotated[
-        Path,
-        typer.Option("--outdir", help="Output directory for fitted neural-ODE artifacts."),
-    ] = Path("outputs/neural_ode/latent_ode_fast"),
-    seeds: Annotated[
-        str,
-        typer.Option("--seeds", help="Comma-separated deterministic seed list."),
-    ] = "0,1,2,3,4,5",
-    nx: Annotated[int, typer.Option("--nx", help="Grid points in x.")] = 16,
-    ny: Annotated[int, typer.Option("--ny", help="Grid points in y.")] = 16,
-    steps: Annotated[int, typer.Option("--steps", help="RK4 steps per seed.")] = 24,
-    dt: Annotated[float, typer.Option("--dt", help="RK4 time step.")] = 1.0e-2,
-    eta: Annotated[float, typer.Option("--eta", help="Resistivity.")] = 1.0e-3,
-    nu: Annotated[float, typer.Option("--nu", help="Viscosity.")] = 1.0e-3,
-    noise_amplitude: Annotated[
-        float,
-        typer.Option("--noise-amplitude", help="Smooth seeded psi-noise amplitude."),
-    ] = 1.0e-8,
-    split_seed: Annotated[
-        int,
-        typer.Option("--split-seed", help="Seed for train/validation/test split."),
-    ] = 314159,
-    observation_count: Annotated[
-        int,
-        typer.Option("--observation-count", help="Prefix samples visible to forecasters."),
-    ] = 2,
-    hidden_size: Annotated[
-        int,
-        typer.Option("--hidden-size", help="Random tanh features in the latent ODE."),
-    ] = 8,
-    ridge: Annotated[
-        float,
-        typer.Option("--ridge", help="Ridge regularization for latent-ODE regression."),
-    ] = 1.0e-8,
-    model_seed: Annotated[
-        int,
-        typer.Option("--model-seed", help="Deterministic random-feature seed."),
-    ] = 0,
-    figures_enabled: Annotated[bool, typer.Option("--figures/--no-figures")] = True,
-) -> None:
-    """Fit a deterministic random-feature latent ODE on FAST seed-QI trajectories."""
-    _configure_validation_precision()
-    manifest_path, validation = write_neural_ode_training_bundle(
-        outdir,
-        seeds=_parse_int_tuple(seeds),
-        shape=(nx, ny),
-        steps=steps,
-        dt=dt,
-        resistivity=eta,
-        viscosity=nu,
-        psi_noise_amplitude=noise_amplitude,
-        split_seed=split_seed,
-        observation_count=observation_count,
-        hidden_size=hidden_size,
-        ridge=ridge,
-        model_seed=model_seed,
-        write_figures=figures_enabled,
-    )
-    typer.echo(f"wrote {manifest_path}")
-    if not validation["passed"]:
-        raise typer.Exit(code=1)
 
 
-@benchmark_app.command("duration-policy")
-def benchmark_duration_policy(
-    outdir: Annotated[
-        Path,
-        typer.Option("--outdir", help="Output directory for duration-policy artifacts."),
-    ] = Path("outputs/benchmarks/duration_policy"),
-    harris_growth_rate: Annotated[
-        float,
-        typer.Option("--harris-growth-rate", help="Reference Harris growth rate gamma."),
-    ] = 1.31e-2,
-    production_efolds: Annotated[
-        float,
-        typer.Option("--production-efolds", help="Required e-folds for production claims."),
-    ] = 10.0,
-) -> None:
-    """Write simulation-duration policy for validation and production runs."""
-    manifest_path, validation = write_duration_policy(
-        outdir,
-        harris_growth_rate=harris_growth_rate,
-        production_efolds=production_efolds,
-    )
-    typer.echo(f"wrote {manifest_path}")
-    if not validation["passed"]:
-        raise typer.Exit(code=1)
 
 
 @benchmark_app.command("diffusion-eigenvalue")
@@ -2124,126 +1442,14 @@ def benchmark_arnoldi(
         raise typer.Exit(code=1)
 
 
-@benchmark_app.command("timing")
-def benchmark_timing(
-    outdir: Annotated[
-        Path,
-        typer.Option("--outdir", help="Output directory for FAST timing artifacts."),
-    ] = Path("outputs/benchmarks/timing"),
-    repeats: Annotated[int, typer.Option("--repeats", help="Measured repeats per case.")] = 3,
-    warmups: Annotated[int, typer.Option("--warmups", help="Unmeasured warmup repeats.")] = 1,
-) -> None:
-    """Run FAST benchmark timing and Python-memory measurements."""
-    manifest_path, _ = write_timing_benchmark(outdir, repeats=repeats, warmups=warmups)
-    typer.echo(f"wrote {manifest_path}")
 
 
-@validate_app.command("all")
-def validate_all(
-    outdir: Annotated[
-        Path,
-        typer.Option("--outdir", help="Output directory for validation-suite artifacts."),
-    ] = Path("outputs/validation_suite"),
-) -> None:
-    """Run the active deterministic FAST validation suite."""
-    summary_path, summary = write_validation_suite(outdir)
-    typer.echo(f"wrote {summary_path}")
-    if not summary["passed"]:
-        raise typer.Exit(code=1)
 
 
-@validate_app.command("readiness")
-def validate_readiness(
-    suite: Annotated[
-        Path,
-        typer.Option(
-            "--suite",
-            help="Validation-suite directory or validation_suite.json file.",
-        ),
-    ] = Path("outputs/validation_suite"),
-    outdir: Annotated[
-        Path,
-        typer.Option("--outdir", help="Output directory for readiness artifacts."),
-    ] = Path("outputs/validation/readiness"),
-) -> None:
-    """Assess public-release and nonlinear-publication readiness."""
-    diagnostics_path, validation = write_readiness_report(outdir, suite)
-    typer.echo(f"wrote {diagnostics_path}")
-    if not validation["passed"]:
-        raise typer.Exit(code=1)
 
 
-@validate_app.command("release-candidate")
-def validate_release_candidate(
-    outdir: Annotated[
-        Path,
-        typer.Option("--outdir", help="Output directory for release-candidate artifacts."),
-    ] = Path("outputs/validation/release_candidate"),
-    repo_root: Annotated[
-        Path,
-        typer.Option("--repo-root", help="Repository root to assess."),
-    ] = Path("."),
-    readiness: Annotated[
-        Path | None,
-        typer.Option(
-            "--readiness",
-            help="Optional readiness.json file or readiness-report directory.",
-        ),
-    ] = None,
-    require_readiness: Annotated[
-        bool,
-        typer.Option(
-            "--require-readiness/--no-require-readiness",
-            help="Require supplied readiness artifacts to be public-release ready.",
-        ),
-    ] = False,
-) -> None:
-    """Assess static public-release-candidate repository gates."""
-    diagnostics_path, validation = write_release_candidate_report(
-        outdir,
-        repo_root=repo_root,
-        readiness=readiness,
-        require_readiness=require_readiness,
-    )
-    typer.echo(f"wrote {diagnostics_path}")
-    if not validation["passed"]:
-        raise typer.Exit(code=1)
 
 
-@validate_app.command("paper-pipeline")
-def validate_paper_pipeline(
-    outdir: Annotated[
-        Path,
-        typer.Option("--outdir", help="Output directory for paper-pipeline artifacts."),
-    ] = Path("outputs/paper_pipeline"),
-    cases: Annotated[
-        str | None,
-        typer.Option(
-            "--cases",
-            help=(
-                "Optional comma-separated validation-suite case subset. "
-                "Omit for the full deterministic FAST pipeline."
-            ),
-        ),
-    ] = None,
-    require_release_ready: Annotated[
-        bool,
-        typer.Option(
-            "--require-release-ready/--no-require-release-ready",
-            help="Require the readiness report to pass public-release gates.",
-        ),
-    ] = True,
-) -> None:
-    """Generate figures, validation reports, readiness metadata, and checksums."""
-    selected_cases = None if cases is None else _parse_string_tuple(cases)
-    result = write_paper_pipeline(
-        outdir,
-        case_names=selected_cases,
-        require_release_ready=require_release_ready,
-    )
-    typer.echo(f"wrote {result.pipeline_path}")
-    if not result.validation["passed"]:
-        raise typer.Exit(code=1)
 
 
 def _configure_validation_precision() -> None:
@@ -2417,3 +1623,54 @@ def main() -> None:  # pragma: no cover - exercised by console entry points.
 
 if __name__ == "__main__":
     main()
+
+
+@app.command()
+def report(
+    run_dir: Annotated[Path, typer.Argument(help="Run directory containing manifest outputs.")],
+) -> None:
+    """Write a JSON and Markdown benchmark report for a run directory."""
+    json_path, markdown_path = write_run_report(run_dir)
+    typer.echo(f"wrote {json_path}")
+    typer.echo(f"wrote {markdown_path}")
+
+
+@benchmark_app.command("run")
+def benchmark_run(
+    config: Annotated[
+        Path,
+        typer.Option("--config", help="Benchmark TOML config."),
+    ] = Path("examples/linear_tearing.toml"),
+    outdir: Annotated[
+        Path,
+        typer.Option("--outdir", help="Benchmark output directory."),
+    ] = Path("outputs/benchmarks/linear_tearing_fast"),
+    figures_enabled: Annotated[bool, typer.Option("--figures/--no-figures")] = True,
+    gif: Annotated[bool, typer.Option("--gif", help="Write flux_movie.gif when plotting.")] = False,
+    report_enabled: Annotated[bool, typer.Option("--report/--no-report")] = True,
+) -> None:
+    """Run the FAST reduced-MHD benchmark pipeline."""
+    manifest_path = _run_config(config, outdir=outdir)
+    typer.echo(f"wrote {manifest_path}")
+    if figures_enabled:
+        figures(outdir, gif=gif)
+    if report_enabled:
+        report(outdir)
+
+
+@benchmark_app.command("validate")
+def benchmark_validate(
+    run_dir: Annotated[Path, typer.Argument(help="Run directory to validate.")],
+    max_relative_energy_growth: Annotated[
+        float,
+        typer.Option("--max-relative-energy-growth", help="Allowed relative total-energy growth."),
+    ] = 1.0e-10,
+) -> None:
+    """Validate a completed FAST benchmark run."""
+    output_path, result = validate_run(
+        run_dir,
+        max_relative_energy_growth=max_relative_energy_growth,
+    )
+    typer.echo(f"wrote {output_path}")
+    if not result["passed"]:
+        raise typer.Exit(code=1)

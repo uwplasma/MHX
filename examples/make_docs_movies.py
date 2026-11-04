@@ -30,8 +30,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 OUTPUT_DIR = ROOT / "docs" / "_static" / "movies"
 
-# Committed validated sources -> mp4 basename. Claim levels stay with the
-# source entries in docs/figures/manifest.toml.
+# Committed validated sources -> mp4 basename.
 TRANSCODES = {
     "docs/_static/readme/double_harris_reconnection.gif": "double_harris_reconnection.mp4",
     "docs/_static/readme/double_harris_current_sheet.gif": "double_harris_current_sheet.mp4",

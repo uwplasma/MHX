@@ -44,18 +44,17 @@ from pathlib import Path
 import matplotlib
 
 matplotlib.use("Agg")  # Headless backend; safe on WSL/HPC login nodes.
-import matplotlib.pyplot as plt
-import numpy as np
 import imageio.v2 as imageio
-
 import jax
 import jax.numpy as jnp
+import matplotlib.pyplot as plt
+import numpy as np
 
 from mhx.config import MeshConfig
-from mhx.grids import CartesianGrid
-from mhx.state import ReducedMHDState
 from mhx.equations.reduced_mhd import current_density, poisson_bracket, stream_function
+from mhx.grids import CartesianGrid
 from mhx.numerics.spectral import laplacian
+from mhx.state import ReducedMHDState
 
 # Enable double precision for the inverse-problem accuracy.
 jax.config.update("jax_enable_x64", True)
@@ -168,7 +167,9 @@ def simulate_observables(
     omega0: jnp.ndarray,
 ) -> jnp.ndarray:
     """Return probe readings ``(num_obs + 1, K, 3)`` with channels [psi, j, eta*j]."""
-    recorded = record_states(eta_field, viscosity, lengths, dt, steps_per_obs, num_obs, psi0, omega0)
+    recorded = record_states(
+        eta_field, viscosity, lengths, dt, steps_per_obs, num_obs, psi0, omega0
+    )
     psi_stack = jnp.stack([s.psi for s in recorded])
     j_stack = jnp.stack([current_density(s.psi, lengths=lengths) for s in recorded])
     psi_probes = jax.vmap(lambda f: bilinear_sample(f, probe_xy, lengths))(psi_stack)
@@ -189,7 +190,9 @@ def simulate_fields(
     omega0: jnp.ndarray,
 ) -> jnp.ndarray:
     """Return the ``psi`` stack at observation times (for post-processing)."""
-    recorded = record_states(eta_field, viscosity, lengths, dt, steps_per_obs, num_obs, psi0, omega0)
+    recorded = record_states(
+        eta_field, viscosity, lengths, dt, steps_per_obs, num_obs, psi0, omega0
+    )
     return jnp.stack([s.psi for s in recorded])
 
 
@@ -434,7 +437,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--Ly", type=float, default=2.0 * np.pi)
     parser.add_argument("--eta0", type=float, default=2.0e-2, help="uniform background resistivity")
     parser.add_argument("--nu", type=float, default=1.0e-2, help="uniform viscosity")
-    parser.add_argument("--blob-amp", type=float, default=0.6, help="initial Gaussian flux amplitude")
+    parser.add_argument(
+        "--blob-amp", type=float, default=0.6, help="initial Gaussian flux amplitude"
+    )
     parser.add_argument("--blob-sigma", type=float, default=1.1, help="initial Gaussian flux width")
     parser.add_argument("--dt", type=float, default=5.0e-3)
     parser.add_argument("--t-end", type=float, default=8.0)
@@ -445,8 +450,12 @@ def parse_args() -> argparse.Namespace:
         default="full",
         help="full = uniform grid across the box; center = tight cluster",
     )
-    parser.add_argument("--n-full-probes", type=int, default=10, help="probes per axis for full style")
-    parser.add_argument("--probe-extent", type=int, default=4, help="probe grid half-extent (cells)")
+    parser.add_argument(
+        "--n-full-probes", type=int, default=10, help="probes per axis for full style"
+    )
+    parser.add_argument(
+        "--probe-extent", type=int, default=4, help="probe grid half-extent (cells)"
+    )
     parser.add_argument("--h-a", type=float, default=2.5e-2, help="truth H amplitude")
     parser.add_argument("--h-d", type=float, default=0.55, help="truth H bar half-separation")
     parser.add_argument("--h-sw", type=float, default=0.16, help="truth H bar width")

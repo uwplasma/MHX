@@ -1,27 +1,19 @@
-"""Run a Kelvin--Helmholtz problem on Modal and extract dye snapshots at t = 2, 4, 6, 8.
+"""Run the incompressible Kelvin--Helmholtz problem on Modal and extract dye snapshots at t = 2, 4, 6, 8.
 
-Two models, chosen with ``--model``:
-
-* ``incompressible`` (default): the NERSC incompressible branch. 1024 x 2048 grid,
-  Re = 1e6 (nu = 2u/Re = 2e-6, u = 1), dt = 2.5e-4, saved every 0.1 time units.
-* ``compressible``: ``examples/kh_compressible_dissipative.py`` at 512 x 1024,
-  Re = 1e5 (nu = chi = nu_dye = 2e-5), u = 1, B = 0, dt = 1e-4 (inside the
-  0.3*dx/(c+u) stability guide), saved every 0.08 time units, with the 2/3 dealiasing rule.
-
-Zero for ``nx``, ``ny``, ``re``, ``dt`` or ``save_every`` means that model's default.
+The NERSC incompressible branch: 1024 x 2048 grid, Re = 1e6 (nu = 2u/Re = 2e-6, u = 1),
+dt = 2.5e-4, saved every 0.1 time units. Zero for ``nx``, ``ny``, ``re``, ``dt`` or
+``save_every`` means the default above.
 
 Usage (from the MHX_final repo root; this bills Modal GPU time):
 
     modal run modal_kelvin_helmholtz_incompressible.py
-    modal run modal_kelvin_helmholtz_incompressible.py --model compressible
-    modal run modal_kelvin_helmholtz_incompressible.py --model compressible --re 5e4
 
-Results land in the ``mhx-outputs`` volume under ``kh_incompressible_modal/`` or
-``kh_compressible_modal/``. Pull the snapshots, not the full trajectory:
+Results land in the ``mhx-outputs`` volume under ``kh_incompressible_modal/``. Pull the
+snapshots, not the full trajectory:
 
-    mkdir -p outputs/kh_compressible_modal
-    modal volume get mhx-outputs kh_compressible_modal/dye_snapshots_t2_4_6_8.png outputs/kh_compressible_modal/dye_snapshots_t2_4_6_8.png
-    modal volume get mhx-outputs kh_compressible_modal/dye_snapshots_t2_4_6_8.npz outputs/kh_compressible_modal/dye_snapshots_t2_4_6_8.npz
+    mkdir -p outputs/kh_incompressible_modal
+    modal volume get mhx-outputs kh_incompressible_modal/dye_snapshots_t2_4_6_8.png outputs/kh_incompressible_modal/dye_snapshots_t2_4_6_8.png
+    modal volume get mhx-outputs kh_incompressible_modal/dye_snapshots_t2_4_6_8.npz outputs/kh_incompressible_modal/dye_snapshots_t2_4_6_8.npz
 """
 
 from __future__ import annotations
@@ -62,7 +54,6 @@ image = (
 
 volume = modal.Volume.from_name("mhx-outputs", create_if_missing=True)
 INCOMPRESSIBLE_OUTDIR = Path("/outputs/kh_incompressible_modal")
-COMPRESSIBLE_OUTDIR = Path("/outputs/kh_compressible_modal")
 SNAPSHOT_TIMES = (2.0, 4.0, 6.0, 8.0)
 
 
@@ -167,125 +158,32 @@ def run_kh_incompressible(
     return summary
 
 
-@app.function(
-    image=image,
-    gpu="A100",
-    volumes={"/outputs": volume},
-    timeout=60 * 60 * 6,
-)
-def run_kh_compressible(
-    nx: int = 512,
-    ny: int = 1024,
-    re: float = 1.0e5,
-    flow_speed: float = 1.0,
-    dt: float = 1.0e-4,
-    t_end: float = 8.0,
-    save_every: int = 800,
-    dealias: bool = True,
-) -> str:
-    """Run the dissipative compressible Kelvin--Helmholtz script and extract dye snapshots."""
-    import json
-    import os
-    import subprocess
-    import sys
-
-    import matplotlib
-
-    matplotlib.use("Agg")
-    import numpy as np
-
-    COMPRESSIBLE_OUTDIR.mkdir(parents=True, exist_ok=True)
-    command = [
-        sys.executable,
-        "/root/mhx/examples/kh_compressible_dissipative.py",
-        "--nx", str(nx),
-        "--ny", str(ny),
-        "--re", str(re),
-        "--flow-speed", str(flow_speed),
-        "--magnetic-x", "0.0",
-        "--magnetic-y", "0.0",
-        "--t-end", str(t_end),
-        "--dt", str(dt),
-        "--save-every", str(save_every),
-        "--outdir", str(COMPRESSIBLE_OUTDIR),
-    ]
-    if not dealias:
-        command.append("--no-dealias")
-    print(f"Running: {' '.join(command)}", flush=True)
-    subprocess.run(command, check=True, env=os.environ.copy())
-
-    data = np.load(COMPRESSIBLE_OUTDIR / "kh_compressible_dissipative.npz")
-    times = data["times"]
-    dye = data["dye_density"] / data["density"]
-    entropy = data["dye_entropy"]
-    density_min = data["density_min"]
-    pressure_min = data["pressure_min"]
-    config = json.loads((COMPRESSIBLE_OUTDIR / "run_config.json").read_text())
-
-    indices = [int(np.argmin(np.abs(times - t))) for t in SNAPSHOT_TIMES]
-    used_times = times[indices]
-    np.savez_compressed(
-        COMPRESSIBLE_OUTDIR / "dye_snapshots_t2_4_6_8.npz",
-        times=used_times,
-        dye=dye[indices],
-    )
-    _plot_snapshots(dye, times, indices, COMPRESSIBLE_OUTDIR / "dye_snapshots_t2_4_6_8.png")
-
-    volume.commit()
-    lines = [f"requested {t} -> used t = {u:.4f}" for t, u in zip(SNAPSHOT_TIMES, used_times)]
-    summary = (
-        f"compressible {nx}x{ny}, Re={re:.2e}, dt={dt:.2e}, dealias={dealias}; "
-        f"saved {len(times)} snapshots; first non-finite t: {config['first_non_finite_time']}; "
-        f"min density {density_min.min():.4f}, min pressure {pressure_min.min():.4f}\n"
-        + "\n".join(lines)
-    )
-    print(summary, flush=True)
-    return summary
-
-
 @app.local_entrypoint()
 def main(
-    model: str = "incompressible",
     nx: int = 0,
     ny: int = 0,
     re: float = 0.0,
     t_end: float = 8.0,
     dt: float = 0.0,
     save_every: int = 0,
-    dealias: bool = True,
 ):
-    """Submit the chosen model and return at once. Zero for nx, ny, re, dt or save_every means that model's default.
+    """Submit the run and return at once. Zero for nx, ny, re, dt or save_every means the default.
 
     The run is spawned, not awaited, so exiting this command (or pressing Ctrl+C)
     does not cancel it. Follow it with ``modal app logs <app-id>``.
     """
-    if model == "incompressible":
-        call = run_kh_incompressible.spawn(
-            nx or 1024,
-            ny or 2048,
-            re or 1.0e6,
-            1.0,
-            dt or 2.5e-4,
-            t_end,
-            save_every or 400,
-        )
-        folder = "kh_incompressible_modal"
-    elif model == "compressible":
-        call = run_kh_compressible.spawn(
-            nx or 512,
-            ny or 1024,
-            re or 1.0e5,
-            1.0,
-            dt or 1.0e-4,
-            t_end,
-            save_every or 800,
-            dealias,
-        )
-        folder = "kh_compressible_modal"
-    else:
-        raise SystemExit(f"model must be 'incompressible' or 'compressible', got {model!r}")
+    call = run_kh_incompressible.spawn(
+        nx or 1024,
+        ny or 2048,
+        re or 1.0e6,
+        1.0,
+        dt or 2.5e-4,
+        t_end,
+        save_every or 400,
+    )
+    folder = "kh_incompressible_modal"
 
-    print(f"\nSubmitted {model} run. Function call ID: {call.object_id}")
+    print(f"\nSubmitted incompressible run. Function call ID: {call.object_id}")
     print("Check progress with: modal app logs <app-id>   (app ID is shown by `modal app list`)")
     print("\nWhen it finishes, pull the snapshots:")
     print(f"  mkdir -p outputs/{folder}")

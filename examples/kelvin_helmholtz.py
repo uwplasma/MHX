@@ -22,13 +22,13 @@ import numpy as np
 from jaxtyping import Array
 
 from mhx.config import MeshConfig
-from mhx.numerics.spectral import fft_derivative
 from mhx.equations.reduced_mhd import poisson_bracket, reduced_mhd_rhs, stream_function
 from mhx.grids import CartesianGrid
 from mhx.io import write_manifest
-from mhx.numerics.spectral import laplacian
+from mhx.numerics.spectral import fft_derivative, laplacian
 from mhx.state import ReducedMHDParams, ReducedMHDState
 from mhx.time_integrators import evolve_rk4
+
 
 class CompressibleMHDState(NamedTuple):
     """2D conservative compressible-MHD state with a passive dye scalar."""

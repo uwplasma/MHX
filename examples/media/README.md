@@ -48,9 +48,4 @@ media.
 Each staged render writes a provenance record under
 `outputs/media-preview/records/` and refreshes the aggregate
 `outputs/media-preview/media_build.json`. Inspect the staged files before copying
-selected outputs into `docs/_static/`, then update
-`docs/figures/manifest.toml` and run:
-
-```bash
-python tools/render_all_media.py --check-only
-```
+selected outputs into `docs/_static/`.

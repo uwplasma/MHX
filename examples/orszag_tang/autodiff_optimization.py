@@ -8,22 +8,21 @@ import time
 from functools import partial
 from pathlib import Path
 
-from scipy.interpolate import interp1d
-
 import jax
 import jax.numpy as jnp
 import numpy as np
 from jaxtyping import Array
+from scipy.interpolate import interp1d
+
+# Same fluid run and three-panel figure as the comparison example. Importing it
+# also selects the headless Agg Matplotlib backend before pyplot is loaded.
+from vencels_kinetic_comparison import run_orszag_tang, write_kinetic_comparison_figure
 
 from mhx.config import MeshConfig
 from mhx.equations.reduced_mhd import reduced_mhd_rhs, stream_function
 from mhx.grids import CartesianGrid
 from mhx.numerics.spectral import gradient
 from mhx.state import ReducedMHDParams, ReducedMHDState
-
-# Same fluid run and three-panel figure as the comparison example. Importing it
-# also selects the headless Agg Matplotlib backend before pyplot is loaded.
-from vencels_kinetic_comparison import run_orszag_tang, write_kinetic_comparison_figure
 
 # The Vencels CSV ships alongside this example.
 VENCELS_CSV = Path(__file__).resolve().parent.parent / "vencelsdata.csv"

@@ -3,7 +3,7 @@
 Every builder returns component-first real fields ``(v, b)`` of shape
 ``(3, nx, ny, nz)`` on the periodic box, ready for
 :func:`mhx.equations.mhd3d.to_spectral`. The Orszag--Tang and
-Taylor--Green fields follow the published formulas cited in ``plan_3d.md``.
+Taylor--Green fields follow the published formulas cited in each class docstring.
 """
 
 from __future__ import annotations
@@ -54,7 +54,7 @@ class CircularlyPolarizedAlfvenEquilibrium:
     With a unit guide field along ``z``, the state
     ``b_perp = amplitude (cos kz, sin kz, 0)`` and ``v = -b_perp`` is an
     exact nonlinear solution propagating at the Alfvén speed. It is the
-    G3 gate of ``plan_3d.md``.
+    G3 gate of the 3D test suite.
     """
 
     amplitude: float = 0.1
