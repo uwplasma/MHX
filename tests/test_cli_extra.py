@@ -304,7 +304,9 @@ def test_run_rejects_unsupported_physics_model(tmp_path) -> None:
     )
     result = runner.invoke(app, ["run", str(cfg), "--outdir", str(tmp_path / "out")])
     assert result.exit_code != 0
-    assert "reduced_mhd_linear_tearing" in result.output
+    assert isinstance(result.exception, ValueError)
+    assert "physics.model must be one of" in str(result.exception)
+    assert "reduced_mhd_linear_tearing" in str(result.exception)
     assert not (tmp_path / "out" / "manifest.json").exists()
 
 

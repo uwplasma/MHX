@@ -15,6 +15,7 @@ import numpy as np
 from rich.console import Console
 from rich.table import Table
 
+from mhx.config import RunConfig
 from mhx.diagnostics import compute_reduced_mhd_diagnostics, trajectory_energies
 from mhx.ensemble import EnsembleResult, run_ensemble
 from mhx.equations.reduced_mhd import (
@@ -28,7 +29,13 @@ from mhx.grids import CartesianGrid
 from mhx.io import write_reduced_mhd_trajectory_npz
 from mhx.numerics import spectral_diffusion_preconditioner
 from mhx.parallel import make_spatial_sharding, shard_state
-from mhx.physics import Equilibrium, PeriodicDoubleHarrisEquilibrium, PhysicsTerm
+from mhx.physics import (
+    Equilibrium,
+    PeriodicDoubleHarrisEquilibrium,
+    PhysicsTerm,
+    build_equilibrium,
+    build_physics_terms,
+)
 from mhx.state import ReducedMHDParams, ReducedMHDState, ReducedMHDTrajectory
 from mhx.time_integrators import evolve_backward_euler, evolve_rk4
 
@@ -268,6 +275,66 @@ class Simulation:
         if self.integrator not in ("rk4", "backward_euler"):
             raise ValueError("integrator must be 'rk4' or 'backward_euler'")
         self._validate_time_settings()
+
+    @classmethod
+    def from_config(cls, config: RunConfig, *, verbose: bool = True) -> Simulation:
+        """Build a simulation from a :class:`mhx.config.RunConfig`.
+
+        This is the bridge between a TOML file and the Python API:
+        ``Simulation.from_config(load_config("run.toml")).run()`` does what
+        ``mhx run run.toml`` does. The ``reduced_mhd``, ``mhd3d`` and
+        ``compressible`` models are supported. The lightweight
+        ``reduced_mhd_linear_tearing`` smoke model has its own runner.
+
+        Args:
+            config: A configuration whose ``time.t0`` is zero.
+            verbose: Print the setup, timings and progress while running.
+        """
+        config = config.validated()
+        physics = config.physics
+        if physics.model == "reduced_mhd_linear_tearing":
+            raise ValueError(
+                "physics.model 'reduced_mhd_linear_tearing' is the smoke workflow; "
+                "use 'reduced_mhd', 'mhd3d' or 'compressible' with Simulation.from_config"
+            )
+        if config.time.t0 != 0.0:
+            raise ValueError("time.t0 must be 0 for Simulation runs")
+        if not all(config.mesh.periodic):
+            raise ValueError("Simulation runs need a periodic mesh")
+        equilibrium = build_equilibrium(physics.equilibrium, physics.equilibrium_parameters)
+        builder = "initial_state" if physics.model == "reduced_mhd" else "initial_fields"
+        if not hasattr(equilibrium, builder):
+            raise ValueError(
+                f"equilibrium {physics.equilibrium!r} does not provide {builder}() "
+                f"required by physics.model {physics.model!r}"
+            )
+        terms = build_physics_terms(
+            physics.rhs_terms,
+            physics.term_parameters,
+            plugin_modules=physics.plugin_modules,
+            plugin_entry_point_groups=physics.plugin_entry_point_groups,
+        )
+        return cls(
+            shape=config.mesh.shape,
+            lower=config.mesh.lower,
+            upper=config.mesh.upper,
+            equilibrium=equilibrium,
+            resistivity=physics.resistivity,
+            viscosity=physics.viscosity,
+            dt=config.time.dt,
+            t_end=config.time.t1 - config.time.t0,
+            save_every=config.time.save_every,
+            integrator=config.numerics.time_integrator,
+            dealiasing=config.numerics.dealiasing,
+            device_count=config.numerics.device_count,
+            verbose=verbose,
+            terms=terms,
+            equations=physics.model,
+            guide_field=physics.guide_field,
+            dissipation_order=physics.dissipation_order,
+            sound_speed=physics.sound_speed,
+            bulk_viscosity=physics.bulk_viscosity,
+        )
 
     def _validate_time_settings(self) -> None:
         """Checks shared by the 2D and 3D paths."""

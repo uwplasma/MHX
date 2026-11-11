@@ -19,7 +19,20 @@ from mhx.physics import (
 
 def test_default_equilibrium_registry_metadata_and_errors() -> None:
     registry = default_equilibrium_registry()
-    assert registry.names() == ("cosine_tearing", "periodic_double_harris", "zero")
+    assert registry.names() == (
+        "abc_flow",
+        "alfven_wave_collision",
+        "cosine_tearing",
+        "cp_alfven",
+        "orszag_tang",
+        "orszag_tang_3d",
+        "periodic_double_harris",
+        "single_mode_3d",
+        "taylor_green_a",
+        "taylor_green_c",
+        "taylor_green_i",
+        "zero",
+    )
     metadata = {item.name: item for item in registry.metadata()}
     assert "current sheet" in metadata["cosine_tearing"].description
     assert "double-Harris" in metadata["periodic_double_harris"].description

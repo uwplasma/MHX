@@ -1,0 +1,23 @@
+# One double-Harris simulation split across devices (field sharding).
+# mesh.shape[0] must divide evenly by numerics.device_count. On a CPU-only
+# machine, expose logical devices first:
+#   XLA_FLAGS=--xla_force_host_platform_device_count=2 mhx run examples/toml/double_harris_sharded.toml
+name = "double_harris_sharded"
+output_dir = "outputs/toml/double_harris_sharded"
+
+[mesh]
+shape = [128, 128]
+
+[time]
+t1 = 1.0
+dt = 0.01
+save_every = 20
+
+[physics]
+model = "reduced_mhd"
+equilibrium = "periodic_double_harris"
+resistivity = 5.0e-3
+viscosity = 5.0e-3
+
+[numerics]
+device_count = 2

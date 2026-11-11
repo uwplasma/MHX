@@ -1,0 +1,24 @@
+# Weak counterpropagating Alfven-wave collision of Howes and Nielson in a
+# strong guide field along z, without dissipation.
+# Run it with:  mhx run examples/toml/alfven_collision_3d.toml
+name = "alfven_collision_3d"
+output_dir = "outputs/toml/alfven_collision_3d"
+
+[mesh]
+shape = [64, 64, 64]
+
+[time]
+t1 = 25.132741228718345
+dt = 9.817477042468104e-4
+save_every = 50
+
+[physics]
+model = "mhd3d"
+equilibrium = "alfven_wave_collision"
+resistivity = 0.0
+viscosity = 0.0
+guide_field = [0.0, 0.0, 1.0]
+
+[physics.equilibrium_parameters]
+amplitude_plus = 0.025
+amplitude_minus = 0.025

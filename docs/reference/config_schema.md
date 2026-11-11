@@ -7,10 +7,74 @@ diagnostics. Saved run directories include `config_effective.json`,
 exact assembled model.
 
 Write a starter file with `mhx init <path>`, then run it with
-`mhx run <path> --outdir <dir>`. The active model is
-`reduced_mhd_linear_tearing`. It evolves the
-[reduced-MHD equations](../physics/reduced_mhd.md) with optional plugin
-sources $(S_\psi, S_\omega)$.
+`mhx run <path> --outdir <dir>`. The same file drives the Python API:
+`mhx.Simulation.from_config(mhx.load_config(path)).run()` does what
+`mhx run` does for the `reduced_mhd`, `mhd3d` and `compressible` models.
+
+## Models
+
+`physics.model` selects the equations.
+
+| Model | Equations | Mesh | Integrators |
+| --- | --- | --- | --- |
+| `reduced_mhd_linear_tearing` | [reduced MHD](../physics/reduced_mhd.md), lightweight smoke workflow with diagnostics plugins | 2 entries | `rk4`, `backward_euler` |
+| `reduced_mhd` | reduced MHD through `mhx.Simulation` | 2 entries | `rk4`, `backward_euler` |
+| `mhd3d` | [3D incompressible MHD](../physics/mhd3d.md) | 3 entries | `if_rk3` (`rk4` selects it), `etdrk4` |
+| `compressible` | [subsonic compressible MHD](../physics/compressible.md) | 3 entries | `if_rk3` (`rk4` selects it), `etdrk4` |
+
+The mesh has two or three entries to match the model. `mesh.lower` and
+`mesh.upper` default to `0` and `2*pi` on every axis, and `Simulation` runs
+need `mesh.periodic` to be all true. `time.t0` must be `0` for
+`Simulation` runs, and `time.t1 - time.t0` must be a whole number of `time.dt`
+steps.
+
+```toml
+[mesh]
+shape = [64, 64, 64]
+
+[time]
+t1 = 2.0
+dt = 2.0e-3
+save_every = 100
+
+[physics]
+model = "mhd3d"
+equilibrium = "orszag_tang_3d"
+resistivity = 5.0e-3
+viscosity = 5.0e-3
+guide_field = [0.0, 0.0, 0.0]
+
+[physics.equilibrium_parameters]
+beta = 0.8
+
+[numerics]
+device_count = 2
+```
+
+The `guide_field`, `dissipation_order`, `sound_speed` and `bulk_viscosity`
+keys apply to the 3D models (`dissipation_order` is the power of the Laplacian
+in the dissipation, and `sound_speed` and `bulk_viscosity` apply to
+`compressible`). `numerics.device_count` shards one run across that many
+devices. A run
+through `Simulation` prints its setup and timings, then writes
+`config_effective.json`, `diagnostics.json`, `trajectory.npz`, `summary.png`
+and `manifest.json`. The `[diagnostics]` table below applies to the
+`reduced_mhd_linear_tearing` model only; `mhx figures` and `mhx report` read
+its output format.
+
+## Shipped examples
+
+| File | Model | What it runs |
+| --- | --- | --- |
+| `examples/linear_tearing.toml` and variants | `reduced_mhd_linear_tearing` | smoke runs with hyper terms and plugins |
+| `examples/toml/double_harris.toml` | `reduced_mhd` | periodic double-Harris sheet seeded with one mode |
+| `examples/toml/double_harris_hyper.toml` | `reduced_mhd` | the same sheet with hyper-resistivity and hyper-viscosity |
+| `examples/toml/double_harris_sharded.toml` | `reduced_mhd` | one run split across two devices |
+| `examples/toml/orszag_tang_2d.toml` | `reduced_mhd` | the 2D Orszag--Tang vortex |
+| `examples/toml/orszag_tang_3d.toml` | `mhd3d` | the 3D Orszag--Tang vortex |
+| `examples/toml/taylor_green_3d.toml` | `mhd3d` | Taylor--Green vortex, insulating class |
+| `examples/toml/alfven_collision_3d.toml` | `mhd3d` | counterpropagating Alfven waves in a guide field |
+| `examples/toml/compressible_orszag_tang_3d.toml` | `compressible` | subsonic compressible Orszag--Tang in a thin box |
 
 ## The physics table
 
@@ -35,8 +99,13 @@ nu4 = 1e-5
 rate = 0.01
 ```
 
-Use `mhx physics equilibria` to list equilibria and `mhx physics list` to
-list terms. `mhx physics lint <name>` validates a registered term against
+Use `mhx physics equilibria` to list equilibria, both the two-dimensional
+ones and the three-dimensional builders (`orszag_tang_3d`, `taylor_green_i`,
+`taylor_green_a`, `taylor_green_c`, `abc_flow`, `alfven_wave_collision`,
+`cp_alfven`, `single_mode_3d`), and `mhx physics list` to list terms. An
+unknown key in `[physics.equilibrium_parameters]` is an error that names the
+valid keys, and list-valued parameters such as `mode = [1, 0, 2]` are
+supported. `mhx physics lint <name>` validates a registered term against
 the active API. The [model page](../physics/reduced_mhd.md#built-in-equilibria)
 documents the equilibrium formulas and the
 [term table](../physics/reduced_mhd.md#optional-physics-terms).

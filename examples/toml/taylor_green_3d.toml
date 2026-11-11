@@ -1,0 +1,25 @@
+# Taylor--Green vortex with the insulating magnetic field (Lee et al. 2010,
+# class I). Use equilibrium "taylor_green_a" for the alternative class and
+# "taylor_green_c" for the conducting class; resistivity equals viscosity
+# (unit magnetic Prandtl number).
+# Run it with:  mhx run examples/toml/taylor_green_3d.toml
+name = "taylor_green_3d"
+output_dir = "outputs/toml/taylor_green_3d"
+
+[mesh]
+shape = [64, 64, 64]
+
+[time]
+t1 = 6.0
+dt = 1.0e-3
+save_every = 200
+
+[physics]
+model = "mhd3d"
+equilibrium = "taylor_green_i"
+resistivity = 2.0e-3
+viscosity = 2.0e-3
+
+[physics.equilibrium_parameters]
+v0 = 1.0
+b0 = 0.5773502691896258

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Any
 
 import typer
 
@@ -73,6 +73,7 @@ from mhx.plotting import (
     write_diagnostic_figures_for_run,
 )
 from mhx.runtime import configure_jax
+from mhx.simulation import Simulation
 from mhx.state import ReducedMHDState
 from mhx.versioning import api_version_info
 
@@ -178,13 +179,10 @@ def _run_config(config: Path, *, outdir: Path | None = None) -> Path:
     configure_jax(enable_x64=cfg.numerics.enable_x64)
     if outdir is not None:
         cfg = cfg.with_output_dir(outdir)
-    if cfg.physics.model != "reduced_mhd_linear_tearing":
-        raise typer.BadParameter(
-            "mhx run currently supports physics.model='reduced_mhd_linear_tearing'."
-        )
-
     run_dir = cfg.output_dir
     run_dir.mkdir(parents=True, exist_ok=True)
+    if cfg.physics.model != "reduced_mhd_linear_tearing":
+        return _run_simulation_config(cfg)
     trajectory, diagnostics = run_linear_tearing_smoke(cfg)
 
     config_path = run_dir / "config_effective.json"
@@ -228,6 +226,47 @@ def _run_config(config: Path, *, outdir: Path | None = None) -> Path:
 
 
 
+
+
+def _jsonable(value: Any) -> Any:
+    """Convert numpy and JAX values in a diagnostics mapping to JSON builtins."""
+    if isinstance(value, dict):
+        return {str(key): _jsonable(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_jsonable(item) for item in value]
+    if hasattr(value, "tolist"):
+        return value.tolist()
+    return value
+
+
+def _run_simulation_config(cfg: RunConfig) -> Path:
+    """Run a ``reduced_mhd``, ``mhd3d`` or ``compressible`` config and write its outputs."""
+    result = Simulation.from_config(cfg).run()
+    result.print_summary()
+    run_dir = cfg.output_dir
+    config_path = run_dir / "config_effective.json"
+    diagnostics_path = run_dir / "diagnostics.json"
+    config_path.write_text(json.dumps(cfg.to_dict(), indent=2, sort_keys=True), encoding="utf-8")
+    diagnostics_path.write_text(
+        json.dumps(_jsonable(result.diagnostics), indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+    trajectory_path = result.save(run_dir / "trajectory.npz")
+    figure_path = result.plot(run_dir / "summary.png")
+    manifest_path = run_dir / "manifest.json"
+    write_manifest(
+        manifest_path,
+        config=cfg.to_dict(),
+        outputs={
+            "config": config_path.name,
+            "diagnostics": diagnostics_path.name,
+            "trajectory": trajectory_path.name,
+            "figure": figure_path.name,
+        },
+        claim_level="smoke",
+        claim_scope="Config-driven run; not a validation or production claim.",
+    )
+    return manifest_path
 
 
 @app.command()
