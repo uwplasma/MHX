@@ -40,6 +40,7 @@ from mhx.diagnostics.reduced_mhd import (
     trajectory_energies,
     trajectory_mode_amplitude,
 )
+from mhx.diagnostics.spectra import fit_power_law, magnetic_power_spectrum_2d
 from mhx.diagnostics.sweet_parker import (
     SweetParkerSheetMeasurement,
     measure_sweet_parker_sheet,
@@ -48,6 +49,8 @@ from mhx.diagnostics.sweet_parker import (
 )
 
 __all__ = [
+    "fit_power_law",
+    "magnetic_power_spectrum_2d",
     "CriticalPointDetection",
     "CriticalPointTracker",
     "PeriodicFluxInterpolator",

@@ -146,8 +146,32 @@ from mhx.benchmarks.turbulence import (
     write_forced_turbulent_reconnection_readiness_report,
     write_forced_turbulent_reconnection_validation,
 )
+from mhx.benchmarks.turbulent_spectrum import (
+    TURBULENT_SPECTRUM_SCHEMA,
+    TurbulentSpectrumResult,
+    run_turbulent_spectrum_validation,
+    write_turbulent_spectrum_validation,
+)
+from mhx.benchmarks.vencels import (
+    VENCELS_CSV,
+    VENCELS_DOMAIN_SIZE,
+    load_vencels_reference,
+    load_vencels_spectrum,
+    run_orszag_tang,
+    vencels_orszag_tang_initial_state,
+)
 
 __all__ = [
+    "TURBULENT_SPECTRUM_SCHEMA",
+    "TurbulentSpectrumResult",
+    "run_turbulent_spectrum_validation",
+    "write_turbulent_spectrum_validation",
+    "VENCELS_CSV",
+    "VENCELS_DOMAIN_SIZE",
+    "load_vencels_reference",
+    "load_vencels_spectrum",
+    "run_orszag_tang",
+    "vencels_orszag_tang_initial_state",
     "validate_run",
     "write_run_report",
     "ARNOLDI_SCHEMA",
