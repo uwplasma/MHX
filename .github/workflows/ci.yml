@@ -37,7 +37,7 @@ jobs:
           python -m pytest tests/test_simulation.py tests/test_spectral.py tests/test_gpu_smoke.py -q
 
   test:
-    runs-on: ${{ (github.event_name != 'pull_request' || (github.event.pull_request.head.repo.full_name == github.repository && matrix.python-version == '3.12')) && fromJSON('["self-hosted","macOS","uwplasma-cpu"]') || 'ubuntu-latest' }}
+    runs-on: ${{ (github.event_name != 'pull_request' || (github.event.pull_request.head.repo.full_name == github.repository && matrix.python-version == '3.12')) && fromJSON('["self-hosted","uwplasma-cpu"]') || 'ubuntu-latest' }}
     timeout-minutes: 25
     strategy:
       fail-fast: false
@@ -70,7 +70,7 @@ jobs:
           python -m pytest -m "not slow"
 
   release-tests:
-    runs-on: ${{ (github.event_name != 'pull_request') && fromJSON('["self-hosted","macOS","uwplasma-cpu"]') || 'ubuntu-latest' }}
+    runs-on: ${{ (github.event_name != 'pull_request') && fromJSON('["self-hosted","uwplasma-cpu"]') || 'ubuntu-latest' }}
     timeout-minutes: 25
     env:
       JAX_PLATFORM_NAME: cpu
@@ -177,7 +177,7 @@ jobs:
           sphinx-build -W -b html docs docs/_build/html
 
   benchmark-artifacts:
-    runs-on: ${{ (github.event_name != 'pull_request') && fromJSON('["self-hosted","macOS","uwplasma-cpu"]') || 'ubuntu-latest' }}
+    runs-on: ${{ (github.event_name != 'pull_request') && fromJSON('["self-hosted","uwplasma-cpu"]') || 'ubuntu-latest' }}
     timeout-minutes: 60
     env:
       JAX_PLATFORM_NAME: cpu
