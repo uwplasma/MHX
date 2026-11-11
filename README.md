@@ -102,19 +102,9 @@ run it from the repository root.
 
 These images show bounded validation runs. The
 [gallery](https://mhx.readthedocs.io/en/latest/gallery.html) plays them as
-movies.
-
-Regenerate the landing-page and documentation media from the same final
-simulation bundles:
-
-```bash
-python examples/media/run_all.py simulate --preset final --allow-expensive
-python examples/media/run_all.py render --preset final
-```
-
-The [media campaign guide](examples/media/README.md) documents individual
-cases, preview runs, staging paths, and promotion checks. The committed
-high-fidelity collection includes its GIFs, MP4s, posters, and provenance.
+movies, and
+[Make your first movie](https://mhx.readthedocs.io/en/latest/getting_started/first_movie.html)
+shows how to render your own.
 
 ## Three-dimensional MHD
 

@@ -1,7 +1,8 @@
 # Orszag--Tang against the Vencels kinetic result
 
 Run the incompressible reduced-MHD Orszag--Tang vortex and compare its energy
-history with the kinetic reference data in `examples/vencelsdata.csv`. Then fit
+history with the kinetic reference data that ships with the package in
+`mhx/benchmarks/data/vencelsdata.csv`. Then fit
 the resistivity and viscosity to that reference by autodiff.
 
 ## Set up
@@ -38,30 +39,33 @@ print(trajectory.states.psi.shape)
 
 ## Run
 
-The comparison script runs the vortex, normalizes the energies by the initial
-total energy `W0`, and draws them against the Vencels curves:
+Open `examples/orszag_tang/vencels_kinetic_comparison.py`, edit the constants
+under "Input parameters" if you want a different grid or end time, and run it
+from the repository root:
 
 ```bash
-python examples/orszag_tang/vencels_kinetic_comparison.py \
-  --nx 32 --ny 32 --t-end 2 --outdir outputs/orszag_tang_kinetic
+python examples/orszag_tang/vencels_kinetic_comparison.py
 ```
 
-It writes `kinetic_comparison.png` and `manifest.json` to `--outdir`.
+The script runs the vortex, normalizes the energies by the initial total energy
+`W0`, and draws them against the Vencels curves. With the defaults (24 x 24
+grid, `T_END = 30`) it takes seconds and writes `kinetic_comparison.png` and
+`manifest.json` to `OUTDIR`.
 
-Fit `eta` and `nu` so the fluid energy curves match the reference. The
-optimizer differentiates through the whole solve:
+Fit `eta` and `nu` so the fluid energy curves match the reference with
+`examples/orszag_tang/autodiff_optimization.py`. The optimizer differentiates
+through the whole solve; each step prints the loss and the current `eta` and
+`nu`. For a quick look set `NX = 32`, `NY = 32`, `T_END = 0.2`, `SAVE_EVERY = 20`
+and `OPT_STEPS = 2` before running:
 
 ```bash
-python examples/orszag_tang/autodiff_optimization.py \
-  --nx 32 --ny 32 --t-end 0.2 --save-every 20 --opt-steps 2 \
-  --outdir outputs/orszag_tang_opt
+python examples/orszag_tang/autodiff_optimization.py
 ```
-
-Each step prints the loss and the current `eta` and `nu`.
 
 ## Scale up
 
-Raise `--nx`, `--ny`, `--t-end` and `--opt-steps`. The defaults are 256 x 256
-and 15 optimization steps. A high-resolution comparison used `--nx 1024 --ny 1024
---dt 5e-4 --t-end 30`. Keep `dt` below the explicit diffusion limit, about
-`2 / (eta * 2 * (pi * N / 10)**2)`.
+In `vencels_kinetic_comparison.py` raise `NX`, `NY` and `T_END`; a
+high-resolution comparison used `NX = NY = 1024`, `DT = 5e-4` and `T_END = 30`.
+In `autodiff_optimization.py` the defaults are 256 x 256 and `OPT_STEPS = 15`;
+`T_END` must be a multiple of `DT * SAVE_EVERY`. Keep `DT` below the explicit
+diffusion limit, about `2 / (eta * 2 * (pi * N / 10)**2)`.

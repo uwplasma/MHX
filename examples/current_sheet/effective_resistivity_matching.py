@@ -3,58 +3,87 @@
 Synthetic-data inverse problem (diffusion-coefficient field inversion):
 
 * A Gaussian magnetic structure (initial flux ``psi0``) is seeded in a periodic
-  box ``[0, 2*pi]^2``.  Its current density ``j_z = -laplacian(psi)`` decays and
-  spreads under the resistive diffusion term ``eta(x, y) * laplacian(psi)`` in
-  the reduced-MHD RHS.  The blob is large enough that its current flows across
-  the whole anomalous region, so ``eta*j_z`` directly samples the resistivity
-  structure everywhere in it.
-* The truth effective-resistivity profile ``eta(x, y)`` is an **H-shaped
-  anomalous region** built from three Gaussian bars -- two vertical bars and a
-  horizontal crossbar -- centered on the structure (mimicking an
-  anomalous-resistivity channel).  The forward solver generates sparse "probe"
-  time series: ``psi``, ``j_z`` and ``eta*j_z`` (the non-ideal field
+  box. Its current density ``j_z = -laplacian(psi)`` decays and spreads under the
+  resistive diffusion term ``eta(x, y) * laplacian(psi)`` in the reduced-MHD RHS.
+  The blob is large enough that its current flows across the whole anomalous
+  region, so ``eta*j_z`` directly samples the resistivity structure everywhere
+  in it.
+* The truth effective-resistivity profile ``eta(x, y)`` is an H-shaped anomalous
+  region built from three Gaussian bars (two vertical bars and a horizontal
+  crossbar) centered on the structure. The forward solver generates sparse
+  "probe" time series of ``psi``, ``j_z`` and ``eta*j_z`` (the non-ideal field
   ``E_non-ideal = eta j``) at fixed locations over a time window, and Gaussian
-  noise is added.  By default the probes are a uniform grid spanning the box
-  (``--probe-style full``, which covers the whole H); a tight cluster around
-  the structure is available via ``--probe-style center``.
+  noise is added. With ``PROBE_STYLE = "full"`` the probes are a uniform grid
+  spanning the box (covering the whole H); ``"center"`` uses a tight cluster
+  around the structure.
 * The inverse problem: starting from uniform resistivity (anomalous region
   wiped), reverse-mode AD propagates error gradients back through the full RK4
-  trajectory and Adam optimizes the H parameters so the solver reproduces the
-  observed time series.  ``evolution.gif`` shows the target vs optimized
-  ``j_z`` evolution frame by frame so the optimization is visible, and
-  ``eta_fields.png`` shows the recovered H against the truth.
+  trajectory and Adam (optax) optimizes the H parameters so the solver
+  reproduces the observed time series.
+
+Writes to OUTDIR: ``loss_history.png``, ``probe_fits.png``, ``eta_fields.png``
+(recovered H against the truth), ``evolution.gif`` (target vs uniform vs
+optimized ``j_z``) and ``effective_resistivity_matching.npz``.
 
 Because this repository ships no external PIC data, the reference is generated
-with the same solver (self-consistency test).  Pass ``--target-npz`` to load a
-reference from disk instead -- the NPZ must contain ``times`` and ``probes``
-arrays matching the shapes produced here (probes has 3 channels: psi, j, eta*j).
+with the same solver (self-consistency test). Set TARGET_NPZ to a file with
+``times`` and ``probes`` arrays (probes has 3 channels: psi, j, eta*j) to use a
+reference from disk instead.
 
-Usage::
+Runtime: the defaults (64 x 64, 1600 RK4 steps per forward run, 120 Adam steps)
+take several minutes on a CPU. For a quick check use NX = 32, T_END = 2,
+OPT_STEPS = 20; to scale up raise NX, N_OBS and OPT_STEPS. Requires ``optax``.
+Run from the repository root:
 
-    python examples/current_sheet/effective_resistivity_matching.py \
-        --nx 64 --t-end 8.0 --opt-steps 120
+    python examples/current_sheet/effective_resistivity_matching.py
 """
 
-from __future__ import annotations
-
-import argparse
+import time
 from functools import partial
 from pathlib import Path
 
-import matplotlib
-
-matplotlib.use("Agg")  # Headless backend; safe on WSL/HPC login nodes.
 import imageio.v2 as imageio
 import jax
 import jax.numpy as jnp
 import matplotlib.pyplot as plt
 import numpy as np
+import optax
 
 from mhx.config import MeshConfig
 from mhx.equations.reduced_mhd import current_density, poisson_bracket, stream_function
 from mhx.grids import CartesianGrid
 from mhx.numerics.spectral import laplacian
 from mhx.state import ReducedMHDState
+
+# --- Input parameters ------------------------------------------------------
+OUTDIR = Path("outputs/examples/effective_resistivity_matching")
+NX = 64  # grid points in x
+NY = None  # grid points in y (None: same as NX)
+LX = 6.283185307179586  # box length in x (2*pi)
+LY = 6.283185307179586  # box length in y (2*pi)
+ETA0 = 2.0e-2  # uniform background resistivity
+NU = 1.0e-2  # uniform viscosity
+BLOB_AMP = 0.6  # initial Gaussian flux amplitude
+BLOB_SIGMA = 1.1  # initial Gaussian flux width
+DT = 5.0e-3  # time step
+T_END = 8.0  # end time of the observation window
+N_OBS = 20  # observation intervals
+PROBE_STYLE = "full"  # "full" = uniform probe grid across the box; "center" = tight cluster
+N_FULL_PROBES = 10  # probes per axis for the "full" style
+PROBE_EXTENT = 4  # probe grid half-extent in probe spacings for the "center" style
+H_A = 2.5e-2  # truth H amplitude
+H_D = 0.55  # truth H bar half-separation
+H_SW = 0.16  # truth H bar width
+H_SH = 0.70  # truth H bar half-length
+H_SL = 0.65  # truth H crossbar half-length
+H_ST = 0.16  # truth H crossbar thickness
+NOISE = 1.0e-3  # relative observation noise (0 disables)
+SEED = 0  # RNG seed for the observation noise
+W_PROBE = 1.0  # weight of the probe-data term
+REG = 1.0e-3  # width prior weight
+OPT_STEPS = 120  # Adam iterations
+LR = 1.0e-2  # Adam learning rate
+TARGET_NPZ = None  # optional NPZ with times/probes reference data instead of synthetic truth
 
 # Enable double precision for the inverse-problem accuracy.
 jax.config.update("jax_enable_x64", True)
@@ -426,279 +455,211 @@ def render_evolution_gif(
     return path
 
 
-def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        "--outdir", type=Path, default=Path("outputs/examples/effective_resistivity_matching")
-    )
-    parser.add_argument("--nx", type=int, default=64, help="grid points per direction")
-    parser.add_argument("--ny", type=int, default=None, help="grid points in y (default: nx)")
-    parser.add_argument("--Lx", type=float, default=2.0 * np.pi)
-    parser.add_argument("--Ly", type=float, default=2.0 * np.pi)
-    parser.add_argument("--eta0", type=float, default=2.0e-2, help="uniform background resistivity")
-    parser.add_argument("--nu", type=float, default=1.0e-2, help="uniform viscosity")
-    parser.add_argument(
-        "--blob-amp", type=float, default=0.6, help="initial Gaussian flux amplitude"
-    )
-    parser.add_argument("--blob-sigma", type=float, default=1.1, help="initial Gaussian flux width")
-    parser.add_argument("--dt", type=float, default=5.0e-3)
-    parser.add_argument("--t-end", type=float, default=8.0)
-    parser.add_argument("--n-obs", type=int, default=20, help="observation intervals")
-    parser.add_argument(
-        "--probe-style",
-        choices=("full", "center"),
-        default="full",
-        help="full = uniform grid across the box; center = tight cluster",
-    )
-    parser.add_argument(
-        "--n-full-probes", type=int, default=10, help="probes per axis for full style"
-    )
-    parser.add_argument(
-        "--probe-extent", type=int, default=4, help="probe grid half-extent (cells)"
-    )
-    parser.add_argument("--h-a", type=float, default=2.5e-2, help="truth H amplitude")
-    parser.add_argument("--h-d", type=float, default=0.55, help="truth H bar half-separation")
-    parser.add_argument("--h-sw", type=float, default=0.16, help="truth H bar width")
-    parser.add_argument("--h-sh", type=float, default=0.70, help="truth H bar half-length")
-    parser.add_argument("--h-sl", type=float, default=0.65, help="truth H crossbar half-length")
-    parser.add_argument("--h-st", type=float, default=0.16, help="truth H crossbar thickness")
-    parser.add_argument("--noise", type=float, default=1.0e-3, help="relative observation noise")
-    parser.add_argument("--seed", type=int, default=0)
-    parser.add_argument("--w-probe", type=float, default=1.0, help="weight of probe-data term")
-    parser.add_argument("--reg", type=float, default=1.0e-3, help="width prior weight")
-    parser.add_argument("--opt-steps", type=int, default=120, help="Adam iterations")
-    parser.add_argument("--lr", type=float, default=1.0e-2, help="Adam learning rate")
-    parser.add_argument(
-        "--target-npz",
-        type=Path,
-        default=None,
-        help="optional NPZ with times/probes reference data instead of synthetic truth",
-    )
-    return parser.parse_args()
 
+# --- Run -------------------------------------------------------------------
+OUTDIR.mkdir(parents=True, exist_ok=True)
 
-def main() -> None:
-    args = parse_args()
-    outdir = args.outdir
-    outdir.mkdir(parents=True, exist_ok=True)
+ny = NX if NY is None else NY
+grid = CartesianGrid.from_mesh_config(
+    MeshConfig(shape=(NX, ny), lower=(0.0, 0.0), upper=(LX, LY))
+)
+mesh = grid.mesh()
+lengths = grid.lengths
+dx, dy = grid.spacing
+sigma_min = 0.5 * min(dx, dy)
+steps_per_obs = max(1, int(round((T_END / N_OBS) / DT)))
+num_obs = N_OBS
+times = DT * steps_per_obs * np.arange(num_obs + 1)
+det_center = (0.5 * LX, 0.5 * LY)
+if PROBE_STYLE == "full":
+    probe_xy = make_full_probe_grid(grid, N_FULL_PROBES)
+else:
+    probe_xy = make_probe_grid(det_center, grid, extent=PROBE_EXTENT)
+center_probe = int(jnp.argmin(jnp.sum((probe_xy - jnp.asarray(det_center)) ** 2, axis=-1)))
 
-    ny = args.ny if args.ny is not None else args.nx
-    grid = CartesianGrid.from_mesh_config(
-        MeshConfig(shape=(args.nx, ny), lower=(0.0, 0.0), upper=(args.Lx, args.Ly))
+initial_state = gaussian_blob_state(grid, BLOB_AMP, BLOB_SIGMA, det_center)
+psi0 = initial_state.psi
+omega0 = initial_state.omega
+
+print("=== Effective resistivity eta(x,y) inversion (H-shaped region) ===")
+print(f"grid {grid.shape}, structure center ({det_center[0]:.4f}, {det_center[1]:.4f}), "
+      f"{probe_xy.shape[0]} probes, {num_obs} obs intervals, "
+      f"{steps_per_obs} RK4 steps each, actual t_end = {times[-1]:.3f}", flush=True)
+
+sim_jit = jax.jit(
+    partial(
+        simulate_observables,
+        viscosity=NU,
+        lengths=lengths,
+        dt=DT,
+        steps_per_obs=steps_per_obs,
+        num_obs=num_obs,
+        probe_xy=probe_xy,
+        psi0=psi0,
+        omega0=omega0,
     )
-    mesh = grid.mesh()
-    lengths = grid.lengths
-    dx, dy = grid.spacing
-    sigma_min = 0.5 * min(dx, dy)
-    dt = args.dt
-    steps_per_obs = max(1, int(round((args.t_end / args.n_obs) / dt)))
-    num_obs = args.n_obs
-    times = dt * steps_per_obs * np.arange(num_obs + 1)
-    det_center = (0.5 * args.Lx, 0.5 * args.Ly)
-    if args.probe_style == "full":
-        probe_xy = make_full_probe_grid(grid, args.n_full_probes)
-    else:
-        probe_xy = make_probe_grid(det_center, grid, extent=args.probe_extent)
-    center_probe = int(
-        jnp.argmin(jnp.sum((probe_xy - jnp.asarray(det_center)) ** 2, axis=-1))
-    )
+)
 
-    initial_state = gaussian_blob_state(grid, args.blob_amp, args.blob_sigma, det_center)
-    psi0 = initial_state.psi
-    omega0 = initial_state.omega
+# 1. Reference observables (synthetic "kinetic-like" data).
+theta_true = truth_theta(H_A, H_D, H_SW, H_SH, H_SL, H_ST)
+theta_uniform = initial_theta().at[0].set(0.0)
+theta0 = initial_theta()
 
-    print("=== Effective resistivity eta(x,y) inversion (H-shaped region) ===")
-    print(f"grid {grid.shape}, structure center ({det_center[0]:.4f}, {det_center[1]:.4f}), "
-          f"{probe_xy.shape[0]} probes, {num_obs} obs intervals, actual t_end = {times[-1]:.3f}")
+t0 = time.perf_counter()
+if TARGET_NPZ is not None:
+    reference = np.load(TARGET_NPZ)
+    probes_obs = jnp.asarray(reference["probes"], dtype=jnp.float64)
+    probes_sigma = jnp.maximum(jnp.std(probes_obs, axis=(0, 1)), 1.0e-12)
+    print(f"loaded reference from {TARGET_NPZ}")
+else:
+    eta_true_field = build_eta_field(theta_true, mesh, lengths, det_center, ETA0, sigma_min)
+    probes_clean = jax.block_until_ready(sim_jit(eta_true_field))
+    probes_obs, probes_clean, probes_sigma = add_noise(probes_clean, NOISE, SEED)
+    print(f"reference observations ({time.perf_counter() - t0:.1f} s incl. compile): "
+          f"probes shape {tuple(probes_obs.shape)}, "
+          f"per-channel sigma = {np.asarray(probes_sigma)}", flush=True)
 
-    sim_jit = jax.jit(
+# 2. Differentiable loss and its exact gradient (reverse-mode AD through every
+#    RK4 step of the whole observation window).
+loss_val_grad = jax.jit(
+    jax.value_and_grad(
         partial(
-            simulate_observables,
-            viscosity=args.nu,
+            loss_fn,
+            mesh=mesh,
             lengths=lengths,
-            dt=dt,
+            det_center=det_center,
+            eta0=ETA0,
+            sigma_min=sigma_min,
+            viscosity=NU,
+            dt=DT,
             steps_per_obs=steps_per_obs,
             num_obs=num_obs,
             probe_xy=probe_xy,
             psi0=psi0,
             omega0=omega0,
+            probes_obs=probes_obs,
+            probes_sigma=probes_sigma,
+            w_probe=W_PROBE,
+            reg_lambda=REG,
         )
     )
+)
 
-    # 1. Reference observables (synthetic "kinetic-like" data).
-    theta_true = truth_theta(args.h_a, args.h_d, args.h_sw, args.h_sh, args.h_sl, args.h_st)
-    theta_uniform = initial_theta().at[0].set(0.0)
-    theta0 = initial_theta()
+t0 = time.perf_counter()
+initial_loss, _ = jax.block_until_ready(loss_val_grad(theta0))
+print(f"loss with wiped anomalous region (uniform eta): {float(initial_loss):.6e} "
+      f"(compile + first gradient {time.perf_counter() - t0:.1f} s)", flush=True)
 
-    if args.target_npz is not None:
-        reference = np.load(args.target_npz)
-        probes_obs = jnp.asarray(reference["probes"], dtype=jnp.float64)
-        probes_sigma = jnp.maximum(jnp.std(probes_obs, axis=(0, 1)), 1.0e-12)
-        print(f"loaded reference from {args.target_npz}")
-    else:
-        eta_true_field = build_eta_field(theta_true, mesh, lengths, det_center, args.eta0,
-                                         sigma_min)
-        probes_clean = sim_jit(eta_true_field)
-        probes_obs, probes_clean, probes_sigma = add_noise(probes_clean, args.noise, args.seed)
-        print(f"reference observations: probes shape {tuple(probes_obs.shape)}, "
-              f"per-channel sigma = {np.asarray(probes_sigma)}")
+# 3. Adam optimization of the H parameters.
+optimizer = optax.adam(learning_rate=LR)
+opt_state = optimizer.init(theta0)
+theta = theta0
+loss_history = []
+t0 = time.perf_counter()
+for step in range(1, OPT_STEPS + 1):
+    loss, grads = loss_val_grad(theta)
+    updates, opt_state = optimizer.update(grads, opt_state)
+    theta = optax.apply_updates(theta, updates)
+    loss_history.append(float(loss))
+    if step == 1 or step % 10 == 0 or step == OPT_STEPS:
+        p = decode_params(theta, det_center, lengths)
+        print(f"step {step:03d} | loss {loss:.6e} | A={p['A']:.2e} d={p['d']:.3f} "
+              f"sw={p['sw']:.3f} sh={p['sh']:.3f} sL={p['sL']:.3f} st={p['st']:.3f} "
+              f"| {time.perf_counter() - t0:.1f} s", flush=True)
 
-    # 2. Differentiable loss and its exact gradient (reverse-mode AD through
-    #    every RK4 step of the whole observation window).
-    loss_val_grad = jax.jit(
-        jax.value_and_grad(
-            partial(
-                loss_fn,
-                mesh=mesh,
-                lengths=lengths,
-                det_center=det_center,
-                eta0=args.eta0,
-                sigma_min=sigma_min,
-                viscosity=args.nu,
-                dt=dt,
-                steps_per_obs=steps_per_obs,
-                num_obs=num_obs,
-                probe_xy=probe_xy,
-                psi0=psi0,
-                omega0=omega0,
-                probes_obs=probes_obs,
-                probes_sigma=probes_sigma,
-                w_probe=args.w_probe,
-                reg_lambda=args.reg,
-            )
-        )
+# 4. Verification: recovered H vs truth and probe fit.
+eta_true_field = build_eta_field(theta_true, mesh, lengths, det_center, ETA0, sigma_min)
+eta_opt_field = build_eta_field(theta, mesh, lengths, det_center, ETA0, sigma_min)
+eta_uniform_field = build_eta_field(theta_uniform, mesh, lengths, det_center, ETA0, sigma_min)
+probes_opt = jnp.asarray(jax.block_until_ready(sim_jit(eta_opt_field)))
+probes_uniform = jnp.asarray(jax.block_until_ready(sim_jit(eta_uniform_field)))
+
+# --- Results ---------------------------------------------------------------
+bump_true = np.asarray(eta_true_field) - ETA0
+bump_opt = np.asarray(eta_opt_field) - ETA0
+correlation = float(np.corrcoef(bump_true.ravel(), bump_opt.ravel())[0, 1])
+bump_rel_l2 = float(np.linalg.norm(bump_opt - bump_true) / max(np.linalg.norm(bump_true), 1.0e-12))
+
+p_true = decode_params(theta_true, det_center, lengths)
+p_opt = decode_params(theta, det_center, lengths)
+print("\n--- verification ---")
+print(f"H correlation (eta - eta0): {correlation:.4f}, relative L2 error: {bump_rel_l2:.3e}")
+for key, value in p_true.items():
+    print(f"  {key:>4s}: true={value:+.4e}  recovered={p_opt[key]:+.4e}")
+for name, probes in (("target", probes_obs), ("uniform", probes_uniform),
+                     ("optimized", probes_opt)):
+    center_j = float(np.asarray(probes)[-1, center_probe, 1])
+    print(f"j_z at center probe, final time: {name} = {center_j:.4e}")
+
+fig_loss, ax_loss = plt.subplots(figsize=(8, 5))
+ax_loss.semilogy(loss_history)
+ax_loss.set_xlabel("Adam step")
+ax_loss.set_ylabel("loss")
+ax_loss.set_title("Effective resistivity inversion: loss history")
+ax_loss.grid(True, which="both", ls="--", alpha=0.5)
+fig_loss.savefig(OUTDIR / "loss_history.png", dpi=150, bbox_inches="tight")
+plt.close(fig_loss)
+
+# The 4 probes where optimized eta differs most from uniform eta in j_z (channel 1).
+probe_diff_rms = jnp.sqrt(jnp.mean((probes_opt[..., 1] - probes_uniform[..., 1]) ** 2, axis=0))
+probe_indices = list(np.asarray(jnp.argsort(-probe_diff_rms))[:4])
+print(f"top-4 probes by |j_z(optimized) - j_z(uniform)|: {probe_indices}")
+fig_probes, axes_probes = plt.subplots(2, 2, figsize=(10, 7), constrained_layout=True)
+for axis, probe in zip(axes_probes.flat, probe_indices, strict=False):
+    axis.plot(times, np.asarray(probes_obs)[:, probe, 1], "ko", ms=4, label="target (obs)")
+    axis.plot(times, np.asarray(probes_uniform)[:, probe, 1], "b--", label="uniform eta")
+    axis.plot(times, np.asarray(probes_opt)[:, probe, 1], "r-", label="optimized eta")
+    axis.set_title(f"j_z at probe {probe}")
+    axis.set_xlabel("t")
+    axis.legend(frameon=False, fontsize="small")
+fig_probes.suptitle("Current-density probe time series")
+fig_probes.savefig(OUTDIR / "probe_fits.png", dpi=150, bbox_inches="tight")
+plt.close(fig_probes)
+
+vmax_eta = max(float(np.max(np.asarray(eta_true_field))), float(np.max(np.asarray(eta_opt_field))))
+fig_eta, axes_eta = plt.subplots(1, 2, figsize=(11, 4.5), constrained_layout=True)
+extent = (0.0, LX, 0.0, LY)
+axes_eta[0].imshow(np.asarray(eta_true_field).T, origin="lower", cmap="viridis",
+                   vmin=ETA0, vmax=vmax_eta, extent=extent)
+axes_eta[0].set_title("truth eta(x,y): H-shaped anomaly")
+im = axes_eta[1].imshow(np.asarray(eta_opt_field).T, origin="lower", cmap="viridis",
+                        vmin=ETA0, vmax=vmax_eta, extent=extent)
+axes_eta[1].set_title(f"recovered eta(x,y)  (corr {correlation:.3f})")
+fig_eta.colorbar(im, ax=axes_eta, shrink=0.85, label=r"$\eta$")
+fig_eta.savefig(OUTDIR / "eta_fields.png", dpi=150, bbox_inches="tight")
+plt.close(fig_eta)
+
+# Evolution GIF: j_z over time, target vs uniform vs optimized.
+jz_stacks = []
+for eta_field in (eta_true_field, eta_uniform_field, eta_opt_field):
+    psi_stack = np.asarray(
+        simulate_fields(eta_field, NU, lengths, DT, steps_per_obs, num_obs, psi0, omega0)
     )
-
-    initial_loss, _ = loss_val_grad(theta0)
-    print(f"loss with wiped anomalous region (uniform eta): {float(initial_loss):.6e}")
-
-    # 3. Adam optimization of the H parameters.
-    import optax
-
-    optimizer = optax.adam(learning_rate=args.lr)
-    opt_state = optimizer.init(theta0)
-    theta = theta0
-    loss_history: list[float] = []
-    for step in range(1, args.opt_steps + 1):
-        loss, grads = loss_val_grad(theta)
-        updates, opt_state = optimizer.update(grads, opt_state)
-        theta = optax.apply_updates(theta, updates)
-        loss_history.append(float(loss))
-        if step == 1 or step % 10 == 0 or step == args.opt_steps:
-            p = decode_params(theta, det_center, lengths)
-            print(f"step {step:03d} | loss {loss:.6e} | A={p['A']:.2e} d={p['d']:.3f} "
-                  f"sw={p['sw']:.3f} sh={p['sh']:.3f} sL={p['sL']:.3f} st={p['st']:.3f}")
-
-    # 4. Verification: recovered H vs truth, probe fit, evolution GIF.
-    eta_true_field = build_eta_field(theta_true, mesh, lengths, det_center, args.eta0, sigma_min)
-    eta_opt_field = build_eta_field(theta, mesh, lengths, det_center, args.eta0, sigma_min)
-    eta_uniform_field = build_eta_field(theta_uniform, mesh, lengths, det_center, args.eta0,
-                                        sigma_min)
-
-    probes_opt = sim_jit(eta_opt_field)
-    probes_uniform = sim_jit(eta_uniform_field)
-    probes_opt = jnp.asarray(probes_opt)
-    probes_uniform = jnp.asarray(probes_uniform)
-
-    bump_true = np.asarray(eta_true_field) - args.eta0
-    bump_opt = np.asarray(eta_opt_field) - args.eta0
-    correlation = float(np.corrcoef(bump_true.ravel(), bump_opt.ravel())[0, 1])
-    bump_rel_l2 = float(
-        np.linalg.norm(bump_opt - bump_true) / max(np.linalg.norm(bump_true), 1.0e-12)
+    jz_stacks.append(
+        np.asarray([np.asarray(current_density(frame, lengths=lengths)) for frame in psi_stack])
     )
+jz_target, jz_uniform, jz_optimized = jz_stacks
+gif_path = render_evolution_gif(
+    jz_target, jz_uniform, jz_optimized, times, lengths, OUTDIR / "evolution.gif"
+)
 
-    p_true = decode_params(theta_true, det_center, lengths)
-    p_opt = decode_params(theta, det_center, lengths)
-    print("\n--- verification ---")
-    print(f"H correlation (eta - eta0): {correlation:.4f}, relative L2 error: {bump_rel_l2:.3e}")
-    for key, value in p_true.items():
-        print(f"  {key:>4s}: true={value:+.4e}  recovered={p_opt[key]:+.4e}")
-    for name, probes in (("target", probes_obs), ("uniform", probes_uniform),
-                         ("optimized", probes_opt)):
-        center_j = float(np.asarray(probes)[-1, center_probe, 1])
-        print(f"j_z at center probe, final time: {name} = {center_j:.4e}")
-
-    # 5. Figures.
-    fig_loss, ax_loss = plt.subplots(figsize=(8, 5))
-    ax_loss.semilogy(loss_history)
-    ax_loss.set_xlabel("Adam step")
-    ax_loss.set_ylabel("loss")
-    ax_loss.set_title("Effective resistivity inversion: loss history")
-    ax_loss.grid(True, which="both", ls="--", alpha=0.5)
-    fig_loss.savefig(outdir / "loss_history.png", dpi=150, bbox_inches="tight")
-    plt.close(fig_loss)
-
-    # Pick the 4 probes where optimized eta differs most from uniform eta
-    # in j_z (channel 1), so the figure clearly shows the inversion's effect.
-    probe_diff_rms = jnp.sqrt(
-        jnp.mean((probes_opt[..., 1] - probes_uniform[..., 1]) ** 2, axis=0)
-    )
-    probe_indices = list(np.asarray(jnp.argsort(-probe_diff_rms))[:4])
-    print(f"   top-4 probes by |j_z(optimized) - j_z(uniform)|: {probe_indices}")
-    fig_probes, axes_probes = plt.subplots(2, 2, figsize=(10, 7), constrained_layout=True)
-    for axis, probe in zip(axes_probes.flat, probe_indices, strict=True):
-        axis.plot(times, np.asarray(probes_obs)[:, probe, 1], "ko", ms=4, label="target (obs)")
-        axis.plot(times, np.asarray(probes_uniform)[:, probe, 1], "b--", label="uniform eta")
-        axis.plot(times, np.asarray(probes_opt)[:, probe, 1], "r-", label="optimized eta")
-        axis.set_title(f"j_z at probe {probe}")
-        axis.set_xlabel("t")
-        axis.legend(frameon=False, fontsize="small")
-    fig_probes.suptitle("Current-density probe time series")
-    fig_probes.savefig(outdir / "probe_fits.png", dpi=150, bbox_inches="tight")
-    plt.close(fig_probes)
-
-    vmax_eta = max(float(np.max(np.asarray(eta_true_field))),
-                   float(np.max(np.asarray(eta_opt_field))))
-    fig_eta, axes_eta = plt.subplots(1, 2, figsize=(11, 4.5), constrained_layout=True)
-    extent = (0.0, args.Lx, 0.0, args.Ly)
-    axes_eta[0].imshow(np.asarray(eta_true_field).T, origin="lower", cmap="viridis",
-                       vmin=args.eta0, vmax=vmax_eta, extent=extent)
-    axes_eta[0].set_title("truth eta(x,y): H-shaped anomaly")
-    im = axes_eta[1].imshow(np.asarray(eta_opt_field).T, origin="lower", cmap="viridis",
-                            vmin=args.eta0, vmax=vmax_eta, extent=extent)
-    axes_eta[1].set_title(f"recovered eta(x,y)  (corr {correlation:.3f})")
-    fig_eta.colorbar(im, ax=axes_eta, shrink=0.85, label=r"$\eta$")
-    fig_eta.savefig(outdir / "eta_fields.png", dpi=150, bbox_inches="tight")
-    plt.close(fig_eta)
-
-    # 6. Evolution GIF: j_z over time, target vs uniform vs optimized.
-    psi_target = np.asarray(simulate_fields(eta_true_field, args.nu, lengths, dt, steps_per_obs,
-                                            num_obs, psi0, omega0))
-    psi_uniform = np.asarray(simulate_fields(eta_uniform_field, args.nu, lengths, dt,
-                                             steps_per_obs, num_obs, psi0, omega0))
-    psi_optimized = np.asarray(simulate_fields(eta_opt_field, args.nu, lengths, dt,
-                                               steps_per_obs, num_obs, psi0, omega0))
-    jz_target = np.asarray(
-        [np.asarray(current_density(frame, lengths=lengths)) for frame in psi_target]
-    )
-    jz_uniform = np.asarray(
-        [np.asarray(current_density(frame, lengths=lengths)) for frame in psi_uniform]
-    )
-    jz_optimized = np.asarray(
-        [np.asarray(current_density(frame, lengths=lengths)) for frame in psi_optimized]
-    )
-    gif_path = render_evolution_gif(
-        jz_target, jz_uniform, jz_optimized, times, lengths, outdir / "evolution.gif"
-    )
-    print(f"saved evolution GIF to {gif_path}")
-
-    np.savez_compressed(
-        outdir / "effective_resistivity_matching.npz",
-        times=times,
-        theta_true=np.asarray(theta_true),
-        theta_recovered=np.asarray(theta),
-        loss_history=np.asarray(loss_history),
-        probes_obs=np.asarray(probes_obs),
-        probes_uniform=np.asarray(probes_uniform),
-        probes_optimized=np.asarray(probes_opt),
-        eta_true=np.asarray(eta_true_field),
-        eta_optimized=np.asarray(eta_opt_field),
-        jz_target=jz_target,
-        jz_uniform=jz_uniform,
-        jz_optimized=jz_optimized,
-    )
-    print(f"\nFigures and data written to {outdir}")
-
-
-if __name__ == "__main__":
-    main()
+npz_path = OUTDIR / "effective_resistivity_matching.npz"
+np.savez_compressed(
+    npz_path,
+    times=times,
+    theta_true=np.asarray(theta_true),
+    theta_recovered=np.asarray(theta),
+    loss_history=np.asarray(loss_history),
+    probes_obs=np.asarray(probes_obs),
+    probes_uniform=np.asarray(probes_uniform),
+    probes_optimized=np.asarray(probes_opt),
+    eta_true=np.asarray(eta_true_field),
+    eta_optimized=np.asarray(eta_opt_field),
+    jz_target=jz_target,
+    jz_uniform=jz_uniform,
+    jz_optimized=jz_optimized,
+)
+print(f"\nSaved {OUTDIR / 'loss_history.png'}, {OUTDIR / 'probe_fits.png'}, "
+      f"{OUTDIR / 'eta_fields.png'}")
+print(f"Saved {gif_path}")
+print(f"Saved {npz_path}")

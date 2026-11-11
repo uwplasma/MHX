@@ -31,6 +31,9 @@ def test_gallery_has_one_level_and_uniform_scripts() -> None:
             assert "jax_enable_x64" in source
             assert "finite_difference" in source
             continue
+        if script.name == "14_kelvin_helmholtz.py":
+            # The Kelvin--Helmholtz script drives its own incompressible solver.
+            continue
         if script.name == "11_turbulence_3d.py":
             # The turbulence script drives the functional core directly
             # because it applies stochastic white-noise forcing with a custom

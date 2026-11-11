@@ -37,19 +37,21 @@ python examples/gallery/09_orszag_tang_3d.py
 This takes about two minutes on a laptop CPU and writes to
 `outputs/gallery/orszag_tang_3d/`.
 
-Track the run:
+Track the run. Open `examples/orszag_tang/track_orszag_tang_3d.py`, set the
+constants under "Input parameters" (for a quick pass `KMIN = 3`, `KMAX = 16` and
+`GIF_FRAMES = 5`), and run it:
 
 ```bash
-python examples/orszag_tang/track_orszag_tang_3d.py \
-  --npz outputs/gallery/orszag_tang_3d/trajectory.npz \
-  --kmin 3 --kmax 16 --gif-frames 5
+python examples/orszag_tang/track_orszag_tang_3d.py
 ```
 
-Results land in `outputs/gallery/orszag_tang_3d/track/`: `energy.png`,
-`spectrum.png` with a power-law fit, `cube_final.png`, `cube.gif`, and the
-`history.csv` and `spectrum.csv` data. The script rebuilds `t = 0` analytically,
-because the NPZ does not store it, so pass `--beta` if you changed `beta`. Use
-`--field B` for `|B|` on the faces. The fit stops at `k = N/3`.
+`NPZ` points at `outputs/gallery/orszag_tang_3d/trajectory.npz` by default.
+Results land in `outputs/gallery/orszag_tang_3d/track/` (set `OUTDIR` to change
+it): `energy.png`, `spectrum.png` with a power-law fit, `cube_final.png`,
+`cube.gif`, and the `history.csv` and `spectrum.csv` data. The script rebuilds
+`t = 0` analytically, because the NPZ does not store it, so set `BETA` if you
+changed `beta`. Set `FIELD = "B"` for `|B|` on the faces. The fit stops at
+`k = N/3`.
 
 ## Scale up
 

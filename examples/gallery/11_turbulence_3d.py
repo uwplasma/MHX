@@ -9,11 +9,17 @@ Models the balanced-Elsässer forced turbulence of equation (25) from the
   with amplitude A = 0.048
 - hyper-resistivity η (−∇²)^r with η = 6.0, r = 2 (η k⁴ damping)
 - integration to a few Alfvén crossing times
+
+Writes trajectory.npz, spectrum.png, slices.gif and outer_faces_cube.gif to OUTDIR.
+The default 64^3 run to t = 200 takes tens of minutes on a CPU (minutes on a GPU).
+For a quick check set N = 16, T_END = 0.2, SAVE_EVERY = 10 (under a minute); for the
+128^3 run raise N and use a GPU. Run from the repository root:
+
+    python examples/gallery/11_turbulence_3d.py
 """
 
 from __future__ import annotations
 
-import os
 import time
 from pathlib import Path
 
@@ -29,21 +35,23 @@ from mhx.simulation3d import MHD3DResult
 from mhx.state.mhd3d import MHD3DParams, MHD3DState, MHD3DTrajectory
 from mhx.time_integrators.exponential import etdrk4_step
 
-# --- settings (edit here) -------------------------------------------------
-GRID_SIZE = int(os.environ.get("MHX_TURBULENCE_3D_N", "64"))
-SHAPE = (GRID_SIZE,) * 3       # cubic periodic L = 2π  [paper: 64³]
+# --- Input parameters -----------------------------------------------------
+N = 64                        # grid points per side
+SHAPE = (N,) * 3       # cubic periodic L = 2π  [paper: 64³]
 AMP_FORCE = 0.048             # forcing amplitude  [paper: 0.048]
 DISSIPATION_ORDER = 2         # hyper-viscosity k⁴
 RESISTIVITY = 6.0 / (21**4)   # η  [paper: 6.0 at k_max=21]
 VISCOSITY = 6.0 / (21**4)     # matched to resistivity
-DT = float(os.environ.get("MHX_TURBULENCE_3D_DT", "2.0e-3"))
-T_END = float(os.environ.get("MHX_TURBULENCE_3D_T_END", "200.0"))
-SAVE_EVERY = int(os.environ.get("MHX_TURBULENCE_3D_SAVE_EVERY", "500"))
+DT = 2.0e-3                   # time step
+T_END = 200.0                 # end time
+SAVE_EVERY = 500              # steps between saved frames
 SEED = 11
 K_FIT_MIN = 3                 # lower edge of the resolved inertial-range fit
 K_FIT_MAX = 16                # below the k≈21 de-aliasing/hyper-dissipation rolloff
 
-output = Path(os.environ.get("MHX_TURBULENCE_3D_OUTDIR", "outputs/gallery/turbulence_3d"))
+OUTDIR = Path("outputs/gallery/turbulence_3d")
+
+output = OUTDIR
 output.parent.mkdir(parents=True, exist_ok=True)
 
 # --- 1. System Setup ------------------------------------------------------
@@ -109,15 +117,13 @@ def chunk_fn(carry: MHD3DState, key_chunk: jax.Array) -> tuple[MHD3DState, MHD3D
     return state_next, state_next
 
 
-@jax.jit
-def run_simulation(state0: MHD3DState, keys_chunks: jax.Array) -> tuple[MHD3DState, MHD3DState]:
-    return jax.lax.scan(chunk_fn, state0, keys_chunks)
+chunk_step = jax.jit(chunk_fn)
 
 # --- 4. Execution ---------------------------------------------------------
 steps = int(round(T_END / DT))
 chunks = steps // SAVE_EVERY
 
-print(f"Running stochastic turbulence for {T_END} time units ({steps} steps)...")
+print(f"Running stochastic turbulence for {T_END} time units ({steps} steps, {chunks} frames)...")
 key0 = jax.random.PRNGKey(SEED)
 keys_chunks = jax.random.split(key0, chunks)
 
@@ -125,14 +131,29 @@ keys_chunks = jax.random.split(key0, chunks)
 zero_hat = jnp.zeros((3, SHAPE[0], SHAPE[1], SHAPE[2] // 2 + 1), dtype=jnp.complex64)
 state0 = MHD3DState(v_hat=zero_hat, b_hat=zero_hat)
 
+print("Compiling...", flush=True)
 t0 = time.perf_counter()
-compiled_simulation = run_simulation.lower(state0, keys_chunks).compile()
+compiled_chunk = chunk_step.lower(state0, keys_chunks[0]).compile()
 compile_seconds = time.perf_counter() - t0
+print(f"Compiled in {compile_seconds:.1f} s", flush=True)
 
 t0 = time.perf_counter()
-final_state, saved = compiled_simulation(state0, keys_chunks)
+final_state = state0
+frames = []
+progress_every = max(1, chunks // 20)
+for chunk_index in range(chunks):
+    final_state, frame = compiled_chunk(final_state, keys_chunks[chunk_index])
+    frames.append(frame)
+    if (chunk_index + 1) % progress_every == 0 or chunk_index + 1 == chunks:
+        jax.block_until_ready(final_state)
+        print(
+            f"  frame {chunk_index + 1}/{chunks}, t = {(chunk_index + 1) * SAVE_EVERY * DT:.2f}, "
+            f"elapsed {time.perf_counter() - t0:.1f} s",
+            flush=True,
+        )
 jax.block_until_ready(final_state)
 run_seconds = time.perf_counter() - t0
+saved = jax.tree.map(lambda *leaves: jnp.stack(leaves), *frames)
 
 times = jnp.arange(1, chunks + 1) * DT * SAVE_EVERY
 trajectory = MHD3DTrajectory(times=times, states=saved)

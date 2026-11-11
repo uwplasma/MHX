@@ -7,28 +7,27 @@ hyper-resistive `eta = nu = 6 / 21**4`.
 
 ## Set up
 
-The script reads its settings from environment variables. Leave them unset for
-the defaults:
+Edit the constants at the top of `examples/gallery/11_turbulence_3d.py`:
 
-| Variable | Default | Meaning |
+| Constant | Default | Meaning |
 | --- | --- | --- |
-| `MHX_TURBULENCE_3D_N` | `64` | grid points per side |
-| `MHX_TURBULENCE_3D_DT` | `2e-3` | time step |
-| `MHX_TURBULENCE_3D_T_END` | `200` | end time |
-| `MHX_TURBULENCE_3D_SAVE_EVERY` | `500` | steps between saved frames |
-| `MHX_TURBULENCE_3D_OUTDIR` | `outputs/gallery/turbulence_3d` | output folder |
+| `N` | `64` | grid points per side |
+| `DT` | `2.0e-3` | time step |
+| `T_END` | `200.0` | end time |
+| `SAVE_EVERY` | `500` | steps between saved frames |
+| `OUTDIR` | `Path("outputs/gallery/turbulence_3d")` | output folder |
 
 ## Run
 
-A quick check on a 16-cubed grid:
+For a quick check on a 16-cubed grid, set `N = 16`, `T_END = 0.2` and
+`SAVE_EVERY = 10`, then run from the repository root:
 
 ```bash
-MHX_TURBULENCE_3D_N=16 MHX_TURBULENCE_3D_T_END=0.2 \
-MHX_TURBULENCE_3D_SAVE_EVERY=10 \
 python examples/gallery/11_turbulence_3d.py
 ```
 
-This takes under a minute and prints an energy summary. It writes `trajectory.npz`, `spectrum.png`, and two GIFs (`slices.gif`,
+This takes under a minute, prints progress and an energy summary, and writes
+`trajectory.npz`, `spectrum.png`, and two GIFs (`slices.gif`,
 `outer_faces_cube.gif`) to the output folder.
 
 The spectrum is averaged over a late window (`t = 180` to `200` by default). A run
@@ -37,6 +36,6 @@ a warning, so report it as a final-state spectrum.
 
 ## Scale up
 
-Use `MHX_TURBULENCE_3D_N=128` with `MHX_TURBULENCE_3D_T_END=200` on a GPU. The
-dissipation coefficients are fixed in the script (`RESISTIVITY` and `VISCOSITY`), so
-edit them to change the Reynolds number as the grid grows.
+Set `N = 128` (with `T_END = 200.0`) on a GPU. The dissipation coefficients are
+fixed in the script (`RESISTIVITY` and `VISCOSITY`), so edit them to change the
+Reynolds number as the grid grows.

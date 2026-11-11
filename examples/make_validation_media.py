@@ -1,8 +1,16 @@
-"""Generate documentation figures for numerical-validation pages."""
+"""Regenerate the deterministic validation figures used by the documentation.
 
-from __future__ import annotations
+Calls the ``mhx.benchmarks`` validation writers, each of which writes its figures
+under ``RUN_ROOT/<name>/figures``, then copies the figures the docs embed into
+``DOCS_ROOT``. The full set takes a long time (tens of minutes on a CPU,
+dominated by the double-Harris long run and convergence study); to refresh one
+figure, comment out the others below. Run from the repository root:
+
+    python examples/make_validation_media.py
+"""
 
 import shutil
+import time
 from pathlib import Path
 
 from mhx.benchmarks import (
@@ -18,7 +26,6 @@ from mhx.benchmarks import (
     write_linear_tearing_layer_validation,
     write_linear_tearing_timedomain_validation,
     write_linearized_rhs_validation,
-    write_nonlinear_duration_audit,
     write_nonlinear_energy_budget_validation,
     write_periodic_current_sheet_eigenvalue_validation,
     write_periodic_current_sheet_nonlinear_bridge_validation,
@@ -30,281 +37,147 @@ from mhx.benchmarks import (
     write_reconnection_scaling_validation,
     write_reduced_mhd_linear_eigenmode_validation,
     write_resistive_decay_validation,
-    write_timing_benchmark,
 )
 from mhx.runtime import configure_jax
 
+# --- Input parameters ------------------------------------------------------
+RUN_ROOT = Path("outputs/docs_validation")  # where the writers put their full outputs
+DOCS_ROOT = Path("docs/_static/validation")  # figures embedded in the docs
+LONG_RUN_SHAPE = (64, 64)  # grid of the double-Harris seeded long run (movies)
+CONVERGENCE_RESOLUTIONS = (16, 24)  # resolutions of the double-Harris convergence study
+CONVERGENCE_DT_VALUES = (2.0e-2, 1.0e-2)  # time steps of the convergence study
+CONVERGENCE_T_END = 8.0  # end time of the convergence study
+CONVERGENCE_FIT_WINDOW = (0.0, 4.0)  # growth-rate fit window of the convergence study
 
-def main() -> None:
-    """Regenerate deterministic validation figures used by the docs."""
-    configure_jax(enable_x64=True)
-    run_dir = Path("outputs/docs_validation/resistive_decay")
-    scaling_run_dir = Path("outputs/docs_validation/reconnection_scaling")
-    fkr_window_run_dir = Path("outputs/docs_validation/fkr_window")
-    fkr_growth_run_dir = Path("outputs/docs_validation/fkr_growth_rate")
-    harris_delta_prime_run_dir = Path("outputs/docs_validation/harris_delta_prime")
-    linear_tearing_dispersion_run_dir = Path("outputs/docs_validation/linear_tearing_dispersion")
-    linear_tearing_eigenvalue_run_dir = Path("outputs/docs_validation/linear_tearing_eigenvalue")
-    linear_tearing_layer_run_dir = Path("outputs/docs_validation/linear_tearing_layer")
-    linear_tearing_timedomain_run_dir = Path("outputs/docs_validation/linear_tearing_timedomain")
-    linearized_run_dir = Path("outputs/docs_validation/linearized_rhs")
-    reduced_mhd_eigenmode_run_dir = Path("outputs/docs_validation/reduced_mhd_eigenmode")
-    cosine_linearization_run_dir = Path(
-        "outputs/docs_validation/cosine_equilibrium_linearization"
-    )
-    periodic_current_sheet_run_dir = Path(
-        "outputs/docs_validation/periodic_current_sheet_eigenvalue"
-    )
-    periodic_current_sheet_timedomain_run_dir = Path(
-        "outputs/docs_validation/periodic_current_sheet_timedomain"
-    )
-    periodic_current_sheet_nonlinear_bridge_run_dir = Path(
-        "outputs/docs_validation/periodic_current_sheet_nonlinear_bridge"
-    )
-    periodic_double_harris_growth_run_dir = Path(
-        "outputs/docs_validation/periodic_double_harris_nonlinear_growth"
-    )
-    periodic_double_harris_long_run_dir = Path(
-        "outputs/docs_validation/periodic_double_harris_seeded_long_run"
-    )
-    periodic_double_harris_convergence_run_dir = Path(
-        "outputs/docs_validation/periodic_double_harris_convergence"
-    )
-    nonlinear_energy_budget_run_dir = Path("outputs/docs_validation/nonlinear_energy_budget")
-    nonlinear_duration_audit_run_dir = Path("outputs/docs_validation/nonlinear_duration_audit")
-    diffusion_eigen_run_dir = Path("outputs/docs_validation/diffusion_eigenvalue")
-    power_iteration_run_dir = Path("outputs/docs_validation/power_iteration")
-    arnoldi_run_dir = Path("outputs/docs_validation/arnoldi")
-    timing_run_dir = Path("outputs/docs_validation/timing")
-    decay_docs_dir = Path("docs/_static/validation/exact_decay")
-    scaling_docs_dir = Path("docs/_static/validation/reconnection_scaling")
-    fkr_window_docs_dir = Path("docs/_static/validation/fkr_window")
-    fkr_growth_docs_dir = Path("docs/_static/validation/fkr_growth_rate")
-    harris_delta_prime_docs_dir = Path("docs/_static/validation/harris_delta_prime")
-    linear_tearing_dispersion_docs_dir = Path("docs/_static/validation/linear_tearing_dispersion")
-    linear_tearing_eigenvalue_docs_dir = Path("docs/_static/validation/linear_tearing_eigenvalue")
-    linear_tearing_layer_docs_dir = Path("docs/_static/validation/linear_tearing_layer")
-    linear_tearing_timedomain_docs_dir = Path("docs/_static/validation/linear_tearing_timedomain")
-    linearized_docs_dir = Path("docs/_static/validation/linearized_rhs")
-    reduced_mhd_eigenmode_docs_dir = Path("docs/_static/validation/reduced_mhd_eigenmode")
-    cosine_linearization_docs_dir = Path(
-        "docs/_static/validation/cosine_equilibrium_linearization"
-    )
-    periodic_current_sheet_docs_dir = Path(
-        "docs/_static/validation/periodic_current_sheet_eigenvalue"
-    )
-    periodic_current_sheet_timedomain_docs_dir = Path(
-        "docs/_static/validation/periodic_current_sheet_timedomain"
-    )
-    periodic_current_sheet_nonlinear_bridge_docs_dir = Path(
-        "docs/_static/validation/periodic_current_sheet_nonlinear_bridge"
-    )
-    periodic_double_harris_growth_docs_dir = Path(
-        "docs/_static/validation/periodic_double_harris_nonlinear_growth"
-    )
-    periodic_double_harris_long_docs_dir = Path(
-        "docs/_static/validation/periodic_double_harris_seeded_long_run"
-    )
-    periodic_double_harris_convergence_docs_dir = Path(
-        "docs/_static/validation/periodic_double_harris_convergence"
-    )
-    nonlinear_energy_budget_docs_dir = Path("docs/_static/validation/nonlinear_energy_budget")
-    nonlinear_duration_audit_docs_dir = Path("docs/_static/validation/nonlinear_duration_audit")
-    diffusion_eigen_docs_dir = Path("docs/_static/validation/diffusion_eigenvalue")
-    power_iteration_docs_dir = Path("docs/_static/validation/power_iteration")
-    arnoldi_docs_dir = Path("docs/_static/validation/arnoldi")
-    timing_docs_dir = Path("docs/_static/performance")
-    write_resistive_decay_validation(run_dir)
-    write_reconnection_scaling_validation(scaling_run_dir)
-    write_fkr_window_validation(fkr_window_run_dir)
-    write_fkr_growth_rate_validation(fkr_growth_run_dir)
-    write_harris_delta_prime_validation(harris_delta_prime_run_dir)
-    write_linear_tearing_dispersion_validation(linear_tearing_dispersion_run_dir)
-    write_linear_tearing_eigenvalue_validation(linear_tearing_eigenvalue_run_dir)
-    write_linear_tearing_layer_validation(linear_tearing_layer_run_dir)
-    write_linear_tearing_timedomain_validation(linear_tearing_timedomain_run_dir)
-    write_linearized_rhs_validation(linearized_run_dir)
-    write_reduced_mhd_linear_eigenmode_validation(reduced_mhd_eigenmode_run_dir)
-    write_cosine_equilibrium_linearization_validation(cosine_linearization_run_dir)
-    write_periodic_current_sheet_eigenvalue_validation(periodic_current_sheet_run_dir)
-    write_periodic_current_sheet_timedomain_validation(
-        periodic_current_sheet_timedomain_run_dir
-    )
-    write_periodic_current_sheet_nonlinear_bridge_validation(
-        periodic_current_sheet_nonlinear_bridge_run_dir
-    )
-    write_periodic_double_harris_nonlinear_growth_validation(
-        periodic_double_harris_growth_run_dir
-    )
-    double_harris_media_preset = double_harris_seeded_long_run_presets()[
-        "readme_release_media"
-    ]
-    write_periodic_double_harris_seeded_long_run_validation(
-        periodic_double_harris_long_run_dir,
-        shape=(64, 64),
-        t_end=float(double_harris_media_preset["t_end"]),
-        save_every=int(double_harris_media_preset["save_every"]),
-        fit_window=tuple(double_harris_media_preset["fit_window"]),
-        duration_label=str(double_harris_media_preset["duration_label"]),
-        movies=True,
-    )
-    write_periodic_double_harris_convergence_validation(
-        periodic_double_harris_convergence_run_dir,
-        resolutions=(16, 24),
-        dt_values=(2.0e-2, 1.0e-2),
-        reference_resolution=16,
-        t_end=8.0,
-        fit_window=(0.0, 4.0),
-    )
-    write_nonlinear_energy_budget_validation(nonlinear_energy_budget_run_dir)
-    write_nonlinear_duration_audit(nonlinear_duration_audit_run_dir)
-    write_diffusion_eigenvalue_validation(diffusion_eigen_run_dir)
-    write_power_iteration_validation(power_iteration_run_dir)
-    write_arnoldi_validation(arnoldi_run_dir)
-    write_timing_benchmark(timing_run_dir, repeats=1, warmups=0)
-    decay_docs_dir.mkdir(parents=True, exist_ok=True)
-    for name in ("decay_amplitude.png", "decay_energy.png", "decay_relative_error.png"):
-        shutil.copy2(run_dir / "figures" / name, decay_docs_dir / name)
-    scaling_docs_dir.mkdir(parents=True, exist_ok=True)
-    for name in ("fkr_scaling.png", "plasmoid_scaling.png", "ideal_tearing_scaling.png"):
-        shutil.copy2(scaling_run_dir / "figures" / name, scaling_docs_dir / name)
-    fkr_window_docs_dir.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(
-        fkr_window_run_dir / "figures" / "fkr_constant_psi_window.png",
-        fkr_window_docs_dir / "fkr_constant_psi_window.png",
-    )
-    fkr_growth_docs_dir.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(
-        fkr_growth_run_dir / "figures" / "fkr_growth_rate.png",
-        fkr_growth_docs_dir / "fkr_growth_rate.png",
-    )
-    harris_delta_prime_docs_dir.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(
-        harris_delta_prime_run_dir / "figures" / "harris_delta_prime.png",
-        harris_delta_prime_docs_dir / "harris_delta_prime.png",
-    )
-    linear_tearing_dispersion_docs_dir.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(
-        linear_tearing_dispersion_run_dir
-        / "figures"
-        / "linear_tearing_dispersion.png",
-        linear_tearing_dispersion_docs_dir / "linear_tearing_dispersion.png",
-    )
-    linear_tearing_eigenvalue_docs_dir.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(
-        linear_tearing_eigenvalue_run_dir
-        / "figures"
-        / "linear_tearing_eigenvalue.png",
-        linear_tearing_eigenvalue_docs_dir / "linear_tearing_eigenvalue.png",
-    )
-    linear_tearing_layer_docs_dir.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(
-        linear_tearing_layer_run_dir / "figures" / "linear_tearing_layer.png",
-        linear_tearing_layer_docs_dir / "linear_tearing_layer.png",
-    )
-    linear_tearing_timedomain_docs_dir.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(
-        linear_tearing_timedomain_run_dir
-        / "figures"
-        / "linear_tearing_timedomain.png",
-        linear_tearing_timedomain_docs_dir / "linear_tearing_timedomain.png",
-    )
-    linearized_docs_dir.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(
-        linearized_run_dir / "figures" / "linearized_rhs_errors.png",
-        linearized_docs_dir / "linearized_rhs_errors.png",
-    )
-    reduced_mhd_eigenmode_docs_dir.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(
-        reduced_mhd_eigenmode_run_dir
-        / "figures"
-        / "reduced_mhd_linear_eigenmode_errors.png",
-        reduced_mhd_eigenmode_docs_dir / "reduced_mhd_linear_eigenmode_errors.png",
-    )
-    cosine_linearization_docs_dir.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(
-        cosine_linearization_run_dir
-        / "figures"
-        / "cosine_equilibrium_linearization_errors.png",
-        cosine_linearization_docs_dir / "cosine_equilibrium_linearization_errors.png",
-    )
-    periodic_current_sheet_docs_dir.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(
-        periodic_current_sheet_run_dir
-        / "figures"
-        / "periodic_current_sheet_spectrum.png",
-        periodic_current_sheet_docs_dir / "periodic_current_sheet_spectrum.png",
-    )
-    periodic_current_sheet_timedomain_docs_dir.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(
-        periodic_current_sheet_timedomain_run_dir
-        / "figures"
-        / "periodic_current_sheet_timedomain.png",
-        periodic_current_sheet_timedomain_docs_dir / "periodic_current_sheet_timedomain.png",
-    )
-    periodic_current_sheet_nonlinear_bridge_docs_dir.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(
-        periodic_current_sheet_nonlinear_bridge_run_dir
-        / "figures"
-        / "periodic_current_sheet_nonlinear_bridge.png",
-        periodic_current_sheet_nonlinear_bridge_docs_dir
-        / "periodic_current_sheet_nonlinear_bridge.png",
-    )
-    periodic_double_harris_growth_docs_dir.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(
-        periodic_double_harris_growth_run_dir
-        / "figures"
-        / "periodic_double_harris_nonlinear_growth.png",
-        periodic_double_harris_growth_docs_dir / "periodic_double_harris_nonlinear_growth.png",
-    )
-    (periodic_double_harris_long_docs_dir / "figures").mkdir(parents=True, exist_ok=True)
-    for name in (
+
+def publish(run_name, docs_dir, *names):
+    """Copy ``figures/<name>`` of one run into the docs folder."""
+    docs_dir.mkdir(parents=True, exist_ok=True)
+    for name in names:
+        shutil.copy2(RUN_ROOT / run_name / "figures" / name, docs_dir / name)
+        print(f"  copied {docs_dir / name}", flush=True)
+
+
+# --- Run -------------------------------------------------------------------
+configure_jax(enable_x64=True)
+print(f"Regenerating validation figures: runs in {RUN_ROOT}, docs in {DOCS_ROOT}", flush=True)
+start = time.perf_counter()
+
+write_resistive_decay_validation(RUN_ROOT / "resistive_decay")
+publish("resistive_decay", DOCS_ROOT / "exact_decay",
+        "decay_amplitude.png", "decay_energy.png", "decay_relative_error.png")
+print("resistive decay done", flush=True)
+
+write_reconnection_scaling_validation(RUN_ROOT / "reconnection_scaling")
+publish("reconnection_scaling", DOCS_ROOT / "reconnection_scaling",
+        "fkr_scaling.png", "plasmoid_scaling.png", "ideal_tearing_scaling.png")
+print("reconnection scaling done", flush=True)
+
+write_fkr_window_validation(RUN_ROOT / "fkr_window")
+publish("fkr_window", DOCS_ROOT / "fkr_window", "fkr_constant_psi_window.png")
+
+write_fkr_growth_rate_validation(RUN_ROOT / "fkr_growth_rate")
+publish("fkr_growth_rate", DOCS_ROOT / "fkr_growth_rate", "fkr_growth_rate.png")
+
+write_harris_delta_prime_validation(RUN_ROOT / "harris_delta_prime")
+publish("harris_delta_prime", DOCS_ROOT / "harris_delta_prime", "harris_delta_prime.png")
+
+write_linear_tearing_dispersion_validation(RUN_ROOT / "linear_tearing_dispersion")
+publish("linear_tearing_dispersion", DOCS_ROOT / "linear_tearing_dispersion",
+        "linear_tearing_dispersion.png")
+
+write_linear_tearing_eigenvalue_validation(RUN_ROOT / "linear_tearing_eigenvalue")
+publish("linear_tearing_eigenvalue", DOCS_ROOT / "linear_tearing_eigenvalue",
+        "linear_tearing_eigenvalue.png")
+
+write_linear_tearing_layer_validation(RUN_ROOT / "linear_tearing_layer")
+publish("linear_tearing_layer", DOCS_ROOT / "linear_tearing_layer", "linear_tearing_layer.png")
+
+write_linear_tearing_timedomain_validation(RUN_ROOT / "linear_tearing_timedomain")
+publish("linear_tearing_timedomain", DOCS_ROOT / "linear_tearing_timedomain",
+        "linear_tearing_timedomain.png")
+print("linear tearing validations done", flush=True)
+
+write_linearized_rhs_validation(RUN_ROOT / "linearized_rhs")
+publish("linearized_rhs", DOCS_ROOT / "linearized_rhs", "linearized_rhs_errors.png")
+
+write_reduced_mhd_linear_eigenmode_validation(RUN_ROOT / "reduced_mhd_eigenmode")
+publish("reduced_mhd_eigenmode", DOCS_ROOT / "reduced_mhd_eigenmode",
+        "reduced_mhd_linear_eigenmode_errors.png")
+
+write_cosine_equilibrium_linearization_validation(RUN_ROOT / "cosine_equilibrium_linearization")
+publish("cosine_equilibrium_linearization", DOCS_ROOT / "cosine_equilibrium_linearization",
+        "cosine_equilibrium_linearization_errors.png")
+
+write_periodic_current_sheet_eigenvalue_validation(
+    RUN_ROOT / "periodic_current_sheet_eigenvalue"
+)
+publish("periodic_current_sheet_eigenvalue", DOCS_ROOT / "periodic_current_sheet_eigenvalue",
+        "periodic_current_sheet_spectrum.png")
+
+write_periodic_current_sheet_timedomain_validation(
+    RUN_ROOT / "periodic_current_sheet_timedomain"
+)
+publish("periodic_current_sheet_timedomain", DOCS_ROOT / "periodic_current_sheet_timedomain",
+        "periodic_current_sheet_timedomain.png")
+
+write_periodic_current_sheet_nonlinear_bridge_validation(
+    RUN_ROOT / "periodic_current_sheet_nonlinear_bridge"
+)
+publish("periodic_current_sheet_nonlinear_bridge",
+        DOCS_ROOT / "periodic_current_sheet_nonlinear_bridge",
+        "periodic_current_sheet_nonlinear_bridge.png")
+print("linearization and current-sheet validations done", flush=True)
+
+write_periodic_double_harris_nonlinear_growth_validation(
+    RUN_ROOT / "periodic_double_harris_nonlinear_growth"
+)
+publish("periodic_double_harris_nonlinear_growth",
+        DOCS_ROOT / "periodic_double_harris_nonlinear_growth",
+        "periodic_double_harris_nonlinear_growth.png")
+
+media_preset = double_harris_seeded_long_run_presets()["readme_release_media"]
+write_periodic_double_harris_seeded_long_run_validation(
+    RUN_ROOT / "periodic_double_harris_seeded_long_run",
+    shape=LONG_RUN_SHAPE,
+    t_end=float(media_preset["t_end"]),
+    save_every=int(media_preset["save_every"]),
+    fit_window=tuple(media_preset["fit_window"]),
+    duration_label=str(media_preset["duration_label"]),
+    movies=True,
+)
+publish("periodic_double_harris_seeded_long_run",
+        DOCS_ROOT / "periodic_double_harris_seeded_long_run" / "figures",
         "periodic_double_harris_seeded_long_run.png",
         "periodic_double_harris_flux.gif",
-        "periodic_double_harris_current.gif",
-    ):
-        shutil.copy2(
-            periodic_double_harris_long_run_dir / "figures" / name,
-            periodic_double_harris_long_docs_dir / "figures" / name,
-        )
-    periodic_double_harris_convergence_docs_dir.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(
-        periodic_double_harris_convergence_run_dir
-        / "figures"
-        / "periodic_double_harris_convergence.png",
-        periodic_double_harris_convergence_docs_dir / "periodic_double_harris_convergence.png",
-    )
-    nonlinear_energy_budget_docs_dir.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(
-        nonlinear_energy_budget_run_dir / "figures" / "nonlinear_energy_budget.png",
-        nonlinear_energy_budget_docs_dir / "nonlinear_energy_budget.png",
-    )
-    nonlinear_duration_audit_docs_dir.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(
-        nonlinear_duration_audit_run_dir / "figures" / "nonlinear_duration_audit.png",
-        nonlinear_duration_audit_docs_dir / "nonlinear_duration_audit.png",
-    )
-    diffusion_eigen_docs_dir.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(
-        diffusion_eigen_run_dir / "figures" / "diffusion_eigenvalue_errors.png",
-        diffusion_eigen_docs_dir / "diffusion_eigenvalue_errors.png",
-    )
-    power_iteration_docs_dir.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(
-        power_iteration_run_dir / "figures" / "power_iteration_history.png",
-        power_iteration_docs_dir / "power_iteration_history.png",
-    )
-    arnoldi_docs_dir.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(
-        arnoldi_run_dir / "figures" / "arnoldi_ritz_values.png",
-        arnoldi_docs_dir / "arnoldi_ritz_values.png",
-    )
-    timing_docs_dir.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(
-        timing_run_dir / "figures" / "timing_summary.png",
-        timing_docs_dir / "timing_summary.png",
-    )
+        "periodic_double_harris_current.gif")
 
+write_periodic_double_harris_convergence_validation(
+    RUN_ROOT / "periodic_double_harris_convergence",
+    resolutions=CONVERGENCE_RESOLUTIONS,
+    dt_values=CONVERGENCE_DT_VALUES,
+    reference_resolution=CONVERGENCE_RESOLUTIONS[0],
+    t_end=CONVERGENCE_T_END,
+    fit_window=CONVERGENCE_FIT_WINDOW,
+)
+publish("periodic_double_harris_convergence",
+        DOCS_ROOT / "periodic_double_harris_convergence",
+        "periodic_double_harris_convergence.png")
+print("double-Harris validations done", flush=True)
 
-if __name__ == "__main__":
-    main()
+write_nonlinear_energy_budget_validation(RUN_ROOT / "nonlinear_energy_budget")
+publish("nonlinear_energy_budget", DOCS_ROOT / "nonlinear_energy_budget",
+        "nonlinear_energy_budget.png")
+
+write_diffusion_eigenvalue_validation(RUN_ROOT / "diffusion_eigenvalue")
+publish("diffusion_eigenvalue", DOCS_ROOT / "diffusion_eigenvalue",
+        "diffusion_eigenvalue_errors.png")
+
+write_power_iteration_validation(RUN_ROOT / "power_iteration")
+publish("power_iteration", DOCS_ROOT / "power_iteration", "power_iteration_history.png")
+
+write_arnoldi_validation(RUN_ROOT / "arnoldi")
+publish("arnoldi", DOCS_ROOT / "arnoldi", "arnoldi_ritz_values.png")
+
+# --- Results ---------------------------------------------------------------
+print(f"Done in {time.perf_counter() - start:.1f} s; figures copied under {DOCS_ROOT}")

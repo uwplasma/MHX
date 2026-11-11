@@ -3,7 +3,10 @@
 #
 # Submit from the repository root (edit -A first):
 #     sbatch examples/sweet_parker/perlmutter_collapse.sbatch
-# Override parameters without editing, e.g. a short debug-queue check:
+# The script has no command-line flags: this job copies collapse_check.py into the
+# output folder and sets its constants with sed, then runs the copy. Override
+# parameters through environment variables (ETA, NX, NY, TEND, SEED, LX, LY, CFL,
+# DEVICES, SAP=True), e.g. a short debug-queue check:
 #     sbatch -q debug -t 00:30:00 --export=ALL,NX=3072,NY=768,TEND=40 \
 #         examples/sweet_parker/perlmutter_collapse.sbatch
 # Four GPUs on one node (whole node, so use the regular queue):
@@ -32,7 +35,7 @@ LX=${LX:-25.132741228718345}  # 8*pi
 LY=${LY:-25.132741228718345}  # 8*pi (ka = 0.125, Delta'a = 15.75)
 CFL=${CFL:-0.25}
 DEVICES=${DEVICES:-1}
-EXTRA=${EXTRA:-}              # extra collapse_check.py flags, e.g. "--sap"
+SAP=${SAP:-False}             # True stops shortly after the clean collapse phase
 
 module load python
 conda activate mhx
@@ -42,14 +45,18 @@ export PYTHONPATH="${SLURM_SUBMIT_DIR}/src${PYTHONPATH:+:${PYTHONPATH}}"
 
 LX_PI=$(awk "BEGIN { printf \"%g\", ${LX} / 3.141592653589793 }")
 LY_PI=$(awk "BEGIN { printf \"%g\", ${LY} / 3.141592653589793 }")
-TAG=$(echo "${EXTRA}" | tr -d ' -')
+TAG=""
+[ "${SAP}" = "True" ] && TAG="sap"
 RUN="collapse_eta${ETA}_${NX}x${NY}_lx${LX_PI}pi_ly${LY_PI}pi_seed${SEED}_cfl${CFL}_gpu${DEVICES}_hold${TAG:+_${TAG}}"
 OUTDIR="${SCRATCH}/mhx_outputs/sweet_parker/${RUN}"
 mkdir -p "${OUTDIR}"
 echo "[sbatch] job ${SLURM_JOB_ID} -> ${OUTDIR}"
 nvidia-smi --query-gpu=name,memory.total --format=csv
 
-srun -n 1 --gpus "${DEVICES}" python -u "${SLURM_SUBMIT_DIR}/examples/sweet_parker/collapse_check.py" \
-    --nx "${NX}" --ny "${NY}" --lx "${LX}" --ly "${LY}" \
-    --eta "${ETA}" --seed "${SEED}" --t-end "${TEND}" --cfl "${CFL}" \
-    --devices "${DEVICES}" --hold-equilibrium --outdir "${OUTDIR}" ${EXTRA}
+# Copy the script into the output folder and set its input constants.
+SCRIPT="${OUTDIR}/collapse_check.py"
+cp "${SLURM_SUBMIT_DIR}/examples/sweet_parker/collapse_check.py" "${SCRIPT}"
+sed -i -E     -e "s|^NX = .*|NX = ${NX}|"     -e "s|^NY = .*|NY = ${NY}|"     -e "s|^LX = .*|LX = ${LX}|"     -e "s|^LY = .*|LY = ${LY}|"     -e "s|^ETA = .*|ETA = ${ETA}|"     -e "s|^SEED = .*|SEED = ${SEED}|"     -e "s|^T_END = .*|T_END = ${TEND}|"     -e "s|^CFL = .*|CFL = ${CFL}|"     -e "s|^DEVICES = .*|DEVICES = ${DEVICES}|"     -e "s|^SAP = .*|SAP = ${SAP}|"     -e "s|^HOLD_EQUILIBRIUM = .*|HOLD_EQUILIBRIUM = True|"     -e "s|^OUTDIR = .*|OUTDIR = Path(\"${OUTDIR}\")|"     "${SCRIPT}"
+grep -E "^(NX|NY|LX|LY|ETA|SEED|T_END|CFL|DEVICES|SAP|HOLD_EQUILIBRIUM|OUTDIR) = " "${SCRIPT}"
+
+srun -n 1 --gpus "${DEVICES}" python -u "${SCRIPT}"

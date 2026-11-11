@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Pre-test: does the large-Delta' double-Harris tearing mode collapse into a Sweet-Parker sheet?
 
 Setup (Waelbroeck 1993; Loureiro et al. 2005): a periodic double-Harris sheet of
@@ -7,7 +6,7 @@ With ``k a = 2*pi*a/Ly`` small, ``Delta' a = 2(1/(ka) - ka)`` is large, so once 
 island passes ``w ~ 1/Delta'`` the X-point collapses into a thin current sheet
 whose reconnection rate plateaus. The sheets sit at ``Lx/4`` and ``3Lx/4``, so
 ``Lx = 8*pi`` keeps them ``4*pi`` apart and the islands clear of each other for
-longer. ``--hold-equilibrium`` replaces ``eta*lap(psi)`` by
+longer. ``HOLD_EQUILIBRIUM = True`` replaces ``eta*lap(psi)`` by
 ``eta*lap(psi - psi_eq)`` (a constant ``E_0 = eta*j_eq``) so the Harris sheet
 does not diffuse away.
 
@@ -29,29 +28,29 @@ full trajectory is kept in memory. At the end the script reports:
   outflow), ``L/delta >= 10`` (elongated sheet) and ``S_L >= 500``;
 * informational Sweet-Parker consistency ratios in the window.
 
-Outputs (in ``--outdir``): ``histories.npz``, ``snapshots.npz``,
+Outputs (in ``OUTDIR``): ``histories.npz``, ``snapshots.npz``,
 ``histories.png``, ``current_snapshots.png``, ``domain.gif`` (full-domain ``j_z``
-with flux contours every ``--gif-interval``) and ``summary.json``. Snapshots and
+with flux contours every ``GIF_INTERVAL``) and ``summary.json``. Snapshots and
 GIF frames are rolled in ``y`` so the X-point sits at ``y = Ly/2``.
 
-``--sap`` (stop after phase) ends the run ``--sap-buffer`` time units after the
+``SAP = True`` (stop after phase) ends the run ``SAP_BUFFER`` time units after the
 clean collapse phase ends, using the same criteria as the verdict.
-``--devices N`` splits the ``x`` axis across ``N`` GPUs (``nx`` must divide by
+``DEVICES = N`` splits the ``x`` axis across ``N`` GPUs (``nx`` must divide by
 ``N``); JAX partitions the FFTs and the RK4 loop across them.
 
-Usage::
+Takes a few minutes for a short check on a small grid and hours at the defaults on
+a GPU. Edit the constants in "Input parameters", then run from the repository root::
 
-    python examples/sweet_parker/collapse_check.py --hold-equilibrium
+    python examples/sweet_parker/collapse_check.py
+
+To scale up use the defaults (``NX = 3072``, ``T_END = 300``) with
+``HOLD_EQUILIBRIUM = True`` on a GPU, and raise ``DEVICES`` to split the grid.
 
 Re-assess and re-plot a finished run from its saved outputs without simulating
-(``domain.gif`` needs a rerun because full-domain frames are not saved)::
-
-    python examples/sweet_parker/collapse_check.py --replot outputs/sweet_parker/<run>
+(``domain.gif`` needs a rerun because full-domain frames are not saved): set
+``REPLOT = Path("outputs/sweet_parker/<run>")``.
 """
 
-from __future__ import annotations
-
-import argparse
 import json
 import math
 import time
@@ -80,6 +79,29 @@ from mhx.physics import PeriodicDoubleHarrisEquilibrium  # noqa: E402
 from mhx.state import ReducedMHDParams, ReducedMHDState  # noqa: E402
 from mhx.time_integrators import evolve_rk4  # noqa: E402
 
+# --- Input parameters ------------------------------------------------------
+OUTDIR = Path("outputs/sweet_parker/collapse_check")  # where the run is written
+REPLOT = None  # a finished run folder (histories.npz, summary.json) to re-assess; None runs
+NX = 3072  # grid points in x
+NY = 384  # grid points in y
+LX = 25.132741228718345  # box length in x (8*pi)
+LY = 12.566370614359172  # box length in y (4*pi)
+WIDTH = 0.5  # Harris half-width a
+ETA = 2.0e-3  # resistivity
+PM = 1.0  # magnetic Prandtl number nu/eta
+SEED = 1.0e-3  # seed flux amplitude
+MODE_Y = 1  # seeded mode number in y
+HOLD_EQUILIBRIUM = False  # use eta*lap(psi - psi_eq) so the Harris sheet does not diffuse
+T_END = 300.0  # end time
+SAVE_INTERVAL = 0.5  # time between measurements
+CFL = 0.25  # dt = CFL * min(dx, dy)
+DEVICES = 1  # GPUs to split the x axis across (NX % DEVICES == 0)
+SAP = False  # stop after the clean collapse phase ends (plus SAP_BUFFER time units)
+SAP_BUFFER = 10.0  # time run past the phase end with SAP
+SNAPSHOTS = 8  # number of j_z snapshots in current_snapshots.png
+GIF_INTERVAL = 1.0  # time between GIF frames (0 disables)
+
+# --- Helpers ---------------------------------------------------------------
 HISTORY_KEYS = (
     "current_x",
     "reconnection_rate",
@@ -114,263 +136,6 @@ MIN_WINDOW_LUNDQUIST = 500.0
 # fraction of its largest value since collapse onset.
 X_POINT_FLATTENING_FRACTION = 0.1
 GIF_MAX_POINTS = 384
-
-
-def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    parser.add_argument("--nx", type=int, default=3072)
-    parser.add_argument("--ny", type=int, default=384)
-    parser.add_argument("--lx", type=float, default=8.0 * math.pi)
-    parser.add_argument("--ly", type=float, default=4.0 * math.pi)
-    parser.add_argument("--width", type=float, default=0.5, help="Harris half-width a")
-    parser.add_argument("--eta", type=float, default=2.0e-3, help="resistivity")
-    parser.add_argument("--pm", type=float, default=1.0, help="magnetic Prandtl nu/eta")
-    parser.add_argument("--seed", type=float, default=1.0e-3, help="seed flux amplitude")
-    parser.add_argument("--mode-y", type=int, default=1)
-    parser.add_argument(
-        "--hold-equilibrium",
-        action="store_true",
-        help="use eta*lap(psi - psi_eq) so the Harris sheet does not diffuse",
-    )
-    parser.add_argument("--t-end", type=float, default=300.0)
-    parser.add_argument("--save-interval", type=float, default=0.5)
-    parser.add_argument("--cfl", type=float, default=0.25, help="dt = cfl * min(dx, dy)")
-    parser.add_argument(
-        "--devices", type=int, default=1, help="GPUs to split the x axis across (nx % devices == 0)"
-    )
-    parser.add_argument(
-        "--sap",
-        action="store_true",
-        help="stop after the clean collapse phase ends (plus --sap-buffer time units)",
-    )
-    parser.add_argument(
-        "--sap-buffer", type=float, default=10.0, help="time run past the phase end with --sap"
-    )
-    parser.add_argument("--snapshots", type=int, default=8)
-    parser.add_argument(
-        "--gif-interval", type=float, default=1.0, help="time between GIF frames (0 disables)"
-    )
-    parser.add_argument(
-        "--outdir", type=Path, default=Path("outputs/sweet_parker/collapse_check")
-    )
-    parser.add_argument(
-        "--replot",
-        type=Path,
-        default=None,
-        help="finished run folder (histories.npz, summary.json) to re-assess and re-plot",
-    )
-    return parser.parse_args()
-
-
-def main() -> None:
-    args = parse_args()
-    if args.replot is not None:
-        replot(args.replot)
-        return
-    args.outdir.mkdir(parents=True, exist_ok=True)
-    grid = CartesianGrid.from_mesh_config(
-        MeshConfig(shape=(args.nx, args.ny), upper=(args.lx, args.ly))
-    )
-    dx, dy = grid.spacing
-    lengths = grid.lengths
-    viscosity = args.pm * args.eta
-    ka = 2.0 * math.pi * args.mode_y * args.width / args.ly
-    delta_prime_a = 2.0 * (1.0 / ka - ka)
-    sheet_separation = 0.5 * args.lx
-
-    # Explicit RK4 is stable for diffusion only while D*k_max^2*dt < ~2.8; keep it <= 2.
-    dt_advective = args.cfl * min(dx, dy)
-    k_max_squared = (math.pi / dx) ** 2 + (math.pi / dy) ** 2
-    dt_diffusive = 2.0 / (max(args.eta, viscosity) * k_max_squared)
-    dt_limit = "diffusive" if dt_diffusive < dt_advective else "advective"
-    save_every = max(1, math.ceil(args.save_interval / min(dt_advective, dt_diffusive)))
-    dt = args.save_interval / save_every
-    n_saves = max(1, round(args.t_end / args.save_interval))
-    print(
-        f"[collapse] grid={args.nx}x{args.ny} L=({args.lx:.3f},{args.ly:.3f}) a={args.width} "
-        f"ka={ka:.3f} Delta'a={delta_prime_a:.2f} eta={args.eta:g} nu={viscosity:g} "
-        f"hold_equilibrium={args.hold_equilibrium} dt={dt:.3e} ({dt_limit} limit) "
-        f"steps={n_saves * save_every} devices={args.devices} sap={args.sap}"
-    )
-    print(f"[collapse] JAX devices: {jax.devices()}")
-
-    equilibrium = PeriodicDoubleHarrisEquilibrium(width=args.width, amplitude=1.0)
-    state = PeriodicDoubleHarrisEquilibrium(
-        width=args.width,
-        amplitude=1.0,
-        perturbation_amplitude=args.seed,
-        perturbation_mode=(0, args.mode_y),
-    ).initial_state(grid)
-    params = ReducedMHDParams(resistivity=args.eta, viscosity=viscosity)
-    # eta*lap(psi - psi_eq) = eta*lap(psi) + eta*j_eq.
-    equilibrium_source = args.eta * current_density(
-        equilibrium.initial_state(grid).psi, lengths=lengths
-    )
-    if args.devices > 1:
-        # Split the x axis across GPUs; JAX partitions the FFTs and RK4 (SPMD).
-        sharding = make_spatial_sharding((args.nx, args.ny), args.devices)
-        state = shard_state(state, sharding)
-        equilibrium_source = jax.device_put(equilibrium_source, sharding.fields)
-
-    @jax.jit
-    def advance(current_state: ReducedMHDState, source: jax.Array) -> ReducedMHDState:
-        def rhs(rhs_state: ReducedMHDState) -> ReducedMHDState:
-            tendency = reduced_mhd_rhs(rhs_state, params, lengths=lengths, dealiasing="two_thirds")
-            if args.hold_equilibrium:
-                tendency = tendency._replace(psi=tendency.psi + source)
-            return tendency
-
-        trajectory = evolve_rk4(current_state, rhs, dt=dt, steps=save_every, save_every=save_every)
-        return jax.tree.map(lambda field: field[-1], trajectory.states)
-
-    sheet_x = 0.25 * args.lx
-    snapshot_indices = set(np.linspace(0, n_saves, args.snapshots).round().astype(int).tolist())
-    times: list[float] = []
-    history: dict[str, list[float]] = {key: [] for key in HISTORY_KEYS}
-    snapshot_times: list[float] = []
-    snapshots: list[np.ndarray] = []
-    gif_stride = round(args.gif_interval / args.save_interval) if args.gif_interval > 0 else 0
-    gif_steps = (max(1, args.nx // GIF_MAX_POINTS), max(1, args.ny // GIF_MAX_POINTS))
-    gif_frames: list[tuple[float, np.ndarray, np.ndarray]] = []
-    wall_start = time.perf_counter()
-    # Online copy of the collapse-phase logic in ``assess`` for --sap.
-    reference_current = math.inf
-    max_angle_since_onset = 0.0
-    onset = False
-    phase_end_time: float | None = None
-    stopped_early = False
-
-    for index in range(n_saves + 1):
-        if index > 0:
-            state = advance(state, equilibrium_source)
-        t = index * args.save_interval
-        psi, omega = np.asarray(state.psi), np.asarray(state.omega)
-        if not (np.all(np.isfinite(psi)) and np.all(np.isfinite(omega))):
-            print(f"[collapse] non-finite fields at t={t:.2f}; stopping")
-            break
-        times.append(t)
-        try:
-            values = measure_sweet_parker_sheet(
-                psi, omega, lengths=lengths, resistivity=args.eta, sheet_x=sheet_x
-            ).as_dict()
-        except ValueError as error:
-            print(f"[collapse] t={t:.2f}: measurement failed ({error})")
-            values = {}
-        for key in HISTORY_KEYS:
-            history[key].append(float(values.get(key, np.nan)))
-        wants_snapshot = index in snapshot_indices
-        wants_gif = bool(gif_stride) and index % gif_stride == 0
-        if wants_snapshot or wants_gif:
-            shift = _centring_shift(history["x_point_y"][-1], args.ny, dy)
-            current_field = np.roll(
-                np.asarray(current_density(state.psi, lengths=lengths), np.float32), shift, axis=1
-            )
-            if wants_snapshot:
-                snapshot_times.append(t)
-                snapshots.append(current_field)
-            if wants_gif:
-                sx, sy = gif_steps
-                gif_frames.append(
-                    (
-                        t,
-                        current_field[::sx, ::sy].astype(np.float16),
-                        np.roll(psi, shift, axis=1)[::sx, ::sy].astype(np.float16),
-                    )
-                )
-        if index % 20 == 0:
-            print(
-                f"[collapse] t={t:7.2f} |j_X|={abs(history['current_x'][-1]):.3f} "
-                f"delta={history['delta'][-1]:.4f} L_j={history['length_current'][-1]:.3f} "
-                f"E*={history['normalized_rate'][-1]:.3e} "
-                f"angle={history['opening_angle_deg'][-1]:.1f}deg "
-                f"nX={history['sheet_x_point_count'][-1]:.0f} "
-                f"W/sep={history['island_width'][-1] / sheet_separation:.3f} "
-                f"wall={time.perf_counter() - wall_start:.0f}s"
-            )
-
-        current_now = abs(history["current_x"][-1])
-        if np.isfinite(current_now):
-            if not onset:
-                reference_current = min(reference_current, current_now)
-                onset = current_now >= 1.5 * reference_current
-            if onset and phase_end_time is None:
-                max_angle_since_onset = max(
-                    max_angle_since_onset, np.nan_to_num(history["opening_angle_deg"][-1])
-                )
-            if onset and phase_end_time is None and (
-                history["opening_angle_deg"][-1]
-                < X_POINT_FLATTENING_FRACTION * max_angle_since_onset
-                or history["sheet_x_point_count"][-1] > 1
-                or not history["island_width"][-1] <= 0.5 * sheet_separation
-                or current_now < 1.5 * reference_current
-            ):
-                phase_end_time = t
-                print(f"[collapse] clean collapse phase ended at t={t:.2f}")
-        if args.sap and phase_end_time is not None and t >= phase_end_time + args.sap_buffer:
-            print(f"[collapse] --sap: stopping at t={t:.2f}")
-            stopped_early = True
-            break
-
-    if stopped_early and (not snapshot_times or snapshot_times[-1] != times[-1]):
-        shift = _centring_shift(history["x_point_y"][-1], args.ny, dy)
-        snapshot_times.append(times[-1])
-        snapshots.append(
-            np.roll(
-                np.asarray(current_density(state.psi, lengths=lengths), np.float32), shift, axis=1
-            )
-        )
-
-    t_arr = np.asarray(times)
-    h = {key: np.asarray(values) for key, values in history.items()}
-    summary = assess(
-        t_arr,
-        h,
-        resistivity=args.eta,
-        viscosity=viscosity,
-        sheet_separation=sheet_separation,
-    )
-    summary.update(
-        {
-            "grid": [args.nx, args.ny],
-            "lengths": list(lengths),
-            "width": args.width,
-            "ka": ka,
-            "delta_prime_a": delta_prime_a,
-            "resistivity": args.eta,
-            "viscosity": viscosity,
-            "seed": args.seed,
-            "hold_equilibrium": args.hold_equilibrium,
-            "cfl": args.cfl,
-            "devices": args.devices,
-            "sap": args.sap,
-            "stopped_early": stopped_early,
-            "sheet_separation": sheet_separation,
-            "dt": dt,
-            "t_final": float(t_arr[-1]),
-            "wall_seconds": time.perf_counter() - wall_start,
-        }
-    )
-
-    np.savez(args.outdir / "histories.npz", times=t_arr, **h)
-    np.savez_compressed(
-        args.outdir / "snapshots.npz",
-        times=np.asarray(snapshot_times),
-        current=np.asarray(snapshots),
-        lengths=np.asarray(lengths),
-        centred=np.asarray(True),
-    )
-    (args.outdir / "summary.json").write_text(json.dumps(summary, indent=2))
-    plot_histories(t_arr, h, summary, args.outdir / "histories.png")
-    plot_snapshots(
-        snapshot_times,
-        snapshots,
-        lengths,
-        sheet_x,
-        args.outdir / "current_snapshots.png",
-        centred=True,
-    )
-    write_domain_gif(gif_frames, lengths, args.outdir / "domain.gif")
-    print_verdict(summary, args.outdir)
 
 
 def replot(run_dir: Path) -> None:
@@ -667,6 +432,220 @@ def _centring_shift(x_point_y: float, ny: int, dy: float) -> int:
         return 0
     return ny // 2 - round(x_point_y / dy)
 
+# --- Run -------------------------------------------------------------------
+if REPLOT is not None:
+    replot(REPLOT)
+else:
+    OUTDIR.mkdir(parents=True, exist_ok=True)
+    grid = CartesianGrid.from_mesh_config(
+        MeshConfig(shape=(NX, NY), upper=(LX, LY))
+    )
+    dx, dy = grid.spacing
+    lengths = grid.lengths
+    viscosity = PM * ETA
+    ka = 2.0 * math.pi * MODE_Y * WIDTH / LY
+    delta_prime_a = 2.0 * (1.0 / ka - ka)
+    sheet_separation = 0.5 * LX
 
-if __name__ == "__main__":
-    main()
+    # Explicit RK4 is stable for diffusion only while D*k_max^2*dt < ~2.8; keep it <= 2.
+    dt_advective = CFL * min(dx, dy)
+    k_max_squared = (math.pi / dx) ** 2 + (math.pi / dy) ** 2
+    dt_diffusive = 2.0 / (max(ETA, viscosity) * k_max_squared)
+    dt_limit = "diffusive" if dt_diffusive < dt_advective else "advective"
+    save_every = max(1, math.ceil(SAVE_INTERVAL / min(dt_advective, dt_diffusive)))
+    dt = SAVE_INTERVAL / save_every
+    n_saves = max(1, round(T_END / SAVE_INTERVAL))
+    print(
+        f"[collapse] grid={NX}x{NY} L=({LX:.3f},{LY:.3f}) a={WIDTH} "
+        f"ka={ka:.3f} Delta'a={delta_prime_a:.2f} eta={ETA:g} nu={viscosity:g} "
+        f"hold_equilibrium={HOLD_EQUILIBRIUM} dt={dt:.3e} ({dt_limit} limit) "
+        f"steps={n_saves * save_every} devices={DEVICES} sap={SAP}"
+    )
+    print(f"[collapse] JAX devices: {jax.devices()}")
+
+    equilibrium = PeriodicDoubleHarrisEquilibrium(width=WIDTH, amplitude=1.0)
+    state = PeriodicDoubleHarrisEquilibrium(
+        width=WIDTH,
+        amplitude=1.0,
+        perturbation_amplitude=SEED,
+        perturbation_mode=(0, MODE_Y),
+    ).initial_state(grid)
+    params = ReducedMHDParams(resistivity=ETA, viscosity=viscosity)
+    # eta*lap(psi - psi_eq) = eta*lap(psi) + eta*j_eq.
+    equilibrium_source = ETA * current_density(
+        equilibrium.initial_state(grid).psi, lengths=lengths
+    )
+    if DEVICES > 1:
+        # Split the x axis across GPUs; JAX partitions the FFTs and RK4 (SPMD).
+        sharding = make_spatial_sharding((NX, NY), DEVICES)
+        state = shard_state(state, sharding)
+        equilibrium_source = jax.device_put(equilibrium_source, sharding.fields)
+
+    @jax.jit
+    def advance(current_state: ReducedMHDState, source: jax.Array) -> ReducedMHDState:
+        def rhs(rhs_state: ReducedMHDState) -> ReducedMHDState:
+            tendency = reduced_mhd_rhs(rhs_state, params, lengths=lengths, dealiasing="two_thirds")
+            if HOLD_EQUILIBRIUM:
+                tendency = tendency._replace(psi=tendency.psi + source)
+            return tendency
+
+        trajectory = evolve_rk4(current_state, rhs, dt=dt, steps=save_every, save_every=save_every)
+        return jax.tree.map(lambda field: field[-1], trajectory.states)
+
+    sheet_x = 0.25 * LX
+    snapshot_indices = set(np.linspace(0, n_saves, SNAPSHOTS).round().astype(int).tolist())
+    times: list[float] = []
+    history: dict[str, list[float]] = {key: [] for key in HISTORY_KEYS}
+    snapshot_times: list[float] = []
+    snapshots: list[np.ndarray] = []
+    gif_stride = round(GIF_INTERVAL / SAVE_INTERVAL) if GIF_INTERVAL > 0 else 0
+    gif_steps = (max(1, NX // GIF_MAX_POINTS), max(1, NY // GIF_MAX_POINTS))
+    gif_frames: list[tuple[float, np.ndarray, np.ndarray]] = []
+    wall_start = time.perf_counter()
+    # Online copy of the collapse-phase logic in ``assess`` for --sap.
+    reference_current = math.inf
+    max_angle_since_onset = 0.0
+    onset = False
+    phase_end_time: float | None = None
+    stopped_early = False
+
+    print("[collapse] compiling and running the first save interval...", flush=True)
+    for index in range(n_saves + 1):
+        if index > 0:
+            state = advance(state, equilibrium_source)
+            if index == 1:
+                jax.block_until_ready(state)
+                print(
+                    f"[collapse] first interval done (incl. compile) in "
+                    f"{time.perf_counter() - wall_start:.1f}s",
+                    flush=True,
+                )
+        t = index * SAVE_INTERVAL
+        psi, omega = np.asarray(state.psi), np.asarray(state.omega)
+        if not (np.all(np.isfinite(psi)) and np.all(np.isfinite(omega))):
+            print(f"[collapse] non-finite fields at t={t:.2f}; stopping")
+            break
+        times.append(t)
+        try:
+            values = measure_sweet_parker_sheet(
+                psi, omega, lengths=lengths, resistivity=ETA, sheet_x=sheet_x
+            ).as_dict()
+        except ValueError as error:
+            print(f"[collapse] t={t:.2f}: measurement failed ({error})")
+            values = {}
+        for key in HISTORY_KEYS:
+            history[key].append(float(values.get(key, np.nan)))
+        wants_snapshot = index in snapshot_indices
+        wants_gif = bool(gif_stride) and index % gif_stride == 0
+        if wants_snapshot or wants_gif:
+            shift = _centring_shift(history["x_point_y"][-1], NY, dy)
+            current_field = np.roll(
+                np.asarray(current_density(state.psi, lengths=lengths), np.float32), shift, axis=1
+            )
+            if wants_snapshot:
+                snapshot_times.append(t)
+                snapshots.append(current_field)
+            if wants_gif:
+                sx, sy = gif_steps
+                gif_frames.append(
+                    (
+                        t,
+                        current_field[::sx, ::sy].astype(np.float16),
+                        np.roll(psi, shift, axis=1)[::sx, ::sy].astype(np.float16),
+                    )
+                )
+        if index % 20 == 0:
+            print(
+                f"[collapse] t={t:7.2f} |j_X|={abs(history['current_x'][-1]):.3f} "
+                f"delta={history['delta'][-1]:.4f} L_j={history['length_current'][-1]:.3f} "
+                f"E*={history['normalized_rate'][-1]:.3e} "
+                f"angle={history['opening_angle_deg'][-1]:.1f}deg "
+                f"nX={history['sheet_x_point_count'][-1]:.0f} "
+                f"W/sep={history['island_width'][-1] / sheet_separation:.3f} "
+                f"wall={time.perf_counter() - wall_start:.0f}s"
+            )
+
+        current_now = abs(history["current_x"][-1])
+        if np.isfinite(current_now):
+            if not onset:
+                reference_current = min(reference_current, current_now)
+                onset = current_now >= 1.5 * reference_current
+            if onset and phase_end_time is None:
+                max_angle_since_onset = max(
+                    max_angle_since_onset, np.nan_to_num(history["opening_angle_deg"][-1])
+                )
+            if onset and phase_end_time is None and (
+                history["opening_angle_deg"][-1]
+                < X_POINT_FLATTENING_FRACTION * max_angle_since_onset
+                or history["sheet_x_point_count"][-1] > 1
+                or not history["island_width"][-1] <= 0.5 * sheet_separation
+                or current_now < 1.5 * reference_current
+            ):
+                phase_end_time = t
+                print(f"[collapse] clean collapse phase ended at t={t:.2f}")
+        if SAP and phase_end_time is not None and t >= phase_end_time + SAP_BUFFER:
+            print(f"[collapse] SAP: stopping at t={t:.2f}")
+            stopped_early = True
+            break
+
+    if stopped_early and (not snapshot_times or snapshot_times[-1] != times[-1]):
+        shift = _centring_shift(history["x_point_y"][-1], NY, dy)
+        snapshot_times.append(times[-1])
+        snapshots.append(
+            np.roll(
+                np.asarray(current_density(state.psi, lengths=lengths), np.float32), shift, axis=1
+            )
+        )
+
+    t_arr = np.asarray(times)
+    h = {key: np.asarray(values) for key, values in history.items()}
+    summary = assess(
+        t_arr,
+        h,
+        resistivity=ETA,
+        viscosity=viscosity,
+        sheet_separation=sheet_separation,
+    )
+    summary.update(
+        {
+            "grid": [NX, NY],
+            "lengths": list(lengths),
+            "width": WIDTH,
+            "ka": ka,
+            "delta_prime_a": delta_prime_a,
+            "resistivity": ETA,
+            "viscosity": viscosity,
+            "seed": SEED,
+            "hold_equilibrium": HOLD_EQUILIBRIUM,
+            "cfl": CFL,
+            "devices": DEVICES,
+            "sap": SAP,
+            "stopped_early": stopped_early,
+            "sheet_separation": sheet_separation,
+            "dt": dt,
+            "t_final": float(t_arr[-1]),
+            "wall_seconds": time.perf_counter() - wall_start,
+        }
+    )
+
+    np.savez(OUTDIR / "histories.npz", times=t_arr, **h)
+    np.savez_compressed(
+        OUTDIR / "snapshots.npz",
+        times=np.asarray(snapshot_times),
+        current=np.asarray(snapshots),
+        lengths=np.asarray(lengths),
+        centred=np.asarray(True),
+    )
+    (OUTDIR / "summary.json").write_text(json.dumps(summary, indent=2))
+    plot_histories(t_arr, h, summary, OUTDIR / "histories.png")
+    plot_snapshots(
+        snapshot_times,
+        snapshots,
+        lengths,
+        sheet_x,
+        OUTDIR / "current_snapshots.png",
+        centred=True,
+    )
+    write_domain_gif(gif_frames, lengths, OUTDIR / "domain.gif")
+    print(f"[collapse] total wall time {summary['wall_seconds']:.1f}s")
+    print_verdict(summary, OUTDIR)

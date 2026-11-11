@@ -148,15 +148,6 @@ localization of {cite}`furth1963`. From `mhx benchmark linear-tearing-layer`.
 
 ## Reproduce or extend
 
-Render every available final source bundle into staging with:
-
-```bash
-python examples/media/run_all.py status --preset final
-python examples/media/run_all.py simulate --preset final --allow-expensive
-python examples/media/run_all.py render --preset final
-```
-
-Missing requested sources are errors. Existing committed files are never treated
-as substitutes for missing inputs. The per-case commands and output contract are documented in
-`examples/media/README.md`. [Make your first movie](getting_started/first_movie.md) shows how to
-build your own.
+These movies were rendered from recorded runs of the examples. [Make your first
+movie](getting_started/first_movie.md) shows how to render your own from any
+saved trajectory.

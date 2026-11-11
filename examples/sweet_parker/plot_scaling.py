@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Plot the Sweet-Parker scaling scan from finished collapse_check.py runs.
 
 Reads each run's ``summary.json`` (steady-window medians) and draws three panels:
@@ -17,14 +16,13 @@ the viscous outflow ``v_out = v_A (1+Pm)^-1/2``. With the measured outflow
 outflow-corrected data ``delta/L * u^1/2`` and ``E* / u^1/2``, which should lie
 on the dotted ``S^-1/2`` line.
 
-Usage::
+Takes seconds. Edit ``RUN_DIRS`` (folders written by ``collapse_check.py``, each
+with a ``summary.json`` that has a steady window; at least two) and ``OUTPUT`` in
+"Input parameters", then run from the repository root::
 
-    python examples/sweet_parker/plot_scaling.py RUN_DIR [RUN_DIR ...] --out scaling.png
+    python examples/sweet_parker/plot_scaling.py
 """
 
-from __future__ import annotations
-
-import argparse
 import json
 from pathlib import Path
 
@@ -33,6 +31,13 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
+
+# --- Input parameters ------------------------------------------------------
+RUN_DIRS = [  # finished collapse_check.py run folders, one per resistivity
+    Path("outputs/sweet_parker/eta2e-3"),
+    Path("outputs/sweet_parker/eta1e-3"),
+]
+OUTPUT = Path("outputs/examples/sweet_parker/sweet_parker_scaling.png")  # figure to write
 
 # Reference palette (categorical slots 1-2) and text/surface roles.
 DELTA_COLOR = "#2a78d6"
@@ -46,7 +51,7 @@ SURFACE = "#fcfcfb"
 
 def load_points(run_dirs: list[Path]) -> list[dict]:
     points = []
-    for run_dir in run_dirs:
+    for run_dir in map(Path, run_dirs):
         summary = json.loads((run_dir / "summary.json").read_text())
         metrics = summary["metrics"]
         if "lundquist_window" not in metrics:
@@ -83,176 +88,168 @@ def style_axis(axis) -> None:
     axis.yaxis.label.set_color(TEXT_PRIMARY)
     axis.title.set_color(TEXT_PRIMARY)
 
+# --- Run -------------------------------------------------------------------
 
-def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    parser.add_argument("run_dirs", nargs="+", type=Path)
-    parser.add_argument("--out", type=Path, default=Path("sweet_parker_scaling.png"))
-    args = parser.parse_args()
+print(f"[plot] reading {len(RUN_DIRS)} runs", flush=True)
+points = load_points(RUN_DIRS)
+if len(points) < 2:
+    raise SystemExit("need at least two runs with a steady window")
+pm = points[0]["pm"]
+lundquist = np.array([point["lundquist"] for point in points])
+rate = np.array([point["rate"] for point in points])
+delta_over_length = np.array([point["delta_over_length"] for point in points])
+root_outflow = np.sqrt(np.array([point["outflow"] for point in points]))
+s_line = np.geomspace(lundquist.min() / 1.3, lundquist.max() * 1.3, 50)
 
-    points = load_points(args.run_dirs)
-    if len(points) < 2:
-        raise SystemExit("need at least two runs with a steady window")
-    pm = points[0]["pm"]
-    lundquist = np.array([point["lundquist"] for point in points])
-    rate = np.array([point["rate"] for point in points])
-    delta_over_length = np.array([point["delta_over_length"] for point in points])
-    root_outflow = np.sqrt(np.array([point["outflow"] for point in points]))
-    s_line = np.geomspace(lundquist.min() / 1.3, lundquist.max() * 1.3, 50)
-
-    fig, axes = plt.subplots(1, 3, figsize=(15, 4.8), constrained_layout=True)
-    fig.patch.set_facecolor(SURFACE)
-    panels = [
-        (
-            axes[0],
-            delta_over_length,
-            DELTA_COLOR,
-            "o",
-            r"$\delta/L$",
-            s_line**-0.5 * (1.0 + pm) ** 0.25,
-            "Sheet aspect ratio",
-            delta_over_length * root_outflow,
-            r"MHX $\times\sqrt{v_{out}/v_A}$ (outflow-corrected)",
-        ),
-        (
-            axes[1],
-            rate,
-            RATE_COLOR,
-            "s",
-            r"$E^* = \eta|j_X|/B_{up}^2$",
-            s_line**-0.5 * (1.0 + pm) ** -0.25,
-            "Normalized reconnection rate",
-            rate / root_outflow,
-            r"MHX $\div\sqrt{v_{out}/v_A}$ (outflow-corrected)",
-        ),
-    ]
-    for axis, values, color, marker, label, theory, title, corrected, corrected_label in panels:
-        style_axis(axis)
-        axis.loglog(
-            s_line,
-            theory,
-            color=THEORY_COLOR,
-            linestyle="--",
-            linewidth=1.5,
-            label=rf"Sweet–Parker, Pm = {pm:g}",
-        )
-        slope = loglog_slope(lundquist, values)
-        axis.loglog(
-            lundquist,
-            values,
-            color=color,
-            marker=marker,
-            markersize=8,
-            linewidth=2,
-            markeredgecolor=SURFACE,
-            markeredgewidth=1.5,
-            label=f"MHX (fitted slope {slope:+.2f})",
-        )
-        axis.loglog(
-            s_line,
-            s_line**-0.5,
-            color=THEORY_COLOR,
-            linestyle=":",
-            linewidth=1.5,
-            label=r"$S_L^{-1/2}$ (Sweet–Parker, measured outflow)",
-        )
-        axis.loglog(
-            lundquist,
-            corrected,
-            color=color,
-            marker=marker,
-            markersize=8,
-            linewidth=1.5,
-            linestyle="-",
-            alpha=0.9,
-            markerfacecolor=SURFACE,
-            markeredgecolor=color,
-            markeredgewidth=1.8,
-            label=corrected_label,
-        )
-        for point, value in zip(points, values, strict=True):
-            axis.annotate(
-                rf"$\eta$={point['eta']:g}",
-                (point["lundquist"], value),
-                textcoords="offset points",
-                xytext=(6, 6),
-                fontsize=8,
-                color=TEXT_SECONDARY,
-            )
-        axis.set_xlabel(r"sheet Lundquist number $S_L = L B_{up}/\eta$")
-        axis.set_ylabel(label)
-        axis.set_title(title)
-        axis.legend(frameon=False, fontsize=9, labelcolor=TEXT_PRIMARY)
-
-    axis = axes[2]
+fig, axes = plt.subplots(1, 3, figsize=(15, 4.8), constrained_layout=True)
+fig.patch.set_facecolor(SURFACE)
+panels = [
+    (
+        axes[0],
+        delta_over_length,
+        DELTA_COLOR,
+        "o",
+        r"$\delta/L$",
+        s_line**-0.5 * (1.0 + pm) ** 0.25,
+        "Sheet aspect ratio",
+        delta_over_length * root_outflow,
+        r"MHX $\times\sqrt{v_{out}/v_A}$ (outflow-corrected)",
+    ),
+    (
+        axes[1],
+        rate,
+        RATE_COLOR,
+        "s",
+        r"$E^* = \eta|j_X|/B_{up}^2$",
+        s_line**-0.5 * (1.0 + pm) ** -0.25,
+        "Normalized reconnection rate",
+        rate / root_outflow,
+        r"MHX $\div\sqrt{v_{out}/v_A}$ (outflow-corrected)",
+    ),
+]
+for axis, values, color, marker, label, theory, title, corrected, corrected_label in panels:
     style_axis(axis)
-    midpoints = np.sqrt(lundquist[1:] * lundquist[:-1])
-    log_steps = np.diff(np.log(lundquist))
-    local_delta = np.diff(np.log(delta_over_length)) / log_steps
-    local_rate = np.diff(np.log(rate)) / log_steps
-    axis.axhline(
-        -0.5, color=THEORY_COLOR, linestyle="--", linewidth=1.5, label="Sweet–Parker −1/2"
+    axis.loglog(
+        s_line,
+        theory,
+        color=THEORY_COLOR,
+        linestyle="--",
+        linewidth=1.5,
+        label=rf"Sweet–Parker, Pm = {pm:g}",
     )
-    axis.semilogx(
-        midpoints,
-        local_delta,
-        color=DELTA_COLOR,
-        marker="o",
+    slope = loglog_slope(lundquist, values)
+    axis.loglog(
+        lundquist,
+        values,
+        color=color,
+        marker=marker,
         markersize=8,
         linewidth=2,
         markeredgecolor=SURFACE,
         markeredgewidth=1.5,
-        label=r"$\delta/L$",
+        label=f"MHX (fitted slope {slope:+.2f})",
     )
-    axis.semilogx(
-        midpoints,
-        local_rate,
-        color=RATE_COLOR,
-        marker="s",
+    axis.loglog(
+        s_line,
+        s_line**-0.5,
+        color=THEORY_COLOR,
+        linestyle=":",
+        linewidth=1.5,
+        label=r"$S_L^{-1/2}$ (Sweet–Parker, measured outflow)",
+    )
+    axis.loglog(
+        lundquist,
+        corrected,
+        color=color,
+        marker=marker,
         markersize=8,
-        linewidth=2,
-        markeredgecolor=SURFACE,
-        markeredgewidth=1.5,
-        label=r"$E^*$",
+        linewidth=1.5,
+        linestyle="-",
+        alpha=0.9,
+        markerfacecolor=SURFACE,
+        markeredgecolor=color,
+        markeredgewidth=1.8,
+        label=corrected_label,
     )
-    axis.annotate(
-        f"{local_delta[-1]:+.2f}",
-        (midpoints[-1], local_delta[-1]),
-        textcoords="offset points",
-        xytext=(8, 4),
-        fontsize=9,
-        color=TEXT_PRIMARY,
-    )
-    axis.annotate(
-        f"{local_rate[-1]:+.2f}",
-        (midpoints[-1], local_rate[-1]),
-        textcoords="offset points",
-        xytext=(8, -12),
-        fontsize=9,
-        color=TEXT_PRIMARY,
-    )
-    axis.set_xlabel(r"$S_L$ (geometric mean of neighbouring runs)")
-    axis.set_ylabel(r"local slope $d\ln(\cdot)/d\ln S_L$")
-    axis.set_title("Local scaling exponent")
+    for point, value in zip(points, values, strict=True):
+        axis.annotate(
+            rf"$\eta$={point['eta']:g}",
+            (point["lundquist"], value),
+            textcoords="offset points",
+            xytext=(6, 6),
+            fontsize=8,
+            color=TEXT_SECONDARY,
+        )
+    axis.set_xlabel(r"sheet Lundquist number $S_L = L B_{up}/\eta$")
+    axis.set_ylabel(label)
+    axis.set_title(title)
     axis.legend(frameon=False, fontsize=9, labelcolor=TEXT_PRIMARY)
 
-    fig.suptitle(
-        "Sweet–Parker scaling from MHX X-point collapse (reduced MHD, Pm = 1)",
-        color=TEXT_PRIMARY,
-    )
-    args.out.parent.mkdir(parents=True, exist_ok=True)
-    fig.savefig(args.out, dpi=150, facecolor=SURFACE)
-    print(f"[plot] wrote {args.out}")
-    for point in points:
-        print(
-            f"  eta={point['eta']:<8g} S_L={point['lundquist']:8.0f} "
-            f"delta/L={point['delta_over_length']:.4f} E*={point['rate']:.5f}"
-        )
+axis = axes[2]
+style_axis(axis)
+midpoints = np.sqrt(lundquist[1:] * lundquist[:-1])
+log_steps = np.diff(np.log(lundquist))
+local_delta = np.diff(np.log(delta_over_length)) / log_steps
+local_rate = np.diff(np.log(rate)) / log_steps
+axis.axhline(
+    -0.5, color=THEORY_COLOR, linestyle="--", linewidth=1.5, label="Sweet–Parker −1/2"
+)
+axis.semilogx(
+    midpoints,
+    local_delta,
+    color=DELTA_COLOR,
+    marker="o",
+    markersize=8,
+    linewidth=2,
+    markeredgecolor=SURFACE,
+    markeredgewidth=1.5,
+    label=r"$\delta/L$",
+)
+axis.semilogx(
+    midpoints,
+    local_rate,
+    color=RATE_COLOR,
+    marker="s",
+    markersize=8,
+    linewidth=2,
+    markeredgecolor=SURFACE,
+    markeredgewidth=1.5,
+    label=r"$E^*$",
+)
+axis.annotate(
+    f"{local_delta[-1]:+.2f}",
+    (midpoints[-1], local_delta[-1]),
+    textcoords="offset points",
+    xytext=(8, 4),
+    fontsize=9,
+    color=TEXT_PRIMARY,
+)
+axis.annotate(
+    f"{local_rate[-1]:+.2f}",
+    (midpoints[-1], local_rate[-1]),
+    textcoords="offset points",
+    xytext=(8, -12),
+    fontsize=9,
+    color=TEXT_PRIMARY,
+)
+axis.set_xlabel(r"$S_L$ (geometric mean of neighbouring runs)")
+axis.set_ylabel(r"local slope $d\ln(\cdot)/d\ln S_L$")
+axis.set_title("Local scaling exponent")
+axis.legend(frameon=False, fontsize=9, labelcolor=TEXT_PRIMARY)
+
+fig.suptitle(
+    "Sweet–Parker scaling from MHX X-point collapse (reduced MHD, Pm = 1)",
+    color=TEXT_PRIMARY,
+)
+OUTPUT.parent.mkdir(parents=True, exist_ok=True)
+fig.savefig(OUTPUT, dpi=150, facecolor=SURFACE)
+print(f"[plot] wrote {OUTPUT}")
+for point in points:
     print(
-        f"  all-point slopes: delta/L {loglog_slope(lundquist, delta_over_length):+.3f}, "
-        f"E* {loglog_slope(lundquist, rate):+.3f}"
+        f"  eta={point['eta']:<8g} S_L={point['lundquist']:8.0f} "
+        f"delta/L={point['delta_over_length']:.4f} E*={point['rate']:.5f}"
     )
-
-
-if __name__ == "__main__":
-    main()
+print(
+    f"  all-point slopes: delta/L {loglog_slope(lundquist, delta_over_length):+.3f}, "
+    f"E* {loglog_slope(lundquist, rate):+.3f}"
+)

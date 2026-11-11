@@ -1,59 +1,50 @@
-"""Animate the turbulent ``j_z`` evolution from a saved ``turbulent_spectrum.npz``."""
+"""Animate the turbulent ``j_z`` evolution from a saved ``turbulent_spectrum.npz``.
 
-from __future__ import annotations
+Writes ``turbulence_jz_evolution.gif`` next to the input file; takes seconds to a
+minute. Run ``benchmark_turbulent_spectrum.py`` first, then from the repository
+root:
 
-import sys
+    python examples/turbulence/animate_turbulence.py
+
+To animate a bigger run, point ``NPZ`` at its file.
+"""
+
 from pathlib import Path
 
 import imageio.v2 as imageio
 import numpy as np
 from matplotlib import colormaps
 
+# --- Input parameters ------------------------------------------------------
+NPZ = Path("outputs/examples/turbulence_2d/turbulent_spectrum.npz")  # saved run
+FRAME_DURATION_MS = 66  # display time of each GIF frame
+PROGRESS_EVERY = 10  # print progress every this many frames
 
-def animate_turbulence() -> None:
-    root_dir = Path(__file__).resolve().parent.parent.parent
+# --- Run -------------------------------------------------------------------
+if not NPZ.exists():
+    raise SystemExit(f"Could not find {NPZ}; run benchmark_turbulent_spectrum.py first.")
 
-    npz_path = root_dir / "outputs" / "turbulent_spectrum_output" / "turbulent_spectrum.npz"
-    if not npz_path.exists():
-        print(f"Error: Could not find {npz_path}")
-        print("Please ensure your turbulence NPZ file exists first.")
-        return
-
-    print(f"Loading {npz_path} (this might take a second for large files)...")
-    data = np.load(npz_path)
-
+print(f"Loading {NPZ} (this might take a second for large files)...", flush=True)
+with np.load(NPZ) as data:
     current_density = data["current_density"]
-    num_frames = current_density.shape[0]
-    print(f"Loaded {num_frames} frames of current density.")
+num_frames = current_density.shape[0]
+print(f"Loaded {num_frames} frames of current density.", flush=True)
 
-    out_path = root_dir / "outputs" / "turbulent_spectrum_output" / "turbulence_jz_evolution.gif"
+# 3 standard deviations of the final frame (fully developed turbulence) set a
+# consistent color scale across the whole movie.
+vmax = max(3.0 * float(np.std(current_density[-1])), 1.0)
+vmin = -vmax
+cmap = colormaps["RdBu_r"]
 
-    # Use 3 standard deviations of the final frame (fully developed turbulence)
-    # to set a consistent color scale across the whole movie.
-    vmax = 3.0 * float(np.std(current_density[-1]))
-    vmax = max(vmax, 1.0)
-    vmin = -vmax
+frames = []
+for i, j_z in enumerate(current_density):
+    if i % PROGRESS_EVERY == 0:
+        print(f"Generating GIF frames ({i}/{num_frames})...", flush=True)
+    normalized = np.clip((j_z.T - vmin) / (vmax - vmin), 0.0, 1.0)
+    frames.append((255.0 * cmap(normalized)[..., :3]).astype(np.uint8))
+print(f"Generated {num_frames}/{num_frames} frames.", flush=True)
 
-    cmap = colormaps["RdBu_r"]
-
-    frames = []
-    print(f"Generating GIF frames (0/{num_frames})...")
-
-    for i, j_z in enumerate(current_density):
-        if i % 10 == 0:
-            sys.stdout.write(f"\rGenerating GIF frames ({i}/{num_frames})...")
-            sys.stdout.flush()
-
-        normalized = np.clip((j_z.T - vmin) / (vmax - vmin), 0.0, 1.0)
-        rgb_frame = (255.0 * cmap(normalized)[..., :3]).astype(np.uint8)
-        frames.append(rgb_frame)
-
-    print(f"\rGenerating GIF frames ({num_frames}/{num_frames})... Done!")
-    print(f"Saving GIF to {out_path}...")
-
-    imageio.mimsave(out_path, frames, duration=66, loop=0, palettesize=64)
-    print(f"wrote {out_path}")
-
-
-if __name__ == "__main__":
-    animate_turbulence()
+# --- Results ---------------------------------------------------------------
+out_path = NPZ.parent / "turbulence_jz_evolution.gif"
+imageio.mimsave(out_path, frames, duration=FRAME_DURATION_MS, loop=0, palettesize=64)
+print(f"wrote {out_path}")
