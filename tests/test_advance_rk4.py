@@ -108,4 +108,4 @@ def test_advance_rk4_accepts_a_traced_step_size() -> None:
         return advance_rk4(initial, rhs, dt=dt, steps=10)
 
     final = run(jnp.asarray(1.0), jnp.asarray(0.01))
-    assert float(final) == pytest.approx(jnp.exp(-0.1), rel=1e-8)
+    assert float(final) == pytest.approx(float(np.exp(-0.1)), rel=1e-8)
