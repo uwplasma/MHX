@@ -289,6 +289,13 @@ def _node_imports_legacy(node: ast.AST) -> bool:
     return False
 
 
+def _pinned(text: str, action: str, version: str) -> bool:
+    """True when ``action`` is used at ``version``, as a tag or as a SHA with a version comment."""
+    return f"{action}@{version}" in text or re.search(
+        rf"{re.escape(action)}@[0-9a-f]{{40}} # {re.escape(version)}\b", text
+    ) is not None
+
+
 def _workflow_checks(root: Path) -> dict[str, bool]:
     workflow_text = "\n".join(
         _read_text(root / workflow)
@@ -300,10 +307,11 @@ def _workflow_checks(root: Path) -> dict[str, bool]:
         )
     )
     return {
-        "ci_uses_node24_compatible_checkout": "actions/checkout@v6.0.2" in workflow_text,
-        "ci_uses_node24_compatible_setup_python": "actions/setup-python@v6.2.0"
-        in workflow_text,
-        "artifact_upload_uses_v7": "actions/upload-artifact@v7.0.1" in workflow_text,
+        "ci_uses_node24_compatible_checkout": _pinned(workflow_text, "actions/checkout", "v6.0.2"),
+        "ci_uses_node24_compatible_setup_python": _pinned(
+            workflow_text, "actions/setup-python", "v6.2.0"
+        ),
+        "artifact_upload_uses_v7": _pinned(workflow_text, "actions/upload-artifact", "v7.0.1"),
     }
 
 
