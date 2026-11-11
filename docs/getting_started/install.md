@@ -37,7 +37,7 @@ should enable float64:
 export JAX_ENABLE_X64=1
 ```
 
-The [differentiability page](../physics/differentiability.md) explains why
+The [differentiability page](../physics/numerics.md) explains why
 this matters for gradient validation.
 
 ## Developer install

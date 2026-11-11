@@ -34,7 +34,7 @@ def test_api_version_info_and_env_override(monkeypatch) -> None:
         require_supported_api_version(context="test")
 
 
-def test_cli_api_status_and_deprecations() -> None:
+def test_cli_api_status() -> None:
     runner = CliRunner()
     status = runner.invoke(app, ["api", "status", "--json"])
     assert status.exit_code == 0, status.stdout
@@ -42,8 +42,3 @@ def test_cli_api_status_and_deprecations() -> None:
     assert payload["public_api_version"] == "v1"
     assert payload["physics_api_version"] == "mhx.physics.v1"
     assert "production_template" in payload["claim_levels"]
-
-    deprecations = runner.invoke(app, ["api", "deprecations"])
-    assert deprecations.exit_code == 0, deprecations.stdout
-    assert "legacy/old_mhx" in deprecations.stdout
-    assert "docs/develop/release.md" in deprecations.stdout

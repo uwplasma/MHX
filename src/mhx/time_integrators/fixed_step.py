@@ -50,6 +50,45 @@ def rk4_step(state: StateT, rhs: Callable[[StateT], StateT], dt: float) -> State
     return _tree_add(state, increment)
 
 
+def advance_rk4(
+    state: StateT,
+    rhs: Callable[[StateT], StateT],
+    *,
+    dt: float,
+    steps: int,
+    checkpoint: bool = False,
+) -> StateT:
+    """Advance ``steps`` RK4 steps and return only the final state.
+
+    The loop is a ``jax.lax.scan``, so long runs compile once. With
+    ``checkpoint=True`` the block is wrapped in ``jax.checkpoint``: reverse-mode
+    differentiation then stores only the block's inputs and recomputes the
+    steps, which keeps the memory of a gradient through many blocks bounded.
+
+    Args:
+        state: Initial state as any JAX PyTree.
+        rhs: Function that returns the time derivative of ``state``.
+        dt: Positive time-step size.
+        steps: Non-negative number of steps in the block.
+        checkpoint: Rematerialize the block during the backward pass.
+
+    Returns:
+        The state after ``steps`` steps.
+    """
+    if not isinstance(dt, jax.core.Tracer) and dt <= 0.0:
+        raise ValueError("dt must be positive")
+    if steps < 0:
+        raise ValueError("steps must be non-negative")
+
+    def run(initial: StateT) -> StateT:
+        def body(carry: StateT, _: None) -> tuple[StateT, None]:
+            return rk4_step(carry, rhs, dt), None
+
+        return jax.lax.scan(body, initial, None, length=steps)[0]
+
+    return (jax.checkpoint(run) if checkpoint else run)(state)
+
+
 def evolve_rk4(
     state0: StateT,
     rhs: Callable[[StateT], StateT],

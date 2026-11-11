@@ -1,50 +1,54 @@
 # Examples
 
-Start in `examples/gallery`. Those seven scripts show the public Python API. Each
-script keeps its settings at the top and writes fields under `outputs/gallery`.
+Every example is a script you read from top to bottom and run with
+`python <path>` from the repository root. They follow one template:
 
-| Script | What it shows |
-| --- | --- |
-| `gallery/01_reconnection.py` | Double-Harris reconnection |
-| `gallery/02_tearing_mode.py` | Cosine current sheet |
-| `gallery/03_implicit_step.py` | SOLVAX backward Euler |
-| `gallery/04_cpu_parallel.py` | Four-device CPU sharding |
-| `gallery/05_gpu_parallel.py` | Multi-GPU sharding |
-| `gallery/06_strong_scaling.py` | Fixed-ensemble strong scaling |
-| `gallery/07_multi_process.py` | Multi-process ensemble |
+1. A docstring that says what the example computes, what it writes and how to
+   scale it up.
+2. **Input parameters** as UPPER_CASE constants. Edit them to define a new run.
+3. **Run**, printing the setup, timings and progress.
+4. **Results**, printing the key numbers and saving figures and data.
 
-Run the first script from the repository root:
+The scripts take no command-line arguments or environment variables and define no
+`main()`. To resize a run on a GPU, `modal run modal_run.py --script <path>
+--overrides "NAME=value ..."` replaces the constants and runs the script on
+Modal.
+
+## Start here
+
+`gallery/` holds fourteen short scripts that show the public Python API:
+reconnection, tearing, implicit stepping, multi-device and multi-process runs,
+gradients, 3D MHD, compressible MHD, turbulence, Taylor--Green, Alfven-wave
+collisions and Kelvin--Helmholtz. See `gallery/README.md`.
 
 ```bash
 python examples/gallery/01_reconnection.py
 ```
 
-Each gallery script uses this order:
+## By topic
 
-1. Choose an output path.
-2. Create `mhx.Simulation`.
-3. Run it.
-4. Print and plot the result.
-5. Save the fields and metadata.
+| Folder | What it holds |
+| --- | --- |
+| `orszag_tang/` | Comparison with the Vencels kinetic result, autodiff fits of resistivity, viscosity and initial conditions, an inviscid energy check, and 3D tracking |
+| `turbulence/` | Forced 2D turbulence, its spectrum, and the render and analysis scripts that read the saved run |
+| `sweet_parker/` | The large-`Delta'` collapse check, its scaling plot and a Perlmutter batch script |
+| `plasmoid_chain/` | The many-plasmoid double-Harris run and a hybrid forced-turbulent-reconnection run |
+| `current_sheet/` | An inverse problem that recovers an effective resistivity from sparse probes |
+| `toml/` | Complete inputs for `mhx run`, for 2D, 3D and compressible runs |
+| `plugin_template/` | A package template for an external physics or diagnostics plugin |
+
+`run_orszag_tang.py` and `run_linear_tearing.py` are small single-purpose runs.
+`make_validation_media.py` regenerates the validation figures under
+`docs/_static/validation`.
 
 ## Recorded config runs
 
 The TOML files support command-line runs with an explicit config record:
 
 ```bash
-mhx run examples/linear_tearing.toml \
-  --outdir outputs/examples/linear_tearing
+mhx run examples/toml/orszag_tang_3d.toml
 ```
 
-Use the TOML path for campaign automation. Use the gallery path when you learn
-or change the Python API.
-
-## Validation drivers
-
-Files named `publication_*.py` and `make_*.py` regenerate review artifacts.
-They call benchmark and campaign modules, so they contain more controls than
-the gallery. The test suite runs their small settings.
-
-`examples/tools/verify_paper_artifacts.py` checks saved paper data.
-`examples/plugin_template/` is a package template for an external physics or
-diagnostics plugin.
+The same file drives the Python API with
+`mhx.Simulation.from_config(mhx.load_config(path)).run()`. See the
+[configuration reference](../docs/reference/config_schema.md) for every model and file.

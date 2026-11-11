@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, fields, is_dataclass
 from typing import Any, ClassVar, Protocol
 
 import jax.numpy as jnp
@@ -117,6 +117,26 @@ class PeriodicDoubleHarrisEquilibrium:
 
 
 @dataclass(frozen=True)
+class OrszagTangEquilibrium:
+    r"""Incompressible reduced-MHD Orszag--Tang vortex.
+
+    The stream and flux functions are ``phi = cos(x) + cos(y)`` and
+    ``psi = cos(y) + 0.5 cos(2x)``. With the MHX convention
+    ``B_perp=(psi_y, -psi_x)`` and ``v_perp=(phi_y, -phi_x)``, this gives the
+    classic 2-D large-scale vortex ``v=(-sin y, sin x)``, ``B=(-sin y, sin 2x)``.
+    """
+
+    name: ClassVar[str] = "orszag_tang"
+    description: ClassVar[str] = "Incompressible reduced-MHD Orszag--Tang vortex."
+
+    def initial_state(self, grid: CartesianGrid) -> ReducedMHDState:
+        x, y = grid.mesh()
+        psi = jnp.cos(y) + 0.5 * jnp.cos(2.0 * x)
+        omega = -jnp.cos(x) - jnp.cos(y)
+        return ReducedMHDState(psi=psi, omega=omega)
+
+
+@dataclass(frozen=True)
 class ZeroEquilibrium:
     """Zero-field reduced-MHD initial condition for plugin/unit tests."""
 
@@ -162,7 +182,7 @@ class EquilibriumRegistry:
             items.append(
                 EquilibriumMetadata(
                     name=name,
-                    description=equilibrium.description,
+                    description=_equilibrium_description(equilibrium),
                     parameters=_equilibrium_parameters(equilibrium),
                 )
             )
@@ -174,7 +194,22 @@ def default_equilibrium_registry() -> EquilibriumRegistry:
     registry = EquilibriumRegistry()
     registry.register("cosine_tearing", _cosine_tearing_factory)
     registry.register("periodic_double_harris", _periodic_double_harris_factory)
+    registry.register("orszag_tang", _dataclass_factory(OrszagTangEquilibrium))
     registry.register("zero", _zero_factory)
+    # Three-dimensional builders return (v, b) fields instead of a reduced state.
+    from mhx.physics import equilibria3d
+
+    for cls in (
+        equilibria3d.SingleModeEquilibrium,
+        equilibria3d.CircularlyPolarizedAlfvenEquilibrium,
+        equilibria3d.AlfvenWaveCollisionEquilibrium,
+        equilibria3d.OrszagTang3DEquilibrium,
+        equilibria3d.ABCFlowEquilibrium,
+        equilibria3d.TaylorGreenEquilibrium,
+        equilibria3d.TaylorGreenAlternativeEquilibrium,
+        equilibria3d.TaylorGreenConductingEquilibrium,
+    ):
+        registry.register(cls.name, _dataclass_factory(cls))
     return registry
 
 
@@ -218,6 +253,50 @@ def _zero_factory(parameters: Mapping[str, Any]) -> ZeroEquilibrium:
     return ZeroEquilibrium()
 
 
+def _coerce_like(default: Any, value: Any, *, name: str) -> Any:
+    """Cast a TOML value to the type of the dataclass field default."""
+    if isinstance(default, bool):
+        return bool(value)
+    if isinstance(default, int):
+        return int(value)
+    if isinstance(default, float):
+        return float(value)
+    if isinstance(default, tuple):
+        if isinstance(value, (str, bytes)) or not hasattr(value, "__iter__"):
+            raise ValueError(f"equilibrium parameter {name!r} must be a list")
+        element = type(default[0]) if default else float
+        return tuple(element(item) for item in value)
+    return value
+
+
+def _dataclass_factory(cls: type) -> Callable[[Mapping[str, Any]], Any]:
+    """Build a registry factory that maps a parameter table onto dataclass fields."""
+    known = {item.name: item for item in fields(cls)}
+
+    def factory(parameters: Mapping[str, Any]) -> Any:
+        unknown = sorted(set(parameters) - set(known))
+        if unknown:
+            raise ValueError(
+                f"unknown parameters for equilibrium {cls.name!r}: {', '.join(unknown)}; "
+                f"known parameters: {', '.join(sorted(known)) or 'none'}"
+            )
+        kwargs = {
+            key: _coerce_like(known[key].default, value, name=key)
+            for key, value in parameters.items()
+        }
+        return cls(**kwargs)
+
+    return factory
+
+
+def _equilibrium_description(equilibrium: Any) -> str:
+    description = getattr(equilibrium, "description", None)
+    if description:
+        return str(description)
+    lines = (type(equilibrium).__doc__ or "").strip().splitlines()
+    return lines[0].strip() if lines else type(equilibrium).__name__
+
+
 def _equilibrium_parameters(equilibrium: Equilibrium) -> dict[str, float]:
     if isinstance(equilibrium, CosineTearingEquilibrium):
         return {"perturbation_amplitude": equilibrium.perturbation_amplitude}
@@ -228,5 +307,12 @@ def _equilibrium_parameters(equilibrium: Equilibrium) -> dict[str, float]:
             "perturbation_amplitude": equilibrium.perturbation_amplitude,
             "perturbation_mode_x": float(equilibrium.perturbation_mode[0]),
             "perturbation_mode_y": float(equilibrium.perturbation_mode[1]),
+        }
+    if is_dataclass(equilibrium):
+        return {
+            item.name: float(getattr(equilibrium, item.name))
+            for item in fields(equilibrium)
+            if isinstance(getattr(equilibrium, item.name), (int, float))
+            and not isinstance(getattr(equilibrium, item.name), bool)
         }
     return {}

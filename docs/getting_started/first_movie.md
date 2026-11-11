@@ -95,5 +95,3 @@ Three rules keep a movie honest:
    base run, and overlay total-flux contours for orientation.
 3. **Label time.** A movie without a clock supports no claim about rates.
 
-The [media inventory](../project/media_inventory.md) records these rules,
-plus the source command and claim level, for every committed movie.

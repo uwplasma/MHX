@@ -1,10 +1,22 @@
 """Standardized diagnostics shared by MHX workflows."""
 
 from mhx.diagnostics.critical_points import (
+    CriticalPointDetection,
+    CriticalPointTracker,
     FluxCriticalPoint,
+    PeriodicFluxInterpolator,
     critical_points_by_kind,
     detect_flux_critical_points,
     track_critical_points,
+)
+from mhx.diagnostics.planar_flux import (
+    PLANAR_FLUX_SCHEMA,
+    FluxPairRegion,
+    PlanarFluxResult,
+    analyze_planar_flux,
+    continuous_flux_rates,
+    double_sheet_pair_regions,
+    join_planar_flux,
 )
 from mhx.diagnostics.reduced_mhd import (
     DIAGNOSTICS_ENTRY_POINT_GROUP,
@@ -28,8 +40,27 @@ from mhx.diagnostics.reduced_mhd import (
     trajectory_energies,
     trajectory_mode_amplitude,
 )
+from mhx.diagnostics.spectra import fit_power_law, magnetic_power_spectrum_2d
+from mhx.diagnostics.sweet_parker import (
+    SweetParkerSheetMeasurement,
+    measure_sweet_parker_sheet,
+    select_steady_window,
+    sweet_parker_prediction,
+)
 
 __all__ = [
+    "fit_power_law",
+    "magnetic_power_spectrum_2d",
+    "CriticalPointDetection",
+    "CriticalPointTracker",
+    "PeriodicFluxInterpolator",
+    "PLANAR_FLUX_SCHEMA",
+    "FluxPairRegion",
+    "PlanarFluxResult",
+    "analyze_planar_flux",
+    "continuous_flux_rates",
+    "double_sheet_pair_regions",
+    "join_planar_flux",
     "DiagnosticContext",
     "DIAGNOSTICS_ENTRY_POINT_GROUP",
     "DiagnosticSpec",
@@ -46,10 +77,14 @@ __all__ = [
     "load_diagnostics_plugin_modules",
     "magnetic_divergence_linf",
     "magnetic_energy",
+    "measure_sweet_parker_sheet",
     "mode_amplitude",
     "reconnected_flux_amplitude",
     "rutherford_island_full_width",
     "select_fit_window",
+    "select_steady_window",
+    "SweetParkerSheetMeasurement",
+    "sweet_parker_prediction",
     "total_energy",
     "trajectory_energies",
     "trajectory_mode_amplitude",

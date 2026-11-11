@@ -2,7 +2,7 @@
 
 The TOML path turns a run into a recorded, auditable workflow: one config
 file in, one run directory out, with manifests and reports beside the data.
-Use it for benchmarks, campaigns, and anything a reviewer will read. The
+Use it for benchmarks and anything a reviewer will read. The
 [configuration reference](../reference/config_schema.md) documents every
 field.
 
@@ -57,5 +57,32 @@ mhx report outputs/tutorial/plugin_demo
 ```
 
 The plugin demo shows how to register a local RHS term and diagnostic without
-editing MHX source. See [plugins.md](../how_to/extend_physics.md) for the external package
+editing MHX source. See [plugins.md](extend.md) for the external package
 template and testing checklist.
+
+## 5. Run the 2D and 3D examples
+
+`mhx run` also drives `reduced_mhd`, `mhd3d` and `compressible` models. Each
+file in `examples/toml/` is a complete input, so copy one and edit the
+parameters:
+
+```bash
+mhx run examples/toml/double_harris.toml
+mhx run examples/toml/orszag_tang_3d.toml --outdir outputs/tutorial/orszag_tang_3d
+```
+
+A run prints its setup, compile and run times and an energy summary, then
+writes `config_effective.json`, `diagnostics.json`, `trajectory.npz`,
+`summary.png` and `manifest.json` to the output directory. From Python, the
+same config builds a simulation:
+
+```python
+import mhx
+
+config = mhx.load_config("examples/toml/orszag_tang_3d.toml")
+result = mhx.Simulation.from_config(config).run()
+result.print_summary()
+```
+
+The [configuration reference](../reference/config_schema.md) lists every model
+and example.
