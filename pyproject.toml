@@ -109,6 +109,7 @@ testpaths = ["tests"]
 addopts = "-ra"
 markers = [
   "slow: validation/artifact tests that exercise heavier release-gate paths",
+  "gpu: short device checks run on the self-hosted GPU lane",
 ]
 
 [tool.coverage.run]
