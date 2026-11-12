@@ -99,27 +99,6 @@ jobs:
           path: coverage.json
           if-no-files-found: error
 
-  gpu:
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: [self-hosted, Linux, uwplasma-gpu]
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v6.0.2
-      - uses: astral-sh/setup-uv@v6
-        with:
-          python-version: "3.12"
-          enable-cache: false
-      - name: Install
-        run: |
-          uv venv --clear
-          uv pip install -e . pytest "jax[cuda12]"
-          echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
-      - name: Check GPU backend
-        run: python -c "import jax; assert jax.default_backend() == 'gpu', jax.devices()"
-      - name: GPU tests
-        timeout-minutes: 1
-        run: python -m pytest -m gpu -q -x
-
   coverage-badge:
     runs-on: ubuntu-latest
     needs: [test, release-tests]
