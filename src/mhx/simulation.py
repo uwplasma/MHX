@@ -229,24 +229,52 @@ class Simulation:
     dt: float = 2.0e-2
     t_end: float = 2.0
     save_every: int = 10
-    integrator: Integrator = "rk4"
+    integrator: str = "rk4"
     dealiasing: str = "two_thirds"
     device_count: int | None = None
     verbose: bool = True
     terms: tuple[PhysicsTerm, ...] = ()
+    equations: str = "reduced_mhd"
+    guide_field: tuple[float, float, float] = (0.0, 0.0, 0.0)
+    sound_speed: float = 1.0
+    bulk_viscosity: float = 0.0
 
     def __post_init__(self) -> None:
         """Reject invalid settings before JAX starts a compilation."""
+        if self.equations not in ("reduced_mhd", "mhd3d", "compressible"):
+            raise ValueError(
+                "equations must be 'reduced_mhd', 'mhd3d', or 'compressible'"
+            )
+        if self.equations in ("mhd3d", "compressible"):
+            if len(self.shape) != 3 or any(points < 4 for points in self.shape):
+                raise ValueError(
+                    f"equations={self.equations!r} needs three grid sizes of "
+                    "at least 4"
+                )
+            if self.integrator == "rk4":
+                # The 3D production stepper; keeps the 2D default untouched.
+                object.__setattr__(self, "integrator", "if_rk3")
+            if self.integrator not in ("if_rk3", "etdrk4"):
+                raise ValueError("3D integrator must be 'if_rk3' or 'etdrk4'")
+            if len(self.lower) == 2:
+                object.__setattr__(self, "lower", (*self.lower, 0.0))
+                object.__setattr__(self, "upper", (*self.upper, 2.0 * math.pi))
+            self._validate_time_settings()
+            return
         if len(self.shape) != 2 or any(points < 4 for points in self.shape):
             raise ValueError("shape must contain two grid sizes of at least 4")
+        if self.integrator not in ("rk4", "backward_euler"):
+            raise ValueError("integrator must be 'rk4' or 'backward_euler'")
+        self._validate_time_settings()
+
+    def _validate_time_settings(self) -> None:
+        """Checks shared by the 2D and 3D paths."""
         if self.dt <= 0.0:
             raise ValueError("dt must be positive")
         if self.t_end <= 0.0:
             raise ValueError("t_end must be positive")
         if self.save_every < 1:
             raise ValueError("save_every must be at least 1")
-        if self.integrator not in ("rk4", "backward_euler"):
-            raise ValueError("integrator must be 'rk4' or 'backward_euler'")
         if self.dealiasing not in ("none", "two_thirds"):
             raise ValueError("dealiasing must be 'none' or 'two_thirds'")
         step_count = self.t_end / self.dt
@@ -262,8 +290,17 @@ class Simulation:
         """Compile and run the configured simulation.
 
         Returns:
-            A :class:`SimulationResult` with fields, diagnostics, and timings.
+            A :class:`SimulationResult` with fields, diagnostics, and timings,
+            or an :class:`mhx.simulation3d.MHD3DResult` for ``mhd3d`` runs.
         """
+        if self.equations == "mhd3d":
+            from mhx.simulation3d import run_mhd3d
+
+            return run_mhd3d(self)
+        if self.equations == "compressible":
+            from mhx.simulation_compressible import run_compressible
+
+            return run_compressible(self)
         if self.integrator == "backward_euler" and not jax.config.jax_enable_x64:
             warnings.warn(
                 "backward_euler targets Newton tolerances near 1e-9, which "

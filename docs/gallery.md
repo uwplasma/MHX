@@ -53,6 +53,24 @@ result.
 
 ## Orszag--Tang vortex
 
+```{video} _static/movies/orszag_tang_3d_current.mp4
+:loop:
+:muted:
+:width: 100%
+```
+
+Full 3D incompressible MHD: the {cite}`politano1995` Orszag--Tang vortex
+at 128 x 128 x 128 to $t=4$, on one office GPU. The panels show the
+current magnitude as a midplane slice and a maximum projection:
+
+```bash
+python - # mhx.Simulation(shape=(128,)*3, equations="mhd3d", ...) per docs/physics/mhd3d.md
+```
+
+Campaign-scale solver output on the road to gate G7. Not yet a gated
+validation artifact: the dissipation-peak tolerance waits on the
+normalization audit in `plan_3d.md`.
+
 ```{video} _static/movies/orszag_tang_current.mp4
 :loop:
 :muted:

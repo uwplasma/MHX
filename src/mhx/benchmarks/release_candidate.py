@@ -67,7 +67,7 @@ README_REQUIRED_MARKERS = (
     "Physics and numerics",
     "Parallel runs",
     "Development",
-    "does not solve the full three-dimensional MHD",
+    "Shocks and supersonic flows | out of scope",
     "bounded validation runs",
 )
 
