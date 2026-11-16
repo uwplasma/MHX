@@ -317,10 +317,9 @@ def test_simulation_prints_progress_and_stops_on_non_finite_fields(capsys) -> No
 
     with pytest.raises(FloatingPointError, match="non-finite fields at step"):
         mhx.Simulation(shape=(64, 64), dt=0.2, t_end=20.0, save_every=10, verbose=False).run()
+    unstable = mhx.Simulation(shape=(64, 64), dt=0.2, t_end=20.0, save_every=10, verbose=False)
     with pytest.raises(FloatingPointError, match="non-finite fields at step"):
-        mhx.Simulation(
-            shape=(64, 64), dt=0.2, t_end=20.0, save_every=10, verbose=False
-        ).run_ensemble((mhx.PeriodicDoubleHarrisEquilibrium(),))
+        unstable.run_ensemble((unstable.equilibrium,))
 
 
 def test_simulation_result_arrays_are_finite() -> None:
