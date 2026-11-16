@@ -109,7 +109,9 @@ def test_simulation_ensemble_runs_plots_and_saves(tmp_path, capsys, monkeypatch)
     assert result.config["parallel_axis"] == "case"
     assert len(tuple(output.glob("case_*.npz"))) == 5
     assert figure.is_file()
-    assert "MHX ensemble" in capsys.readouterr().out
+    printed = capsys.readouterr().out
+    assert "MHX ensemble" in printed
+    assert "step 2/2" in printed
 
     monkeypatch.setattr(jax, "process_index", lambda: 1)
     assert result.save(tmp_path / "not-written") == tmp_path / "not-written"
@@ -315,6 +317,10 @@ def test_simulation_prints_progress_and_stops_on_non_finite_fields(capsys) -> No
 
     with pytest.raises(FloatingPointError, match="non-finite fields at step"):
         mhx.Simulation(shape=(64, 64), dt=0.2, t_end=20.0, save_every=10, verbose=False).run()
+    with pytest.raises(FloatingPointError, match="non-finite fields at step"):
+        mhx.Simulation(
+            shape=(64, 64), dt=0.2, t_end=20.0, save_every=10, verbose=False
+        ).run_ensemble((mhx.PeriodicDoubleHarrisEquilibrium(),))
 
 
 def test_simulation_result_arrays_are_finite() -> None:
