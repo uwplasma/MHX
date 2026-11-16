@@ -109,7 +109,9 @@ def test_simulation_ensemble_runs_plots_and_saves(tmp_path, capsys, monkeypatch)
     assert result.config["parallel_axis"] == "case"
     assert len(tuple(output.glob("case_*.npz"))) == 5
     assert figure.is_file()
-    assert "MHX ensemble" in capsys.readouterr().out
+    printed = capsys.readouterr().out
+    assert "MHX ensemble" in printed
+    assert "step 2/2" in printed
 
     monkeypatch.setattr(jax, "process_index", lambda: 1)
     assert result.save(tmp_path / "not-written") == tmp_path / "not-written"
@@ -323,6 +325,10 @@ def test_simulation_prints_progress_and_stops_on_non_finite_fields(capsys) -> No
         mhx.Simulation(
             shape=(8, 8), equilibrium=_NonFiniteEquilibrium(), dt=0.01, t_end=0.02, verbose=False
         ).run()
+    with pytest.raises(FloatingPointError, match="non-finite fields at step"):
+        mhx.Simulation(shape=(8, 8), dt=0.01, t_end=0.02, verbose=False).run_ensemble(
+            (_NonFiniteEquilibrium(),)
+        )
 
 
 def test_simulation_substeps_above_the_cfl_limit() -> None:
