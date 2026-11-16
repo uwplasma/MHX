@@ -58,31 +58,42 @@ def current_density(psi: Array, *, lengths: tuple[float, float]) -> Array:
 
 
 def to_spectral_state(state: ReducedMHDState) -> ReducedMHDState:
-    """Transform a physical reduced-MHD state to Fourier coefficients.
+    """Transform a physical reduced-MHD state to half-spectrum Fourier coefficients.
 
-    Both fields are transformed as one batch. On a device mesh this gives JAX
-    one larger collective instead of two small collectives.
+    The fields are real, so MHX keeps only the non-negative last-axis modes
+    (``rfft2``). Both fields are transformed as one batch, which gives one
+    collective instead of two on a device mesh.
     """
     fields = jnp.stack((state.psi, state.omega))
-    transformed = jnp.fft.fftn(fields, axes=(-2, -1))
+    transformed = jnp.fft.rfft2(fields)
     return ReducedMHDState(psi=transformed[0], omega=transformed[1])
 
 
-def to_physical_state(state_hat: ReducedMHDState) -> ReducedMHDState:
-    """Transform Fourier coefficients to real physical fields."""
+def _physical_shape(spectral_shape: tuple[int, ...], ny: int | None) -> tuple[int, int]:
+    return spectral_shape[-2], 2 * (spectral_shape[-1] - 1) if ny is None else ny
+
+
+def to_physical_state(state_hat: ReducedMHDState, *, ny: int | None = None) -> ReducedMHDState:
+    """Transform half-spectrum coefficients to real fields.
+
+    ``ny`` is the physical size of the last axis. It defaults to the even size
+    that matches the half spectrum.
+    """
     fields_hat = jnp.stack((state_hat.psi, state_hat.omega))
-    fields = jnp.fft.ifftn(fields_hat, axes=(-2, -1)).real
+    fields = jnp.fft.irfft2(fields_hat, s=_physical_shape(fields_hat.shape, ny))
     return ReducedMHDState(psi=fields[0], omega=fields[1])
 
 
-def to_physical_trajectory(trajectory: ReducedMHDTrajectory) -> ReducedMHDTrajectory:
-    """Transform a saved Fourier-space trajectory to physical fields.
+def to_physical_trajectory(
+    trajectory: ReducedMHDTrajectory, *, ny: int | None = None
+) -> ReducedMHDTrajectory:
+    """Transform a saved half-spectrum trajectory to physical fields.
 
     The field and saved-time dimensions are batch dimensions, so the conversion
     needs one distributed inverse transform rather than one per saved state.
     """
     fields_hat = jnp.stack((trajectory.states.psi, trajectory.states.omega))
-    fields = jnp.fft.ifftn(fields_hat, axes=(-2, -1)).real
+    fields = jnp.fft.irfft2(fields_hat, s=_physical_shape(fields_hat.shape, ny))
     return ReducedMHDTrajectory(
         times=trajectory.times,
         states=ReducedMHDState(psi=fields[0], omega=fields[1]),
@@ -96,15 +107,17 @@ def reduced_mhd_rhs_spectral(
     lengths: tuple[float, float],
     terms: tuple[PhysicsTerm, ...] = (),
     dealiasing: str = "none",
+    ny: int | None = None,
 ) -> ReducedMHDState:
-    r"""Return the reduced-MHD right-hand side in Fourier space.
+    r"""Return the reduced-MHD right-hand side in half-spectrum Fourier space.
 
     The implementation reuses the Fourier coefficients of ``ψ`` and ``ω``.
     Eight physical derivatives are evaluated in one inverse-FFT batch, and the
     three Poisson brackets are returned to Fourier space in one forward-FFT
     batch. This is algebraically equivalent to :func:`reduced_mhd_rhs`, but it
     removes repeated transforms and reduces collective-launch overhead when the
-    fields are sharded.
+    fields are sharded. ``ny`` is the physical last-axis size, by default the
+    even size that matches the half spectrum.
     """
     if state_hat.psi.ndim != 2 or state_hat.omega.shape != state_hat.psi.shape:
         raise ValueError("spectral reduced-MHD fields must have the same 2D shape")
@@ -113,18 +126,25 @@ def reduced_mhd_rhs_spectral(
     if dealiasing not in ("none", "two_thirds"):
         raise ValueError("dealiasing must be 'none' or 'two_thirds'")
 
-    shape = state_hat.psi.shape
+    shape = _physical_shape(state_hat.psi.shape, ny)
+    half = state_hat.psi.shape[-1]
     kx = spectral_wavenumbers(shape[0], lengths[0])[:, None]
-    ky = spectral_wavenumbers(shape[1], lengths[1])[None, :]
+    ky = jnp.abs(spectral_wavenumbers(shape[1], lengths[1])[:half])[None, :]
     k_squared = kx**2 + ky**2
     safe_k_squared = jnp.where(k_squared == 0.0, 1.0, k_squared)
+    # A first derivative of the Nyquist mode of a real field is not real, so
+    # it is set to zero, as a one-axis real transform does.
+    if shape[0] % 2 == 0:
+        kx = kx.at[shape[0] // 2].set(0.0)
+    if shape[1] % 2 == 0:
+        ky = ky.at[:, -1].set(0.0)
 
     if dealiasing == "two_thirds":
-        nonlinear_mask = two_thirds_mask(shape)
+        nonlinear_mask = two_thirds_mask(shape)[:, :half]
         psi_nonlinear_hat = state_hat.psi * nonlinear_mask
         omega_nonlinear_hat = state_hat.omega * nonlinear_mask
     else:
-        nonlinear_mask = jnp.ones(shape, dtype=bool)
+        nonlinear_mask = jnp.ones(state_hat.psi.shape, dtype=bool)
         psi_nonlinear_hat = state_hat.psi
         omega_nonlinear_hat = state_hat.omega
 
@@ -146,7 +166,7 @@ def reduced_mhd_rhs_spectral(
             1j * ky * lap_psi_nonlinear_hat,
         )
     )
-    derivatives = jnp.fft.ifftn(derivative_hats, axes=(-2, -1)).real
+    derivatives = jnp.fft.irfft2(derivative_hats, s=shape)
     phi_x, phi_y, psi_x, psi_y, omega_x, omega_y, lap_psi_x, lap_psi_y = derivatives
 
     brackets = jnp.stack(
@@ -156,7 +176,7 @@ def reduced_mhd_rhs_spectral(
             psi_x * lap_psi_y - psi_y * lap_psi_x,
         )
     )
-    bracket_hats = jnp.fft.fftn(brackets, axes=(-2, -1)) * nonlinear_mask
+    bracket_hats = jnp.fft.rfft2(brackets) * nonlinear_mask
     dpsi_hat = (
         -bracket_hats[0]
         - params.resistivity * k_squared * state_hat.psi
@@ -171,8 +191,8 @@ def reduced_mhd_rhs_spectral(
     if not terms:
         return base_rhs_hat
 
-    state = to_physical_state(state_hat)
-    base_rhs = to_physical_state(base_rhs_hat)
+    state = to_physical_state(state_hat, ny=shape[1])
+    base_rhs = to_physical_state(base_rhs_hat, ny=shape[1])
     complete_rhs = apply_physics_terms(
         base_rhs,
         terms,
@@ -207,8 +227,9 @@ def reduced_mhd_rhs(
         lengths=lengths,
         terms=terms,
         dealiasing=dealiasing,
+        ny=state.psi.shape[1],
     )
-    return to_physical_state(rhs_hat)
+    return to_physical_state(rhs_hat, ny=state.psi.shape[1])
 
 
 def linearized_reduced_mhd_rhs(

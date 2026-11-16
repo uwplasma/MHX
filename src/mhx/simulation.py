@@ -313,6 +313,7 @@ class Simulation:
                         lengths=grid.lengths,
                         terms=self.terms,
                         dealiasing=self.dealiasing,
+                        ny=self.shape[1],
                     )
 
                 trajectory_hat = evolve_rk4(
@@ -322,7 +323,7 @@ class Simulation:
                     steps=self.steps,
                     save_every=self.save_every,
                 )
-                return to_physical_trajectory(trajectory_hat)
+                return to_physical_trajectory(trajectory_hat, ny=self.shape[1])
 
         else:
             preconditioner = spectral_diffusion_preconditioner(
