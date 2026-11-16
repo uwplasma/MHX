@@ -16,6 +16,7 @@ import jax
 import jax.numpy as jnp
 
 from mhx.state.mhd3d import MHD3DState, MHD3DTrajectory
+from mhx.time_integrators.fixed_step import checkpointed_steps
 
 
 def _phi_factors(decay_leaf: jax.Array, dt: float) -> tuple[jax.Array, ...]:
@@ -110,11 +111,9 @@ def evolve_etdrk4(
     chunks, remainder = divmod(steps, save_every)
 
     def advance(state: MHD3DState, count: int) -> MHD3DState:
-        def body(carry: MHD3DState, _: None) -> tuple[MHD3DState, None]:
-            return etdrk4_step(carry, nonlinear, decay, dt), None
-
-        advanced, _ = jax.lax.scan(body, state, None, length=count)
-        return advanced
+        return checkpointed_steps(
+            lambda carry: etdrk4_step(carry, nonlinear, decay, dt), state, count
+        )
 
     def chunk_body(carry: MHD3DState, _: None) -> tuple[MHD3DState, MHD3DState]:
         advanced = advance(carry, save_every)

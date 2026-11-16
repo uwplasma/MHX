@@ -65,3 +65,18 @@ def test_mhd3d_shape_and_equilibrium_validation() -> None:
 def test_reduced_mhd_rejects_three_dimensional_shapes() -> None:
     with pytest.raises(ValueError, match="two grid sizes"):
         mhx.Simulation(shape=(8, 8, 8))
+
+
+def test_mhd3d_substeps_above_cfl_and_stops(capsys) -> None:
+    # OT at 8^3 has a CFL limit near 0.02 at cfl=0.5, so dt=0.5 needs substeps.
+    result = make_simulation(dt=0.5, t_end=1.0, save_every=1, verbose=True).run()
+    assert result.diagnostics["max_substeps"] > 1
+    assert np.isfinite(np.asarray(result.final_state.b_hat)).all()
+    assert "step 2/2" in capsys.readouterr().out
+
+    with pytest.raises(FloatingPointError, match="more than 100 substeps"):
+        make_simulation(dt=0.5, t_end=0.5, cfl=1.0e-4).run()
+    with pytest.raises(FloatingPointError, match="non-finite fields at step"):
+        make_simulation(
+            equilibrium=mhx.OrszagTang3DEquilibrium(beta=float("nan"))
+        ).run()

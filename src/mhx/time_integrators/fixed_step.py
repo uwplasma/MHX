@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from collections.abc import Callable
 from typing import Any, TypeVar
 
@@ -11,6 +12,28 @@ import jax.numpy as jnp
 from mhx.state import ReducedMHDTrajectory
 
 StateT = TypeVar("StateT")
+
+
+def checkpointed_steps(step: Callable[[StateT], StateT], state: StateT, count: int) -> StateT:
+    """Apply ``step`` ``count`` times in ``jax.checkpoint`` blocks of about sqrt(count).
+
+    Reverse mode stores one state per block and recomputes a block when it
+    needs it, so gradient memory grows as ``sqrt(count)`` instead of
+    linearly, for about one extra forward pass.
+    """
+
+    def body(carry: StateT, _: Any) -> tuple[StateT, None]:
+        return step(carry), None
+
+    block = math.isqrt(count)
+    blocks, tail = divmod(count, block)
+
+    @jax.checkpoint
+    def block_body(carry: StateT, _: Any) -> tuple[StateT, None]:
+        return jax.lax.scan(body, carry, None, length=block)[0], None
+
+    state = jax.lax.scan(block_body, state, None, length=blocks)[0]
+    return jax.lax.scan(body, state, None, length=tail)[0] if tail else state
 
 
 def _tree_add(left: StateT, right: StateT) -> StateT:
