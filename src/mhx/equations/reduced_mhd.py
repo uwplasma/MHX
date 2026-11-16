@@ -132,6 +132,12 @@ def reduced_mhd_rhs_spectral(
     ky = jnp.abs(spectral_wavenumbers(shape[1], lengths[1])[:half])[None, :]
     k_squared = kx**2 + ky**2
     safe_k_squared = jnp.where(k_squared == 0.0, 1.0, k_squared)
+    # A first derivative of the Nyquist mode of a real field is not real, so
+    # it is set to zero, as a one-axis real transform does.
+    if shape[0] % 2 == 0:
+        kx = kx.at[shape[0] // 2].set(0.0)
+    if shape[1] % 2 == 0:
+        ky = ky.at[:, -1].set(0.0)
 
     if dealiasing == "two_thirds":
         nonlinear_mask = two_thirds_mask(shape)[:, :half]
