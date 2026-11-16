@@ -22,16 +22,18 @@ from mhx.equations.reduced_mhd import (
     current_density,
     reduced_mhd_rhs,
     reduced_mhd_rhs_spectral,
+    stream_function,
     to_physical_state,
     to_spectral_state,
 )
 from mhx.grids import CartesianGrid
 from mhx.io import write_reduced_mhd_trajectory_npz
 from mhx.numerics import spectral_diffusion_preconditioner
+from mhx.numerics.spectral import gradient
 from mhx.parallel import make_spatial_sharding, shard_state
 from mhx.physics import Equilibrium, PeriodicDoubleHarrisEquilibrium, PhysicsTerm
 from mhx.state import ReducedMHDParams, ReducedMHDState, ReducedMHDTrajectory
-from mhx.time_integrators import evolve_backward_euler, evolve_rk4
+from mhx.time_integrators import evolve_backward_euler, rk4_step
 
 Integrator = Literal["rk4", "backward_euler"]
 
@@ -205,7 +207,8 @@ class Simulation:
         equilibrium: Object that builds the initial state.
         resistivity: Magnetic diffusivity.
         viscosity: Viscous diffusivity.
-        dt: Fixed time step.
+        dt: Time between steps. An RK4 chunk whose CFL limit is smaller
+            splits each step into equal substeps.
         t_end: Final simulation time.
         save_every: Save one state after this many steps.
         integrator: ``"rk4"`` or ``"backward_euler"``.
@@ -213,6 +216,7 @@ class Simulation:
         device_count: Number of JAX devices. Leave unset for one device.
         verbose: Print configuration and timing information.
         terms: Extra MHX physics terms applied to the right-hand side.
+        cfl: Fraction of the RK4 stability limit used to choose substeps.
     """
 
     shape: tuple[int, int] = (64, 64)
@@ -235,6 +239,7 @@ class Simulation:
     device_count: int | None = None
     verbose: bool = True
     terms: tuple[PhysicsTerm, ...] = ()
+    cfl: float = 0.5
 
     def __post_init__(self) -> None:
         """Reject invalid settings before JAX starts a compilation."""
@@ -242,6 +247,8 @@ class Simulation:
             raise ValueError("shape must contain two grid sizes of at least 4")
         if self.dt <= 0.0:
             raise ValueError("dt must be positive")
+        if not 0.0 < self.cfl <= 1.0:
+            raise ValueError("cfl must be in (0, 1]")
         if self.t_end <= 0.0:
             raise ValueError("t_end must be positive")
         if self.save_every < 1:
@@ -306,6 +313,21 @@ class Simulation:
         def finite(state: ReducedMHDState):
             return jnp.isfinite(state.psi).all() & jnp.isfinite(state.omega).all()
 
+        def stable_dt(state: ReducedMHDState):
+            # RK4 is stable for |dt * lambda| < 2.6 in the left half plane.
+            # Bound |lambda| by the Nyquist wavenumber times the flow plus
+            # Alfven speed along each axis, plus the largest diffusion rate.
+            phi = stream_function(state.omega, lengths=grid.lengths)
+            phi_x, phi_y = gradient(phi, lengths=grid.lengths)
+            psi_x, psi_y = gradient(state.psi, lengths=grid.lengths)
+            k_max = [math.pi * n / size for n, size in zip(self.shape, grid.lengths, strict=True)]
+            rate = (
+                k_max[0] * (jnp.abs(phi_y).max() + jnp.abs(psi_y).max())
+                + k_max[1] * (jnp.abs(phi_x).max() + jnp.abs(psi_x).max())
+                + max(self.resistivity, self.viscosity) * (k_max[0] ** 2 + k_max[1] ** 2)
+            )
+            return self.cfl * 2.6 / rate
+
         if self.integrator == "rk4":
             def spectral_rhs(state_hat: ReducedMHDState) -> ReducedMHDState:
                 return reduced_mhd_rhs_spectral(
@@ -316,13 +338,16 @@ class Simulation:
                     dealiasing=self.dealiasing,
                 )
 
-            def advance(state_hat: ReducedMHDState, steps: int):
-                saved = evolve_rk4(
-                    state_hat, spectral_rhs, dt=self.dt, steps=steps, save_every=steps
+            def advance(state_hat: ReducedMHDState, steps: int, substeps):
+                substep_dt = self.dt / substeps
+                state_hat = jax.lax.fori_loop(
+                    0,
+                    steps * substeps,
+                    lambda _, value: rk4_step(value, spectral_rhs, substep_dt),
+                    state_hat,
                 )
-                state_hat = jax.tree.map(lambda value: value[-1], saved.states)
                 state = to_physical_state(state_hat)
-                return state_hat, state, finite(state), None
+                return state_hat, state, finite(state), stable_dt(state), None
 
             carry = to_spectral_state(initial_state)
         else:
@@ -332,7 +357,8 @@ class Simulation:
                 dt=self.dt,
             )
 
-            def advance(state: ReducedMHDState, steps: int):
+            def advance(state: ReducedMHDState, steps: int, substeps):
+                del substeps
                 solved = evolve_backward_euler(
                     state,
                     rhs,
@@ -342,7 +368,8 @@ class Simulation:
                     preconditioner=preconditioner,
                 )
                 state = jax.tree.map(lambda value: value[-1], solved.trajectory.states)
-                return state, state, finite(state), solved._replace(trajectory=None)
+                stats = solved._replace(trajectory=None)
+                return state, state, finite(state), jnp.inf, stats
 
             carry = initial_state
 
@@ -355,18 +382,29 @@ class Simulation:
             console.print("[cyan]Compile[/cyan] JAX program")
         compile_start = time.perf_counter()
         executables = {
-            length: jax.jit(advance, static_argnums=1).lower(carry, length).compile()
+            length: jax.jit(advance, static_argnums=1).lower(carry, length, 1).compile()
             for length in sorted(set(chunks))
         }
+        limit = float(jax.jit(stable_dt)(initial_state)) if self.integrator == "rk4" else math.inf
         compile_seconds = time.perf_counter() - compile_start
 
         if self.verbose:
             console.print("[cyan]Run[/cyan] time integration")
         report_every = max(1, len(chunks) // 20)
-        saved_states, solver_stats, step = [], [], 0
+        saved_states, solver_stats, step, max_substeps = [], [], 0, 1
         run_start = time.perf_counter()
         for index, length in enumerate(chunks):
-            carry, state, is_finite, stats = executables[length](carry)
+            # The saved times stay fixed. A chunk whose CFL limit is below dt
+            # takes equal substeps, and a run that needs more than 100 stops.
+            substeps = math.ceil(self.dt / limit) if limit < self.dt else 1
+            if substeps > 100:
+                raise FloatingPointError(
+                    f"CFL limit {limit:.3g} at t = {step * self.dt:.6g} needs more than "
+                    f"100 substeps of dt = {self.dt:g}"
+                )
+            max_substeps = max(max_substeps, substeps)
+            carry, state, is_finite, limit, stats = executables[length](carry, substeps)
+            limit = float(limit)
             step += length
             if not bool(is_finite):
                 raise FloatingPointError(
@@ -378,6 +416,7 @@ class Simulation:
             if self.verbose and (index % report_every == 0 or index == len(chunks) - 1):
                 console.print(
                     f"step {step}/{self.steps}  t = {step * self.dt:.6g}  "
+                    f"substeps {substeps}  CFL dt {limit:.3g}  "
                     f"{time.perf_counter() - run_start:.2f} s"
                 )
         run_seconds = time.perf_counter() - run_start
@@ -393,6 +432,7 @@ class Simulation:
             mode=(0, 1),
             fit_time_window=None,
         )
+        diagnostics["max_substeps"] = max_substeps
         if self.integrator == "backward_euler":
             stats = jax.tree.map(lambda *values: np.concatenate(values), *solver_stats)
             diagnostics.update(
@@ -460,6 +500,7 @@ class Simulation:
             "save_every": self.save_every,
             "integrator": self.integrator,
             "dealiasing": self.dealiasing,
+            "cfl": self.cfl,
             "device_count": device_count,
             "platform": jax.default_backend(),
             "x64": bool(jax.config.x64_enabled),
