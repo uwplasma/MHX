@@ -204,13 +204,14 @@ def run_ensemble(
             lengths=grid.lengths,
             terms=simulation.terms,
             dealiasing=simulation.dealiasing,
+            ny=simulation.shape[1],
         )
         return jnp.stack((rhs.psi, rhs.omega))
 
     batched_rhs = jax.vmap(single_rhs)
 
     def integrate_local(fields: jax.Array) -> jax.Array:
-        fields_hat = jnp.fft.fftn(fields, axes=(-2, -1))
+        fields_hat = jnp.fft.rfft2(fields)
         trajectory_hat = evolve_rk4(
             fields_hat,
             batched_rhs,
@@ -218,10 +219,7 @@ def run_ensemble(
             steps=simulation.steps,
             save_every=simulation.save_every,
         )
-        physical = jnp.fft.ifftn(
-            trajectory_hat.states,
-            axes=(-2, -1),
-        ).real
+        physical = jnp.fft.irfft2(trajectory_hat.states, s=simulation.shape)
         return jnp.moveaxis(physical, 1, 0)
 
     integrate = shard_batch(

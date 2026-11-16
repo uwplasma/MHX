@@ -65,8 +65,9 @@ def test_reduced_mhd_rhs_linear_diffusion_limit() -> None:
 
 
 @pytest.mark.parametrize("dealiasing", ["none", "two_thirds"])
-def test_fused_spectral_rhs_matches_direct_operator(dealiasing) -> None:
-    grid = CartesianGrid.from_mesh_config(MeshConfig(shape=(16, 16)))
+@pytest.mark.parametrize("shape", [(16, 16), (16, 15)])
+def test_fused_spectral_rhs_matches_direct_operator(dealiasing, shape) -> None:
+    grid = CartesianGrid.from_mesh_config(MeshConfig(shape=shape))
     key_psi, key_omega = jax.random.split(jax.random.key(4))
     state = ReducedMHDState(
         psi=jax.random.normal(key_psi, grid.shape),
@@ -109,8 +110,11 @@ def test_fused_spectral_rhs_matches_direct_operator(dealiasing) -> None:
         params,
         lengths=grid.lengths,
         dealiasing=dealiasing,
+        ny=shape[1],
     )
-    actual = to_physical_state(spectral_rhs)
+    actual = to_physical_state(spectral_rhs, ny=shape[1])
+
+    assert state_hat.psi.shape == (shape[0], shape[1] // 2 + 1)
 
     assert jnp.allclose(actual.psi, reference.psi, rtol=1.0e-10, atol=1.0e-10)
     assert jnp.allclose(actual.omega, reference.omega, rtol=1.0e-10, atol=1.0e-10)
