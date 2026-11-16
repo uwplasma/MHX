@@ -309,6 +309,14 @@ assert result.trajectory.states.psi.shape == (4, 2, 9, 8)
     assert completed.returncode == 0, completed.stderr
 
 
+def test_simulation_prints_progress_and_stops_on_non_finite_fields(capsys) -> None:
+    mhx.Simulation(shape=(16, 16), dt=0.01, t_end=0.03, save_every=1).run()
+    assert "step 3/3" in capsys.readouterr().out
+
+    with pytest.raises(FloatingPointError, match="non-finite fields at step"):
+        mhx.Simulation(shape=(64, 64), dt=0.2, t_end=20.0, save_every=10, verbose=False).run()
+
+
 def test_simulation_result_arrays_are_finite() -> None:
     result = mhx.Simulation(
         shape=(8, 8),

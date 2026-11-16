@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Literal
 
 import jax
+import jax.numpy as jnp
 import numpy as np
 from rich.console import Console
 from rich.table import Table
@@ -21,7 +22,7 @@ from mhx.equations.reduced_mhd import (
     current_density,
     reduced_mhd_rhs,
     reduced_mhd_rhs_spectral,
-    to_physical_trajectory,
+    to_physical_state,
     to_spectral_state,
 )
 from mhx.grids import CartesianGrid
@@ -302,28 +303,28 @@ class Simulation:
                 dealiasing=self.dealiasing,
             )
 
+        def finite(state: ReducedMHDState):
+            return jnp.isfinite(state.psi).all() & jnp.isfinite(state.omega).all()
+
         if self.integrator == "rk4":
-            def integrate(state: ReducedMHDState):
-                state_hat = to_spectral_state(state)
-
-                def spectral_rhs(active_state_hat: ReducedMHDState) -> ReducedMHDState:
-                    return reduced_mhd_rhs_spectral(
-                        active_state_hat,
-                        parameters,
-                        lengths=grid.lengths,
-                        terms=self.terms,
-                        dealiasing=self.dealiasing,
-                    )
-
-                trajectory_hat = evolve_rk4(
+            def spectral_rhs(state_hat: ReducedMHDState) -> ReducedMHDState:
+                return reduced_mhd_rhs_spectral(
                     state_hat,
-                    spectral_rhs,
-                    dt=self.dt,
-                    steps=self.steps,
-                    save_every=self.save_every,
+                    parameters,
+                    lengths=grid.lengths,
+                    terms=self.terms,
+                    dealiasing=self.dealiasing,
                 )
-                return to_physical_trajectory(trajectory_hat)
 
+            def advance(state_hat: ReducedMHDState, steps: int):
+                saved = evolve_rk4(
+                    state_hat, spectral_rhs, dt=self.dt, steps=steps, save_every=steps
+                )
+                state_hat = jax.tree.map(lambda value: value[-1], saved.states)
+                state = to_physical_state(state_hat)
+                return state_hat, state, finite(state), None
+
+            carry = to_spectral_state(initial_state)
         else:
             preconditioner = spectral_diffusion_preconditioner(
                 parameters,
@@ -331,29 +332,59 @@ class Simulation:
                 dt=self.dt,
             )
 
-            def integrate(state: ReducedMHDState):
-                return evolve_backward_euler(
+            def advance(state: ReducedMHDState, steps: int):
+                solved = evolve_backward_euler(
                     state,
                     rhs,
                     dt=self.dt,
-                    steps=self.steps,
-                    save_every=self.save_every,
+                    steps=steps,
+                    save_every=steps,
                     preconditioner=preconditioner,
                 )
+                state = jax.tree.map(lambda value: value[-1], solved.trajectory.states)
+                return state, state, finite(state), solved._replace(trajectory=None)
 
+            carry = initial_state
+
+        # The run is split into one compiled chunk per saved state. Between
+        # chunks the host prints progress and stops on non-finite fields.
+        stride = min(self.save_every, self.steps)
+        full, tail = divmod(self.steps, stride)
+        chunks = [stride] * full + [tail] * bool(tail)
         if self.verbose:
             console.print("[cyan]Compile[/cyan] JAX program")
         compile_start = time.perf_counter()
-        executable = jax.jit(integrate).lower(initial_state).compile()
+        executables = {
+            length: jax.jit(advance, static_argnums=1).lower(carry, length).compile()
+            for length in sorted(set(chunks))
+        }
         compile_seconds = time.perf_counter() - compile_start
 
         if self.verbose:
             console.print("[cyan]Run[/cyan] time integration")
+        report_every = max(1, len(chunks) // 20)
+        saved_states, solver_stats, step = [], [], 0
         run_start = time.perf_counter()
-        raw_result = executable(initial_state)
-        jax.block_until_ready(raw_result)
-        trajectory = raw_result if self.integrator == "rk4" else raw_result.trajectory
+        for index, length in enumerate(chunks):
+            carry, state, is_finite, stats = executables[length](carry)
+            step += length
+            if not bool(is_finite):
+                raise FloatingPointError(
+                    f"non-finite fields at step {step} (t = {step * self.dt:.6g}); the last "
+                    f"finite state is at t = {(step - length) * self.dt:.6g}. Reduce dt."
+                )
+            saved_states.append(state)
+            solver_stats.append(stats)
+            if self.verbose and (index % report_every == 0 or index == len(chunks) - 1):
+                console.print(
+                    f"step {step}/{self.steps}  t = {step * self.dt:.6g}  "
+                    f"{time.perf_counter() - run_start:.2f} s"
+                )
         run_seconds = time.perf_counter() - run_start
+        trajectory = ReducedMHDTrajectory(
+            times=self.dt * jnp.asarray(np.cumsum(chunks)),
+            states=jax.tree.map(lambda *values: jnp.stack(values), *saved_states),
+        )
         diagnostics = compute_reduced_mhd_diagnostics(
             trajectory,
             initial_state=initial_state,
@@ -363,18 +394,13 @@ class Simulation:
             fit_time_window=None,
         )
         if self.integrator == "backward_euler":
+            stats = jax.tree.map(lambda *values: np.concatenate(values), *solver_stats)
             diagnostics.update(
                 {
-                    "implicit_converged": bool(np.all(np.asarray(raw_result.converged))),
-                    "implicit_linear_converged": bool(
-                        np.all(np.asarray(raw_result.linear_converged))
-                    ),
-                    "implicit_nonlinear_iterations": int(
-                        np.sum(np.asarray(raw_result.nonlinear_iterations))
-                    ),
-                    "implicit_linear_iterations": int(
-                        np.sum(np.asarray(raw_result.linear_iterations))
-                    ),
+                    "implicit_converged": bool(np.all(stats.converged)),
+                    "implicit_linear_converged": bool(np.all(stats.linear_converged)),
+                    "implicit_nonlinear_iterations": int(np.sum(stats.nonlinear_iterations)),
+                    "implicit_linear_iterations": int(np.sum(stats.linear_iterations)),
                 }
             )
         config = self._config(effective_device_count)
