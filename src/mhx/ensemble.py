@@ -209,42 +209,53 @@ def run_ensemble(
 
     batched_rhs = jax.vmap(single_rhs)
 
-    def integrate_local(fields: jax.Array) -> jax.Array:
-        fields_hat = jnp.fft.fftn(fields, axes=(-2, -1))
-        trajectory_hat = evolve_rk4(
-            fields_hat,
-            batched_rhs,
-            dt=simulation.dt,
-            steps=simulation.steps,
-            save_every=simulation.save_every,
-        )
-        physical = jnp.fft.ifftn(
-            trajectory_hat.states,
-            axes=(-2, -1),
-        ).real
-        return jnp.moveaxis(physical, 1, 0)
+    def advance(fields_hat: jax.Array, steps: int):
+        def advance_local(local_hat: jax.Array):
+            saved = evolve_rk4(local_hat, batched_rhs, dt=simulation.dt, steps=steps)
+            local_hat = saved.states[-1]
+            return local_hat, jnp.fft.ifftn(local_hat, axes=(-2, -1)).real
 
-    integrate = shard_batch(
-        integrate_local,
-        mesh=mesh,
-        input_rank=4,
-        output_rank=5,
-    )
+        sharded = shard_batch(advance_local, mesh=mesh, input_rank=4, output_rank=4)
+        fields_hat, fields = sharded(fields_hat)
+        return fields_hat, fields, jnp.isfinite(fields).all()
+
+    # One compiled chunk per saved state, as in Simulation.run: the host
+    # prints progress between chunks and stops on non-finite fields.
+    stride = min(simulation.save_every, simulation.steps)
+    full, tail = divmod(simulation.steps, stride)
+    chunks = [stride] * full + [tail] * bool(tail)
+    carry = jax.jit(lambda fields: jnp.fft.fftn(fields, axes=(-2, -1)))(initial_fields)
     compile_start = time.perf_counter()
-    executable = jax.jit(integrate).lower(initial_fields).compile()
+    executables = {
+        length: jax.jit(advance, static_argnums=1).lower(carry, length).compile()
+        for length in sorted(set(chunks))
+    }
     compile_seconds = time.perf_counter() - compile_start
 
+    report = simulation.verbose and jax.process_index() == 0
+    report_every = max(1, len(chunks) // 20)
+    saved, step = [], 0
     run_start = time.perf_counter()
-    fields = executable(initial_fields)
+    for index, length in enumerate(chunks):
+        carry, fields, is_finite = executables[length](carry)
+        step += length
+        if not bool(is_finite):
+            raise FloatingPointError(
+                f"non-finite fields at step {step} (t = {step * simulation.dt:.6g}); the "
+                f"last finite state is at t = {(step - length) * simulation.dt:.6g}. Reduce dt."
+            )
+        saved.append(fields)
+        if report and (index % report_every == 0 or index == len(chunks) - 1):
+            Console().print(
+                f"step {step}/{simulation.steps}  t = {step * simulation.dt:.6g}  "
+                f"{time.perf_counter() - run_start:.2f} s"
+            )
+    fields = jnp.stack(saved, axis=1)
     jax.block_until_ready(fields)
     run_seconds = time.perf_counter() - run_start
 
-    stride = min(simulation.save_every, simulation.steps)
-    step_numbers = list(range(stride, simulation.steps + 1, stride))
-    if step_numbers[-1] != simulation.steps:
-        step_numbers.append(simulation.steps)
     trajectory = ReducedMHDTrajectory(
-        times=jnp.asarray(step_numbers) * simulation.dt,
+        times=simulation.dt * jnp.asarray(np.cumsum(chunks)),
         states=ReducedMHDState(psi=fields[:, :, 0], omega=fields[:, :, 1]),
     )
     result = EnsembleResult(
