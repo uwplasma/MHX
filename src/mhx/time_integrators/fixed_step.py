@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from collections.abc import Callable
 from typing import Any, TypeVar
 
@@ -63,9 +64,12 @@ def evolve_rk4(
 
     The implementation advances ``save_every`` internal steps per saved sample,
     so long runs store only the returned trajectory rather than every internal
-    RK4 step. The final state is always included, even when ``steps`` is not an
-    exact multiple of ``save_every``. Returned times are absolute and start
-    after ``t0``.
+    RK4 step. Each save interval runs as checkpointed blocks of about
+    ``sqrt(save_every)`` steps, so reverse-mode memory grows with the square
+    root of the interval instead of linearly, at the cost of one extra forward
+    pass in the gradient. The final state is always included, even when
+    ``steps`` is not an exact multiple of ``save_every``. Returned times are
+    absolute and start after ``t0``.
 
     Args:
         state0: State at ``t0``.
@@ -92,9 +96,21 @@ def evolve_rk4(
         del step_index
         return rk4_step(carry, rhs, dt), None
 
+    def advance(carry: StateT, length: int) -> StateT:
+        block = math.isqrt(length)
+        blocks, tail = divmod(length, block)
+
+        @jax.checkpoint
+        def block_step(state: StateT, block_index: Any) -> tuple[StateT, None]:
+            del block_index
+            return jax.lax.scan(inner_step, state, None, length=block)[0], None
+
+        carry = jax.lax.scan(block_step, carry, None, length=blocks)[0]
+        return jax.lax.scan(inner_step, carry, None, length=tail)[0] if tail else carry
+
     def saved_step(carry: StateT, save_index: Any) -> tuple[StateT, StateT]:
         del save_index
-        next_state, _ = jax.lax.scan(inner_step, carry, None, length=stride)
+        next_state = advance(carry, stride)
         return next_state, next_state
 
     final_state, saved_states = jax.lax.scan(
@@ -104,7 +120,7 @@ def evolve_rk4(
     )
     step_numbers = stride * jnp.arange(1, full_saved_count + 1)
     if remainder:
-        final_state, _ = jax.lax.scan(inner_step, final_state, None, length=remainder)
+        final_state = advance(final_state, remainder)
         saved_states = jax.tree.map(
             lambda saved, final: jnp.concatenate((saved, final[None, ...]), axis=0),
             saved_states,
