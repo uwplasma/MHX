@@ -23,10 +23,16 @@ from mhx.benchmarks import (
 from mhx.cli.main import app
 
 
+def _failed(validation: dict, diagnostics: dict) -> str:
+    """Name the failed checks so a runner-specific failure can be diagnosed."""
+    failed = [name for name, passed in validation["checks"].items() if not passed]
+    return f"failed checks {failed}; diagnostics {diagnostics}"
+
+
 def test_linear_tearing_eigenvalue_matches_literature_gate() -> None:
     result = run_linear_tearing_eigenvalue_validation()
     assert result.diagnostics["schema"] == LINEAR_TEARING_EIGENVALUE_SCHEMA
-    assert result.validation["passed"] is True
+    assert result.validation["passed"] is True, _failed(result.validation, result.diagnostics)
     assert all(result.validation["checks"].values())
     assert result.selected_eigenvalue.real == pytest.approx(0.0131, rel=0.03)
     assert result.extrapolated_growth_rate == pytest.approx(0.0131, rel=0.01)
@@ -63,7 +69,7 @@ def test_linear_tearing_eigenvalue_rejects_invalid_inputs() -> None:
 def test_linear_tearing_dispersion_gates_unstable_band_and_controls() -> None:
     result = run_linear_tearing_dispersion_validation()
     assert result.diagnostics["schema"] == LINEAR_TEARING_DISPERSION_SCHEMA
-    assert result.validation["passed"] is True
+    assert result.validation["passed"] is True, _failed(result.validation, result.diagnostics)
     assert all(result.validation["checks"].values())
     assert np.all(result.growth_rate[result.unstable_band_mask] > 0.0)
     assert np.all(np.diff(result.growth_rate[result.unstable_band_mask]) < 0.0)
