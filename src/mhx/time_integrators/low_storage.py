@@ -72,11 +72,13 @@ def evolve_if_rk3(
     steps: int,
     save_every: int = 1,
     t0: float = 0.0,
+    checkpoint: bool = True,
 ) -> MHD3DTrajectory:
     """Evolve with :func:`if_rk3_step` and retain every ``save_every`` step.
 
     The final state is always included, matching :func:`mhx.time_integrators
-    .evolve_rk4`. Returned times are absolute.
+    .evolve_rk4`. Returned times are absolute. ``checkpoint`` is passed to
+    :func:`mhx.time_integrators.fixed_step.checkpointed_steps`.
     """
     if steps < 1:
         raise ValueError("steps must be >= 1")
@@ -89,7 +91,7 @@ def evolve_if_rk3(
 
     def advance(state: MHD3DState, count: int) -> MHD3DState:
         return checkpointed_steps(
-            lambda carry: if_rk3_step(carry, nonlinear, decay, dt), state, count
+            lambda carry: if_rk3_step(carry, nonlinear, decay, dt), state, count, checkpoint
         )
 
     def chunk_body(carry: MHD3DState, _: None) -> tuple[MHD3DState, MHD3DState]:

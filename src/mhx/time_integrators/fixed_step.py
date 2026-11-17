@@ -14,16 +14,23 @@ from mhx.state import ReducedMHDTrajectory
 StateT = TypeVar("StateT")
 
 
-def checkpointed_steps(step: Callable[[StateT], StateT], state: StateT, count: int) -> StateT:
+def checkpointed_steps(
+    step: Callable[[StateT], StateT], state: StateT, count: int, checkpoint: bool = True
+) -> StateT:
     """Apply ``step`` ``count`` times in ``jax.checkpoint`` blocks of about sqrt(count).
 
     Reverse mode stores one state per block and recomputes a block when it
     needs it, so gradient memory grows as ``sqrt(count)`` instead of
-    linearly, for about one extra forward pass.
+    linearly, for about one extra forward pass (a plain gradient costs about
+    2.5 forward passes, a checkpointed one about 3.7). ``checkpoint=False``
+    stores every step instead, for gradients whose tape fits in memory.
     """
 
     def body(carry: StateT, _: Any) -> tuple[StateT, None]:
         return step(carry), None
+
+    if not checkpoint:
+        return jax.lax.scan(body, state, None, length=count)[0]
 
     block = math.isqrt(count)
     blocks, tail = divmod(count, block)

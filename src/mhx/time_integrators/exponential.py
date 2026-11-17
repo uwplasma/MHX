@@ -99,6 +99,7 @@ def evolve_etdrk4(
     steps: int,
     save_every: int = 1,
     t0: float = 0.0,
+    checkpoint: bool = True,
 ) -> MHD3DTrajectory:
     """Evolve with :func:`etdrk4_step`, mirroring ``evolve_if_rk3``."""
     if steps < 1:
@@ -112,7 +113,7 @@ def evolve_etdrk4(
 
     def advance(state: MHD3DState, count: int) -> MHD3DState:
         return checkpointed_steps(
-            lambda carry: etdrk4_step(carry, nonlinear, decay, dt), state, count
+            lambda carry: etdrk4_step(carry, nonlinear, decay, dt), state, count, checkpoint
         )
 
     def chunk_body(carry: MHD3DState, _: None) -> tuple[MHD3DState, MHD3DState]:
