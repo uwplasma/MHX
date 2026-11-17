@@ -314,19 +314,7 @@ class Simulation:
             return jnp.isfinite(state.psi).all() & jnp.isfinite(state.omega).all()
 
         def stable_dt(state: ReducedMHDState):
-            # RK4 is stable for |dt * lambda| < 2.6 in the left half plane.
-            # Bound |lambda| by the Nyquist wavenumber times the flow plus
-            # Alfven speed along each axis, plus the largest diffusion rate.
-            phi = stream_function(state.omega, lengths=grid.lengths)
-            phi_x, phi_y = gradient(phi, lengths=grid.lengths)
-            psi_x, psi_y = gradient(state.psi, lengths=grid.lengths)
-            k_max = [math.pi * n / size for n, size in zip(self.shape, grid.lengths, strict=True)]
-            rate = (
-                k_max[0] * (jnp.abs(phi_y).max() + jnp.abs(psi_y).max())
-                + k_max[1] * (jnp.abs(phi_x).max() + jnp.abs(psi_x).max())
-                + max(self.resistivity, self.viscosity) * (k_max[0] ** 2 + k_max[1] ** 2)
-            )
-            return self.cfl * 2.6 / rate
+            return self._stable_dt(state, grid.lengths)
 
         if self.integrator == "rk4":
             def spectral_rhs(state_hat: ReducedMHDState) -> ReducedMHDState:
@@ -396,12 +384,7 @@ class Simulation:
         for index, length in enumerate(chunks):
             # The saved times stay fixed. A chunk whose CFL limit is below dt
             # takes equal substeps, and a run that needs more than 100 stops.
-            substeps = math.ceil(self.dt / limit) if limit < self.dt else 1
-            if substeps > 100:
-                raise FloatingPointError(
-                    f"CFL limit {limit:.3g} at t = {step * self.dt:.6g} needs more than "
-                    f"100 substeps of dt = {self.dt:g}"
-                )
+            substeps = self._substeps(limit, step)
             max_substeps = max(max_substeps, substeps)
             carry, state, is_finite, limit, stats = executables[length](carry, substeps)
             limit = float(limit)
@@ -461,6 +444,32 @@ class Simulation:
                 f"after {compile_seconds:.3f} s compilation"
             )
         return result
+
+    def _stable_dt(self, state: ReducedMHDState, lengths: tuple[float, float]) -> jax.Array:
+        """Largest RK4 step for a physical state, scaled by ``cfl``."""
+        # RK4 is stable for |dt * lambda| < 2.6 in the left half plane.
+        # Bound |lambda| by the Nyquist wavenumber times the flow plus
+        # Alfven speed along each axis, plus the largest diffusion rate.
+        phi = stream_function(state.omega, lengths=lengths)
+        phi_x, phi_y = gradient(phi, lengths=lengths)
+        psi_x, psi_y = gradient(state.psi, lengths=lengths)
+        k_max = [math.pi * n / size for n, size in zip(self.shape, lengths, strict=True)]
+        rate = (
+            k_max[0] * (jnp.abs(phi_y).max() + jnp.abs(psi_y).max())
+            + k_max[1] * (jnp.abs(phi_x).max() + jnp.abs(psi_x).max())
+            + max(self.resistivity, self.viscosity) * (k_max[0] ** 2 + k_max[1] ** 2)
+        )
+        return self.cfl * 2.6 / rate
+
+    def _substeps(self, limit: float, step: int) -> int:
+        """Equal substeps per step for a CFL limit; more than 100 stops the run."""
+        substeps = math.ceil(self.dt / limit) if limit < self.dt else 1
+        if substeps > 100:
+            raise FloatingPointError(
+                f"CFL limit {limit:.3g} at t = {step * self.dt:.6g} needs more than "
+                f"100 substeps of dt = {self.dt:g}"
+            )
+        return substeps
 
     def run_ensemble(self, equilibria: Sequence[Equilibrium]) -> EnsembleResult:
         """Run independent initial conditions in parallel over devices."""
