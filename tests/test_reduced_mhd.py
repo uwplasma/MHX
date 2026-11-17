@@ -144,13 +144,15 @@ def test_rk4_diffusion_gradient_matches_finite_difference() -> None:
     psi = grid.sinusoid(mode=(1, 0))
     state0 = ReducedMHDState(psi=psi, omega=jnp.zeros_like(psi))
 
-    def objective(resistivity: float) -> jax.Array:
+    def objective(resistivity: float, checkpoint: bool = True) -> jax.Array:
         params = ReducedMHDParams(resistivity=resistivity, viscosity=0.0)
 
         def rhs(state: ReducedMHDState) -> ReducedMHDState:
             return reduced_mhd_rhs(state, params, lengths=grid.lengths)
 
-        trajectory = evolve_rk4(state0, rhs, dt=0.01, steps=3, save_every=3)
+        trajectory = evolve_rk4(
+            state0, rhs, dt=0.01, steps=3, save_every=3, checkpoint=checkpoint
+        )
         final_state = ReducedMHDState(
             psi=trajectory.states.psi[-1],
             omega=trajectory.states.omega[-1],
@@ -162,6 +164,7 @@ def test_rk4_diffusion_gradient_matches_finite_difference() -> None:
     eps = 1.0e-5
     finite_difference = (objective(eta + eps) - objective(eta - eps)) / (2.0 * eps)
     assert float(jnp.abs(autodiff - finite_difference)) < 1.0e-8
+    assert float(jnp.abs(jax.grad(objective)(eta, False) - autodiff)) < 1.0e-15
     assert float(total_energy(state0, lengths=grid.lengths)) > 0.0
 
 
