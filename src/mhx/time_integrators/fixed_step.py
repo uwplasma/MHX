@@ -59,6 +59,7 @@ def evolve_rk4(
     steps: int,
     save_every: int = 1,
     t0: float = 0.0,
+    checkpoint: bool = True,
 ) -> ReducedMHDTrajectory:
     """Evolve a state with RK4 and retain selected steps.
 
@@ -67,7 +68,9 @@ def evolve_rk4(
     RK4 step. Each save interval runs as checkpointed blocks of about
     ``sqrt(save_every)`` steps, so reverse-mode memory grows with the square
     root of the interval instead of linearly, at the cost of one extra forward
-    pass in the gradient. The final state is always included, even when
+    pass in the gradient (a plain gradient costs about 2.5 forward passes, a
+    checkpointed one about 3.7). Pass ``checkpoint=False`` when the full tape
+    fits in memory. The final state is always included, even when
     ``steps`` is not an exact multiple of ``save_every``. Returned times are
     absolute and start after ``t0``.
 
@@ -78,6 +81,7 @@ def evolve_rk4(
         steps: Number of time steps.
         save_every: Retain a state after this many steps.
         t0: Initial time.
+        checkpoint: Recompute blocks in reverse mode instead of storing every step.
 
     Returns:
         Saved times and states.
@@ -97,6 +101,8 @@ def evolve_rk4(
         return rk4_step(carry, rhs, dt), None
 
     def advance(carry: StateT, length: int) -> StateT:
+        if not checkpoint:
+            return jax.lax.scan(inner_step, carry, None, length=length)[0]
         block = math.isqrt(length)
         blocks, tail = divmod(length, block)
 
