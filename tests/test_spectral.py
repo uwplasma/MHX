@@ -89,3 +89,41 @@ def test_spectral_operator_validation() -> None:
         spectral_filter(field, dealiasing="invalid")
     with pytest.raises(ValueError, match="equal shapes"):
         dealiased_product(field, field[:, :-1])
+
+
+@pytest.mark.parametrize("shape", [(12, 8), (9, 7)])
+def test_real_fields_use_the_half_spectrum_with_complex_results(shape) -> None:
+    import jax
+
+    from mhx.diagnostics.reduced_mhd import mode_amplitude
+    from mhx.numerics import spectral_diffusion_preconditioner
+    from mhx.state import ReducedMHDParams, ReducedMHDState
+
+    field = jax.random.normal(jax.random.PRNGKey(3), shape)
+    lengths = (2.0, 3.0)
+    as_complex = field.astype(jnp.complex128 if field.dtype == jnp.float64 else jnp.complex64)
+    pairs = [
+        (spectral_filter(field), spectral_filter(as_complex)),
+        (inverse_laplacian(field, lengths=lengths), inverse_laplacian(as_complex, lengths=lengths)),
+    ]
+    for order in (1, 2, 3):
+        for axis in (0, 1):
+            pairs.append((
+                fft_derivative(field, axis=axis, length=lengths[axis], order=order),
+                fft_derivative(as_complex, axis=axis, length=lengths[axis], order=order),
+            ))
+    apply = spectral_diffusion_preconditioner(
+        ReducedMHDParams(resistivity=0.1, viscosity=0.2), lengths=lengths, dt=0.5
+    )
+    real_state = apply(ReducedMHDState(psi=field, omega=field))
+    complex_state = apply(ReducedMHDState(psi=as_complex, omega=as_complex))
+    pairs += [(real_state.psi, complex_state.psi), (real_state.omega, complex_state.omega)]
+    tol = 1e-12 if field.dtype == jnp.float64 else 1e-5
+    for real, reference in pairs:
+        assert jnp.isrealobj(real)
+        assert jnp.allclose(real, reference.real, atol=tol * 100)
+    reference = jnp.fft.fftn(field) / field.size
+    for mode in [(2, 1), (-2, -1), (1, -3), (0, shape[1] // 2)]:
+        expected = jnp.abs(reference[mode[0] % shape[0], mode[1] % shape[1]])
+        state = ReducedMHDState(psi=field, omega=field)
+        assert jnp.allclose(mode_amplitude(state, mode=mode), expected, rtol=tol)

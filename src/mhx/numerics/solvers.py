@@ -83,10 +83,10 @@ def spectral_diffusion_preconditioner(
                 shape,
             )
         denominator = 1.0 + dt * diffusivity * wave_number_squared
-        result = jnp.fft.ifftn(jnp.fft.fftn(array) / denominator)
         if jnp.isrealobj(array):
-            return jnp.real(result)
-        return result
+            half = denominator[..., : array.shape[-1] // 2 + 1]
+            return jnp.fft.irfftn(jnp.fft.rfftn(array) / half, s=array.shape)
+        return jnp.fft.ifftn(jnp.fft.fftn(array) / denominator)
 
     @jax.jit
     def apply(state: ReducedMHDState) -> ReducedMHDState:

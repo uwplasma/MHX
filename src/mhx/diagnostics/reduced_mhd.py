@@ -134,17 +134,22 @@ def magnetic_divergence_linf(state: ReducedMHDState, *, lengths: tuple[float, fl
     r"""Return ``||∇·B_\perp||_∞`` for ``B_\perp=(∂_yψ,-∂_xψ)``."""
     psi = jnp.asarray(state.psi)
     kx = spectral_wavenumbers(psi.shape[0], lengths[0]).reshape((-1, 1))
-    ky = spectral_wavenumbers(psi.shape[1], lengths[1]).reshape((1, -1))
-    psi_hat = jnp.fft.fftn(psi)
+    ky = spectral_wavenumbers(psi.shape[1], lengths[1])[: psi.shape[1] // 2 + 1].reshape((1, -1))
+    psi_hat = jnp.fft.rfftn(psi)
     div_hat = (1j * kx) * (1j * ky) * psi_hat - (1j * ky) * (1j * kx) * psi_hat
-    div_b = jnp.fft.ifftn(div_hat)
+    div_b = jnp.fft.irfftn(div_hat, s=psi.shape)
     return jnp.max(jnp.abs(div_b))
 
 
 def mode_amplitude(state: ReducedMHDState, *, mode: tuple[int, int]) -> Array:
     """Return the absolute normalized Fourier amplitude of ``psi`` for a mode."""
-    psi_hat = jnp.fft.fftn(state.psi) / state.psi.size
-    return jnp.abs(psi_hat[mode[0] % state.psi.shape[0], mode[1] % state.psi.shape[1]])
+    nx, ny = state.psi.shape[-2:]
+    psi_hat = jnp.fft.rfftn(state.psi) / state.psi.size
+    # A real field has |c(-k)| = |c(k)|; fold modes past the half spectrum.
+    kx, ky = mode[0] % nx, mode[1] % ny
+    if ky > ny // 2:
+        kx, ky = (-mode[0]) % nx, (-mode[1]) % ny
+    return jnp.abs(psi_hat[kx, ky])
 
 
 def reconnected_flux_amplitude(state: ReducedMHDState, *, mode: tuple[int, int]) -> Array:

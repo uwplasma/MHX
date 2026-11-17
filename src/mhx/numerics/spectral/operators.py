@@ -41,10 +41,11 @@ def spectral_filter(field: Array, *, dealiasing: str = "two_thirds") -> Array:
         return array
     if dealiasing != "two_thirds":
         raise ValueError("dealiasing must be 'none' or 'two_thirds'")
-    filtered = jnp.fft.ifftn(jnp.fft.fftn(array) * two_thirds_mask(array.shape))
-    if jnp.isrealobj(array):
-        return jnp.real(filtered)
-    return filtered
+    mask = two_thirds_mask(array.shape)
+    if jnp.isrealobj(array):  # half spectrum along the last axis
+        half = mask[..., : array.shape[-1] // 2 + 1]
+        return jnp.fft.irfftn(jnp.fft.rfftn(array) * half, s=array.shape)
+    return jnp.fft.ifftn(jnp.fft.fftn(array) * mask)
 
 
 def dealiased_product(left: Array, right: Array, *, dealiasing: str = "two_thirds") -> Array:
@@ -64,7 +65,7 @@ def dealiased_product(left: Array, right: Array, *, dealiasing: str = "two_third
 
 
 def fft_derivative(field: Array, *, axis: int, length: float, order: int = 1) -> Array:
-    """Differentiate a periodic field along one axis using complex FFTs."""
+    """Differentiate a periodic field along one axis with FFTs (real FFTs for real fields)."""
     array = jnp.asarray(field)
     if order < 0:
         raise ValueError("order must be non-negative")
@@ -72,12 +73,15 @@ def fft_derivative(field: Array, *, axis: int, length: float, order: int = 1) ->
         return array
     axis = axis % array.ndim
     wavenumbers = spectral_wavenumbers(array.shape[axis], length)
-    multiplier = (1j * _broadcast_wavenumbers(wavenumbers, axis=axis, ndim=array.ndim)) ** order
-    transformed = jnp.fft.fft(array, axis=axis)
-    derivative = jnp.fft.ifft(multiplier * transformed, axis=axis)
+    points = array.shape[axis]
     if jnp.isrealobj(array):
-        return jnp.real(derivative)
-    return derivative
+        # The half spectrum; irfft drops the imaginary Nyquist part, as the
+        # real part of the complex transform did.
+        wavenumbers = wavenumbers[: points // 2 + 1]
+        multiplier = (1j * _broadcast_wavenumbers(wavenumbers, axis=axis, ndim=array.ndim)) ** order
+        return jnp.fft.irfft(multiplier * jnp.fft.rfft(array, axis=axis), n=points, axis=axis)
+    multiplier = (1j * _broadcast_wavenumbers(wavenumbers, axis=axis, ndim=array.ndim)) ** order
+    return jnp.fft.ifft(multiplier * jnp.fft.fft(array, axis=axis), axis=axis)
 
 
 def gradient(field: Array, *, lengths: tuple[float, ...]) -> tuple[Array, ...]:
@@ -117,11 +121,13 @@ def inverse_laplacian(field: Array, *, lengths: tuple[float, ...]) -> Array:
             ndim=array.ndim,
         )
 
-    transformed = jnp.fft.fftn(array)
+    real = jnp.isrealobj(array)
+    if real:
+        denominator = denominator[..., : array.shape[-1] // 2 + 1]
+    transformed = jnp.fft.rfftn(array) if real else jnp.fft.fftn(array)
     zero_mode = denominator == 0.0
     safe_denominator = jnp.where(zero_mode, 1.0, denominator)
     inverse_hat = jnp.where(zero_mode, 0.0, -transformed / safe_denominator)
-    inverse = jnp.fft.ifftn(inverse_hat)
-    if jnp.isrealobj(array):
-        return jnp.real(inverse)
-    return inverse
+    if real:
+        return jnp.fft.irfftn(inverse_hat, s=array.shape)
+    return jnp.fft.ifftn(inverse_hat)
