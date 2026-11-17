@@ -311,15 +311,54 @@ assert result.trajectory.states.psi.shape == (4, 2, 9, 8)
     assert completed.returncode == 0, completed.stderr
 
 
+class _NonFiniteEquilibrium(mhx.ZeroEquilibrium):
+    def initial_state(self, grid):
+        state = super().initial_state(grid)
+        return state._replace(psi=state.psi + jnp.nan)
+
+
 def test_simulation_prints_progress_and_stops_on_non_finite_fields(capsys) -> None:
     mhx.Simulation(shape=(16, 16), dt=0.01, t_end=0.03, save_every=1).run()
     assert "step 3/3" in capsys.readouterr().out
 
     with pytest.raises(FloatingPointError, match="non-finite fields at step"):
-        mhx.Simulation(shape=(64, 64), dt=0.2, t_end=20.0, save_every=10, verbose=False).run()
-    unstable = mhx.Simulation(shape=(64, 64), dt=0.2, t_end=20.0, save_every=10, verbose=False)
+        mhx.Simulation(
+            shape=(8, 8), equilibrium=_NonFiniteEquilibrium(), dt=0.01, t_end=0.02, verbose=False
+        ).run()
     with pytest.raises(FloatingPointError, match="non-finite fields at step"):
-        unstable.run_ensemble((unstable.equilibrium,))
+        mhx.Simulation(shape=(8, 8), dt=0.01, t_end=0.02, verbose=False).run_ensemble(
+            (_NonFiniteEquilibrium(),)
+        )
+
+
+def test_simulation_substeps_above_the_cfl_limit() -> None:
+    # dt = 0.2 is above the advective limit and returned NaN fields before.
+    result = mhx.Simulation(shape=(64, 64), dt=0.2, t_end=4.0, save_every=10, verbose=False).run()
+    assert result.diagnostics["max_substeps"] > 1
+    assert np.isfinite(np.asarray(result.trajectory.states.psi)).all()
+
+    with pytest.raises(FloatingPointError, match="more than 100 substeps"):
+        mhx.Simulation(shape=(64, 64), dt=0.2, t_end=0.4, cfl=1.0e-3, verbose=False).run()
+
+
+def test_ensemble_substeps_above_the_cfl_limit() -> None:
+    simulation = mhx.Simulation(shape=(64, 64), dt=0.2, t_end=4.0, save_every=10, verbose=False)
+    equilibria = (mhx.PeriodicDoubleHarrisEquilibrium(), mhx.CosineTearingEquilibrium())
+    result = simulation.run_ensemble(equilibria)
+    assert result.config["max_substeps"] > 1
+    # Without substeps both cases reach |psi| of 1e72 and 1e243 by t = 4.
+    assert np.abs(np.asarray(result.trajectory.states.psi)).max() < 2.0
+    # Each case matches its own single run, which may need fewer substeps.
+    single = mhx.Simulation(
+        shape=(64, 64), dt=0.2, t_end=4.0, save_every=10, verbose=False,
+        equilibrium=equilibria[0],
+    ).run()
+    assert np.allclose(result.final_states.psi[0], single.final_state.psi, atol=1e-6)
+
+    with pytest.raises(FloatingPointError, match="more than 100 substeps"):
+        mhx.Simulation(
+            shape=(64, 64), dt=0.2, t_end=0.4, cfl=1.0e-3, verbose=False
+        ).run_ensemble(equilibria)
 
 
 def test_simulation_result_arrays_are_finite() -> None:

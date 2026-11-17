@@ -22,7 +22,7 @@ from mhx.io import write_reduced_mhd_trajectory_npz
 from mhx.parallel import make_device_mesh, shard_batch
 from mhx.physics import Equilibrium
 from mhx.state import ReducedMHDParams, ReducedMHDState, ReducedMHDTrajectory
-from mhx.time_integrators import evolve_rk4
+from mhx.time_integrators import rk4_step
 
 if TYPE_CHECKING:
     from mhx.simulation import Simulation
@@ -209,15 +209,26 @@ def run_ensemble(
 
     batched_rhs = jax.vmap(single_rhs)
 
-    def advance(fields_hat: jax.Array, steps: int):
+    def stable_dt(field_pair: jax.Array) -> jax.Array:
+        state = ReducedMHDState(psi=field_pair[0], omega=field_pair[1])
+        return simulation._stable_dt(state, grid.lengths)
+
+    def advance(fields_hat: jax.Array, steps: int, substeps):
         def advance_local(local_hat: jax.Array):
-            saved = evolve_rk4(local_hat, batched_rhs, dt=simulation.dt, steps=steps)
-            local_hat = saved.states[-1]
+            substep_dt = simulation.dt / substeps
+            local_hat = jax.lax.fori_loop(
+                0,
+                steps * substeps,
+                lambda _, value: rk4_step(value, batched_rhs, substep_dt),
+                local_hat,
+            )
             return local_hat, jnp.fft.ifftn(local_hat, axes=(-2, -1)).real
 
         sharded = shard_batch(advance_local, mesh=mesh, input_rank=4, output_rank=4)
         fields_hat, fields = sharded(fields_hat)
-        return fields_hat, fields, jnp.isfinite(fields).all()
+        # All cases share the saved times, so the slowest case sets the substeps.
+        limit = jnp.min(jax.vmap(stable_dt)(fields))
+        return fields_hat, fields, jnp.isfinite(fields).all(), limit
 
     # One compiled chunk per saved state, as in Simulation.run: the host
     # prints progress between chunks and stops on non-finite fields.
@@ -227,17 +238,21 @@ def run_ensemble(
     carry = jax.jit(lambda fields: jnp.fft.fftn(fields, axes=(-2, -1)))(initial_fields)
     compile_start = time.perf_counter()
     executables = {
-        length: jax.jit(advance, static_argnums=1).lower(carry, length).compile()
+        length: jax.jit(advance, static_argnums=1).lower(carry, length, 1).compile()
         for length in sorted(set(chunks))
     }
+    limit = float(jnp.min(jax.jit(jax.vmap(stable_dt))(initial_fields)))
     compile_seconds = time.perf_counter() - compile_start
 
     report = simulation.verbose and jax.process_index() == 0
     report_every = max(1, len(chunks) // 20)
-    saved, step = [], 0
+    saved, step, max_substeps = [], 0, 1
     run_start = time.perf_counter()
     for index, length in enumerate(chunks):
-        carry, fields, is_finite = executables[length](carry)
+        substeps = simulation._substeps(limit, step)
+        max_substeps = max(max_substeps, substeps)
+        carry, fields, is_finite, limit = executables[length](carry, substeps)
+        limit = float(limit)
         step += length
         if not bool(is_finite):
             raise FloatingPointError(
@@ -248,6 +263,7 @@ def run_ensemble(
         if report and (index % report_every == 0 or index == len(chunks) - 1):
             Console().print(
                 f"step {step}/{simulation.steps}  t = {step * simulation.dt:.6g}  "
+                f"substeps {substeps}  CFL dt {limit:.3g}  "
                 f"{time.perf_counter() - run_start:.2f} s"
             )
     fields = jnp.stack(saved, axis=1)
@@ -265,6 +281,7 @@ def run_ensemble(
             **simulation._config(device_count),
             "ensemble_size": len(cases),
             "parallel_axis": "case",
+            "max_substeps": max_substeps,
         },
         compile_seconds=compile_seconds,
         run_seconds=run_seconds,
