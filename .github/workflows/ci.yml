@@ -21,8 +21,10 @@ jobs:
       JAX_PLATFORM_NAME: cpu
       JAX_ENABLE_X64: "1"
     steps:
-      - uses: actions/checkout@v6.0.2
-      - uses: actions/setup-python@v6.2.0
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
         with:
           python-version: "3.11"
       - name: Install
@@ -51,8 +53,10 @@ jobs:
       JAX_PLATFORM_NAME: cpu
       JAX_ENABLE_X64: "1"
     steps:
-      - uses: actions/checkout@v6.0.2
-      - uses: astral-sh/setup-uv@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@d0d8abe699bfb85fec6de9f7adb5ae17292296ff # v6
         with:
           python-version: "${{ matrix.python-version }}"
           enable-cache: false
@@ -80,8 +84,10 @@ jobs:
       JAX_PLATFORM_NAME: cpu
       JAX_ENABLE_X64: "1"
     steps:
-      - uses: actions/checkout@v6.0.2
-      - uses: astral-sh/setup-uv@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@d0d8abe699bfb85fec6de9f7adb5ae17292296ff # v6
         with:
           python-version: "3.11"
           enable-cache: false
@@ -97,7 +103,7 @@ jobs:
         run: |
           python -m pytest -m slow --cov=mhx --cov-append --cov-report=term-missing --cov-report=json:coverage.json --cov-fail-under=95
       - name: Upload coverage JSON
-        uses: actions/upload-artifact@v7.0.1
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: coverage-json
           path: coverage.json
@@ -112,11 +118,11 @@ jobs:
       actions: read
       contents: write
     steps:
-      - uses: actions/checkout@v6.0.2
-      - uses: actions/setup-python@v6.2.0
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
         with:
           python-version: "3.11"
-      - uses: actions/download-artifact@v7.0.0
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
         with:
           name: coverage-json
           path: .coverage-artifacts
@@ -144,8 +150,10 @@ jobs:
       JAX_PLATFORM_NAME: cpu
       JAX_ENABLE_X64: "1"
     steps:
-      - uses: actions/checkout@v6.0.2
-      - uses: actions/setup-python@v6.2.0
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
         with:
           python-version: "3.11"
       - name: Install
@@ -168,8 +176,10 @@ jobs:
       JAX_PLATFORM_NAME: cpu
       JAX_ENABLE_X64: "1"
     steps:
-      - uses: actions/checkout@v6.0.2
-      - uses: astral-sh/setup-uv@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@d0d8abe699bfb85fec6de9f7adb5ae17292296ff # v6
         with:
           python-version: "3.11"
           enable-cache: false
@@ -501,7 +511,7 @@ jobs:
           if invalid:
               raise SystemExit(f"CI artifacts must stay bounded: {invalid}")
           PY
-      - uses: actions/upload-artifact@v7.0.1
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: mhx-fast-artifacts
           path: outputs/ci

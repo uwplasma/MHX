@@ -2953,7 +2953,7 @@ Every agent must append an entry here. Do not delete previous entries.
 ### Log entry template
 
 ```markdown
-### YYYY-MM-DD HH:MM TZ — Agent: <name/model>
+### YYYY-MM-DD HH:MM TZ — <topic>
 
 **Summary**
 
@@ -2985,7 +2985,7 @@ Every agent must append an entry here. Do not delete previous entries.
 - ...
 ```
 
-### 2026-05-04 — Agent: GPT-5.5 Pro
+### 2026-05-04 — planning pass
 
 **Summary**
 
@@ -3021,7 +3021,7 @@ Every agent must append an entry here. Do not delete previous entries.
 
 - A coding agent should perform the legacy migration, create the new package skeleton, add CLI/config/grid/operator basics, and implement the first spectral derivative tests.
 
-### 2026-05-04 — Agent: GPT-5.5 Pro, final online planning pass
+### 2026-05-04 — final online planning pass
 
 **Summary**
 
@@ -3061,7 +3061,7 @@ Every agent must append an entry here. Do not delete previous entries.
 
 - Coding agent should execute the migration, create the clean package skeleton, add TOML config loading, add CLI help/version/init/run stubs, add docs/workflows, and implement first spectral derivative and reduced-MHD tearing tests.
 
-### 2026-05-04 — Agent: Codex, rebuild implementation pass 1 started
+### 2026-05-04 — rebuild implementation pass 1 started
 
 **Summary**
 
@@ -3100,12 +3100,12 @@ Every agent must append an entry here. Do not delete previous entries.
 - Run validation locally, fix failures, then commit and push this first rebuild chunk.
 - Next implementation chunk should add the first reduced-MHD spectral state/RHS, a linear tearing manufactured benchmark, and a gradient check.
 
-### 2026-05-04 — Agent: Codex, rebuild implementation pass 1 validated
+### 2026-05-04 — rebuild implementation pass 1 validated
 
 **Summary**
 
 - Completed the first migration and package-skeleton chunk.
-- Fixed a pathing issue from the first patch application by reapplying all active project files with absolute `/Users/rogerio/local/MHX/...` paths.
+- Fixed a pathing issue from the first patch application by reapplying all active project files with absolute `the repository root` paths.
 - Added enough tests to validate the active skeleton, IO schema, CLI, grid generation, and spectral operators.
 
 **Files changed**
@@ -3147,7 +3147,7 @@ Every agent must append an entry here. Do not delete previous entries.
 - Implement the first spectral reduced-MHD state, Poisson solve/operator utilities, linear tearing RHS, deterministic FAST integration, and gradient check.
 - Add a real diagnostics API before porting inverse design, scans, figures, or neural ODE components.
 
-### 2026-05-04 — Agent: Codex, reduced-MHD smoke benchmark
+### 2026-05-04 — reduced-MHD smoke benchmark
 
 **Summary**
 
@@ -3194,7 +3194,7 @@ Every agent must append an entry here. Do not delete previous entries.
 - Add growth-rate diagnostics and a small linear tearing validation target.
 - Add plotting helpers for energy history and flux contours, then a deterministic FAST figure pipeline.
 
-### 2026-05-04 — Agent: Codex, trajectory schema and figures
+### 2026-05-04 — trajectory schema and figures
 
 **Summary**
 
@@ -3238,7 +3238,7 @@ Every agent must append an entry here. Do not delete previous entries.
 - Add a first deterministic benchmark report command and docs page.
 - Add basic movie/GIF support once the trajectory schema stores enough frames for useful animations.
 
-### 2026-05-04 — Agent: Codex, mode amplitude and growth-rate diagnostics
+### 2026-05-04 — mode amplitude and growth-rate diagnostics
 
 **Summary**
 
@@ -3281,7 +3281,7 @@ Every agent must append an entry here. Do not delete previous entries.
 - Add a simple GIF/movie writer using saved `psi` frames.
 - Start the theory-calibrated tearing benchmark by adding an equilibrium/eigenmode module and fit-window controls.
 
-### 2026-05-04 — Agent: Codex, reports and GIF output
+### 2026-05-04 — reports and GIF output
 
 **Summary**
 
@@ -3324,7 +3324,7 @@ Every agent must append an entry here. Do not delete previous entries.
 - Add benchmark comparison hooks and a first theory-calibrated tearing-growth fixture.
 - Add a `mhx benchmark` command group once there is more than one benchmark.
 
-### 2026-05-04 — Agent: Codex, benchmark command group and theory scaffolds
+### 2026-05-04 — benchmark command group and theory scaffolds
 
 **Summary**
 
@@ -3368,7 +3368,7 @@ Every agent must append an entry here. Do not delete previous entries.
 - Add benchmark artifact upload to CI once the active benchmark pipeline is stable on GitHub Actions.
 - Add the first physics plugin API after the benchmark API stabilizes.
 
-### 2026-05-04 — Agent: Codex, fit-window policy for growth diagnostics
+### 2026-05-04 — fit-window policy for growth diagnostics
 
 **Summary**
 
@@ -3408,7 +3408,7 @@ Every agent must append an entry here. Do not delete previous entries.
 - Add CI artifact upload for benchmark outputs.
 - Start the physics plugin interface after the benchmark/report/validation workflow is stable.
 
-### 2026-05-04 — Agent: Codex, versioned physics plugin API
+### 2026-05-04 — versioned physics plugin API
 
 **Summary**
 
@@ -3456,7 +3456,7 @@ Every agent must append an entry here. Do not delete previous entries.
 - Add the first nontrivial extended-MHD toy term that approximates Hall/two-fluid effects within the current reduced-state API.
 - Add benchmark artifact upload in CI and expand validation beyond smoke energy checks.
 
-### 2026-05-04 — Agent: Codex, config-driven equilibrium assembly
+### 2026-05-04 — config-driven equilibrium assembly
 
 **Summary**
 
@@ -3504,7 +3504,7 @@ Every agent must append an entry here. Do not delete previous entries.
 - Add CI artifact upload for FAST benchmark outputs.
 - Start separating diagnostics into a configurable registry similar to equilibria and RHS terms.
 
-### 2026-05-04 — Agent: Codex, extended-MHD-inspired toy plugins
+### 2026-05-04 — extended-MHD-inspired toy plugins
 
 **Summary**
 
@@ -3553,7 +3553,7 @@ Every agent must append an entry here. Do not delete previous entries.
 - Add a diagnostics registry so configs can select diagnostics the same way they select equilibria and RHS terms.
 - Start a validated manufactured-solution test for the reduced-MHD RHS/integrator.
 
-### 2026-05-04 — Agent: Codex, CI benchmark artifact pipeline
+### 2026-05-04 — CI benchmark artifact pipeline
 
 **Summary**
 
@@ -3600,7 +3600,7 @@ Every agent must append an entry here. Do not delete previous entries.
 - Add a diagnostics registry and config-selected diagnostics.
 - Add a manufactured-solution or exact-decay validation test.
 
-### 2026-05-04 — Agent: Codex, recursive artifact checksums
+### 2026-05-04 — recursive artifact checksums
 
 **Summary**
 
@@ -3646,7 +3646,7 @@ Every agent must append an entry here. Do not delete previous entries.
 - Add exact-decay/manufactured-solution validation for the solver.
 - Add a lightweight performance/timing report to the artifact bundle.
 
-### 2026-05-04 — Agent: Codex, exact resistive-decay validation gates
+### 2026-05-04 — exact resistive-decay validation gates
 
 **Summary**
 
@@ -3697,7 +3697,7 @@ Every agent must append an entry here. Do not delete previous entries.
 - Add a calibrated linear-mode/eigenvalue validation fixture and compare against FKR scaling.
 - Add a timing/performance table to the CI artifact bundle.
 
-### 2026-05-04 — Agent: Codex, reconnection scaling validation gates
+### 2026-05-04 — reconnection scaling validation gates
 
 **Summary**
 
@@ -3748,7 +3748,7 @@ Every agent must append an entry here. Do not delete previous entries.
 - Add a diagnostics registry so configs can select diagnostics explicitly.
 - Add timing/performance tables to the CI artifact bundle.
 
-### 2026-05-04 — Agent: Codex, FAST performance artifact reporting
+### 2026-05-04 — FAST performance artifact reporting
 
 **Summary**
 
@@ -3792,7 +3792,7 @@ Every agent must append an entry here. Do not delete previous entries.
 - Add a calibrated linear eigenmode or matrix-free growth-rate benchmark against FKR/Coppi regimes.
 - Expand performance benchmarking into FAST/medium/production × JIT on/off and record tables as CI artifacts.
 
-### 2026-05-04 — Agent: Codex, config-selectable diagnostics registry
+### 2026-05-04 — config-selectable diagnostics registry
 
 **Summary**
 
@@ -3836,7 +3836,7 @@ Every agent must append an entry here. Do not delete previous entries.
 - Allow third-party diagnostics to be registered from package entry points or config modules.
 - Expand the timing benchmark into a FAST/medium/production × JIT matrix.
 
-### 2026-05-05 — Agent: Codex, config-loaded physics and diagnostics plugins
+### 2026-05-05 — config-loaded physics and diagnostics plugins
 
 **Summary**
 
@@ -3882,7 +3882,7 @@ Every agent must append an entry here. Do not delete previous entries.
 - Add a calibrated linear eigenmode or matrix-free growth-rate benchmark against FKR/Coppi regimes.
 - Make report templates dynamically include plugin diagnostic scalars.
 
-### 2026-05-05 — Agent: Codex, entry-point plugins and FKR-window gate
+### 2026-05-05 — entry-point plugins and FKR-window gate
 
 **Summary**
 
@@ -3948,7 +3948,7 @@ Every agent must append an entry here. Do not delete previous entries.
 - Expand dynamic reports to include plugin diagnostic metadata and optional
   plotting hooks.
 
-### 2026-05-05 — Agent: Codex, plugin template and metadata reports
+### 2026-05-05 — plugin template and metadata reports
 
 **Summary**
 
@@ -4006,7 +4006,7 @@ Every agent must append an entry here. Do not delete previous entries.
 - Add optional plotting hooks to diagnostic metadata so plugin diagnostics can
   generate figures without custom report code.
 
-### 2026-05-05 — Agent: Codex, matrix-free linearized RHS gate
+### 2026-05-05 — matrix-free linearized RHS gate
 
 **Summary**
 
@@ -4062,7 +4062,7 @@ Every agent must append an entry here. Do not delete previous entries.
 - Add plugin plotting hooks so extension diagnostics can produce first-class
   figures in reports.
 
-### 2026-05-05 — Agent: Codex, matrix-free eigenvalue scaffold
+### 2026-05-05 — matrix-free eigenvalue scaffold
 
 **Summary**
 
@@ -4108,7 +4108,7 @@ Every agent must append an entry here. Do not delete previous entries.
   operator before applying it to reduced-MHD.
 - Add plugin plotting hooks and report integration for custom diagnostics.
 
-### 2026-05-05 — Agent: Codex, reduced-MHD JVP operator and power iteration
+### 2026-05-05 — reduced-MHD JVP operator and power iteration
 
 **Summary**
 
@@ -4170,7 +4170,7 @@ Every agent must append an entry here. Do not delete previous entries.
 - Start the first numerical tearing eigenmode validation against a documented
   asymptotic target and tolerance.
 
-### 2026-05-05 — Agent: Codex, Arnoldi eigenmode scaffold
+### 2026-05-05 — Arnoldi eigenmode scaffold
 
 **Summary**
 
@@ -4231,7 +4231,7 @@ Every agent must append an entry here. Do not delete previous entries.
 - Add a benchmark manifest table that lists validation schemas and generated
   figures for all current gates.
 
-### 2026-05-05 — Agent: Codex, reduced-MHD linear eigenmode gate
+### 2026-05-05 — reduced-MHD linear eigenmode gate
 
 **Summary**
 
@@ -4289,7 +4289,7 @@ Every agent must append an entry here. Do not delete previous entries.
 - Start a calibrated nonzero-equilibrium tearing eigenmode benchmark with a
   conservative literature-anchored gate.
 
-### 2026-05-05 — Agent: Codex, diagnostic figure hooks
+### 2026-05-05 — diagnostic figure hooks
 
 **Summary**
 
@@ -4345,7 +4345,7 @@ Every agent must append an entry here. Do not delete previous entries.
   directly.
 - Start the first nonzero-equilibrium tearing eigenmode validation gate.
 
-### 2026-05-05 — Agent: Codex, validation benchmark catalog
+### 2026-05-05 — validation benchmark catalog
 
 **Summary**
 
@@ -4395,7 +4395,7 @@ Every agent must append an entry here. Do not delete previous entries.
 - Start a calibrated nonzero-equilibrium tearing eigenmode validation gate.
 - Add release notes/changelog entries summarizing the new validation stack.
 
-### 2026-05-05 — Agent: Codex, diagnostic figures in `mhx figures`
+### 2026-05-05 — diagnostic figures in `mhx figures`
 
 **Summary**
 
@@ -4456,7 +4456,7 @@ Every agent must append an entry here. Do not delete previous entries.
 - Add a reviewer-oriented `mhx validate all` command that executes the active
   validation catalog rather than only listing it.
 
-### 2026-05-05 — Agent: Codex, nonzero-equilibrium linearization gate
+### 2026-05-05 — nonzero-equilibrium linearization gate
 
 **Summary**
 
@@ -4522,7 +4522,7 @@ Every agent must append an entry here. Do not delete previous entries.
 - Start a calibrated tearing eigenmode benchmark with a documented asymptotic
   regime and tolerances.
 
-### 2026-05-05 — Agent: Codex, validation-suite runner
+### 2026-05-05 — validation-suite runner
 
 **Summary**
 
@@ -4581,7 +4581,7 @@ Every agent must append an entry here. Do not delete previous entries.
 - Add a migration/deprecation cleanup pass for legacy scripts once the new
   command surface is stable.
 
-### 2026-05-05 — Agent: Codex, skeptical validation audit
+### 2026-05-05 — skeptical validation audit
 
 **Summary**
 
@@ -4646,7 +4646,7 @@ Every agent must append an entry here. Do not delete previous entries.
 - Add release notes and deprecation cleanup for legacy scripts once the new
   command surface has enough validated coverage.
 
-### 2026-05-05 — Agent: Codex, periodic current-sheet spectrum gate
+### 2026-05-05 — periodic current-sheet spectrum gate
 
 **Summary**
 
@@ -4712,7 +4712,7 @@ Every agent must append an entry here. Do not delete previous entries.
 - Then start nonlinear island-growth/plasmoid validation from the calibrated
   linear eigenmode setup.
 
-### 2026-05-05 — Agent: Codex, Harris outer-region Delta-prime gate
+### 2026-05-05 — Harris outer-region Delta-prime gate
 
 **Summary**
 
@@ -4774,7 +4774,7 @@ Every agent must append an entry here. Do not delete previous entries.
 - Begin nonlinear island-growth validation after the linear growth benchmark is
   trustworthy.
 
-### 2026-05-05 — Agent: Codex, API/release hardening and legacy guard
+### 2026-05-05 — API/release hardening and legacy guard
 
 **Summary**
 
@@ -4843,7 +4843,7 @@ Every agent must append an entry here. Do not delete previous entries.
 - Push this release-hardening commit and watch GitHub Actions to confirm remote
   CI parity.
 
-### 2026-05-05 — Agent: Codex, FKR asymptotic growth-rate gate
+### 2026-05-05 — FKR asymptotic growth-rate gate
 
 **Summary**
 
@@ -4911,7 +4911,7 @@ Every agent must append an entry here. Do not delete previous entries.
 - Keep scan/inverse-design/neural-ODE work deferred until the growth benchmark
   and nonlinear validation are strong enough to support optimization claims.
 
-### 2026-05-09 — Agent: Codex, nonlinear duration audit and island diagnostics
+### 2026-05-09 — nonlinear duration audit and island diagnostics
 
 **Summary**
 
@@ -4970,7 +4970,7 @@ Every agent must append an entry here. Do not delete previous entries.
 - Start the neural-ODE dataset only after the nonlinear solver outputs are
   physically meaningful enough to serve as supervised data.
 
-### 2026-05-09 — Agent: Codex, duration policy gate for all current/future runs
+### 2026-05-09 — duration policy gate for all current/future runs
 
 **Summary**
 
@@ -5037,7 +5037,7 @@ Every agent must append an entry here. Do not delete previous entries.
 - Extend the paper pipeline manifest with a `claim_level` field so each figure
   is mechanically labeled as smoke, validation, or production.
 
-### 2026-05-10 — Agent: Codex, claim metadata and Rutherford campaign template
+### 2026-05-10 — claim metadata and Rutherford campaign template
 
 **Summary**
 
@@ -5106,7 +5106,7 @@ Every agent must append an entry here. Do not delete previous entries.
 - Add paper-pipeline checks that fail if README/docs try to display production
   media without a matching `claim_level = "production"` manifest.
 
-### 2026-05-12 — Agent: Codex, large multi-lane push
+### 2026-05-12 — large multi-lane push
 
 **Summary**
 
@@ -5180,7 +5180,7 @@ Every agent must append an entry here. Do not delete previous entries.
 - Train and evaluate latent/neural ODE models against the frozen dataset,
   baseline, and calibration protocol.
 
-### 2026-05-12 — Agent: Codex, closed-lane executor and latent-ODE push
+### 2026-05-12 — closed-lane executor and latent-ODE push
 
 **Summary**
 
@@ -5251,7 +5251,7 @@ Every agent must append an entry here. Do not delete previous entries.
 - Train the latent/neural ODE on production-quality trajectories and freeze a
   reviewer-facing comparison table against baselines.
 
-### 2026-05-12 — Agent: Codex, CI artifact hardening and closed-lane cleanup
+### 2026-05-12 — CI artifact hardening and closed-lane cleanup
 
 **Summary**
 
@@ -5297,7 +5297,7 @@ Every agent must append an entry here. Do not delete previous entries.
 - Extend latent-ODE experiments from FAST seed-QI data to medium nonlinear
   trajectories before making publication-grade surrogate claims.
 
-### 2026-05-16 — Agent: Codex, full-lane plan/docs/CI audit pass
+### 2026-05-16 — full-lane plan/docs/CI audit pass
 
 **Summary**
 
@@ -5365,7 +5365,7 @@ Every agent must append an entry here. Do not delete previous entries.
   electron pressure tensor, or two-fluid terms as more than reduced-state toy
   plugins.
 
-### 2026-05-16 23:39 CDT — Agent: Codex, production-promotion gates
+### 2026-05-16 23:39 CDT — production-promotion gates
 
 **Steps taken**
 
@@ -5415,7 +5415,7 @@ Every agent must append an entry here. Do not delete previous entries.
 - Attach production-scale neural-ODE datasets only after the nonlinear campaign
   evidence is promoted.
 
-### 2026-05-17 03:21 CDT — Agent: Codex, critical-point refinement closure
+### 2026-05-17 03:21 CDT — critical-point refinement closure
 
 **Steps taken**
 
@@ -5459,7 +5459,7 @@ Every agent must append an entry here. Do not delete previous entries.
 - Add separatrix-event segmentation only after the promoted long-run artifacts
   exist, so thresholds are tuned against real data rather than demos.
 
-### 2026-05-17 16:35 CDT — Agent: Codex, promotion-boundary and neural-ODE failure-mode closure
+### 2026-05-17 16:35 CDT — promotion-boundary and neural-ODE failure-mode closure
 
 **Steps taken**
 
@@ -5498,7 +5498,7 @@ Every agent must append an entry here. Do not delete previous entries.
 - Attach those sweeps to `rutherford-promotion-check` only after they are matched to the production diagnostic family.
 - Add separatrix-event segmentation and calibrated reconnection-rate diagnostics before upgrading plasmoid figures to production.
 
-### 2026-05-17 17:15 CDT — Agent: Codex, Rutherford promotion response gate
+### 2026-05-17 17:15 CDT — Rutherford promotion response gate
 
 **Steps taken**
 
@@ -5549,7 +5549,7 @@ Every agent must append an entry here. Do not delete previous entries.
   seed ensemble, then attach those matched evidence bundles to the promotion
   checker.
 
-### 2026-05-22 09:10 CDT — Agent: Codex, GPU validation campaign and publication examples
+### 2026-05-22 09:10 CDT — GPU validation campaign and publication examples
 
 **Steps taken**
 
