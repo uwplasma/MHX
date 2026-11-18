@@ -25,47 +25,43 @@ classifiers = [
   "Topic :: Scientific/Engineering :: Physics",
 ]
 dependencies = [
-  "jax>=0.4",
-  "numpy>=1.24",
-  "rich>=13",
-  "typer>=0.12",
-  "tomli>=2; python_version < '3.11'",
-  "jaxtyping>=0.2",
+  "imageio",
+  "jax",
+  "jaxtyping",
+  "matplotlib",
+  "numpy",
+  "rich",
+  "solvax",
+  "typer",
+  "tomli; python_version < '3.11'",
 ]
 
 [project.optional-dependencies]
 research = [
-  "diffrax>=0.5",
-  "equinox>=0.11",
-  "lineax>=0.0.7",
-  "optimistix>=0.0.10",
-  "optax>=0.2",
-  "orbax-checkpoint>=0.5",
-]
-plotting = [
-  "imageio>=2",
-  "matplotlib>=3.8",
+  "diffrax",
+  "equinox",
+  "lineax",
+  "optimistix",
+  "optax",
+  "orbax-checkpoint",
 ]
 docs = [
-  "sphinx>=7",
-  "myst-parser>=2",
-  "sphinx-autodoc-typehints>=2",
-]
-test = [
-  "imageio>=2",
-  "matplotlib>=3.8",
-  "pytest>=8",
-  "pytest-cov>=5",
+  "myst-nb",
+  "sphinx",
+  "sphinx-autodoc-typehints",
+  "sphinx-book-theme",
+  "sphinx-copybutton",
+  "sphinx-design",
+  "sphinxcontrib-bibtex",
+  "sphinxcontrib-video",
+  "sphinxext-opengraph",
 ]
 dev = [
-  "imageio>=2",
-  "matplotlib>=3.8",
-  "myst-parser>=2",
-  "pytest>=8",
-  "pytest-cov>=5",
-  "sphinx>=7",
-  "sphinx-autodoc-typehints>=2",
-  "ruff>=0.5",
+  "imageio-ffmpeg",
+  "mhx[docs]",
+  "pytest",
+  "pytest-cov",
+  "ruff",
 ]
 
 [project.urls]
@@ -93,6 +89,8 @@ exclude = [
   "/.ruff_cache/**",
   "/.venv",
   "/.venv/**",
+  "/.venv-*",
+  "/.venv-*/**",
   "/docs/_build",
   "/docs/_build/**",
   "docs/_build/**",
@@ -111,6 +109,7 @@ testpaths = ["tests"]
 addopts = "-ra"
 markers = [
   "slow: validation/artifact tests that exercise heavier release-gate paths",
+  "gpu: short device checks run on the self-hosted GPU lane",
 ]
 
 [tool.coverage.run]

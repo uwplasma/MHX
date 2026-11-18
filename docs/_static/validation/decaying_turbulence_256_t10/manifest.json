@@ -1,0 +1,57 @@
+{
+  "api_version": "v1",
+  "claim_level": "validation",
+  "claim_scope": "Deterministic nonlinear reduced-MHD turbulence/current-sheet media with dissipative energy and divergence gates.",
+  "config": {
+    "current_linf_growth": 4.339048540444482,
+    "domain": [
+      0.0,
+      6.283185307179586,
+      0.0,
+      6.283185307179586
+    ],
+    "dt": 0.004,
+    "final_total_energy": 0.030001301400266675,
+    "initial_current_linf": 8.957021671583622,
+    "initial_total_energy": 0.49773280569940537,
+    "max_current_high_k_fraction": 0.8076573104594853,
+    "max_current_linf": 13.296070212028104,
+    "max_magnetic_divergence_linf": 0.0,
+    "max_relative_energy_growth": 0.0,
+    "references": {
+      "literature": "Anchored to 2-D MHD turbulence/current-sheet studies and the Orszag--Tang vortex as a canonical nonlinear MHD test.",
+      "scope": "Deterministic decaying incompressible reduced-MHD turbulence example with current-sheet formation and dissipative energy checks."
+    },
+    "relative_energy_drop": 0.9397240827674411,
+    "resistivity": 0.02,
+    "samples": 126,
+    "save_every": 20,
+    "schema": "mhx.validation.decaying_mhd_turbulence.v1",
+    "seed": 7,
+    "shape": [
+      256,
+      256
+    ],
+    "t_end": 10.0,
+    "viscosity": 0.02
+  },
+  "created_utc": "2026-08-06T01:14:24.320823+00:00",
+  "hashes": {
+    "current_movie": "2c1ac13b9660c9e1150ac6120dc90e0c51f33ed7b8871932d435d24e7c0ae152",
+    "diagnostics": "07ffde119a82fcb0080e6922056c6bf110f26fa41bca694a5064aa9ffe9d4a5a",
+    "flux_movie": "ba305d0a02bd45ba2fe488d8fd4dd1fb0cb5d78d896581460c464a9a7a8a2c7c",
+    "history": "a821741fde46fb27ee83abbcec30bdc80852ef2f44abce9cd5d0705353bbefdc",
+    "summary": "4c561de95dbf378794fa93d80aa0a93574af8f54609ccb5fa4bfc1077140b681",
+    "validation": "3981a8ef4cabe08253169b6c4d2957f0ac8d53517372ab565fb035da02642324"
+  },
+  "mhx_version": "0.1.0a1",
+  "outputs": {
+    "current_movie": "figures/decaying_mhd_turbulence_current.gif",
+    "diagnostics": "diagnostics.json",
+    "flux_movie": "figures/decaying_mhd_turbulence_flux_contours.gif",
+    "history": "decaying_mhd_turbulence.npz",
+    "summary": "figures/decaying_mhd_turbulence_summary.png",
+    "validation": "validation.json"
+  },
+  "schema": "mhx.manifest.v1"
+}

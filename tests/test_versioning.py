@@ -46,4 +46,4 @@ def test_cli_api_status_and_deprecations() -> None:
     deprecations = runner.invoke(app, ["api", "deprecations"])
     assert deprecations.exit_code == 0, deprecations.stdout
     assert "legacy/old_mhx" in deprecations.stdout
-    assert "docs/release.md" in deprecations.stdout
+    assert "docs/develop/release.md" in deprecations.stdout

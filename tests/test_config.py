@@ -5,6 +5,7 @@ import pytest
 from mhx.config import (
     DiagnosticsConfig,
     MeshConfig,
+    NumericsConfig,
     PhysicsConfig,
     RunConfig,
     TimeConfig,
@@ -36,7 +37,11 @@ def test_config_roundtrip_dict_and_toml() -> None:
     assert data["diagnostics"]["plugin_entry_point_groups"] == []
     assert data["diagnostics"]["mode"] == [1, 1]
     assert data["diagnostics"]["fit_time_window"] is None
+    assert data["numerics"]["spatial_method"] == "fft_pseudospectral"
+    assert data["numerics"]["dealiasing"] == "two_thirds"
+    assert data["numerics"]["time_integrator"] == "rk4"
     assert "[mesh]" in cfg.to_toml()
+    assert 'spatial_method = "fft_pseudospectral"' in cfg.to_toml()
     assert "plugin_modules = []" in cfg.to_toml()
     assert "plugin_entry_point_groups = []" in cfg.to_toml()
     assert cfg.with_output_dir("outputs/other").output_dir.as_posix() == "outputs/other"
@@ -73,6 +78,8 @@ def test_config_validation_errors() -> None:
         TimeConfig(dt=0.0).validated()
     with pytest.raises(ValueError, match="time.save_every"):
         TimeConfig(save_every=0).validated()
+    with pytest.raises(ValueError, match="integer number"):
+        _ = TimeConfig(t1=1.0, dt=0.3).steps
     with pytest.raises(ValueError, match="equilibrium"):
         PhysicsConfig(equilibrium="").validated()
     with pytest.raises(ValueError, match="resistivity"):
@@ -89,3 +96,31 @@ def test_config_validation_errors() -> None:
         DiagnosticsConfig(quantities=("energy", "energy")).validated()
     with pytest.raises(ValueError, match="plugin_entry_point_groups"):
         DiagnosticsConfig(plugin_entry_point_groups=("group", "group")).validated()
+    with pytest.raises(ValueError, match="dealiasing"):
+        NumericsConfig(dealiasing="invalid").validated()
+    with pytest.raises(ValueError, match="time_integrator"):
+        NumericsConfig(time_integrator="bdf2").validated()
+    with pytest.raises(ValueError, match="rtol"):
+        NumericsConfig(rtol=0.0).validated()
+    with pytest.raises(ValueError, match="spatial_method"):
+        NumericsConfig(spatial_method="finite_volume").validated()
+    with pytest.raises(ValueError, match="linear_solver"):
+        NumericsConfig(linear_solver="direct").validated()
+    with pytest.raises(ValueError, match="nonlinear_solver"):
+        NumericsConfig(nonlinear_solver="fixed_point").validated()
+    with pytest.raises(ValueError, match="preconditioner"):
+        NumericsConfig(preconditioner="ilu").validated()
+    with pytest.raises(ValueError, match="atol"):
+        NumericsConfig(atol=-1.0).validated()
+    with pytest.raises(ValueError, match="linear_restart"):
+        NumericsConfig(linear_restart=0).validated()
+    with pytest.raises(ValueError, match="linear_max_restarts"):
+        NumericsConfig(linear_max_restarts=0).validated()
+    with pytest.raises(ValueError, match="nonlinear_max_steps"):
+        NumericsConfig(nonlinear_max_steps=0).validated()
+
+
+def test_legacy_spectral_method_maps_to_explicit_spatial_method() -> None:
+    numerics = NumericsConfig.from_mapping({"method": "spectral"})
+
+    assert numerics.spatial_method == "fft_pseudospectral"

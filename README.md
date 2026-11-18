@@ -2,134 +2,167 @@
 
 [![CI](https://github.com/uwplasma/MHX/actions/workflows/ci.yml/badge.svg)](https://github.com/uwplasma/MHX/actions/workflows/ci.yml)
 [![Coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/uwplasma/MHX/main/badges/coverage.json)](https://github.com/uwplasma/MHX/actions/workflows/ci.yml)
-[![Documentation Status](https://readthedocs.org/projects/mhx/badge/?version=latest)](https://mhx.readthedocs.io/)
+[![Documentation](https://readthedocs.org/projects/mhx/badge/?version=latest)](https://mhx.readthedocs.io/)
 
-**MHX is a JAX-native, differentiable plasma and magnetohydrodynamics toolkit
-for magnetic reconnection, tearing-mode studies, reduced-MHD experiments, and
-future inverse-design workflows.**
+MHX runs differentiable, two-dimensional reduced-MHD models in JAX. It builds
+the plasma equations and diagnostics. [SOLVAX](https://github.com/uwplasma/SOLVAX)
+contains the linear, Krylov, and nonlinear solvers.
 
-The active Python package lives under `src/mhx/` and exposes command-line tools,
-benchmark runners, plotting utilities, artifact manifests, and a small public
-API for reproducible reduced-MHD studies.
+Use MHX to study periodic current sheets, tearing modes, reconnection, and
+reduced-MHD turbulence. MHX does not solve the full three-dimensional MHD
+equations.
 
-## MHD at a Glance
+![Double-Harris reconnection: residual flux with flux contours and X/O markers](docs/_static/readme/double_harris_reconnection.gif)
 
-These previews keep the README visual and short. The first row shows residual
-double-Harris reconnecting fields, a forced turbulent current-sheet replay with
-magnetic-flux (`Az`/`ψ`) contours, and Orszag--Tang current sheets; the second
-row shows nonlinear reduced-MHD turbulence, Orszag--Tang roll-up, and a Harris
-tearing layer sweep. See
-[docs/media.md](docs/media.md) for source commands, visual QA, and claim
-boundaries.
+## First run
 
-| Residual double-Harris reconnection | Forced turbulent-reconnection proxy | Orszag--Tang current sheets |
-| --- | --- | --- |
-| ![Double-Harris reconnection replay](docs/_static/readme/double_harris_reconnection.gif) | ![Forced turbulent reconnection](docs/_static/readme/forced_turbulent_reconnection.gif) | ![Orszag-Tang current sheets](docs/_static/readme/orszag_tang_current.gif) |
-| Single-sheet zoom from a `128×128`, `t=160` GPU validation bundle: residual reconnecting flux `Δψ` with total `Az` contours and diagnostic X/O markers; not separatrix-event, Rutherford, or plasmoid-production evidence. | `64×64`, `t=80` forced-turbulence current sheet with reconnection-rate proxy diagnostics. | Solver-generated Orszag--Tang current-density morphology and high-$k$ transfer over a `96×96`, `t=10` validation run. |
-
-| Decaying MHD turbulence | Orszag--Tang vorticity | Harris tearing layer |
-| --- | --- | --- |
-| ![Decaying MHD turbulence](docs/_static/readme/decaying_mhd_turbulence_current.gif) | ![Orszag-Tang vorticity roll-up](docs/_static/readme/orszag_tang_vorticity.gif) | ![Harris tearing layer sweep](docs/_static/readme/harris_layer_sweep.gif) |
-| Solver-generated `64×64`, `t=8` decaying reduced-MHD turbulence with current filaments. | Vorticity roll-up and filamentation from the same nonlinear Orszag--Tang run. | Literature-anchored Harris eigenfunction localization sweep. |
-
-## What Works Today
-
-MHX currently supports deterministic reduced-MHD validation for spectral
-operators, resistive decay, finite-domain Harris tearing checks, nonlinear
-energy/dissipation budgets, Orszag--Tang vortex media, forced
-turbulent-reconnection readiness checks, bounded double-Harris promotion and
-convergence evidence, Rutherford execution-path checks, and seed-robust QI plus
-latent-ODE workflow tests on small datasets.
-
-Current results should be read at their manifest claim level. MHX does **not**
-yet claim converged Rutherford island growth, Sweet-Parker plasmoid chains,
-calibrated production surrogates, turbulence statistics, or inverse-design
-results.
-
-## Install
+Install the current source:
 
 ```bash
 git clone https://github.com/uwplasma/MHX.git
 cd MHX
 python -m venv .venv
 source .venv/bin/activate
-python -m pip install --upgrade pip
-python -m pip install -e ".[dev,docs]"
-mhx version
+python -m pip install .
 ```
 
-JAX accelerator wheels are platform-specific. For GPU/TPU installs, follow the
-official JAX instructions first, then install MHX.
-
-## Quickstart
-
-Run a deterministic reduced-MHD smoke workflow:
-
-```bash
-mhx init outputs/tutorial/linear_tearing.toml
-mhx run outputs/tutorial/linear_tearing.toml --outdir outputs/smoke
-mhx figures outputs/smoke --gif
-mhx report outputs/smoke
-mhx artifact-manifest outputs/smoke
-```
-
-Check the public API contract:
-
-```bash
-mhx api status
-MHX_API_VERSION=v1 mhx api status --json
-```
-
-Use MHX from Python:
+Create `reconnection.py`:
 
 ```python
+from pathlib import Path
+
 import mhx
 
-manifest = mhx.run("examples/linear_tearing.toml", outdir="outputs/python_api")
-cfg = mhx.load_config("examples/linear_tearing.toml")
-print(manifest, cfg.physics.model)
+output = Path("outputs/reconnection")
+
+simulation = mhx.Simulation(
+    shape=(64, 64),
+    equilibrium=mhx.PeriodicDoubleHarrisEquilibrium(
+        width=0.4,
+        perturbation_amplitude=4.0e-3,
+        perturbation_mode=(2, 1),
+    ),
+    resistivity=5.0e-3,
+    viscosity=5.0e-3,
+    dt=2.0e-2,
+    t_end=40.0,
+    save_every=100,
+)
+
+result = simulation.run()
+result.print_summary()
+result.plot(output / "summary.png")
+result.save(output)
 ```
+
+Run it:
+
+```bash
+python reconnection.py
+```
+
+The run takes seconds on a laptop CPU. MHX prints the grid, physics settings,
+device count, compile time, run time, energy, and divergence error. The
+summary figure includes the island flux, the view that shows the growing
+tearing mode. The saved NPZ file holds the full field history.
+
+The documentation walks through every step:
+[run your first model](https://mhx.readthedocs.io/en/latest/getting_started/first_run.html),
+then [make your first movie](https://mhx.readthedocs.io/en/latest/getting_started/first_movie.html).
+
+## Example gallery
+
+The scripts in [`examples/gallery/`](examples/gallery/) use the same
+structure as the first run. Edit the settings at the top of a script, then
+run it from the repository root.
+
+| Script | Purpose |
+| --- | --- |
+| [`01_reconnection.py`](examples/gallery/01_reconnection.py) | Seed and evolve a periodic double-Harris current sheet. |
+| [`02_tearing_mode.py`](examples/gallery/02_tearing_mode.py) | Evolve a perturbed cosine current sheet. |
+| [`03_implicit_step.py`](examples/gallery/03_implicit_step.py) | Use backward Euler with SOLVAX Newton--Krylov solves. |
+| [`04_cpu_parallel.py`](examples/gallery/04_cpu_parallel.py) | Split one field across four local CPU devices. |
+| [`05_gpu_parallel.py`](examples/gallery/05_gpu_parallel.py) | Split one field across all visible GPUs. |
+| [`06_strong_scaling.py`](examples/gallery/06_strong_scaling.py) | Strong-scale one fixed reconnection ensemble. |
+| [`07_multi_process.py`](examples/gallery/07_multi_process.py) | Run one ensemble across JAX processes. |
+| [`08_gradient.py`](examples/gallery/08_gradient.py) | Differentiate a solve and check the gradient numerically. |
+
+| Reconnection | Turbulence | Orszag--Tang |
+| --- | --- | --- |
+| ![Double-Harris current sheet](docs/_static/readme/double_harris_current_sheet.gif) | ![Decaying reduced-MHD turbulence](docs/_static/readme/decaying_mhd_turbulence_current.gif) | ![Orszag-Tang current density](docs/_static/readme/orszag_tang_current.gif) |
+
+These images show bounded validation runs. The
+[gallery](https://mhx.readthedocs.io/en/latest/gallery.html) plays them as
+movies, and the
+[media inventory](docs/project/media_inventory.md) records their settings and
+claim limits.
+
+## Physics and numerics
+
+MHX owns quantities that depend on the model:
+
+- reduced-MHD states and equations
+- periodic equilibria and source terms
+- Fourier spatial operators
+- plasma diagnostics and validation cases
+
+SOLVAX owns general numerical algebra:
+
+- matrix-free operators
+- GMRES and recycled Krylov methods
+- Newton--Krylov root solves
+- preconditioners and implicit differentiation
+
+The documentation states the
+[equations and their derivation](https://mhx.readthedocs.io/en/latest/physics/reduced_mhd.html),
+the [spectral method](https://mhx.readthedocs.io/en/latest/physics/spectral_method.html),
+and [what differentiates](https://mhx.readthedocs.io/en/latest/physics/differentiability.html).
+
+## Parallel runs
+
+Set `device_count` to shard one large field, or run independent cases as an
+ensemble. Ensembles avoid communication inside the time loop, so prefer them
+for scans and seed studies.
+
+```bash
+python examples/gallery/04_cpu_parallel.py
+JAX_PLATFORM_NAME=gpu python examples/gallery/05_gpu_parallel.py
+```
+
+![Strong-scaling measurements](docs/_static/readme/strong_scaling.png)
+
+The measured speedup is 2.38x on four logical CPU devices and 1.95x on two
+PCIe-connected RTX A4000 GPUs, for four fixed reconnection cases. The
+[device guide](https://mhx.readthedocs.io/en/latest/how_to/run_on_gpus.html)
+and [performance page](docs/reference/performance.md) hold the settings and
+data.
 
 ## Documentation
 
-| Need | Start here |
+| Need | Read |
 | --- | --- |
-| First run and plugin demo | [docs/quickstart.md](docs/quickstart.md) |
-| Installation and environments | [docs/install.md](docs/install.md) |
-| Guided tutorial | [docs/tutorial.md](docs/tutorial.md) |
-| Media sources and claim boundaries | [docs/media.md](docs/media.md) |
-| Physics validation details | [docs/validation.md](docs/validation.md) |
-| Reviewer evidence and claim boundaries | [docs/reviewer_evidence.md](docs/reviewer_evidence.md), [docs/publication_checklist.md](docs/publication_checklist.md) |
-| Benchmark commands and expected artifacts | [docs/benchmarks.md](docs/benchmarks.md) |
-| Diagnostics and output schemas | [docs/diagnostics.md](docs/diagnostics.md), [docs/output_schema.md](docs/output_schema.md) |
-| Neural-ODE reproducibility | [docs/neural_ode_reproducibility.md](docs/neural_ode_reproducibility.md) |
-| Performance and timing | [docs/performance.md](docs/performance.md) |
-| Long-run duration evidence | [docs/long_run_evidence.md](docs/long_run_evidence.md) |
-| Campaign planning and execution | [docs/campaign_runner.md](docs/campaign_runner.md) |
-| API compatibility policy | [docs/api_policy.md](docs/api_policy.md) |
+| Install and first steps | [Get started](https://mhx.readthedocs.io/en/latest/getting_started/install.html) |
+| Equations and derivation | [`docs/physics/reduced_mhd.md`](docs/physics/reduced_mhd.md) |
+| Gradients | [`docs/physics/differentiability.md`](docs/physics/differentiability.md) |
+| Validation gates and limits | [`docs/validation/index.md`](docs/validation/index.md) |
+| TOML configuration | [`docs/reference/config_schema.md`](docs/reference/config_schema.md) |
+| Output files | [`docs/reference/output_schema.md`](docs/reference/output_schema.md) |
+| Movie gallery | [`docs/gallery.md`](docs/gallery.md) |
 
-Common entry points:
+The benchmark and campaign tools remain available for validation and long
+production runs. Run `mhx --help` to list them.
+
+## Development
+
+Install the repository tools, then run the checks:
 
 ```bash
-mhx validate all --outdir outputs/validation_suite
-mhx benchmark catalog --outdir outputs/benchmarks/catalog
-mhx benchmark double-harris-promotion-check \
-  outputs/benchmarks/periodic_double_harris_seeded_long_run \
-  --convergence-dir outputs/benchmarks/periodic_double_harris_convergence
-mhx benchmark forced-turbulent-reconnection-readiness-check \
-  outputs/benchmarks/forced_turbulent_reconnection
-mhx campaign rutherford-plan-production --outdir outputs/campaigns/rutherford_production_plan
-# Run restartable chunks until the target completes; then attach convergence and seed-QI evidence:
-mhx campaign rutherford-execute outputs/campaigns/rutherford_production_plan --movies
-mhx campaign rutherford-promotion-check outputs/campaigns/rutherford_production_plan
-mhx validate readiness --suite outputs/validation_suite --outdir outputs/validation_readiness
-mhx validate release-candidate --outdir outputs/release_candidate
-mhx api deprecations
-mhx physics list
-mhx diagnostics list
+python -m pip install -e ".[dev]"
+python -m ruff check src tests examples tools
+python tools/check_prose.py
+python -m pytest
+sphinx-build -W -b html docs docs/_build/html
 ```
 
-## Citation
-
-Until a DOI is minted, cite the repository URL plus release tag or commit SHA,
-or use the provisional metadata in `CITATION.cff`.
+Use the release tag or commit SHA when you cite a run. Provisional citation
+metadata is in [`CITATION.cff`](CITATION.cff).

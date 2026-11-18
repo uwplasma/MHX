@@ -122,7 +122,7 @@ def build_rutherford_campaign_template(
             resistivity=resistivity,
             viscosity=viscosity,
         ),
-        numerics=NumericsConfig(method="spectral", enable_x64=True, enable_jit=True),
+        numerics=NumericsConfig(enable_x64=True, enable_jit=True),
         diagnostics=DiagnosticsConfig(
             quantities=("energy", "mode_growth", "divergence_error"),
             mode=perturbation_mode,

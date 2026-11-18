@@ -38,15 +38,15 @@ REQUIRED_ROOT_FILES = (
 REQUIRED_DOCS = (
     "docs/conf.py",
     "docs/index.md",
-    "docs/install.md",
-    "docs/quickstart.md",
-    "docs/validation.md",
-    "docs/media.md",
-    "docs/reviewer_evidence.md",
-    "docs/publication_checklist.md",
-    "docs/paper_pipeline.md",
-    "docs/release.md",
-    "docs/api_policy.md",
+    "docs/getting_started/install.md",
+    "docs/getting_started/first_run.md",
+    "docs/validation/index.md",
+    "docs/project/media_inventory.md",
+    "docs/project/reviewer_evidence.md",
+    "docs/project/publication_checklist.md",
+    "docs/project/paper_pipeline.md",
+    "docs/develop/release.md",
+    "docs/develop/release.md",
 )
 
 REQUIRED_EXAMPLES = (
@@ -61,14 +61,14 @@ REQUIRED_EXAMPLES = (
 README_REQUIRED_MARKERS = (
     "[![CI]",
     "[![Coverage]",
-    "[![Documentation Status]",
-    "MHD at a Glance",
-    "What Works Today",
-    "Install",
-    "Quickstart",
-    "Citation",
-    "does **not**",
-    "converged Rutherford island growth",
+    "[![Documentation]",
+    "First run",
+    "Example gallery",
+    "Physics and numerics",
+    "Parallel runs",
+    "Development",
+    "does not solve the full three-dimensional MHD",
+    "bounded validation runs",
 )
 
 RELEASE_CANDIDATE_PRODUCTION_GAPS = (

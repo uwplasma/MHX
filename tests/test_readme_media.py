@@ -230,7 +230,10 @@ def test_readme_uses_only_landing_page_media() -> None:
     readme_path = ROOT / "README.md"
     local_targets = _local_image_targets(readme_path)
     assert all("docs/_static/readme/" in target for target in local_targets)
-    assert all(not target.endswith(".png") for target in local_targets)
+    assert all(
+        not target.endswith(".png") or target.endswith("/strong_scaling.png")
+        for target in local_targets
+    )
 
 
 def test_readme_excludes_internal_reviewer_sections() -> None:
@@ -252,7 +255,7 @@ def test_readme_has_auto_updated_coverage_badge() -> None:
 
 
 def test_readme_solver_media_has_longer_validation_provenance() -> None:
-    media_text = (ROOT / "docs" / "media.md").read_text(encoding="utf-8")
+    media_text = (ROOT / "docs" / "project" / "media_inventory.md").read_text(encoding="utf-8")
     qa_manifest = _read_visual_qa_manifest()
     local_targets = _local_image_targets(ROOT / "README.md")
     readme_solver_targets = [

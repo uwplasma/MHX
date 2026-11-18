@@ -5,11 +5,14 @@ import pytest
 
 from mhx.grids import CartesianGrid
 from mhx.numerics.spectral import (
+    dealiased_product,
     fft_derivative,
     gradient,
     inverse_laplacian,
     laplacian,
+    spectral_filter,
     spectral_wavenumbers,
+    two_thirds_mask,
 )
 
 
@@ -47,6 +50,21 @@ def test_inverse_laplacian_recovers_zero_mean_field() -> None:
     assert float(jnp.max(jnp.abs(residual))) < 1.0e-10
 
 
+def test_two_thirds_product_removes_quadratic_alias() -> None:
+    points = 24
+    coordinate = 2.0 * jnp.pi * jnp.arange(points) / points
+    mode = jnp.cos(7.0 * coordinate)
+
+    unfiltered = dealiased_product(mode, mode, dealiasing="none")
+    filtered = dealiased_product(mode, mode, dealiasing="two_thirds")
+
+    assert float(jnp.max(jnp.abs(unfiltered - 0.5))) > 0.4
+    assert float(jnp.max(jnp.abs(filtered - 0.5))) < 1.0e-12
+    mask = two_thirds_mask((points,))
+    assert bool(mask[7])
+    assert not bool(mask[8])
+
+
 def test_spectral_operator_validation() -> None:
     grid = CartesianGrid(shape=(8, 8), lower=(0.0, 0.0), upper=(1.0, 1.0))
     field = grid.sinusoid()
@@ -54,6 +72,9 @@ def test_spectral_operator_validation() -> None:
     complex_field = field.astype(jnp.complex128) * (1.0 + 1.0j)
     complex_derivative = fft_derivative(complex_field, axis=0, length=1.0)
     assert jnp.iscomplexobj(complex_derivative)
+    assert jnp.iscomplexobj(spectral_filter(complex_field))
+    assert jnp.iscomplexobj(inverse_laplacian(complex_field, lengths=(1.0, 1.0)))
+    assert jnp.allclose(spectral_filter(field, dealiasing="none"), field)
     with pytest.raises(ValueError, match="order"):
         fft_derivative(field, axis=0, length=1.0, order=-1)
     with pytest.raises(ValueError, match="expected"):
@@ -62,3 +83,9 @@ def test_spectral_operator_validation() -> None:
         laplacian(field, lengths=(1.0,))
     with pytest.raises(ValueError, match="expected"):
         inverse_laplacian(field, lengths=(1.0,))
+    with pytest.raises(ValueError, match="shape"):
+        two_thirds_mask((1,))
+    with pytest.raises(ValueError, match="dealiasing"):
+        spectral_filter(field, dealiasing="invalid")
+    with pytest.raises(ValueError, match="equal shapes"):
+        dealiased_product(field, field[:, :-1])
