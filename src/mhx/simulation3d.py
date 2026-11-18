@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -212,30 +213,86 @@ def run_mhd3d(simulation) -> MHD3DResult:
             state, params, shape=shape, k=k, mask=mask, mesh=mesh
         )
 
-    evolve = {"if_rk3": evolve_if_rk3, "etdrk4": evolve_etdrk4}[
-        simulation.integrator
-    ]
-    steps = simulation.steps
+    # Diffusion is integrated exactly, so only advection and Alfven waves
+    # limit the step: imaginary-axis stability is sqrt(3) for IF-RK3 and
+    # about 2.8 for ETDRK4.
+    evolve, stability = {
+        "if_rk3": (evolve_if_rk3, math.sqrt(3.0)),
+        "etdrk4": (evolve_etdrk4, 2.8),
+    }[simulation.integrator]
+    k_max = [math.pi * n / length for n, length in zip(shape, lengths, strict=True)]
 
-    def program(initial: MHD3DState) -> MHD3DTrajectory:
-        return evolve(
-            initial,
-            nonlinear,
-            decay,
-            dt=simulation.dt,
-            steps=steps,
-            save_every=simulation.save_every,
+    def stable_dt(state: MHD3DState) -> Array:
+        v = mhd3d.to_physical(state.v_hat, shape=shape, mesh=mesh)
+        b = mhd3d.to_physical(state.b_hat, shape=shape, mesh=mesh)
+        rate = sum(
+            k_max[i]
+            * (jnp.abs(v[i]).max() + jnp.abs(b[i]).max() + abs(params.guide_field[i]))
+            for i in range(3)
         )
+        return simulation.cfl * stability / rate
 
-    compiled = jax.jit(program)
-    start = time.perf_counter()
-    lowered = compiled.lower(state0).compile()
-    compile_seconds = time.perf_counter() - start
+    def advance(state: MHD3DState, steps: int, substeps: int):
+        count = steps * substeps
+        saved = evolve(
+            state, nonlinear, decay, dt=simulation.dt / substeps, steps=count, save_every=count
+        )
+        state = jax.tree.map(lambda leaf: leaf[-1], saved.states)
+        finite = jnp.isfinite(state.v_hat).all() & jnp.isfinite(state.b_hat).all()
+        return state, finite, stable_dt(state)
 
-    start = time.perf_counter()
-    trajectory = lowered(state0)
-    jax.block_until_ready(trajectory)
-    run_seconds = time.perf_counter() - start
+    # One compiled chunk per saved state. Between chunks the host prints
+    # progress, picks equal substeps when dt exceeds the CFL limit, and stops
+    # on non-finite fields. Each new substep count compiles once.
+    stride = min(simulation.save_every, simulation.steps)
+    full, tail = divmod(simulation.steps, stride)
+    chunks = [stride] * full + [tail] * bool(tail)
+    executables = {}
+    compile_seconds = 0.0
+
+    def executable(length: int, substeps: int):
+        nonlocal compile_seconds
+        if (length, substeps) not in executables:
+            start = time.perf_counter()
+            executables[length, substeps] = (
+                jax.jit(advance, static_argnums=(1, 2)).lower(state0, length, substeps).compile()
+            )
+            compile_seconds += time.perf_counter() - start
+        return executables[length, substeps]
+
+    console = Console()
+    limit = float(jax.jit(stable_dt)(state0))
+    report_every = max(1, len(chunks) // 20)
+    state, saved_states, step, max_substeps, run_seconds = state0, [], 0, 1, 0.0
+    for index, length in enumerate(chunks):
+        substeps = math.ceil(simulation.dt / limit) if limit < simulation.dt else 1
+        if substeps > 100:
+            raise FloatingPointError(
+                f"CFL limit {limit:.3g} at t = {step * simulation.dt:.6g} needs more than "
+                f"100 substeps of dt = {simulation.dt:g}"
+            )
+        max_substeps = max(max_substeps, substeps)
+        compiled = executable(length, substeps)
+        start = time.perf_counter()
+        state, is_finite, limit = compiled(state)
+        is_finite, limit = bool(is_finite), float(limit)
+        run_seconds += time.perf_counter() - start
+        step += length
+        if not is_finite:
+            raise FloatingPointError(
+                f"non-finite fields at step {step} (t = {step * simulation.dt:.6g}); the "
+                f"last finite state is at t = {(step - length) * simulation.dt:.6g}. Reduce dt."
+            )
+        saved_states.append(state)
+        if simulation.verbose and (index % report_every == 0 or index == len(chunks) - 1):
+            console.print(
+                f"step {step}/{simulation.steps}  t = {step * simulation.dt:.6g}  "
+                f"substeps {substeps}  CFL dt {limit:.3g}  {run_seconds:.2f} s"
+            )
+    trajectory = MHD3DTrajectory(
+        times=simulation.dt * jnp.asarray(np.cumsum(chunks)),
+        states=jax.tree.map(lambda *leaves: jnp.stack(leaves), *saved_states),
+    )
 
     initial_energy = mhd3d.energies(state0, shape=shape)
     final_state = jax.tree.map(lambda leaf: leaf[-1], trajectory.states)
@@ -252,6 +309,7 @@ def run_mhd3d(simulation) -> MHD3DResult:
         "final_velocity_divergence_linf": float(
             mhd3d.divergence_linf(final_state.v_hat, k)
         ),
+        "max_substeps": max_substeps,
     }
     config = {
         "equations": "mhd3d",

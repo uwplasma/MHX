@@ -212,6 +212,8 @@ class Simulation:
         device_count: Number of JAX devices. Leave unset for one device.
         verbose: Print configuration and timing information.
         terms: Extra MHX physics terms applied to the right-hand side.
+        cfl: Fraction of the stability limit used to choose substeps in
+            the 3D path.
     """
 
     shape: tuple[int, int] = (64, 64)
@@ -238,6 +240,7 @@ class Simulation:
     guide_field: tuple[float, float, float] = (0.0, 0.0, 0.0)
     sound_speed: float = 1.0
     bulk_viscosity: float = 0.0
+    cfl: float = 0.5
 
     def __post_init__(self) -> None:
         """Reject invalid settings before JAX starts a compilation."""
@@ -271,6 +274,8 @@ class Simulation:
         """Checks shared by the 2D and 3D paths."""
         if self.dt <= 0.0:
             raise ValueError("dt must be positive")
+        if not 0.0 < self.cfl <= 1.0:
+            raise ValueError("cfl must be in (0, 1]")
         if self.t_end <= 0.0:
             raise ValueError("t_end must be positive")
         if self.save_every < 1:

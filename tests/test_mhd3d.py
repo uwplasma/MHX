@@ -228,7 +228,7 @@ def test_gradient_of_energy_with_respect_to_viscosity_matches_fd() -> None:
     state0, k = make_state(shape, OrszagTang3DEquilibrium())
     mask = mhd3d.two_thirds_mask_rfft(shape)
 
-    def loss(viscosity):
+    def loss(viscosity, checkpoint=True):
         params = MHD3DParams(viscosity=viscosity, resistivity=5.0e-3)
         decay = mhd3d.decay_rates(params, k)
 
@@ -238,7 +238,8 @@ def test_gradient_of_energy_with_respect_to_viscosity_matches_fd() -> None:
             )
 
         trajectory = evolve_if_rk3(
-            state0, nonlinear, decay, dt=5.0e-3, steps=10, save_every=10
+            state0, nonlinear, decay, dt=5.0e-3, steps=10, save_every=10,
+            checkpoint=checkpoint,
         )
         final = jax.tree.map(lambda leaf: leaf[-1], trajectory.states)
         return mhd3d.energies(final, shape=shape)["total"]
@@ -250,3 +251,5 @@ def test_gradient_of_energy_with_respect_to_viscosity_matches_fd() -> None:
     finite_difference = (loss(nu + eps) - loss(nu - eps)) / (2.0 * eps)
     relative = abs(float(finite_difference - gradient)) / abs(float(gradient))
     assert relative < 1.0e-6
+    plain = jax.grad(lambda v: loss(v, False))(nu)
+    assert abs(float(plain - gradient)) <= 1.0e-13 * abs(float(gradient))
