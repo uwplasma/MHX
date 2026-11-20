@@ -60,7 +60,7 @@ summary table reports timing, energy, and the divergence check:
 ```
 
 Energy decreases because the run is resistive. The divergence is exactly zero
-because the [spectral method](../physics/spectral_method.md) evolves the flux
+because the [spectral method](../physics/numerics.md) evolves the flux
 function, not the field components.
 
 Access the arrays directly when you need them:
@@ -120,4 +120,4 @@ history.
 - [Make your first movie](first_movie.md)
 - [Run from a TOML config](../how_to/run_from_toml.md)
 - [The reduced-MHD model](../physics/reduced_mhd.md)
-- [Differentiate a run](../physics/differentiability.md)
+- [Differentiate a run](../physics/numerics.md)

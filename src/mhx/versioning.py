@@ -17,7 +17,6 @@ DIAGNOSTICS_API_VERSION = "mhx.diagnostics.v1"
 REDUCED_MHD_TRAJECTORY_SCHEMA = "mhx.reduced_mhd.trajectory.v1"
 MANIFEST_SCHEMA = "mhx.manifest.v1"
 ARTIFACT_MANIFEST_SCHEMA = "mhx.artifacts.v1"
-VALIDATION_SUITE_SCHEMA = "mhx.validation.suite.v1"
 CLAIM_LEVELS = ("unspecified", "smoke", "validation", "production_template", "production")
 
 
@@ -33,7 +32,6 @@ class APIVersionInfo:
     trajectory_schema: str
     manifest_schema: str
     artifact_manifest_schema: str
-    validation_suite_schema: str
     claim_levels: tuple[str, ...]
 
     def to_dict(self) -> dict[str, object]:
@@ -47,7 +45,6 @@ class APIVersionInfo:
             "trajectory_schema": self.trajectory_schema,
             "manifest_schema": self.manifest_schema,
             "artifact_manifest_schema": self.artifact_manifest_schema,
-            "validation_suite_schema": self.validation_suite_schema,
             "claim_levels": list(self.claim_levels),
         }
 
@@ -96,6 +93,5 @@ def api_version_info() -> APIVersionInfo:
         trajectory_schema=REDUCED_MHD_TRAJECTORY_SCHEMA,
         manifest_schema=MANIFEST_SCHEMA,
         artifact_manifest_schema=ARTIFACT_MANIFEST_SCHEMA,
-        validation_suite_schema=VALIDATION_SUITE_SCHEMA,
         claim_levels=CLAIM_LEVELS,
     )

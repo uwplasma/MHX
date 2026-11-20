@@ -1,4 +1,4 @@
-"""Subsonic compressible MHD, spectral and smooth, per plan_3d.md Track C.
+"""Subsonic compressible MHD, spectral and smooth.
 
 Isothermal closure with log density, following the Pencil Code and
 Shebalin precedents: positivity holds without floors, so the model stays

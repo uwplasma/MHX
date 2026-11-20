@@ -3,7 +3,7 @@
 Every builder returns component-first real fields ``(v, b)`` of shape
 ``(3, nx, ny, nz)`` on the periodic box, ready for
 :func:`mhx.equations.mhd3d.to_spectral`. The Orszag--Tang and
-Taylor--Green fields follow the published formulas cited in ``plan_3d.md``.
+Taylor--Green fields follow the published formulas cited in each class docstring.
 """
 
 from __future__ import annotations
@@ -54,7 +54,7 @@ class CircularlyPolarizedAlfvenEquilibrium:
     With a unit guide field along ``z``, the state
     ``b_perp = amplitude (cos kz, sin kz, 0)`` and ``v = -b_perp`` is an
     exact nonlinear solution propagating at the Alfvén speed. It is the
-    G3 gate of ``plan_3d.md``.
+    G3 gate of the 3D test suite.
     """
 
     amplitude: float = 0.1
@@ -69,6 +69,22 @@ class CircularlyPolarizedAlfvenEquilibrium:
         zero = jnp.zeros(shape)
         b = self.amplitude * jnp.stack((jnp.cos(phase), jnp.sin(phase), zero))
         return -b, b
+
+
+@dataclass(frozen=True)
+class AlfvenWaveCollisionEquilibrium:
+    """Howes--Nielson perpendicular counterpropagating Alfvén waves."""
+
+    amplitude_plus: float = 0.1
+    amplitude_minus: float = 0.1
+    name: ClassVar[str] = "alfven_wave_collision"
+
+    def initial_fields(self, shape: tuple[int, int, int]) -> tuple[Array, Array]:
+        x, y, z = _grid(shape)
+        zero = jnp.zeros(shape)
+        z_plus = self.amplitude_plus * jnp.stack((zero, jnp.cos(x - z), zero))
+        z_minus = self.amplitude_minus * jnp.stack((jnp.cos(y + z), zero, zero))
+        return 0.5 * (z_plus + z_minus), 0.5 * (z_plus - z_minus)
 
 
 @dataclass(frozen=True)
@@ -168,10 +184,69 @@ class TaylorGreenEquilibrium:
         return v, b
 
 
+@dataclass(frozen=True)
+class TaylorGreenAlternativeEquilibrium:
+    """Lee et al. (2010) alternative insulating Taylor--Green field."""
+
+    v0: float = 1.0
+    b0: float = 1.0
+    name: ClassVar[str] = "taylor_green_a"
+
+    def initial_fields(self, shape: tuple[int, int, int]) -> tuple[Array, Array]:
+        x, y, z = _grid(shape)
+        zero = jnp.zeros(shape)
+        v = self.v0 * jnp.stack(
+            (
+                jnp.sin(x) * jnp.cos(y) * jnp.cos(z),
+                -jnp.cos(x) * jnp.sin(y) * jnp.cos(z),
+                zero,
+            )
+        )
+        b = self.b0 * jnp.stack(
+            (
+                jnp.cos(2 * x) * jnp.sin(2 * y) * jnp.sin(2 * z),
+                -jnp.sin(2 * x) * jnp.cos(2 * y) * jnp.sin(2 * z),
+                zero,
+            )
+        )
+        return v, b
+
+
+@dataclass(frozen=True)
+class TaylorGreenConductingEquilibrium:
+    """Lee et al. (2010) conducting Taylor--Green magnetic field."""
+
+    v0: float = 1.0
+    b0: float = 1.0
+    name: ClassVar[str] = "taylor_green_c"
+
+    def initial_fields(self, shape: tuple[int, int, int]) -> tuple[Array, Array]:
+        x, y, z = _grid(shape)
+        zero = jnp.zeros(shape)
+        v = self.v0 * jnp.stack(
+            (
+                jnp.sin(x) * jnp.cos(y) * jnp.cos(z),
+                -jnp.cos(x) * jnp.sin(y) * jnp.cos(z),
+                zero,
+            )
+        )
+        b = self.b0 * jnp.stack(
+            (
+                jnp.sin(2 * x) * jnp.cos(2 * y) * jnp.cos(2 * z),
+                jnp.cos(2 * x) * jnp.sin(2 * y) * jnp.cos(2 * z),
+                -2 * jnp.cos(2 * x) * jnp.cos(2 * y) * jnp.sin(2 * z),
+            )
+        )
+        return v, b
+
+
 __all__ = [
     "ABCFlowEquilibrium",
+    "AlfvenWaveCollisionEquilibrium",
     "CircularlyPolarizedAlfvenEquilibrium",
     "OrszagTang3DEquilibrium",
     "SingleModeEquilibrium",
+    "TaylorGreenAlternativeEquilibrium",
+    "TaylorGreenConductingEquilibrium",
     "TaylorGreenEquilibrium",
 ]

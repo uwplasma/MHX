@@ -1,0 +1,29 @@
+# Periodic double-Harris current sheet seeded with a single tearing mode.
+# Run it with:  mhx run examples/toml/double_harris.toml
+name = "double_harris"
+output_dir = "outputs/toml/double_harris"
+
+[mesh]
+shape = [64, 64]
+lower = [0.0, 0.0]
+upper = [6.283185307179586, 6.283185307179586]
+
+[time]
+t1 = 2.0
+dt = 0.02
+save_every = 10
+
+[physics]
+model = "reduced_mhd"
+equilibrium = "periodic_double_harris"
+resistivity = 5.0e-3
+viscosity = 5.0e-3
+
+[physics.equilibrium_parameters]
+width = 0.4
+perturbation_amplitude = 1.0e-3
+perturbation_mode = [2, 1]
+
+[numerics]
+time_integrator = "rk4"
+dealiasing = "two_thirds"

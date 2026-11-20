@@ -1,6 +1,7 @@
 """Plotting helpers."""
 
 from mhx.plotting.diagnostics import write_diagnostic_figures_for_run
+from mhx.plotting.frames import sample_indices
 from mhx.plotting.reduced_mhd import (
     plot_arnoldi_ritz_values,
     plot_cosine_equilibrium_linearization_errors,
@@ -36,8 +37,10 @@ from mhx.plotting.reduced_mhd import (
     plot_reduced_mhd_eigenmode_errors,
     plot_timing_summary,
 )
+from mhx.plotting.vencels import plot_kinetic_comparison
 
 __all__ = [
+    "sample_indices",
     "plot_arnoldi_ritz_values",
     "plot_cosine_equilibrium_linearization_errors",
     "plot_decay_amplitude",
@@ -55,6 +58,7 @@ __all__ = [
     "plot_flux_contours",
     "plot_flux_gif",
     "plot_harris_delta_prime",
+    "plot_kinetic_comparison",
     "plot_ideal_tearing_scaling",
     "plot_linear_tearing_dispersion_validation",
     "plot_linear_tearing_eigenvalue_validation",

@@ -15,6 +15,7 @@ from mhx.diagnostics import kinetic_energy, magnetic_divergence_linf, magnetic_e
 from mhx.equations.reduced_mhd import current_density, reduced_mhd_rhs
 from mhx.grids import CartesianGrid
 from mhx.io import write_manifest
+from mhx.physics import OrszagTangEquilibrium
 from mhx.state import ReducedMHDParams, ReducedMHDState
 from mhx.time_integrators import evolve_rk4
 
@@ -59,10 +60,7 @@ def orszag_tang_initial_state(grid: CartesianGrid) -> ReducedMHDState:
     ``v_perp=(phi_y, -phi_x)``, this gives the classic 2-D Orszag--Tang
     large-scale vortex ``v=(-sin y, sin x)`` and ``B=(-sin y, sin 2x)``.
     """
-    x, y = grid.mesh()
-    psi = jnp.cos(y) + 0.5 * jnp.cos(2.0 * x)
-    omega = -jnp.cos(x) - jnp.cos(y)
-    return ReducedMHDState(psi=psi, omega=omega)
+    return OrszagTangEquilibrium().initial_state(grid)
 
 
 def run_orszag_tang_vortex_validation(

@@ -66,8 +66,10 @@ def test_load_config_enforces_public_api_version(tmp_path, monkeypatch) -> None:
 def test_config_validation_errors() -> None:
     with pytest.raises(ValueError, match="mesh.shape"):
         MeshConfig(shape=(2, 32)).validated()
-    with pytest.raises(ValueError, match="must have length"):
+    with pytest.raises(ValueError, match="2 or 3 entries"):
         MeshConfig.from_mapping({"shape": [8]})
+    with pytest.raises(ValueError, match="must have length"):
+        MeshConfig.from_mapping({"shape": [8, 8], "lower": [0.0]})
     with pytest.raises(ValueError, match="must not be None"):
         MeshConfig.from_mapping({"shape": None})
     with pytest.raises(ValueError, match="mesh.upper"):

@@ -124,6 +124,14 @@ class MHD3DResult:
         output = Path(path)
         output.parent.mkdir(parents=True, exist_ok=True)
 
+        plt.rcParams.update(
+            {
+                "axes.spines.top": False,
+                "axes.spines.right": False,
+                "font.size": 10,
+            }
+        )
+
         k = mhd3d.wavevectors(self.shape, (2.0 * jnp.pi,) * 3)
         final = self.final_state
         current = mhd3d.to_physical(
@@ -147,24 +155,37 @@ class MHD3DResult:
         ]
         times = np.asarray(self.trajectory.times)
 
-        figure, axes = plt.subplots(2, 2, figsize=(9.0, 7.0), constrained_layout=True)
-        for axis, field, title in (
-            (axes[0, 0], current_slice, "|j|, midplane"),
-            (axes[0, 1], speed_slice, "|v|, midplane"),
+        figure, axes = plt.subplots(2, 2, figsize=(11.0, 7.5), constrained_layout=True)
+        for axis, field, title, clabel in (
+            (axes[0, 0], current_slice, r"$|\mathbf{j}|$, midplane", r"$|\mathbf{j}|$"),
+            (axes[0, 1], speed_slice, r"$|\mathbf{v}|$, midplane", r"$|\mathbf{v}|$"),
         ):
-            image = axis.imshow(field.T, origin="lower", cmap="inferno")
+            image = axis.imshow(field.T, origin="lower", cmap="jet")
             axis.set_title(title)
-            figure.colorbar(image, ax=axis, shrink=0.8)
+            axis.set_xlabel("grid x")
+            axis.set_ylabel("grid y")
+            cbar = figure.colorbar(image, ax=axis, shrink=0.82)
+            cbar.set_label(clabel)
+
         axes[1, 0].plot(times, [float(h["kinetic"]) for h in history], label="kinetic")
         axes[1, 0].plot(times, [float(h["magnetic"]) for h in history], label="magnetic")
         axes[1, 0].plot(times, [float(h["total"]) for h in history], label="total")
         axes[1, 0].set_xlabel("time")
         axes[1, 0].set_title("Mean energy")
+        axes[1, 0].grid(True, alpha=0.25)
         axes[1, 0].legend(frameon=False)
+
         axes[1, 1].plot(times, [float(h["cross_helicity"]) for h in history])
         axes[1, 1].set_xlabel("time")
         axes[1, 1].set_title("Cross helicity")
-        figure.savefig(output, dpi=180)
+        axes[1, 1].grid(True, alpha=0.25)
+
+        figure.suptitle(
+            f"MHX 3D incompressible MHD  —  "
+            f"{getattr(type(self), '__name__', 'run')}",
+            fontsize=13,
+        )
+        figure.savefig(output, dpi=200)
         plt.close(figure)
         return output
 
@@ -195,6 +216,7 @@ def run_mhd3d(simulation) -> MHD3DResult:
         viscosity=simulation.viscosity,
         resistivity=simulation.resistivity,
         guide_field=getattr(simulation, "guide_field", (0.0, 0.0, 0.0)),
+        dissipation_order=getattr(simulation, "dissipation_order", 1),
     )
     k = mhd3d.wavevectors(shape, lengths)
     mask = mhd3d.two_thirds_mask_rfft(shape)
@@ -211,6 +233,19 @@ def run_mhd3d(simulation) -> MHD3DResult:
         return mhd3d.mhd3d_nonlinear(
             state, params, shape=shape, k=k, mask=mask, mesh=mesh
         )
+
+    forcing = getattr(simulation, "forcing", None)
+    if forcing is not None:
+
+        def forced_nonlinear(state: MHD3DState) -> MHD3DState:
+            return mhd3d.mhd3d_nonlinear(
+                state, params, shape=shape, k=k, mask=mask, mesh=mesh
+            )
+
+        def nonlinear(state: MHD3DState) -> MHD3DState:
+            return jax.tree.map(
+                lambda r, f: r + f, forced_nonlinear(state), forcing
+            )
 
     evolve = {"if_rk3": evolve_if_rk3, "etdrk4": evolve_etdrk4}[
         simulation.integrator

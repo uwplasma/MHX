@@ -1,0 +1,29 @@
+# Double-Harris sheet with hyper-resistivity and hyper-viscosity terms, which
+# damp the grid scale without changing the large-scale dynamics.
+# Run it with:  mhx run examples/toml/double_harris_hyper.toml
+name = "double_harris_hyper"
+output_dir = "outputs/toml/double_harris_hyper"
+
+[mesh]
+shape = [128, 128]
+
+[time]
+t1 = 4.0
+dt = 0.01
+save_every = 20
+
+[physics]
+model = "reduced_mhd"
+equilibrium = "periodic_double_harris"
+resistivity = 1.0e-3
+viscosity = 1.0e-3
+rhs_terms = ["hyper_resistivity"]
+
+[physics.equilibrium_parameters]
+width = 0.4
+perturbation_amplitude = 1.0e-3
+perturbation_mode = [2, 1]
+
+[physics.term_parameters.hyper_resistivity]
+eta4 = 1.0e-6
+nu4 = 1.0e-6

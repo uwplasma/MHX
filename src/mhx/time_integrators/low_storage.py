@@ -53,13 +53,23 @@ def if_rk3_step(
     """
     w = state
     q = jax.tree.map(jnp.zeros_like, state)
+    # Clip decay rates so the backward exponentials stay finite.
+    # Modes with ``rate * dt > 30`` are killed in one step
+    # (``exp(-30) ≈ 1e-13``); the exact integrating-factor
+    # treatment is numerically unnecessary there and the raw
+    # ``exp(+rate * dt)`` would overflow for hyper-dissipation.
+    safe_decay = jax.tree.map(
+        lambda r: jnp.where(r * dt > 30.0, 30.0 / dt, r), decay
+    )
     for a_i, b_i, c_i in zip(_A, _B, _C, strict=True):
-        forward = _exp_factor(decay, c_i * dt)
-        backward = jax.tree.map(lambda rate, c=c_i: jnp.exp(rate * c * dt), decay)
+        forward = _exp_factor(safe_decay, c_i * dt)
+        backward = jax.tree.map(
+            lambda rate, c=c_i: jnp.exp(rate * c * dt), safe_decay
+        )
         rhs = _scale(nonlinear(_scale(w, forward)), backward)
         q = jax.tree.map(lambda qq, rr, a=a_i: a * qq + dt * rr, q, rhs)
         w = jax.tree.map(lambda ww, qq, b=b_i: ww + b * qq, w, q)
-    return _scale(w, _exp_factor(decay, dt))
+    return _scale(w, _exp_factor(safe_decay, dt))
 
 
 def evolve_if_rk3(

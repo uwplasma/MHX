@@ -52,8 +52,7 @@ Gate C4 is the cross-model discriminator. Parametric decay exists only
 in compressible MHD, so one experiment validates the new physics and
 the model boundary at once. The remaining ladder entries are the {cite}`dahlburg1989` subsonic
 Orszag--Tang comparison and the subsonic turbulence campaign.
-[`plan_3d.md`](https://github.com/uwplasma/MHX/blob/main/plan_3d.md)
-section 14 tracks both.
+
 
 ## Using it
 
