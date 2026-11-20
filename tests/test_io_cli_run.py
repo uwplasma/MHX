@@ -47,12 +47,16 @@ def test_cli_init_writes_config(tmp_path) -> None:
     assert "[physics]" in path.read_text()
 
 
-def test_cli_init_refuses_existing_file(tmp_path) -> None:
-    path = tmp_path / "new_config.toml"
+def test_cli_init_refuses_existing_file(tmp_path, monkeypatch) -> None:
+    # A relative path keeps the error short. A long temporary path wraps
+    # inside the Rich error panel and splits the message across lines.
+    monkeypatch.chdir(tmp_path)
+    path = tmp_path / "new.toml"
     path.write_text("name = 'existing'\n")
-    result = CliRunner().invoke(app, ["init", str(path)])
+    result = CliRunner().invoke(app, ["init", "new.toml"])
     assert result.exit_code != 0
     assert "already exists" in result.output
+    assert path.read_text() == "name = 'existing'\n"
 
 
 def test_cli_run_uses_config_output_dir(tmp_path) -> None:
