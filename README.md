@@ -4,15 +4,22 @@
 [![Coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/uwplasma/MHX/main/badges/coverage.json)](https://github.com/uwplasma/MHX/actions/workflows/ci.yml)
 [![Documentation](https://readthedocs.org/projects/mhx/badge/?version=latest)](https://mhx.readthedocs.io/)
 
-MHX runs differentiable, two-dimensional reduced-MHD models in JAX. It builds
-the plasma equations and diagnostics. [SOLVAX](https://github.com/uwplasma/SOLVAX)
+MHX runs differentiable MHD models in JAX: two-dimensional reduced MHD,
+full three-dimensional incompressible MHD, and subsonic compressible MHD. It builds the plasma equations
+and diagnostics. [SOLVAX](https://github.com/uwplasma/SOLVAX)
 contains the linear, Krylov, and nonlinear solvers.
 
-Use MHX to study periodic current sheets, tearing modes, reconnection, and
-reduced-MHD turbulence. MHX does not solve the full three-dimensional MHD
-equations.
+Use MHX to study periodic current sheets, tearing modes, reconnection,
+MHD turbulence, and dynamos. The capability matrix:
 
-![Double-Harris reconnection: residual flux with flux contours and X/O markers](docs/_static/readme/double_harris_reconnection.gif)
+| | 2D | 3D |
+| --- | --- | --- |
+| Reduced MHD (incompressible) | validated | not offered |
+| Incompressible MHD | via the reduced model | available |
+| Compressible MHD, subsonic smooth | available, thin box | available |
+| Shocks and supersonic flows | out of scope | out of scope |
+
+![Many-plasmoid Double-Harris chain: magnetic flux with flux contours](docs/_static/readme/double_harris_reconnection.gif)
 
 ## First run
 
@@ -86,6 +93,8 @@ run it from the repository root.
 | [`06_strong_scaling.py`](examples/gallery/06_strong_scaling.py) | Strong-scale one fixed reconnection ensemble. |
 | [`07_multi_process.py`](examples/gallery/07_multi_process.py) | Run one ensemble across JAX processes. |
 | [`08_gradient.py`](examples/gallery/08_gradient.py) | Differentiate a solve and check the gradient numerically. |
+| [`09_orszag_tang_3d.py`](examples/gallery/09_orszag_tang_3d.py) | Run the 3D incompressible Orszag--Tang vortex. |
+| [`10_compressible_orszag_tang.py`](examples/gallery/10_compressible_orszag_tang.py) | Run the subsonic compressible model in a thin box. |
 
 | Reconnection | Turbulence | Orszag--Tang |
 | --- | --- | --- |
@@ -93,9 +102,29 @@ run it from the repository root.
 
 These images show bounded validation runs. The
 [gallery](https://mhx.readthedocs.io/en/latest/gallery.html) plays them as
-movies, and the
-[media inventory](docs/project/media_inventory.md) records their settings and
-claim limits.
+movies, and
+[Make your first movie](https://mhx.readthedocs.io/en/latest/getting_started/first_movie.html)
+shows how to render your own.
+
+## Three-dimensional MHD
+
+The same call runs full 3D incompressible MHD: change the shape, the
+equations name, and the equilibrium.
+
+```python
+result = mhx.Simulation(
+    shape=(128, 128, 128),
+    equations="mhd3d",
+    equilibrium=mhx.OrszagTang3DEquilibrium(beta=0.8),
+    viscosity=2.0e-3,
+    resistivity=2.0e-3,
+    dt=1.0e-3,
+    t_end=4.0,
+).run()
+```
+
+The [3D model page](docs/physics/mhd3d.md) states the equations, the
+numerics, and the passing validation gates.
 
 ## Physics and numerics
 
@@ -115,8 +144,7 @@ SOLVAX owns general numerical algebra:
 
 The documentation states the
 [equations and their derivation](https://mhx.readthedocs.io/en/latest/physics/reduced_mhd.html),
-the [spectral method](https://mhx.readthedocs.io/en/latest/physics/spectral_method.html),
-and [what differentiates](https://mhx.readthedocs.io/en/latest/physics/differentiability.html).
+and the [spectral method and what differentiates](https://mhx.readthedocs.io/en/latest/physics/numerics.html).
 
 ## Parallel runs
 
@@ -134,7 +162,7 @@ JAX_PLATFORM_NAME=gpu python examples/gallery/05_gpu_parallel.py
 The measured speedup is 2.38x on four logical CPU devices and 1.95x on two
 PCIe-connected RTX A4000 GPUs, for four fixed reconnection cases. The
 [device guide](https://mhx.readthedocs.io/en/latest/how_to/run_on_gpus.html)
-and [performance page](docs/reference/performance.md) hold the settings and
+and [performance page](docs/how_to/run_on_gpus.md) hold the settings and
 data.
 
 ## Documentation
@@ -143,14 +171,14 @@ data.
 | --- | --- |
 | Install and first steps | [Get started](https://mhx.readthedocs.io/en/latest/getting_started/install.html) |
 | Equations and derivation | [`docs/physics/reduced_mhd.md`](docs/physics/reduced_mhd.md) |
-| Gradients | [`docs/physics/differentiability.md`](docs/physics/differentiability.md) |
+| Numerics and gradients | [`docs/physics/numerics.md`](docs/physics/numerics.md) |
 | Validation gates and limits | [`docs/validation/index.md`](docs/validation/index.md) |
 | TOML configuration | [`docs/reference/config_schema.md`](docs/reference/config_schema.md) |
 | Output files | [`docs/reference/output_schema.md`](docs/reference/output_schema.md) |
 | Movie gallery | [`docs/gallery.md`](docs/gallery.md) |
 
-The benchmark and campaign tools remain available for validation and long
-production runs. Run `mhx --help` to list them.
+The benchmark commands remain available for validation. Run `mhx --help` to
+list them.
 
 ## Development
 
@@ -159,7 +187,6 @@ Install the repository tools, then run the checks:
 ```bash
 python -m pip install -e ".[dev]"
 python -m ruff check src tests examples tools
-python tools/check_prose.py
 python -m pytest
 sphinx-build -W -b html docs docs/_build/html
 ```

@@ -15,6 +15,7 @@ import numpy as np
 from rich.console import Console
 from rich.table import Table
 
+from mhx.config import RunConfig
 from mhx.diagnostics import compute_reduced_mhd_diagnostics, trajectory_energies
 from mhx.ensemble import EnsembleResult, run_ensemble
 from mhx.equations.reduced_mhd import (
@@ -28,7 +29,13 @@ from mhx.grids import CartesianGrid
 from mhx.io import write_reduced_mhd_trajectory_npz
 from mhx.numerics import spectral_diffusion_preconditioner
 from mhx.parallel import make_spatial_sharding, shard_state
-from mhx.physics import Equilibrium, PeriodicDoubleHarrisEquilibrium, PhysicsTerm
+from mhx.physics import (
+    Equilibrium,
+    PeriodicDoubleHarrisEquilibrium,
+    PhysicsTerm,
+    build_equilibrium,
+    build_physics_terms,
+)
 from mhx.state import ReducedMHDParams, ReducedMHDState, ReducedMHDTrajectory
 from mhx.time_integrators import evolve_backward_euler, evolve_rk4
 
@@ -229,24 +236,114 @@ class Simulation:
     dt: float = 2.0e-2
     t_end: float = 2.0
     save_every: int = 10
-    integrator: Integrator = "rk4"
+    integrator: str = "rk4"
     dealiasing: str = "two_thirds"
     device_count: int | None = None
     verbose: bool = True
     terms: tuple[PhysicsTerm, ...] = ()
+    equations: str = "reduced_mhd"
+    guide_field: tuple[float, float, float] = (0.0, 0.0, 0.0)
+    dissipation_order: int = 1
+    forcing: object | None = None
+    sound_speed: float = 1.0
+    bulk_viscosity: float = 0.0
 
     def __post_init__(self) -> None:
         """Reject invalid settings before JAX starts a compilation."""
+        if self.equations not in ("reduced_mhd", "mhd3d", "compressible"):
+            raise ValueError(
+                "equations must be 'reduced_mhd', 'mhd3d', or 'compressible'"
+            )
+        if self.equations in ("mhd3d", "compressible"):
+            if len(self.shape) != 3 or any(points < 4 for points in self.shape):
+                raise ValueError(
+                    f"equations={self.equations!r} needs three grid sizes of "
+                    "at least 4"
+                )
+            if self.integrator == "rk4":
+                # The 3D production stepper; keeps the 2D default untouched.
+                object.__setattr__(self, "integrator", "if_rk3")
+            if self.integrator not in ("if_rk3", "etdrk4"):
+                raise ValueError("3D integrator must be 'if_rk3' or 'etdrk4'")
+            if len(self.lower) == 2:
+                object.__setattr__(self, "lower", (*self.lower, 0.0))
+                object.__setattr__(self, "upper", (*self.upper, 2.0 * math.pi))
+            self._validate_time_settings()
+            return
         if len(self.shape) != 2 or any(points < 4 for points in self.shape):
             raise ValueError("shape must contain two grid sizes of at least 4")
+        if self.integrator not in ("rk4", "backward_euler"):
+            raise ValueError("integrator must be 'rk4' or 'backward_euler'")
+        self._validate_time_settings()
+
+    @classmethod
+    def from_config(cls, config: RunConfig, *, verbose: bool = True) -> Simulation:
+        """Build a simulation from a :class:`mhx.config.RunConfig`.
+
+        This is the bridge between a TOML file and the Python API:
+        ``Simulation.from_config(load_config("run.toml")).run()`` does what
+        ``mhx run run.toml`` does. The ``reduced_mhd``, ``mhd3d`` and
+        ``compressible`` models are supported. The lightweight
+        ``reduced_mhd_linear_tearing`` smoke model has its own runner.
+
+        Args:
+            config: A configuration whose ``time.t0`` is zero.
+            verbose: Print the setup, timings and progress while running.
+        """
+        config = config.validated()
+        physics = config.physics
+        if physics.model == "reduced_mhd_linear_tearing":
+            raise ValueError(
+                "physics.model 'reduced_mhd_linear_tearing' is the smoke workflow; "
+                "use 'reduced_mhd', 'mhd3d' or 'compressible' with Simulation.from_config"
+            )
+        if config.time.t0 != 0.0:
+            raise ValueError("time.t0 must be 0 for Simulation runs")
+        if not all(config.mesh.periodic):
+            raise ValueError("Simulation runs need a periodic mesh")
+        equilibrium = build_equilibrium(physics.equilibrium, physics.equilibrium_parameters)
+        builder = "initial_state" if physics.model == "reduced_mhd" else "initial_fields"
+        if not hasattr(equilibrium, builder):
+            raise ValueError(
+                f"equilibrium {physics.equilibrium!r} does not provide {builder}() "
+                f"required by physics.model {physics.model!r}"
+            )
+        terms = build_physics_terms(
+            physics.rhs_terms,
+            physics.term_parameters,
+            plugin_modules=physics.plugin_modules,
+            plugin_entry_point_groups=physics.plugin_entry_point_groups,
+        )
+        return cls(
+            shape=config.mesh.shape,
+            lower=config.mesh.lower,
+            upper=config.mesh.upper,
+            equilibrium=equilibrium,
+            resistivity=physics.resistivity,
+            viscosity=physics.viscosity,
+            dt=config.time.dt,
+            t_end=config.time.t1 - config.time.t0,
+            save_every=config.time.save_every,
+            integrator=config.numerics.time_integrator,
+            dealiasing=config.numerics.dealiasing,
+            device_count=config.numerics.device_count,
+            verbose=verbose,
+            terms=terms,
+            equations=physics.model,
+            guide_field=physics.guide_field,
+            dissipation_order=physics.dissipation_order,
+            sound_speed=physics.sound_speed,
+            bulk_viscosity=physics.bulk_viscosity,
+        )
+
+    def _validate_time_settings(self) -> None:
+        """Checks shared by the 2D and 3D paths."""
         if self.dt <= 0.0:
             raise ValueError("dt must be positive")
         if self.t_end <= 0.0:
             raise ValueError("t_end must be positive")
         if self.save_every < 1:
             raise ValueError("save_every must be at least 1")
-        if self.integrator not in ("rk4", "backward_euler"):
-            raise ValueError("integrator must be 'rk4' or 'backward_euler'")
         if self.dealiasing not in ("none", "two_thirds"):
             raise ValueError("dealiasing must be 'none' or 'two_thirds'")
         step_count = self.t_end / self.dt
@@ -262,8 +359,17 @@ class Simulation:
         """Compile and run the configured simulation.
 
         Returns:
-            A :class:`SimulationResult` with fields, diagnostics, and timings.
+            A :class:`SimulationResult` with fields, diagnostics, and timings,
+            or an :class:`mhx.simulation3d.MHD3DResult` for ``mhd3d`` runs.
         """
+        if self.equations == "mhd3d":
+            from mhx.simulation3d import run_mhd3d
+
+            return run_mhd3d(self)
+        if self.equations == "compressible":
+            from mhx.simulation_compressible import run_compressible
+
+            return run_compressible(self)
         if self.integrator == "backward_euler" and not jax.config.jax_enable_x64:
             warnings.warn(
                 "backward_euler targets Newton tolerances near 1e-9, which "

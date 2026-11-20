@@ -1,0 +1,21 @@
+# 3D incompressible Orszag--Tang vortex (Politano, Pouquet and Sulem 1995).
+# Run it with:  mhx run examples/toml/orszag_tang_3d.toml
+name = "orszag_tang_3d"
+output_dir = "outputs/toml/orszag_tang_3d"
+
+[mesh]
+shape = [64, 64, 64]
+
+[time]
+t1 = 2.0
+dt = 2.0e-3
+save_every = 100
+
+[physics]
+model = "mhd3d"
+equilibrium = "orszag_tang_3d"
+resistivity = 5.0e-3
+viscosity = 5.0e-3
+
+[physics.equilibrium_parameters]
+beta = 0.8

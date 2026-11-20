@@ -1,0 +1,24 @@
+# Subsonic compressible Orszag--Tang vortex in a thin 3D box. The sound speed
+# sets how close the flow is to incompressible.
+# Run it with:  mhx run examples/toml/compressible_orszag_tang_3d.toml
+name = "compressible_orszag_tang_3d"
+output_dir = "outputs/toml/compressible_orszag_tang_3d"
+
+[mesh]
+shape = [64, 64, 4]
+
+[time]
+t1 = 1.0
+dt = 1.0e-3
+save_every = 100
+
+[physics]
+model = "compressible"
+equilibrium = "orszag_tang_3d"
+resistivity = 5.0e-3
+viscosity = 5.0e-3
+bulk_viscosity = 5.0e-3
+sound_speed = 5.0
+
+[physics.equilibrium_parameters]
+beta = 0.8

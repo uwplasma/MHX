@@ -26,44 +26,50 @@ def _tuple_from(value: Any, *, length: int, name: str, cast: type) -> tuple[Any,
 
 @dataclass(frozen=True)
 class MeshConfig:
-    """Uniform Cartesian mesh configuration."""
+    """Uniform Cartesian mesh configuration with two or three periodic axes."""
 
-    shape: tuple[int, int] = (32, 32)
-    lower: tuple[float, float] = (0.0, 0.0)
-    upper: tuple[float, float] = (6.283185307179586, 6.283185307179586)
-    periodic: tuple[bool, bool] = (True, True)
+    shape: tuple[int, ...] = (32, 32)
+    lower: tuple[float, ...] = (0.0, 0.0)
+    upper: tuple[float, ...] = (6.283185307179586, 6.283185307179586)
+    periodic: tuple[bool, ...] = (True, True)
 
     @classmethod
     def from_mapping(cls, mapping: dict[str, Any] | None) -> MeshConfig:
         mapping = mapping or {}
+        raw_shape = mapping.get("shape", cls.shape)
+        if raw_shape is None:
+            raise ValueError("mesh.shape must not be None")
+        if len(raw_shape) not in (2, 3):
+            raise ValueError("mesh.shape must have 2 or 3 entries")
+        ndim = len(raw_shape)
         return cls(
-            shape=_tuple_from(
-                mapping.get("shape", cls.shape),
-                length=2,
-                name="mesh.shape",
-                cast=int,
-            ),
+            shape=_tuple_from(raw_shape, length=ndim, name="mesh.shape", cast=int),
             lower=_tuple_from(
-                mapping.get("lower", cls.lower),
-                length=2,
+                mapping.get("lower", (0.0,) * ndim),
+                length=ndim,
                 name="mesh.lower",
                 cast=float,
             ),
             upper=_tuple_from(
-                mapping.get("upper", cls.upper),
-                length=2,
+                mapping.get("upper", (2.0 * math.pi,) * ndim),
+                length=ndim,
                 name="mesh.upper",
                 cast=float,
             ),
             periodic=_tuple_from(
-                mapping.get("periodic", cls.periodic),
-                length=2,
+                mapping.get("periodic", (True,) * ndim),
+                length=ndim,
                 name="mesh.periodic",
                 cast=bool,
             ),
         ).validated()
 
     def validated(self) -> MeshConfig:
+        if len(self.shape) not in (2, 3):
+            raise ValueError("mesh.shape must have 2 or 3 entries")
+        for name in ("lower", "upper", "periodic"):
+            if len(getattr(self, name)) != len(self.shape):
+                raise ValueError(f"mesh.{name} must have {len(self.shape)} entries")
         if any(points < 4 for points in self.shape):
             raise ValueError("mesh.shape entries must be >= 4")
         if any(hi <= lo for lo, hi in zip(self.lower, self.upper, strict=True)):
@@ -114,15 +120,37 @@ class TimeConfig:
         return int(round(step_count))
 
 
+PHYSICS_MODELS = ("reduced_mhd_linear_tearing", "reduced_mhd", "mhd3d", "compressible")
+MODELS_2D = ("reduced_mhd_linear_tearing", "reduced_mhd")
+INTEGRATORS_2D = ("rk4", "backward_euler")
+INTEGRATORS_3D = ("rk4", "if_rk3", "etdrk4")
+
+
+def _parameter_value(value: Any) -> Any:
+    """Keep list-valued equilibrium parameters and cast scalars to float."""
+    if isinstance(value, (list, tuple)):
+        return list(value)
+    return float(value)
+
+
 @dataclass(frozen=True)
 class PhysicsConfig:
-    """Physics model parameters for early rebuild workflows."""
+    """Physics model parameters.
+
+    ``model`` selects the equations: ``reduced_mhd_linear_tearing`` is the
+    lightweight smoke workflow; ``reduced_mhd``, ``mhd3d`` and ``compressible``
+    run through :class:`mhx.Simulation`.
+    """
 
     model: str = "reduced_mhd_linear_tearing"
     equilibrium: str = "cosine_tearing"
-    equilibrium_parameters: dict[str, float] = field(default_factory=dict)
+    equilibrium_parameters: dict[str, Any] = field(default_factory=dict)
     resistivity: float = 1.0e-3
     viscosity: float = 1.0e-3
+    guide_field: tuple[float, float, float] = (0.0, 0.0, 0.0)
+    dissipation_order: int = 1
+    sound_speed: float = 1.0
+    bulk_viscosity: float = 0.0
     plugin_modules: tuple[str, ...] = ()
     plugin_entry_point_groups: tuple[str, ...] = ()
     rhs_terms: tuple[str, ...] = ()
@@ -135,11 +163,20 @@ class PhysicsConfig:
             model=str(mapping.get("model", cls.model)),
             equilibrium=str(mapping.get("equilibrium", cls.equilibrium)),
             equilibrium_parameters={
-                str(key): float(value)
+                str(key): _parameter_value(value)
                 for key, value in mapping.get("equilibrium_parameters", {}).items()
             },
             resistivity=float(mapping.get("resistivity", cls.resistivity)),
             viscosity=float(mapping.get("viscosity", cls.viscosity)),
+            guide_field=_tuple_from(
+                mapping.get("guide_field", cls.guide_field),
+                length=3,
+                name="physics.guide_field",
+                cast=float,
+            ),
+            dissipation_order=int(mapping.get("dissipation_order", cls.dissipation_order)),
+            sound_speed=float(mapping.get("sound_speed", cls.sound_speed)),
+            bulk_viscosity=float(mapping.get("bulk_viscosity", cls.bulk_viscosity)),
             plugin_modules=tuple(
                 str(item) for item in mapping.get("plugin_modules", cls.plugin_modules)
             ),
@@ -158,8 +195,18 @@ class PhysicsConfig:
         ).validated()
 
     def validated(self) -> PhysicsConfig:
+        if self.model not in PHYSICS_MODELS:
+            raise ValueError(
+                f"physics.model must be one of {', '.join(PHYSICS_MODELS)}, got {self.model!r}"
+            )
         if not self.equilibrium:
             raise ValueError("physics.equilibrium must be non-empty")
+        if self.dissipation_order < 1:
+            raise ValueError("physics.dissipation_order must be >= 1")
+        if self.sound_speed <= 0.0:
+            raise ValueError("physics.sound_speed must be positive")
+        if self.bulk_viscosity < 0.0:
+            raise ValueError("physics.bulk_viscosity must be non-negative")
         if self.resistivity < 0.0:
             raise ValueError("physics.resistivity must be non-negative")
         if self.viscosity < 0.0:
@@ -194,6 +241,7 @@ class NumericsConfig:
     nonlinear_max_steps: int = 20
     enable_x64: bool = True
     enable_jit: bool = True
+    device_count: int | None = None
 
     @classmethod
     def from_mapping(cls, mapping: dict[str, Any] | None) -> NumericsConfig:
@@ -222,6 +270,11 @@ class NumericsConfig:
             ),
             enable_x64=bool(mapping.get("enable_x64", cls.enable_x64)),
             enable_jit=bool(mapping.get("enable_jit", cls.enable_jit)),
+            device_count=(
+                None
+                if mapping.get("device_count", cls.device_count) is None
+                else int(mapping["device_count"])
+            ),
         ).validated()
 
     def validated(self) -> NumericsConfig:
@@ -232,10 +285,12 @@ class NumericsConfig:
             )
         if self.dealiasing not in {"none", "two_thirds"}:
             raise ValueError("numerics.dealiasing must be 'none' or 'two_thirds'")
-        if self.time_integrator not in {"rk4", "backward_euler"}:
+        if self.time_integrator not in {"rk4", "backward_euler", "if_rk3", "etdrk4"}:
             raise ValueError(
-                "numerics.time_integrator must be 'rk4' or 'backward_euler'"
+                "numerics.time_integrator must be 'rk4', 'backward_euler', 'if_rk3' or 'etdrk4'"
             )
+        if self.device_count is not None and self.device_count < 1:
+            raise ValueError("numerics.device_count must be >= 1")
         if self.linear_solver != "solvax_gmres":
             raise ValueError("numerics.linear_solver must be 'solvax_gmres'")
         if self.nonlinear_solver != "solvax_newton_krylov":
@@ -343,7 +398,26 @@ class RunConfig:
             physics=PhysicsConfig.from_mapping(mapping.get("physics")),
             numerics=NumericsConfig.from_mapping(mapping.get("numerics")),
             diagnostics=DiagnosticsConfig.from_mapping(mapping.get("diagnostics")),
-        )
+        ).validated()
+
+    def validated(self) -> RunConfig:
+        """Check the settings that depend on more than one section."""
+        three_dimensional = self.physics.model in ("mhd3d", "compressible")
+        expected_dimensions = 3 if three_dimensional else 2
+        if len(self.mesh.shape) != expected_dimensions:
+            raise ValueError(
+                f"physics.model {self.physics.model!r} needs a {expected_dimensions}-entry "
+                f"mesh.shape, got {len(self.mesh.shape)}"
+            )
+        allowed = INTEGRATORS_3D if three_dimensional else INTEGRATORS_2D
+        if self.numerics.time_integrator not in allowed:
+            raise ValueError(
+                f"numerics.time_integrator must be one of {', '.join(allowed)} for "
+                f"physics.model {self.physics.model!r}, got {self.numerics.time_integrator!r}"
+            )
+        if self.physics.model not in MODELS_2D and not all(self.mesh.periodic):
+            raise ValueError(f"physics.model {self.physics.model!r} needs a periodic mesh")
+        return self
 
     def with_output_dir(self, output_dir: str | Path) -> RunConfig:
         """Return a copy with a different output directory."""
@@ -368,6 +442,11 @@ class RunConfig:
             ""
             if data["diagnostics"]["fit_time_window"] is None
             else f"fit_time_window = {data['diagnostics']['fit_time_window']}\n"
+        )
+        device_count_line = (
+            ""
+            if data["numerics"]["device_count"] is None
+            else f"device_count = {data['numerics']['device_count']}\n"
         )
         equilibrium_parameter_lines = ""
         if data["physics"]["equilibrium_parameters"]:
@@ -397,6 +476,10 @@ class RunConfig:
             f'equilibrium = "{data["physics"]["equilibrium"]}"\n'
             f"resistivity = {data['physics']['resistivity']}\n"
             f"viscosity = {data['physics']['viscosity']}\n"
+            f"guide_field = {data['physics']['guide_field']}\n"
+            f"dissipation_order = {data['physics']['dissipation_order']}\n"
+            f"sound_speed = {data['physics']['sound_speed']}\n"
+            f"bulk_viscosity = {data['physics']['bulk_viscosity']}\n"
             f"plugin_modules = {data['physics']['plugin_modules']}\n"
             "plugin_entry_point_groups = "
             f"{data['physics']['plugin_entry_point_groups']}\n"
@@ -416,7 +499,8 @@ class RunConfig:
             f"linear_max_restarts = {data['numerics']['linear_max_restarts']}\n"
             f"nonlinear_max_steps = {data['numerics']['nonlinear_max_steps']}\n"
             f"enable_x64 = {str(data['numerics']['enable_x64']).lower()}\n"
-            f"enable_jit = {str(data['numerics']['enable_jit']).lower()}\n\n"
+            f"enable_jit = {str(data['numerics']['enable_jit']).lower()}\n"
+            f"{device_count_line}\n"
             "[diagnostics]\n"
             f"quantities = {data['diagnostics']['quantities']}\n"
             f"plugin_modules = {data['diagnostics']['plugin_modules']}\n"
