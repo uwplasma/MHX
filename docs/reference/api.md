@@ -51,6 +51,7 @@ holds the reduced-MHD right-hand side and its spectral form.
 ```{eval-rst}
 .. automodule:: mhx.physics
    :members:
+   :exclude-members: Equilibrium
 
 .. automodule:: mhx.physics.equilibria
    :members:

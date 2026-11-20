@@ -3,6 +3,7 @@ name: Benchmark Smoke
 on:
   workflow_dispatch:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
     paths:
       - "src/mhx/**"
       - "examples/**"
@@ -21,8 +22,12 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
   smoke:
+    if: github.event_name != 'pull_request' || !github.event.pull_request.draft
     name: FAST benchmark artifacts
     runs-on: ubuntu-latest
     steps:
@@ -38,7 +43,7 @@ jobs:
           mhx benchmark orszag-tang --outdir outputs/benchmark_smoke/orszag_tang --nx 16 --ny 16 --t-end 1.0 --save-every 2
           mhx benchmark decaying-turbulence --outdir outputs/benchmark_smoke/decaying_turbulence --nx 16 --ny 16 --t-end 0.5 --save-every 2
           mhx benchmark forced-turbulent-reconnection --outdir outputs/benchmark_smoke/forced_turbulent_reconnection --nx 16 --ny 16 --t-end 0.5 --save-every 2 --seed 1
-          mhx artifact-manifest outputs/benchmark_smoke
+          python -c "from mhx.io import write_artifact_manifest; write_artifact_manifest('outputs/benchmark_smoke')"
       - name: Upload benchmark artifacts
         uses: actions/upload-artifact@v7.0.1
         with:
