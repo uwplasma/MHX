@@ -31,7 +31,7 @@ dependencies = [
   "matplotlib",
   "numpy",
   "rich",
-  "solvax",
+  "solvax>=0.36.2",
   "typer",
   "tomli; python_version < '3.11'",
 ]
